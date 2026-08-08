@@ -70,34 +70,87 @@ die van de marktkans, over dezelfde bets. Is Brier eigen niet lager, dan voegt d
 kansinformatie toe boven de prijs — hoe goed de hit rate er op korte termijn ook uitziet. Hit rate en
 ROI zijn bij tientallen bets vooral ruis; deze vergelijking is het eerste signaal dat richting geeft.
 
+## Waarom de bronnen dicht zitten
+
+Gemeten op 8 aug 2026, met bewijs in plaats van vermoedens:
+
+- **Het is niet de netwerkpolicy van de omgeving.** De proxy maakt de verbinding (`200 Connection
+  Established`) en er komt geen `x-deny-reason: host_not_allowed` terug. `api.the-odds-api.com`
+  antwoordt zelfs gewoon met 200. Er hoeft dus **niets** aan **Allowed domains** te veranderen.
+- **Het is geen user-agent-probleem.** Met een gewone Chrome-user-agent geven fbref, Forebet,
+  FootyStats en PredictZ alle vier nog steeds 403, met bodies van vrijwel identieke grootte.
+- **Het is Cloudflare-botbescherming.** De 403-pagina is Cloudflares `Just a moment...`-challenge.
+  Die vier sites sluiten geautomatiseerde toegang bewust af.
+
+Dat laatste is geen storing die overgaat en geen bug om omheen te werken: het is een dichte deur met
+een bordje erop. Het antwoord is een dienst die datatoegang aanbiedt, niet een challenge omzeilen.
+
+## Sleutels toevoegen
+
+Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangrijke.**
+
+| Variabele | Dienst | Levert | Nodig? |
+|---|---|---|---|
+| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Ja — dit is wat de routine deblokkeert** |
+| `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Optioneel, verbetering |
+
+Waarom die volgorde: odds werken al via Oddschecker. Wat ontbreekt is een **onafhankelijke
+kansinput**, want zonder die zou `my_prob` uit de bookmakerprijs komen — precies wat
+`_shared-rules.md §2` verbiedt. `API_FOOTBALL_KEY` vult dat gat; `ODDS_API_KEY` maakt alleen de
+prijskant netter.
+
+### Stappen
+
+1. Maak een gratis account op api-football.com en kopieer de sleutel uit je dashboard.
+2. Ga naar [claude.ai/code/routines](https://claude.ai/code/routines) en klik op de routine.
+3. Klik het pennetje (**Edit routine**).
+4. Onder het **Instructions**-vak: klik het wolkje met de naam van je omgeving (bv. **Default**).
+5. Ga met de muis over de omgeving in de lijst en klik het instellingen-icoontje rechts.
+6. In **Update cloud environment**, in het veld voor omgevingsvariabelen, één regel per sleutel in
+   `.env`-vorm:
+   ```
+   API_FOOTBALL_KEY=jouwsleutelhier
+   ```
+7. **Save changes.** Dit geldt vanaf de volgende run; een lopende sessie leest het niet opnieuw.
+8. Klik **Run now** op de routine, of wacht op de volgende run. Controleer met:
+   ```bash
+   python3 scripts/api_check.py
+   ```
+
+**Netwerkinstellingen niet aanpassen** — beide API's zijn al bereikbaar op **Trusted**.
+
+### Twee waarschuwingen
+
+**Zichtbaarheid.** Claude Code heeft nog geen aparte kluis voor geheimen; het dialoogvenster
+waarschuwt daar zelf voor. Iedereen die de omgeving gebruikt kan de waarde lezen. Bij een
+persoonlijke omgeving op een Pro/Max-account ben jij dat alleen. Gebruik hier alleen een
+gratis-tier-sleutel die niets anders opent, en zet hem **nooit** in de repo (zie `.gitignore`).
+Plak een sleutel ook niet in een chatgesprek.
+
+**Quota.** Bij The Odds API is de prijs per verzoek `aantal markten × aantal regio's`. Met 500
+credits per maand en twee runs per dag betekent dat: één regio (`eu`), maximaal twee markten, en
+alleen competities die vandaag spelen. Acht competities per dag à 2 credits is ~480 per maand — dat
+past net. Laat een run stoppen zodra `x-requests-remaining` onder een reserve komt.
+
 ## Nog te doen
 
-**1. API-keys (grootste winst, kan ik niet zelf doen)**
-
-Zeven van de negen bronnen die de routine nodig heeft zijn dicht: 403 (fbref, Forebet, FootyStats,
-PredictZ) of JS-only (OddsPortal, BetExplorer, Flashscore). Zolang dat zo is, blijven veel
-competities in `BUITEN DATADEKKING` vallen en leveren runs vaak nul bets — de eerlijke uitkomst van
-de huidige input, geen defect in de regels.
-
-Twee keys halen dat in één keer weg. Zet ze als omgevingsvariabelen in de omgeving van de geplande
-taak (**niet** in de repo — zie `.gitignore`):
-
-| Variabele | Dienst | Levert |
-|---|---|---|
-| `ODDS_API_KEY` | the-odds-api.com (gratis tier) | echte odds per bookmaker als JSON |
-| `API_FOOTBALL_KEY` | api-football / API-Sports | xG, opstellingen, blessures, statistieken |
-
-Beide staan al in `data/coverage.json` met status `untested`. Zodra een key aanwezig is, pikt Stage 3
-ze automatisch op.
-
-**2. Run B-runlijst invullen** — `prompts/run-b.md` heeft een lege competitielijst. Die is met opzet
+**1. Run B-runlijst invullen** — `prompts/run-b.md` heeft een lege competitielijst. Die is met opzet
 niet geraden.
 
-**3. Fotmob proberen** — de enige onafhankelijke kansbron met brede dekking die nog niet getest is.
-Werkt hij, dan komen Eredivisie, Primeira Liga, Belgian Pro League en Ekstraklasa binnen bereik
-zonder API-key.
+**2. Ophaalcode schrijven zodra er een sleutel is.** `scripts/api_check.py` controleert alleen of de
+sleutels werken. De code die daadwerkelijk statistieken en odds ophaalt en omzet naar `my_prob` is er
+nog niet, omdat de responsevorm zonder werkende sleutel niet te verifiëren is — die op gok
+schrijven levert code op die er goed uitziet en niet werkt.
 
-**4. Status van de overige diagnosepunten** — gevraagd waren punt 2, 3 en 5; die zijn af. Van de
+**3. xG-dekking van API-Football per competitie natrekken.** Alle endpoints zitten in het gratis
+plan, maar xG blijkt per competitie en seizoen wisselend aanwezig. Zolang dat niet nagetrokken is,
+geldt API-Football als tier-2-bron (`LIGHT`), niet als xG-bron (`FULL`).
+
+**4. Fotmob proberen** — de enige onafhankelijke kansbron met brede dekking die nog niet getest is.
+Werkt hij, dan komen Eredivisie, Primeira Liga, Belgian Pro League en Ekstraklasa binnen bereik
+zonder sleutel.
+
+**5. Status van de overige diagnosepunten** — gevraagd waren punt 2, 3 en 5; die zijn af. Van de
 rest: punt 4 (dynamische competitielijst) viel vanzelf uit de poort in Stage 2 en is meegenomen;
 punt 6 (vroeg-seizoen-behandeling) staat als regel in `_shared-rules.md §4` maar is nog niet in de
 praktijk getoetst; punt 1 (API-keys) staat hierboven en vraagt een key van de gebruiker.
