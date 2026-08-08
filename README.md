@@ -30,10 +30,15 @@ data/
   coverage.json         welke bron welke competitie kan bedienen, en in welke rol
   source-health.json    wat elke bron laatst deed toen we hem probeerden
   picks.jsonl           het logboek: één gepubliceerde bet per regel
+  cache/fotmob/         team-xG per competitie, per dag ververst (.gitignore, geen bron van waarheid)
 schema/
   pick.schema.json      velddefinitie van een pick
 scripts/
   ledger.py             valideren, afwikkelen en meten (alleen stdlib)
+  fotmob.py             fixtures + team-xG ophalen, met caching per dag
+  betexplorer.py        gratis 1X2-odds ophalen
+  oddsapi.py            Over/Under en overige markten ophalen, credit-bewust
+  model.py              Poisson met Dixon-Coles-correctie + de robuustheidstest
 runs/
   TEMPLATE.md           vorm van een runrapport
   YYYY-MM-DD-run-a.md   het rapport van elke run
@@ -143,11 +148,14 @@ past net. Laat een run stoppen zodra `x-requests-remaining` onder een reserve ko
 Nog wél te doen: van 14 van die 17 is de databekking niet getest (zie de "Let op"-sectie in
 run-b.md) — dat trekt de eerste Run B na.
 
-**2. Ophaalcode schrijven zodra er een sleutel is.** `scripts/api_check.py` controleert alleen of de
-sleutels werken. De code die daadwerkelijk statistieken en odds ophaalt en omzet naar `my_prob` is er
-nog niet als herbruikbaar script in `scripts/` — de Run A-diagnose van 8 aug 2026 deed dit ad hoc
-per run. Nu beide sleutels werken (zie hieronder) is dit de volgende stap: de fetch/model-code uit
-die run vastleggen in `scripts/` in plaats van hem elke run opnieuw te schrijven.
+**2. ~~Ophaalcode schrijven~~ — gedaan (8 aug 2026).** `scripts/fotmob.py` (fixtures + team-xG,
+met caching per dag in `data/cache/fotmob/`), `scripts/betexplorer.py` (gratis 1X2-odds),
+`scripts/oddsapi.py` (Over/Under en de overige markten, credit-bewust) en `scripts/model.py`
+(Poisson met Dixon-Coles-correctie + de robuustheidstest) vervangen de ad-hoc-scripts van de
+Run A-diagnose. Elk heeft een zelftest (`python3 scripts/<naam>.py`) die tegen echte, actuele data
+draait. Zie de toelichting bij Stage 4 in `_shared-rules.md` voor waarom dit `MAX_DEEP_ANALYSES`
+van 12 naar 30 heeft gebracht: niet het aantal wedstrijden was de bottleneck, maar het aantal
+competities waarvoor nog geen team-xG was opgehaald.
 
 **3. xG-dekking van API-Football per competitie natrekken.** De sleutel werkt sinds 8 aug 2026
 (was eerder afgewezen, opgelost door de gebruiker), maar xG blijkt per competitie en seizoen

@@ -10,7 +10,7 @@ aanpassen zonder de geplande taak aan te raken.
 
 | Parameter | Waarde | Waarom |
 |---|---|---|
-| `MAX_DEEP_ANALYSES` | **12** | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. |
+| `MAX_DEEP_ANALYSES` | **30** | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. Verhoogd van 12 naar 30 op 8 aug 2026 nadat `scripts/fotmob.py`, `scripts/model.py`, `scripts/betexplorer.py` en `scripts/oddsapi.py` de ophaal- en rekenlogica herbruikbaar maakten — zie de toelichting eronder. |
 | `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
 | `EDGE_THRESHOLD_FULL` | **3.0 procentpunt** | Onder deze grens is de schatting niet te onderscheiden van modelruis. |
 | `EDGE_THRESHOLD_LIGHT` | **6.0 procentpunt** | Zwakkere data eist een grotere marge. |
@@ -119,6 +119,20 @@ Rangschik de overgebleven wedstrijden op verwachte datakwaliteit (FULL boven LIG
 onafhankelijke inputs boven minder). Neem de top `MAX_DEEP_ANALYSES` mee naar de diepe analyse.
 Noteer expliciet hoeveel wedstrijden hierdoor zijn afgekapt — **stille truncatie is verboden**;
 een afgekapte lijst leest anders als volledige dekking.
+
+**Gebruik `scripts/fotmob.py`, `scripts/betexplorer.py`, `scripts/oddsapi.py` en
+`scripts/model.py` voor Stage 3-5** in plaats van de ophaal- en rekenlogica opnieuw te schrijven.
+Dat is precies wat de vorige aanpak duur maakte: niet het aantal wedstrijden, maar het aantal
+**nieuwe, nog niet opgehaalde competities** — voor elke competitie moet één keer een team-xG-
+dossier worden opgebouwd (`fotmob.fetch_league_stats`, met caching per dag), maar zodra dat er
+is, kost een extra wedstrijd binnen diezelfde competitie bijna niets: alleen nog
+`model.analyze_match` en `model.robustness_check` aanroepen. Reken dus niet met wedstrijden als
+eenheid van "hoeveel kan ik aan vandaag", maar met **hoeveel competities voor het eerst worden
+opgehaald**. Een dag met 30 wedstrijden in 3 al-bekende competities is goedkoop; een dag met
+10 wedstrijden in 10 nieuwe competities is duur — ook al is het aantal wedstrijden lager. Val bij
+twijfel terug op de volgorde uit deze paragraaf (FULL boven LIGHT), en meld in het runrapport
+welke competities deze run voor het eerst zijn opgehaald (en dus in `data/cache/fotmob/` zijn
+gecached voor de volgende run).
 
 ### Stage 5 — Analyse en output
 Analyseer de geselecteerde wedstrijden volgens §4 en §5.
