@@ -25,8 +25,8 @@
       "role": "odds",
       "independent": false,
       "url_pattern": "https://www.oddschecker.com/football",
-      "notes": "Werkt. Fractionele odds, geaggregeerd over 25+ UK-boeken; individuele bookmaker is in de tekstweergave niet altijd herleidbaar.",
-      "coverage_verified": true,
+      "notes": "NIET ACTIEF sinds 8 aug 2026: Cloudflare 'Just a moment...'-challenge (403). Was daarvoor de primaire oddsbron. Niet omheen werken.",
+      "coverage_verified": false,
       "covers": "uk_facing"
     },
     "understat": {
@@ -54,10 +54,21 @@
     "fotmob": {
       "role": "prob",
       "independent": true,
-      "url_pattern": "https://www.fotmob.com/leagues/{id}",
-      "notes": "Nog niet getest. xG + opstellingen + blessures. Volgende kandidaat om te proberen.",
-      "coverage_verified": false,
-      "covers": "claimed_all"
+      "url_pattern": "https://www.fotmob.com/api/data/{matches?date=YYYYMMDD | leagues?id={id}&season=YYYY%2FYYYY} en https://data.fotmob.com/stats/{leagueId}/season/{seasonId}/{expected_goals_team|expected_goals_conceded_team}.json",
+      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Geen xG voor tweede divisies (Eerste Divisie, Liga Portugal 2, Scottish Championship) — daar alleen doelpunten.",
+      "coverage_verified": true,
+      "covers": [
+        "Eredivisie (NED)",
+        "Primeira Liga (POR)",
+        "Belgian Pro League (BEL)",
+        "Ekstraklasa (POL)",
+        "Scottish Premiership (SCO)",
+        "Championship (ENG)",
+        "League One (ENG)",
+        "League Two (ENG)",
+        "Serie B (ITA)",
+        "Serie C (ITA)"
+      ]
     },
     "footystats": {
       "role": "prob",
@@ -98,33 +109,180 @@
       "notes": "NIET ACTIEF — vereist API_FOOTBALL_KEY. xG, opstellingen, blessures, statistieken als JSON.",
       "coverage_verified": false,
       "covers": "claimed_all"
+    },
+    "betexplorer": {
+      "role": "odds",
+      "independent": false,
+      "url_pattern": "https://www.betexplorer.com/next/football/ en https://www.betexplorer.com/football/{country}/{league}/",
+      "notes": "Primaire oddsbron sinds 8 aug 2026. 1X2 server-side in data-odd (gemiddelde) en data-odd-max (beste prijs); data-ts is de aftrap als epoch. ALLEEN 1X2 — ou/bts/ah-endpoints geven 404, en de wedstrijdpagina bevat geen odds. Individuele bookmaker niet herleidbaar.",
+      "coverage_verified": true,
+      "covers": "all"
     }
   },
   "competitions": {
     "_doc": "prob_sources in voorkeursvolgorde. Een competitie passeert de datadekkingspoort zodra één prob_source status 'ok' heeft in source-health.json.",
-    "Premier League (ENG)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
-    "Serie A (ITA)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
-    "La Liga (ESP)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
-    "Bundesliga (GER)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
-    "Ligue 1 (FRA)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
-    "Championship (ENG)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Eredivisie (NED)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Primeira Liga (POR)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Belgian Pro League (BEL)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Super Lig (TUR)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Scottish Premiership (SCO)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Danish Superliga (DEN)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "Ekstraklasa (POL)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "UEFA Champions League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
-    "UEFA Europa League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
-    "UEFA Conference League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
-    "FA Cup (ENG)": { "prob_sources": ["fbref", "fotmob", "forebet"] },
-    "League Cup (ENG)": {
-      "prob_sources": ["fbref", "fotmob", "forebet"],
-      "notes": "Ronde 1-2 zijn lage-divisieties met vrijwel geen publieke xG. Verwacht BUITEN DATADEKKING."
+    "Premier League (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "understat",
+        "fbref",
+        "forebet"
+      ]
     },
-    "Coppa Italia (ITA)": { "prob_sources": ["fbref", "fotmob", "forebet"] },
-    "KNVB Beker (NED)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
-    "DFB Pokal (GER)": { "prob_sources": ["fbref", "fotmob", "forebet"] }
+    "Serie A (ITA)": {
+      "prob_sources": [
+        "fotmob",
+        "understat",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "La Liga (ESP)": {
+      "prob_sources": [
+        "fotmob",
+        "understat",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "Bundesliga (GER)": {
+      "prob_sources": [
+        "fotmob",
+        "understat",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "Ligue 1 (FRA)": {
+      "prob_sources": [
+        "fotmob",
+        "understat",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "Championship (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Eredivisie (NED)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Primeira Liga (POR)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Belgian Pro League (BEL)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Super Lig (TUR)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Scottish Premiership (SCO)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Danish Superliga (DEN)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "Ekstraklasa (POL)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "UEFA Champions League": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "UEFA Europa League": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "UEFA Conference League": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "FA Cup (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ]
+    },
+    "League Cup (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ],
+      "notes": "Ronde 1-2 zijn lage-divisieties. Sinds 8 aug 2026 heeft Fotmob wel xG voor League One en League Two, dus dit is geen dekkingsprobleem meer — met 29 ties per speeldag vallen ze vooral buiten MAX_DEEP_ANALYSES."
+    },
+    "Coppa Italia (ITA)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ],
+      "notes": "Fotmob heeft xG voor Serie B en Serie C, maar de dekking per Serie C-girone is nog niet nagetrokken."
+    },
+    "KNVB Beker (NED)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats",
+        "forebet"
+      ]
+    },
+    "DFB Pokal (GER)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "forebet"
+      ]
+    }
   }
 }

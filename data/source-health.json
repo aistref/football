@@ -17,19 +17,19 @@
       "status": "ok",
       "last_checked": "2026-08-08",
       "role": "fixtures",
-      "detail": "Volledige fixturelijst per datum, server-side gerenderd. Leverde 46 wedstrijden over 7 Run A-competities."
+      "detail": "Volledige fixturelijst per datum, server-side. Bevat match_date in UTC (bruikbaar voor tijdzonecontrole). Let op: match_betting_market was vandaag leeg — geen odds meer via deze bron."
     },
     "oddschecker": {
-      "status": "ok",
+      "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "odds",
-      "detail": "Odds zichtbaar in fractionele notatie, geaggregeerd. Individuele bookmaker niet altijd herleidbaar uit de tekstweergave."
+      "detail": "OMGEVALLEN t.o.v. vorige run: 403 met Cloudflare 'Just a moment...'-challenge op /football en /football/netherlands/eredivisie (server: cloudflare). Was eerder vandaag nog ok. Niet omheen werken."
     },
     "understat": {
-      "status": "http_503",
+      "status": "ok",
       "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "Homepage laadde wel (xG aanwezig, 6 competities), maar /league/EPL/2026 gaf 503. Wisselvallig — opnieuw proberen."
+      "detail": "HERSTELD: /league/EPL/2026 gaf 200 (18.7 kB) waar het eerder 503 gaf. Dekt alleen de top-5 competities, die vandaag niet spelen — dus deze run niet gebruikt."
     },
     "fbref": {
       "status": "cloudflare_challenge",
@@ -59,43 +59,43 @@
       "status": "js_only",
       "last_checked": "2026-08-08",
       "role": "odds",
-      "detail": "HTML bevat navigatie en footer, geen wedstrijden of odds."
+      "detail": "HTTP 200 op /football/netherlands/eredivisie/ maar de wedstrijden van vandaag staan er niet in."
     },
     "betexplorer": {
-      "status": "js_only",
+      "status": "ok",
       "last_checked": "2026-08-08",
       "role": "odds",
-      "detail": "Wedstrijdlijst met aftraptijden aanwezig, maar de 1/X/2-kolommen zijn leeg."
+      "detail": "HERZIEN: eerder als js_only gemarkeerd op basis van de verkeerde pagina. /next/football/ en de 'Next matches'-tabel per competitie leveren 1X2-odds server-side in data-odd (gemiddelde) en data-odd-max (beste prijs), plus data-ts als epoch voor de aftrap. Alleen 1X2; ou/bts/ah-endpoints geven 404. Individuele bookmaker niet herleidbaar."
     },
     "flashscore": {
       "status": "js_only",
       "last_checked": "2026-08-08",
       "role": "fixtures",
-      "detail": "Toont 'Loading...' in plaats van de dagschema's."
+      "detail": "Niet opnieuw geprobeerd deze run; Fotmob dekt de fixtures nu."
     },
     "bbc_sport": {
       "status": "blocked",
       "last_checked": "2026-08-08",
       "role": "fixtures",
-      "detail": "Fetch geweigerd door de tool ('unable to fetch from www.bbc.com')."
+      "detail": "Niet opnieuw geprobeerd deze run."
     },
     "fotmob": {
-      "status": "untested",
-      "last_checked": null,
+      "status": "ok",
+      "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "Nog niet geprobeerd. Beste openstaande kandidaat voor xG-dekking buiten de top-5 competities."
+      "detail": "GETEST EN WERKEND (openstaand punt 4 uit README). /api/data/matches?date=YYYYMMDD geeft alle fixtures met utcTime; /api/data/leagues?id=..&season=YYYY%2FYYYY geeft stand met thuis/uit-splits; data.fotmob.com/stats/{lid}/season/{sid}/expected_goals_team.json en expected_goals_conceded_team.json geven xG en xGA per team (gzip). xG bevestigd voor Eredivisie, Liga Portugal, Belgian Pro League, Ekstraklasa, Scottish Premiership, EFL Championship/League One/League Two, Serie B en Serie C. Let op: het oude pad /api/matches geeft 404."
     },
     "the_odds_api": {
-      "status": "untested",
-      "last_checked": null,
+      "status": "no_key",
+      "last_checked": "2026-08-08",
       "role": "odds",
-      "detail": "Host bereikbaar (HTTP 200 zonder sleutel-fout op de sportenlijst); vereist ODDS_API_KEY. Kosten per verzoek = markten x regio's, 500 credits/maand gratis."
+      "detail": "ODDS_API_KEY niet gezet in de omgeving — api_check.py slaat de controle over."
     },
     "api_football": {
-      "status": "untested",
-      "last_checked": null,
+      "status": "key_rejected",
+      "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "Host bereikbaar (v3.football.api-sports.io antwoordt, wijst af zonder sleutel); vereist API_FOOTBALL_KEY. Gratis: 100 verzoeken/dag, alle endpoints, maar xG-dekking per competitie wisselend."
+      "detail": "API_FOOTBALL_KEY IS gezet (32 tekens, lowercase hex) maar wordt afgewezen: v3.football.api-sports.io/status en /fixtures geven HTTP 200 met errors.token = 'Error/Missing application key.'. Proxy uitgesloten als oorzaak — een echo-dienst bevestigde dat de header x-apisports-key intact aankomt. RapidAPI-spiegel geeft 403 'You are not subscribed to this API' (idem voor een willekeurige sleutel, dus niet onderscheidend). Actie voor de gebruiker: sleutel uit het dashboard van api-football.com opnieuw kopiëren."
     }
   },
   "_network": "Netwerkpolicy is NIET de blokkade: proxy verbindt, geen x-deny-reason. Beide API-hosts zijn bereikbaar op Trusted. Allowed domains hoeft niet aangepast."
