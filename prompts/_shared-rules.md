@@ -174,12 +174,13 @@ Volg §6. Zonder commit is de run niet gebeurd.
 
 ## 4. Datahiërarchie en labels
 
-1. **Hard data**: team xG/xGA (seizoen); rolling xG (laatste 5–8); match-level predicted xG;
-   shots, SOT, big chances; fitheid, blessures/schorsingen key-players.
-2. **Bij ontbrekende xG**: gepubliceerde modelkansen; goal averages, BTTS%, over/under-lijnen;
-   home/away-splits; recente vorm (5–6).
+1. **Hard data** (indien beschikbaar): team xG/xGA (seizoen); rolling xG-trend (laatste 5–8);
+   match-level predicted xG (home/away); shots, SOT, big chances; fitheid, blessures/schorsingen
+   key-players.
+2. **Bij ontbrekende xG**: gepubliceerde modelkansen (Forebet, FootyStats, xGscore, Prognosist
+   e.d.); goal averages, BTTS%, over/under-lijnen; home/away-splits; recente vorm (5–6).
 
-Benoem waar data onzeker of conflicterend is.
+**Consistentie-check:** benoem waar data onzeker of conflicterend is.
 
 | Label | Voorwaarde |
 |---|---|
