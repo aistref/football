@@ -59,6 +59,17 @@ Is er voor een wedstrijd géén enkele onafhankelijke input? → `data_tier = NO
 Niet "LIGHT met lage confidence" — geen bet. Vermeld bij elk cijfer de bron. Niet gevonden =
 schrijf "niet gevonden", nooit gokken.
 
+**Een "gepubliceerde modelkans"-site is niet automatisch schoon.** De expliciete bookmaker/
+aggregator-uitsluiting (Oddschecker, BetExplorer, The Odds API e.d.) vangt niet alles: sommige
+voorspellingssites nemen odds of marktbeweging zelf al op als invoer voor hun "modelkans" — hun
+getal is dan een verkapte afgeleide van de markt, ook al staat het niet op een bookmakerpagina.
+Controleer de methodetekst van een nieuwe bron voordat je hem als onafhankelijk aanmerkt.
+Concreet voorbeeld, ontdekt op 8 aug 2026: prognosist.com noemt zelf "team form, xG, odds and
+market movement" als invoer voor zijn "Model probability" — daarom staat die bron in
+`coverage.json` met `"blends_market_data": true` en telt hij niet als schone onafhankelijke input
+op zichzelf. Twijfel je over een bron? Zoek de "methodology"/"how it works"-pagina op en lees hem,
+net zo goed als je bij een cijfer de bron leest.
+
 ---
 
 ## 3. Pipeline — filter vóór de analyse, niet erna

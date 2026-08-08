@@ -136,18 +136,19 @@
     "xgscore": {
       "role": "prob",
       "independent": true,
-      "url_pattern": "onbekend — nog geen werkende URL bij gevonden",
-      "notes": "Genoemd in de oorspronkelijke (voor-repo) opdracht als bron voor gepubliceerde modelkansen, samen met Forebet/FootyStats/Prognosist. Nooit getest en geen bevestigde URL — niet gokken naar een domeinnaam. Vul aan zodra iemand de juiste site heeft gevonden.",
-      "coverage_verified": false,
-      "covers": "onbekend"
+      "url_pattern": "https://xgscore.io/predictions/today",
+      "notes": "Bevestigd werkend op 8 aug 2026: HTTP 200, geen Cloudflare. Server-side gerenderde 1X2-kansen per wedstrijd (tijd, teams, kans%, referentie-odds) staan leesbaar in de HTML, regex-parsebaar zoals betexplorer.py. Geverifieerd tegen de echte fixtures van vandaag (Marítimo-Casa Pia, PSV-Fortuna, AZ-Den Haag). Kansen wijken af van zowel het eigen model als de markt (PSV: xgscore 81% vs eigen model 73.5% vs implied ~84%), past bij een zelfstandig xG-model. Tijden lijken UTC (18:00 op de site = 20:00 CEST, bevestigd tegen Fotmob) - net als elke bron, aftraptijd tegen een tweede bron controleren. Nog geen scripts/xgscore.py gebouwd; kandidaat voor dezelfde behandeling als fotmob.py kreeg.",
+      "coverage_verified": true,
+      "covers": "claimed_all"
     },
     "prognosist": {
       "role": "prob",
       "independent": true,
-      "url_pattern": "onbekend — nog geen werkende URL bij gevonden",
-      "notes": "Zelfde situatie als xgscore: genoemd in de oude opdracht, nooit getest, geen bevestigde URL.",
-      "coverage_verified": false,
-      "covers": "onbekend"
+      "blends_market_data": true,
+      "url_pattern": "https://prognosist.com/en/football (toont maar 1 'top prediction' per dag op de landingpagina; losse wedstrijdpagina's onder /en/football/match/<id>; volledig dagoverzicht nog niet gevonden)",
+      "notes": "LET OP — geen schone onafhankelijke bron, ondanks dat het een 'gepubliceerde modelkans'-site is. De site beschrijft de eigen methode zelf als 'We analyse team form, xG, odds and market movement' en toont een 'Value vs odds'-veld naast 'Model probability'. De gepubliceerde kans heeft dus al marktdata verwerkt. Een edge die alleen hierop steunt, meet via een omweg je eigen afwijking van de markt — zie de toegevoegde waarschuwing in _shared-rules.md §2. Bruikbaar als aanvullende context naast een schone bron (bv. xgscore of team-xG), nooit als enige onafhankelijke input.",
+      "coverage_verified": true,
+      "covers": "onbekend, minstens Austrian Bundesliga bevestigd (Hartberg-Sturm Graz, 8 aug 2026)"
     }
   },
   "competitions": {
