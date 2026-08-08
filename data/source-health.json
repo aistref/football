@@ -1,0 +1,101 @@
+{
+  "_doc": [
+    "Wat elke bron laatst deed toen we hem probeerden. Elke run leest dit vóór het afgaan van",
+    "bronnen (om geen tijd te verliezen aan bekende blokkades) en werkt het daarna bij met wat",
+    "er die run gemeten is.",
+    "",
+    "status: ok | http_403 | http_503 | js_only | blocked | untested",
+    "js_only = de HTML komt binnen maar de data wordt client-side ingeladen, dus onbruikbaar",
+    "          voor een fetch-only tool.",
+    "",
+    "Werk 'last_checked' en 'status' bij, ook als er niets veranderd is. Een bron die drie runs",
+    "op rij ok is, mag naar voren in de voorkeursvolgorde in coverage.json."
+  ],
+  "last_run": "2026-08-08",
+  "sources": {
+    "sportinglife": {
+      "status": "ok",
+      "last_checked": "2026-08-08",
+      "role": "fixtures",
+      "detail": "Volledige fixturelijst per datum, server-side gerenderd. Leverde 46 wedstrijden over 7 Run A-competities."
+    },
+    "oddschecker": {
+      "status": "ok",
+      "last_checked": "2026-08-08",
+      "role": "odds",
+      "detail": "Odds zichtbaar in fractionele notatie, geaggregeerd. Individuele bookmaker niet altijd herleidbaar uit de tekstweergave."
+    },
+    "understat": {
+      "status": "http_503",
+      "last_checked": "2026-08-08",
+      "role": "prob",
+      "detail": "Homepage laadde wel (xG aanwezig, 6 competities), maar /league/EPL/2026 gaf 503. Wisselvallig — opnieuw proberen."
+    },
+    "fbref": {
+      "status": "http_403",
+      "last_checked": "2026-08-08",
+      "role": "prob",
+      "detail": "403 Forbidden op /en/comps/9/Premier-League-Stats."
+    },
+    "forebet": {
+      "status": "http_403",
+      "last_checked": "2026-08-08",
+      "role": "prob",
+      "detail": "403 op zowel /football-tips-and-predictions-for-today als /by-league."
+    },
+    "footystats": {
+      "status": "http_403",
+      "last_checked": "2026-08-08",
+      "role": "prob",
+      "detail": "403 op de homepage."
+    },
+    "predictz": {
+      "status": "http_403",
+      "last_checked": "2026-08-08",
+      "role": "prob",
+      "detail": "403 op /predictions/."
+    },
+    "oddsportal": {
+      "status": "js_only",
+      "last_checked": "2026-08-08",
+      "role": "odds",
+      "detail": "HTML bevat navigatie en footer, geen wedstrijden of odds."
+    },
+    "betexplorer": {
+      "status": "js_only",
+      "last_checked": "2026-08-08",
+      "role": "odds",
+      "detail": "Wedstrijdlijst met aftraptijden aanwezig, maar de 1/X/2-kolommen zijn leeg."
+    },
+    "flashscore": {
+      "status": "js_only",
+      "last_checked": "2026-08-08",
+      "role": "fixtures",
+      "detail": "Toont 'Loading...' in plaats van de dagschema's."
+    },
+    "bbc_sport": {
+      "status": "blocked",
+      "last_checked": "2026-08-08",
+      "role": "fixtures",
+      "detail": "Fetch geweigerd door de tool ('unable to fetch from www.bbc.com')."
+    },
+    "fotmob": {
+      "status": "untested",
+      "last_checked": null,
+      "role": "prob",
+      "detail": "Nog niet geprobeerd. Beste openstaande kandidaat voor xG-dekking buiten de top-5 competities."
+    },
+    "the_odds_api": {
+      "status": "untested",
+      "last_checked": null,
+      "role": "odds",
+      "detail": "Vereist ODDS_API_KEY in de omgeving; niet aanwezig."
+    },
+    "api_football": {
+      "status": "untested",
+      "last_checked": null,
+      "role": "prob",
+      "detail": "Vereist API_FOOTBALL_KEY in de omgeving; niet aanwezig."
+    }
+  }
+}

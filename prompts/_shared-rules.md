@@ -1,0 +1,229 @@
+# Gedeelde analyseregels — Run A & Run B
+
+Deze regels gelden voor **elke** run. Wijzig ze hier in de repo, niet in de scheduler.
+De scheduler-prompt is met opzet kort en verwijst naar dit bestand, zodat je regels kunt
+aanpassen zonder de geplande taak aan te raken.
+
+---
+
+## 0. Vaste parameters
+
+| Parameter | Waarde | Waarom |
+|---|---|---|
+| `MAX_DEEP_ANALYSES` | **12** | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. |
+| `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
+| `EDGE_THRESHOLD_FULL` | **3.0 procentpunt** | Onder deze grens is de schatting niet te onderscheiden van modelruis. |
+| `EDGE_THRESHOLD_LIGHT` | **6.0 procentpunt** | Zwakkere data eist een grotere marge. |
+| `MAX_LIGHT_IN_SHORTLIST` | **2** | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. |
+| `MIN_ODDS` / `MAX_ODDS` | **1.30** / **6.00** | Buiten deze band is de kansschatting te onnauwkeurig om edge zinvol te noemen. |
+| `SETTLE_AFTER_HOURS` | **12** | Openstaande picks ouder dan dit worden afgewikkeld. |
+
+---
+
+## 1. Selectie: **0 of 1** bet per wedstrijd
+
+> Dit vervangt de oude regel "exact één beste valuebet per wedstrijd".
+
+Per geanalyseerde wedstrijd geldt precies één van twee uitkomsten:
+
+- **BET** — er is één markt/selectie die alle poorten hieronder passeert.
+- **GEEN BET** — met een reden in één regel. Dit is een volwaardige, correcte uitkomst.
+
+Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
+
+1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`;
+2. `MIN_ODDS ≤ odds ≤ MAX_ODDS`;
+3. de anti-circulariteitsregel (§2) is voldaan;
+4. `data_tier ≠ NONE`.
+
+**Een run met nul bets is geen mislukte run.** Nul bets rapporteren met een heldere reden is
+correct gedrag; bets forceren om het format te vullen is dat niet.
+
+Ga alle markten langs — 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS —
+en publiceer alleen de sterkste. Geen "gevoel", geen reputatie-argumenten.
+
+---
+
+## 2. Anti-circulariteitsregel (hard, niet optioneel)
+
+`my_prob` mag **nooit** afgeleid zijn van de odds waartegen je hem afzet. Doe je dat, dan meet
+`edge = my_prob − implied_prob` alleen je eigen afwijking van de markt, zonder onafhankelijk
+anker — een getal dat overtuigend lijkt en niets betekent.
+
+Daarom: elke bet heeft **minstens één onafhankelijke kansinput** in `prob_sources`, en die mag
+géén bookmaker of odds-aggregator zijn. Geldig zijn o.a. xG/xGA, rolling-xG, shot- en
+big-chance-data, gepubliceerde modelkansen, goal averages, BTTS%/O-U-percentages,
+home/away-splits, blessures/schorsingen van sleutelspelers.
+
+Is er voor een wedstrijd géén enkele onafhankelijke input? → `data_tier = NONE` → **GEEN BET**.
+Niet "LIGHT met lage confidence" — geen bet. Vermeld bij elk cijfer de bron. Niet gevonden =
+schrijf "niet gevonden", nooit gokken.
+
+---
+
+## 3. Pipeline — filter vóór de analyse, niet erna
+
+### Stage 0 — Afwikkelen (vorige runs)
+Lees `data/picks.jsonl`. Zoek de uitslagen op van picks met `result = null` en een aftrap ouder
+dan `SETTLE_AFTER_HOURS`. Werk ze bij via `scripts/ledger.py settle`. Zonder deze stap is de
+kwaliteit van de routine niet meetbaar.
+
+### Stage 1 — Fixtures van vandaag
+Bepaal zelf de actuele datum. Haal fixtures op; probeer meerdere bronnen (zie
+`data/source-health.json` voor wat laatst werkte). Werk uitsluitend met wedstrijden van **vandaag**.
+
+### Stage 2 — Competitiepoort
+Competities uit je runlijst **zonder** wedstrijden vandaag: overslaan, één regel in de
+dekkingstabel, geen verdere aandacht. Rapporteer ze niet als "gat" — buiten het seizoen is geen
+storing.
+
+### Stage 3 — Bronprobe + datadekkingspoort
+Test de bronnen uit `data/coverage.json` live en werk `data/source-health.json` bij met wat je
+meet (inclusief HTTP-status bij falen). Bepaal per resterende competitie of er een werkende,
+onafhankelijke kansbron is. Competities zonder dekking gaan naar
+**"buiten datadekking"** en worden niet geanalyseerd.
+
+Deze stap maakt de routine zelfherstellend: zodra een bron terugkomt of er een API-key
+beschikbaar is, stroomt het werk automatisch weer door — zonder de prompt te wijzigen.
+
+### Stage 4 — Rangschikken en afkappen
+Rangschik de overgebleven wedstrijden op verwachte datakwaliteit (FULL boven LIGHT, meer
+onafhankelijke inputs boven minder). Neem de top `MAX_DEEP_ANALYSES` mee naar de diepe analyse.
+Noteer expliciet hoeveel wedstrijden hierdoor zijn afgekapt — **stille truncatie is verboden**;
+een afgekapte lijst leest anders als volledige dekking.
+
+### Stage 5 — Analyse en output
+Analyseer de geselecteerde wedstrijden volgens §4 en §5.
+
+### Stage 6 — Vastleggen
+Volg §6. Zonder commit is de run niet gebeurd.
+
+---
+
+## 4. Datahiërarchie en labels
+
+1. **Hard data**: team xG/xGA (seizoen); rolling xG (laatste 5–8); match-level predicted xG;
+   shots, SOT, big chances; fitheid, blessures/schorsingen key-players.
+2. **Bij ontbrekende xG**: gepubliceerde modelkansen; goal averages, BTTS%, over/under-lijnen;
+   home/away-splits; recente vorm (5–6).
+
+Benoem waar data onzeker of conflicterend is.
+
+| Label | Voorwaarde |
+|---|---|
+| `FULL` | ≥ 2 onafhankelijke inputs, waarvan ≥ 1 uit categorie 1 |
+| `LIGHT` | ≥ 1 onafhankelijke input, maar niet genoeg voor FULL |
+| `NONE` | geen onafhankelijke input → geen bet |
+
+**Vroeg seizoen (speeldag 1–5):** "rolling xG laatste 5–8" bestaat dan niet. Eis het niet en
+verzin het niet. Gebruik xG van vorig seizoen en markeer expliciet transfers en
+selectiewisselingen als onzekerheid. Bij promovendi/nieuwkomers zonder vergelijkbare historie:
+`LIGHT` of `NONE`.
+
+---
+
+## 5. Outputformat
+
+### Dekkingsrapportage (bovenaan, verplicht)
+
+Een tabel met elke competitie uit je runlijst en precies één status:
+
+| Status | Betekenis |
+|---|---|
+| `GEANALYSEERD` | wedstrijden vandaag + datadekking |
+| `GEEN WEDSTRIJD` | niets op de kalender vandaag |
+| `BUITEN DATADEKKING` | wedstrijden vandaag, maar geen werkende onafhankelijke kansbron (noem welke bron faalde + status) |
+| `AFGEKAPT` | wel dekking, maar buiten `MAX_DEEP_ANALYSES` gevallen (noem het aantal) |
+
+Doe niet alsof de dekking volledig is als dat niet zo is.
+
+### Per wedstrijd
+
+Bij een **bet**:
+
+```
+[Thuis] – [Uit] · [aftrap lokale tijd NL] · [competitie]
+Data: FULL | LIGHT
+Bet: [markt + selectie] — Odds: best [x.xx] ([bron]) of target ≥ [x.xx]
+Implied prob: xx.x%  •  My prob: xx.x%
+Edge: +x.x pp  •  Confidence: High | Medium | Low
+Inputs: [de sturende onafhankelijke inputs, met bron per cijfer]
+Onderbouwing: [max 5 zinnen, data-gedreven]
+```
+
+Bij **geen bet**:
+
+```
+[Thuis] – [Uit] · [aftrap] · [competitie]
+Data: FULL | LIGHT | NONE
+GEEN BET — [reden in één regel: edge onder drempel / geen onafhankelijke input /
+             odds buiten band / data conflicterend]
+```
+
+### Topselectie
+
+Rangschik alle gepubliceerde bets op **Edge × Probability × Data-betrouwbaarheid**. Geef de top
+`MAX_SHORTLIST`, met per bet: Probability • Edge • Risicoklasse (Low/Medium/High) • waarom
+deze wél en de eerstvolgende net niet. Maximaal `MAX_LIGHT_IN_SHORTLIST` bets met `LIGHT`.
+
+Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
+
+### Aftraptijden
+
+Rapporteer in **NL-tijd**. Let op de tijdzone van de bron: Britse sites (Sporting Life, Oddschecker,
+BBC) geven doorgaans UK-tijd, wat in de zomer NL −1 uur is. Labelt een bron de tijdzone niet
+expliciet, dan reken je om, **zeg je dat je hebt omgerekend**, en controleer je één aftraptijd tegen
+een tweede bron als sanity-check. Een aftraptijd die er een uur naast zit maakt de hele bet
+onbruikbaar.
+
+### Odds
+
+Noteer het tijdstip van uitlezen — odds bewegen. Geef beste prijs + bookmaker als die te bepalen
+is; anders "target minimum odds ≥ …". Een geaggregeerde beste prijs zonder herleidbare
+bookmaker: noteer de aggregator als bron en zeg dat de bookmaker niet herleidbaar was.
+
+### Onderaan, letterlijk
+
+> Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.
+
+---
+
+## 6. Vastleggen in de repo
+
+Elke run, ook een run met nul bets:
+
+1. **Runrapport** → `runs/YYYY-MM-DD-run-<a|b>.md` (zie `runs/TEMPLATE.md`).
+2. **Picks** → append één JSON-regel per gepubliceerde bet aan `data/picks.jsonl`
+   (schema: `schema/pick.schema.json`; valideer met `scripts/ledger.py validate`).
+3. **Bronstatus** → werk `data/source-health.json` bij met wat je deze run gemeten hebt.
+4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
+5. **Commit en push** naar de werkbranch. Zonder push is de run verdwenen zodra de container
+   wordt opgeruimd.
+
+Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
+runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
+
+---
+
+## 7. Wanneer een notificatie sturen
+
+De run draait terwijl niemand meekijkt; wat alleen in het transcript staat, bereikt niemand.
+
+**Stuur een notificatie bij:**
+- een niet-lege topselectie (leid met de beste bet en de aftraptijd);
+- een run die niet kon draaien, of nul bets door een **nieuwe** oorzaak (bron omgevallen,
+  fixtures onvindbaar, push geweigerd);
+- een afwikkelingsresultaat dat opvalt (bijv. een reeks van 5+ verliezende picks).
+
+**Stuur geen notificatie bij:**
+- nul bets om dezelfde reden als de vorige run (bijv. "nog steeds geen dekking voor deze comps");
+- een routinematige, gezonde run zonder gekwalificeerde bets.
+
+---
+
+## 8. Wat deze regels expliciet níet oplossen
+
+De bronnen zijn nog steeds grotendeels dichtgezet (zie `data/source-health.json`). Zolang er geen
+API-key beschikbaar is, zullen veel competities in `BUITEN DATADEKKING` blijven vallen en zullen
+runs vaak nul bets opleveren. Dat is de eerlijke uitkomst van de huidige input, niet een defect
+in deze regels. De structurele fix staat in `README.md` onder "Nog te doen".

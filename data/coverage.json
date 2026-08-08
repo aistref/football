@@ -1,0 +1,130 @@
+{
+  "_doc": [
+    "Welke bron welke competitie kan bedienen, en in welke rol. Gebruikt door Stage 3 van",
+    "prompts/_shared-rules.md om de datadekkingspoort te bepalen.",
+    "",
+    "role: fixtures | odds | prob",
+    "independent: true = mag dienen als onafhankelijke kansinput (anti-circulariteitsregel, §2).",
+    "  Bookmakers en odds-aggregators staan hier altijd op false.",
+    "coverage_verified: is deze dekking daadwerkelijk gemeten, of alleen geclaimd door de bron?",
+    "",
+    "Actuele bereikbaarheid staat NIET hier maar in source-health.json. Dit bestand beschrijft",
+    "wat een bron in principe dekt; source-health.json wat er laatst werkte."
+  ],
+  "updated": "2026-08-08",
+  "sources": {
+    "sportinglife": {
+      "role": "fixtures",
+      "independent": false,
+      "url_pattern": "https://www.sportinglife.com/football/fixtures-results/{YYYY-MM-DD}",
+      "notes": "Datum-gebaseerd, server-side gerenderd. Primaire fixtures-bron.",
+      "coverage_verified": true,
+      "covers": "all"
+    },
+    "oddschecker": {
+      "role": "odds",
+      "independent": false,
+      "url_pattern": "https://www.oddschecker.com/football",
+      "notes": "Werkt. Fractionele odds, geaggregeerd over 25+ UK-boeken; individuele bookmaker is in de tekstweergave niet altijd herleidbaar.",
+      "coverage_verified": true,
+      "covers": "uk_facing"
+    },
+    "understat": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://understat.com/league/{code}/{season}",
+      "notes": "Enige xG-bron die deze meting haalde. Dekt zes competities, waarvan vijf in de Run A-lijst.",
+      "coverage_verified": true,
+      "covers": [
+        "Premier League (ENG)",
+        "Serie A (ITA)",
+        "La Liga (ESP)",
+        "Bundesliga (GER)",
+        "Ligue 1 (FRA)"
+      ]
+    },
+    "fbref": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://fbref.com/en/comps/{id}/{name}-Stats",
+      "notes": "Breedste xG-dekking van alle bronnen, maar geeft 403. Bij herstel de belangrijkste winst.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "fotmob": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://www.fotmob.com/leagues/{id}",
+      "notes": "Nog niet getest. xG + opstellingen + blessures. Volgende kandidaat om te proberen.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "footystats": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://footystats.org/{country}/{league}",
+      "notes": "403. BTTS%, over/under, home/away-splits.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "forebet": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://www.forebet.com/en/football-tips-and-predictions-for-today",
+      "notes": "403 op beide bekende URL's. Gepubliceerde modelkansen.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "predictz": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://www.predictz.com/predictions/",
+      "notes": "403. Voorspelde scores en vormpercentages.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "the_odds_api": {
+      "role": "odds",
+      "independent": false,
+      "url_pattern": "https://api.the-odds-api.com/v4/sports/{sport}/odds?apiKey={KEY}",
+      "notes": "NIET ACTIEF — vereist ODDS_API_KEY in de omgeving. Echte odds per bookmaker als JSON, geen scraping.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    },
+    "api_football": {
+      "role": "prob",
+      "independent": true,
+      "url_pattern": "https://v3.football.api-sports.io/{endpoint}",
+      "notes": "NIET ACTIEF — vereist API_FOOTBALL_KEY. xG, opstellingen, blessures, statistieken als JSON.",
+      "coverage_verified": false,
+      "covers": "claimed_all"
+    }
+  },
+  "competitions": {
+    "_doc": "prob_sources in voorkeursvolgorde. Een competitie passeert de datadekkingspoort zodra één prob_source status 'ok' heeft in source-health.json.",
+    "Premier League (ENG)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
+    "Serie A (ITA)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
+    "La Liga (ESP)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
+    "Bundesliga (GER)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
+    "Ligue 1 (FRA)": { "prob_sources": ["understat", "fbref", "fotmob", "forebet"] },
+    "Championship (ENG)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Eredivisie (NED)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Primeira Liga (POR)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Belgian Pro League (BEL)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Super Lig (TUR)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Scottish Premiership (SCO)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Danish Superliga (DEN)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "Ekstraklasa (POL)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "UEFA Champions League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
+    "UEFA Europa League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
+    "UEFA Conference League": { "prob_sources": ["fbref", "fotmob", "forebet"] },
+    "FA Cup (ENG)": { "prob_sources": ["fbref", "fotmob", "forebet"] },
+    "League Cup (ENG)": {
+      "prob_sources": ["fbref", "fotmob", "forebet"],
+      "notes": "Ronde 1-2 zijn lage-divisieties met vrijwel geen publieke xG. Verwacht BUITEN DATADEKKING."
+    },
+    "Coppa Italia (ITA)": { "prob_sources": ["fbref", "fotmob", "forebet"] },
+    "KNVB Beker (NED)": { "prob_sources": ["fbref", "fotmob", "footystats", "forebet"] },
+    "DFB Pokal (GER)": { "prob_sources": ["fbref", "fotmob", "forebet"] }
+  }
+}

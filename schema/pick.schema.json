@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pick",
+  "description": "Eén gepubliceerde bet uit één run. Eén JSON-object per regel in data/picks.jsonl. scripts/ledger.py valideert hiertegen.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id", "run", "run_date", "kickoff", "competition", "home", "away",
+    "market", "selection", "odds", "odds_source", "odds_captured_at",
+    "implied_prob", "my_prob", "edge_pp", "data_tier", "confidence",
+    "prob_sources", "shortlisted", "result"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stabiel en uniek, bv. 2026-08-08-eredivisie-psv-fortuna-ou25",
+      "minLength": 8
+    },
+    "run": { "enum": ["A", "B"] },
+    "run_date": { "type": "string", "description": "YYYY-MM-DD van de run" },
+    "kickoff": { "type": "string", "description": "ISO 8601 met offset, lokale tijd NL, bv. 2026-08-08T19:00:00+02:00" },
+    "competition": { "type": "string" },
+    "home": { "type": "string" },
+    "away": { "type": "string" },
+    "market": { "enum": ["1X2", "Double Chance", "Draw No Bet", "Asian Handicap", "Over/Under", "BTTS"] },
+    "selection": { "type": "string", "description": "bv. 'Over 2.5', 'AH -0.75 thuis', 'BTTS Ja', '1X'" },
+    "odds": { "type": "number", "minimum": 1.01, "maximum": 100 },
+    "odds_source": { "type": "string", "description": "Bookmaker indien herleidbaar, anders de aggregator + notitie dat de boek niet herleidbaar was" },
+    "odds_captured_at": { "type": "string", "description": "ISO 8601 met offset — odds bewegen" },
+    "implied_prob": { "type": "number", "minimum": 0, "maximum": 1, "description": "1 / odds" },
+    "my_prob": { "type": "number", "minimum": 0, "maximum": 1 },
+    "edge_pp": { "type": "number", "minimum": -100, "maximum": 100, "description": "(my_prob - implied_prob) * 100, in procentpunten" },
+    "data_tier": {
+      "enum": ["FULL", "LIGHT"],
+      "description": "NONE komt hier niet voor: die wedstrijden leveren geen bet op"
+    },
+    "confidence": { "enum": ["High", "Medium", "Low"] },
+    "prob_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" },
+      "description": "De onafhankelijke inputs achter my_prob. Mag geen bookmaker of odds-aggregator bevatten (anti-circulariteitsregel)."
+    },
+    "shortlisted": { "type": "boolean", "description": "Stond deze bet in de topselectie van de run?" },
+    "result": {
+      "enum": ["pending", "won", "lost", "void"],
+      "description": "void = afgelast, push, of handicap-gelijkspel"
+    },
+    "settled_at": { "type": ["string", "null"] },
+    "settled_score": { "type": ["string", "null"], "description": "bv. '2-1', voor controle achteraf" },
+    "notes": { "type": "string" }
+  }
+}
