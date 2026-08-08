@@ -31,6 +31,7 @@ data/
   source-health.json    wat elke bron laatst deed toen we hem probeerden
   picks.jsonl           het logboek: één gepubliceerde bet per regel
   cache/fotmob/         team-xG per competitie, per dag ververst (.gitignore, geen bron van waarheid)
+  run-state/            voortgang per lopende run — NIET .gitignore, moet een onderbreking overleven
 schema/
   pick.schema.json      velddefinitie van een pick
 scripts/
@@ -39,6 +40,7 @@ scripts/
   betexplorer.py        gratis 1X2-odds ophalen
   oddsapi.py            Over/Under en overige markten ophalen, credit-bewust
   model.py              Poisson met Dixon-Coles-correctie + de robuustheidstest
+  progress.py           voortgangsbestand: hervat een run na een Claude-limiet i.p.v. opnieuw te beginnen
 runs/
   TEMPLATE.md           vorm van een runrapport
   YYYY-MM-DD-run-a.md   het rapport van elke run

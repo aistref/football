@@ -63,6 +63,36 @@ schrijf "niet gevonden", nooit gokken.
 
 ## 3. Pipeline — filter vóór de analyse, niet erna
 
+### Stage -1 — Onderbreking en hervatting (Claude-limiet)
+
+Een sessie kan halverwege stoppen doordat de gebruiker zijn Claude-gebruikslimiet raakt. Zonder
+maatregel begint de volgende poging weer bij wedstrijd 1 — met `MAX_DEEP_ANALYSES = 30` is dat
+zonde van precies het werk dat al gedaan was. Daarom, **vóór Stage 0**:
+
+```python
+from datetime import date
+from scripts.progress import load_or_start, is_completed, is_done, mark, save, mark_completed
+
+state = load_or_start(RUN_ID, date.today())
+```
+
+- `is_completed(state)` is waar → deze run is vandaag al helemaal afgerond (rapport geschreven,
+  picks gecommit). Stop meteen, doe niets — anders analyseer je dezelfde dag twee keer.
+- `state["resumed_count"] > 0` → dit is een hervatting. Meld dat bovenaan het runrapport in één
+  zin ("hervat om HH:MM na onderbreking, N competities al gedaan"). Geen drama, geen aparte
+  sectie — gewoon vermelden.
+- Loop je vervolgens door de runlijst (Stage 4/5): sla een competitie over met `is_done(state,
+  naam)` als hij al in het voortgangsbestand staat, en verwerk alleen wat nog ontbreekt.
+- **Commit en push het voortgangsbestand na elke afgeronde competitie** (`mark(...)` gevolgd door
+  `save(...)`), niet pas aan het eind. Dit is de kern van hervatten: zonder tussentijdse commit
+  overleeft niets een afgebroken sessie, want de container wordt weggegooid zodra hij stopt.
+- Aan het eind van Stage 6, ná de normale vastlegging (rapport, picks, source-health, push): roep
+  `mark_completed(state)` en `save(state)` aan. Dat is het signaal voor een eventuele latere
+  aanroep diezelfde dag dat er niets meer te doen is.
+
+`data/run-state/` staat **niet** in `.gitignore` (in tegenstelling tot `data/cache/`) — dit
+bestand moet juist wél overleven tussen sessies, dat is zijn hele functie.
+
 ### Stage 0 — Afwikkelen (vorige runs)
 Lees `data/picks.jsonl`. Zoek de uitslagen op van picks met `result = null` en een aftrap ouder
 dan `SETTLE_AFTER_HOURS`. Werk ze bij via `scripts/ledger.py settle`. Zonder deze stap is de
@@ -241,6 +271,9 @@ Elke run, ook een run met nul bets:
 4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
 5. **Commit en push** naar de werkbranch. Zonder push is de run verdwenen zodra de container
    wordt opgeruimd.
+6. **Voortgangsbestand afsluiten** — `scripts/progress.py`: `mark_completed(state)` + `save(state)`,
+   en nog een keer committen/pushen (zie Stage -1). Zonder deze stap denkt een latere aanroep
+   diezelfde dag dat de run nog loopt.
 
 Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
 runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
