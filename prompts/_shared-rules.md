@@ -78,10 +78,38 @@ dekkingstabel, geen verdere aandacht. Rapporteer ze niet als "gat" — buiten he
 storing.
 
 ### Stage 3 — Bronprobe + datadekkingspoort
-Test de bronnen uit `data/coverage.json` live en werk `data/source-health.json` bij met wat je
-meet (inclusief HTTP-status bij falen). Bepaal per resterende competitie of er een werkende,
-onafhankelijke kansbron is. Competities zonder dekking gaan naar
-**"buiten datadekking"** en worden niet geanalyseerd.
+
+Begin met de sleutelcontrole — dit is de eerste opdracht van elke run na het afwikkelen:
+
+```bash
+python3 scripts/api_check.py
+```
+
+Neem de uitvoer letterlijk over in het runrapport onder "Bronstatus deze run". Wat je eruit haalt:
+
+- **Beide sleutels ontbreken** → er is geen API-bron. Ga verder met de scrape-bronnen uit
+  `coverage.json`; verwacht dat vrijwel alles `BUITEN DATADEKKING` wordt. Meld in het rapport dat
+  de sleutels ontbreken, met verwijzing naar `README.md` → "Sleutels toevoegen".
+- **`API_FOOTBALL_KEY` werkt** → er is een onafhankelijke kansbron. Deze competities kunnen nu de
+  datadekkingspoort passeren. Trek per competitie na of er daadwerkelijk xG in de respons zit:
+  zo ja `FULL`, zo nee `LIGHT` op basis van teamstatistieken, doelgemiddelden en home/away-splits.
+- **Een sleutel wordt afgewezen** → meld de exacte foutmelding in het rapport en stuur een
+  notificatie (§7, "nieuwe blokkade"). Een stilzwijgend afgewezen sleutel is het soort storing dat
+  maanden onopgemerkt blijft.
+- **Quota bijna op** → verlaag het aantal opvragingen deze run en meld het. Bij The Odds API kost
+  een verzoek `markten × regio's`; houd het op één regio en maximaal twee markten.
+
+Werk daarna `data/source-health.json` bij met wat je gemeten hebt: de statusregels van
+`api_check.py` én de scrape-bronnen die je deze run hebt geprobeerd (inclusief HTTP-status bij
+falen). Zet de sleutelbronnen op `ok` of op de foutmelding, niet meer op `untested`.
+
+Bepaal dan per resterende competitie of er een werkende, onafhankelijke kansbron is. Competities
+zonder dekking gaan naar **"buiten datadekking"** en worden niet geanalyseerd.
+
+**Niet doen:** de Cloudflare-challenge op fbref, Forebet, FootyStats of PredictZ omzeilen. Die
+sites sluiten bots bewust af (zie `README.md` → "Waarom de bronnen dicht zitten"). Blijft hun
+status `cloudflare_challenge`, dan is dat de uitkomst — probeer geen headless browser, geen
+challenge-solver en geen proxy om er langs te komen.
 
 Deze stap maakt de routine zelfherstellend: zodra een bron terugkomt of er een API-key
 beschikbaar is, stroomt het werk automatisch weer door — zonder de prompt te wijzigen.
