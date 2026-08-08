@@ -23,7 +23,8 @@ diagnose van 8 aug 2026 staat in `runs/2026-08-08-run-a.md`; de drie doorgevoerd
 prompts/
   SCHEDULER-RUN-A.txt   korte prompt om in de geplande taak te plakken
   run-a.md              Run A: competitielijst + run-specifieke instellingen
-  run-b.md              Run B: idem (competitielijst nog in te vullen)
+  run-b.md              Run B: idem, overige competities
+  SCHEDULER-RUN-B.txt   idem, voor Run B
   _shared-rules.md      de eigenlijke opdracht — parameters, regels, pipeline, format
 data/
   coverage.json         welke bron welke competitie kan bedienen, en in welke rol
@@ -44,8 +45,11 @@ repo, niet in de scheduler.**
 ## Installeren in de scheduler
 
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
-`prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B zodra de runlijst in `prompts/run-b.md` is
-ingevuld.
+`prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
+
+Beide wijzen naar dezelfde branch (`claude/zealous-keller-ja4wwn`) en dezelfde `picks.jsonl` —
+dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
+hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
 
 ## Het logboek gebruiken
 
@@ -134,21 +138,27 @@ past net. Laat een run stoppen zodra `x-requests-remaining` onder een reserve ko
 
 ## Nog te doen
 
-**1. Run B-runlijst invullen** — `prompts/run-b.md` heeft een lege competitielijst. Die is met opzet
-niet geraden.
+**1. ~~Run B-runlijst invullen~~ — gedaan (8 aug 2026).** `prompts/run-b.md` en
+`prompts/SCHEDULER-RUN-B.txt` staan klaar met de 17 competities die de gebruiker heeft opgegeven.
+Nog wél te doen: van 14 van die 17 is de databekking niet getest (zie de "Let op"-sectie in
+run-b.md) — dat trekt de eerste Run B na.
 
 **2. Ophaalcode schrijven zodra er een sleutel is.** `scripts/api_check.py` controleert alleen of de
 sleutels werken. De code die daadwerkelijk statistieken en odds ophaalt en omzet naar `my_prob` is er
-nog niet, omdat de responsevorm zonder werkende sleutel niet te verifiëren is — die op gok
-schrijven levert code op die er goed uitziet en niet werkt.
+nog niet als herbruikbaar script in `scripts/` — de Run A-diagnose van 8 aug 2026 deed dit ad hoc
+per run. Nu beide sleutels werken (zie hieronder) is dit de volgende stap: de fetch/model-code uit
+die run vastleggen in `scripts/` in plaats van hem elke run opnieuw te schrijven.
 
-**3. xG-dekking van API-Football per competitie natrekken.** Alle endpoints zitten in het gratis
-plan, maar xG blijkt per competitie en seizoen wisselend aanwezig. Zolang dat niet nagetrokken is,
-geldt API-Football als tier-2-bron (`LIGHT`), niet als xG-bron (`FULL`).
+**3. xG-dekking van API-Football per competitie natrekken.** De sleutel werkt sinds 8 aug 2026
+(was eerder afgewezen, opgelost door de gebruiker), maar xG blijkt per competitie en seizoen
+wisselend aanwezig. Zolang dat niet nagetrokken is, geldt API-Football als tier-2-bron (`LIGHT`),
+niet als xG-bron (`FULL`). Dit weegt inmiddels minder zwaar: Fotmob levert al bevestigde xG voor
+de meeste Run A-competities en drie Run B-competities zonder sleutel nodig te hebben.
 
-**4. Fotmob proberen** — de enige onafhankelijke kansbron met brede dekking die nog niet getest is.
-Werkt hij, dan komen Eredivisie, Primeira Liga, Belgian Pro League en Ekstraklasa binnen bereik
-zonder sleutel.
+**4. ~~Fotmob proberen~~ — gedaan (8 aug 2026).** Werkt, zonder sleutel. Bevestigde xG-dekking:
+Eredivisie, Primeira Liga, Belgian Pro League, Ekstraklasa, Scottish Premiership, Championship,
+League One, League Two, Serie B (ITA) en Serie C (ITA). Zie `data/coverage.json` en
+`runs/2026-08-08-run-a-2.md` voor de meting.
 
 **5. Status van de overige diagnosepunten** — gevraagd waren punt 2, 3 en 5; die zijn af. Van de
 rest: punt 4 (dynamische competitielijst) viel vanzelf uit de poort in Stage 2 en is meegenomen;
