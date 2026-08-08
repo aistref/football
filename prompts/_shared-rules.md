@@ -161,8 +161,8 @@ onafhankelijke inputs boven minder). Neem de top `MAX_DEEP_ANALYSES` mee naar de
 Noteer expliciet hoeveel wedstrijden hierdoor zijn afgekapt — **stille truncatie is verboden**;
 een afgekapte lijst leest anders als volledige dekking.
 
-**Gebruik `scripts/fotmob.py`, `scripts/betexplorer.py`, `scripts/oddsapi.py` en
-`scripts/model.py` voor Stage 3-5** in plaats van de ophaal- en rekenlogica opnieuw te schrijven.
+**Gebruik `scripts/fotmob.py`, `scripts/betexplorer.py`, `scripts/oddsapi.py`, `scripts/xgscore.py`
+en `scripts/model.py` voor Stage 3-5** in plaats van de ophaal- en rekenlogica opnieuw te schrijven.
 Dat is precies wat de vorige aanpak duur maakte: niet het aantal wedstrijden, maar het aantal
 **nieuwe, nog niet opgehaalde competities** — voor elke competitie moet één keer een team-xG-
 dossier worden opgebouwd (`fotmob.fetch_league_stats`, met caching per dag), maar zodra dat er

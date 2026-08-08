@@ -39,6 +39,7 @@ scripts/
   fotmob.py             fixtures + team-xG ophalen, met caching per dag
   betexplorer.py        gratis 1X2-odds ophalen
   oddsapi.py            Over/Under en overige markten ophalen, credit-bewust
+  xgscore.py            gepubliceerde 1X2-modelkansen van xgscore.io ophalen
   model.py              Poisson met Dixon-Coles-correctie + de robuustheidstest
   progress.py           voortgangsbestand: hervat een run na een Claude-limiet i.p.v. opnieuw te beginnen
 runs/
