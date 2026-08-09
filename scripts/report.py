@@ -1,0 +1,559 @@
+#!/usr/bin/env python3
+"""Leesbaar dagrapport als HTML-pagina, naast het technische runrapport in markdown.
+
+Waarom dit bestaat: het markdown-runrapport is geschreven voor iemand die de repo kent. Het
+opent met bronstatus, gebruikt edge_pp, de-viggen en Brier zonder uitleg, en de bets staan als
+twee regels in een tabel tussen alle andere wedstrijden. De gebruiker die de routine alleen
+leest heeft daar niets aan. Deze pagina bevat dezelfde cijfers in een andere volgorde: eerst de
+bets met prijs en tijd, dan wat de gebruiker zelf moet beslissen, dan de dekking, dan het
+logboek, dan een woordenlijst.
+
+    python3 scripts/report.py --run a --date 2026-08-09
+
+Structurele data komt automatisch uit `data/picks.jsonl` en `data/run-state/`. De leesbare tekst
+per run komt uit een prosebestand, `runs/<datum>-run-<id>.prose.json`; ontbreekt dat, dan levert
+het script een pagina zonder de verhalende stukken en zegt het dat erbij. Werkt zo voor Run A en
+Run B: de competitielijst komt uit het voortgangsbestand, niet uit dit script.
+
+Alleen de standaardbibliotheek.
+"""
+
+from __future__ import annotations
+
+import argparse
+import html
+import json
+from datetime import date, datetime
+from pathlib import Path
+
+import ledger
+
+ROOT = Path(__file__).resolve().parent.parent
+RUNS_DIR = ROOT / "runs"
+STATE_DIR = ROOT / "data" / "run-state"
+
+DISCLAIMER = ("Beslissingsondersteuning, geen winnend systeem. "
+              "Na de bookmakermarge is de verwachtingswaarde negatief.")
+
+MONTHS = ["januari", "februari", "maart", "april", "mei", "juni",
+          "juli", "augustus", "september", "oktober", "november", "december"]
+DAYS = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"]
+
+STATUS_CHIP = {
+    "GEANALYSEERD": ("ok", "geanalyseerd"),
+    "GEEN WEDSTRIJD": ("none", "geen wedstrijd"),
+    "BUITEN DATADEKKING": ("gap", "geen cijfers"),
+    "AFGEKAPT": ("gap", "afgekapt"),
+}
+
+GLOSSARY = [
+    ("Koers / odds",
+     "Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet "
+     "levert 2,48 euro terug, dus 1,48 winst."),
+    ("Kans van de bookmaker",
+     "De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het "
+     "gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em>"),
+    ("Voordeel in procentpunten",
+     "Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan "
+     "is dat +7,9. Onder de 3 wordt er niets gepubliceerd. <em>In de repo: “edge_pp”.</em>"),
+    ("Kansenkwaliteit (xG)",
+     "Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. "
+     "Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is."),
+    ("De robuustheidstoets",
+     "Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen "
+     "bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit."),
+    ("De tweede methode",
+     "Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen "
+     "thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd."),
+    ("Marge eruit rekenen",
+     "Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er "
+     "eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em>"),
+    ("Volledig / beperkt / geen data",
+     "Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde "
+     "club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is."),
+    ("De kalibratiescore",
+     "Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de "
+     "vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe."),
+]
+
+
+def esc(value) -> str:
+    return html.escape(str(value), quote=True)
+
+
+def nl_date(day: date) -> str:
+    return f"{DAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]} {day.year}"
+
+
+def pct(value: float, digits: int = 1) -> str:
+    return f"{value * 100:.{digits}f}".replace(".", ",") + "%"
+
+
+def signed(value: float, digits: int = 1) -> str:
+    return f"{value:+.{digits}f}".replace(".", ",")
+
+
+def kickoff_time(pick: dict) -> str:
+    try:
+        return datetime.fromisoformat(pick["kickoff"]).strftime("%H:%M")
+    except (ValueError, KeyError):
+        return "tijd onbekend"
+
+
+def short_competition(name: str, labels: dict) -> str:
+    if name in labels:
+        return labels[name]
+    return name.split(" (")[0]
+
+
+def risk_class(pick: dict, prose: dict) -> tuple[str, str]:
+    """(css-klasse, zin). Prosebestand wint; anders afgeleid van de kans."""
+    given = prose.get("risk")
+    if given:
+        return prose.get("risk_level", "high" if pick["my_prob"] < 0.35 else "med"), given
+    if pick["my_prob"] >= 0.45:
+        return "med", "Middelmatig risico — kans rond de helft, geen gok op een stunt"
+    if pick["my_prob"] >= 0.30:
+        return "med", f"Verhoogd risico — dit lukt ongeveer {pick['my_prob'] * 100:.0f} keer per 100"
+    return "high", (f"Hoog risico — dit lukt ongeveer {pick['my_prob'] * 100:.0f} keer per 100, "
+                    "en de markt is het stevig oneens")
+
+
+def ledger_summary(picks: list[dict]) -> dict:
+    settled = [p for p in picks if p.get("result") in ("won", "lost")]
+    won = [p for p in settled if p["result"] == "won"]
+    profit = sum(p["odds"] - 1 for p in won) - len(settled) + len(won)
+    own = ledger.brier([(p["my_prob"], 1 if p["result"] == "won" else 0) for p in settled])
+    market = ledger.brier([(p["implied_prob"], 1 if p["result"] == "won" else 0) for p in settled])
+    return {"settled": len(settled), "won": len(won), "profit": profit,
+            "brier_own": own, "brier_market": market}
+
+
+# --------------------------------------------------------------------------- rendering
+
+def render_bets(picks: list[dict], prose: dict, labels: dict) -> str:
+    if not picks:
+        return ('<div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> '
+                'Geen enkele wedstrijd haalde alle drempels. Dat is een geldige uitkomst, geen '
+                'mislukte run — de lijst wordt niet aangevuld om hem voller te laten lijken.</p>'
+                '</div>')
+    blocks = []
+    for pick in picks:
+        text = prose.get(pick["id"], {})
+        level, sentence = risk_class(pick, text)
+        why = text.get("why") or ("Onderbouwing niet in het prosebestand gezet; de technische "
+                                  "redenering staat in het markdown-runrapport.")
+        blocks.append(f'''<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">{esc(short_competition(pick["competition"], labels))} · aftrap {esc(kickoff_time(pick))}</span>
+        <span class="bet-match">{esc(pick["home"])} – {esc(pick["away"])}</span>
+        <span class="bet-pick">{esc(pick["selection"])}</span>
+      </div>
+      <div class="price">
+        <span class="odds num">{pick["odds"]:.2f}</span>
+        <span class="book">bij {esc(text.get("book") or pick["odds_source"].split(" (")[0])}</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">{pct(pick["implied_prob"])}</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">{pct(pick["my_prob"])}</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">{signed(pick["edge_pp"])}</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">{esc(why)}</p>
+      <span class="risk"><span class="dot {level}"></span>{esc(sentence)}</span>
+    </div>
+  </div>''')
+    return "\n".join(blocks)
+
+
+def render_coverage(state: dict, notes: dict, labels: dict) -> str:
+    order = {"GEANALYSEERD": 0, "BUITEN DATADEKKING": 1, "AFGEKAPT": 2, "GEEN WEDSTRIJD": 3}
+    rows = sorted(state.get("competitions", {}).items(),
+                  key=lambda kv: (order.get(kv[1].get("status"), 9), kv[0]))
+    out = []
+    for name, result in rows:
+        css, label = STATUS_CHIP.get(result.get("status"), ("none", result.get("status", "?")))
+        note = notes.get(name)
+        if note is None:
+            count = len(result.get("matches", []))
+            note = (f"{count} wedstrijd{'en' if count != 1 else ''} bekeken" if count
+                    else "niets op de kalender")
+        out.append(f'<tr><td class="comp">{esc(short_competition(name, labels))}</td>'
+                   f'<td><span class="chip {css}">{esc(label)}</span></td>'
+                   f'<td class="note">{note}</td></tr>')
+    return "\n        ".join(out)
+
+
+def render_finding(finding: dict) -> str:
+    if not finding:
+        return ""
+    paragraphs = "\n    ".join(f'<p class="prose">{p}</p>' for p in finding.get("paragraphs", []))
+    table = ""
+    if finding.get("table"):
+        head = "".join(f"<th>{esc(h)}</th>" for h in finding["table"]["head"])
+        body = "\n        ".join(
+            "<tr>" + "".join(
+                f'<td class="{"comp" if i == 0 else "num"}">{cell}</td>' if i < len(row) - 1
+                else f"<td>{cell}</td>"
+                for i, cell in enumerate(row)) + "</tr>"
+            for row in finding["table"]["rows"])
+        table = f'''
+  <div class="tablewrap" style="margin-top:24px">
+    <table>
+      <thead><tr>{head}</tr></thead>
+      <tbody>
+        {body}
+      </tbody>
+    </table>
+  </div>'''
+    return f'''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>{esc(finding.get("title", "Wat deze run opleverde"))}</h2>
+  </div>
+  <div class="stack g16 measure">
+    {paragraphs}
+  </div>{table}
+</section>'''
+
+
+def render_todo(items: list[dict]) -> str:
+    if not items:
+        return ""
+    blocks = []
+    for i, item in enumerate(items, 1):
+        done = item.get("done")
+        mark = "✓" if done else str(i)
+        when = f'<span class="when">{esc(item["when"])}</span>' if item.get("when") else ""
+        blocks.append(f'''<div class="task">
+      <span class="tick{' done' if done else ''}">{mark}</span>
+      <span class="body">
+        <span class="t">{esc(item["title"])}</span>
+        <span class="d">{esc(item.get("detail", ""))}</span>
+        {when}
+      </span>
+    </div>''')
+    return f'''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat jij nog moet doen</h2>
+  </div>
+  <div class="todo">
+    {"".join(blocks)}
+  </div>
+</section>'''
+
+
+def render_settled(entries: list[dict], stats: dict) -> str:
+    rows = "\n        ".join(
+        f'<tr><td class="comp">{esc(e["label"])}</td><td class="num">{esc(e["score"])}</td>'
+        f'<td><span class="chip {"ok" if e["result"] == "won" else "gap"}">'
+        f'{"gewonnen" if e["result"] == "won" else "verloren"}</span></td></tr>'
+        for e in entries)
+    table = f'''
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        {rows}
+      </tbody>
+    </table>
+  </div>''' if entries else ""
+
+    if not stats["settled"]:
+        verdict = ('<p class="prose">Er is nog geen enkele bet afgewikkeld, dus over de kwaliteit '
+                   'valt nog niets te zeggen.</p>')
+    else:
+        own, market = stats["brier_own"], stats["brier_market"]
+        if own is None or market is None:
+            verdict = ""
+        elif own < market:
+            verdict = (f'<div class="callout"><p class="prose"><strong>De cijferregel om op te '
+                       f'letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn '
+                       f'kansinschatting scherper is dan die van de bookmaker. Op dit moment is die '
+                       f'van mij beter ({own:.3f} tegen {market:.3f} — lager is beter). Bij '
+                       f'{stats["settled"]} wedstrijden is dat nog geen bewijs, maar het staat de '
+                       f'goede kant op.</p></div>')
+        else:
+            verdict = (f'<div class="callout warn"><p class="prose"><strong>De cijferregel om op te '
+                       f'letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn '
+                       f'kansinschatting scherper is dan die van de bookmaker. Op dit moment is die '
+                       f'van de bookmaker beter ({market:.3f} tegen mijn {own:.3f} — lager is beter). '
+                       f'Bij {stats["settled"]} wedstrijden is dat ruis, maar het is de goede meter, '
+                       f'en hij staat nu in het rood.</p></div>')
+    return f'''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>{table}
+  <div class="stack g16 measure">
+    {verdict}
+  </div>
+</section>'''
+
+
+def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
+           state: dict, prose: dict) -> str:
+    labels = prose.get("coverage_labels", {})
+    stats = ledger_summary(all_picks)
+    comps = state.get("competitions", {})
+    active = sum(1 for r in comps.values() if r.get("status") != "GEEN WEDSTRIJD")
+    matches = sum(len(r.get("matches", [])) for r in comps.values())
+    record = f'{stats["won"]}/{stats["settled"]}' if stats["settled"] else "–"
+    record_colour = ' style="color:var(--neg)"' if stats["settled"] and not stats["won"] else ""
+    started = prose.get("started")
+    verdict = prose.get("verdict") or (
+        f'Van <b>{matches} wedstrijden</b> in <b>{active} competities</b> '
+        f'{"blijft er <b>1 bet</b> over" if len(picks) == 1 else f"blijven er <b>{len(picks)} bets</b> over"}.')
+
+    gloss = "\n    ".join(
+        f'<div class="term"><dt>{esc(t)}</dt><dd>{d}</dd></div>' for t, d in GLOSSARY)
+
+    truncated = prose.get("truncated", 0)
+    trunc_line = (f'<p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten '
+                  f'wegens tijdgebrek</strong>: er mogen er 30 per run diep worden bekeken en het '
+                  f'waren er {matches}.</p>') if not truncated else (
+        f'<p class="prose measure" style="margin-top:20px"><strong>{truncated} wedstrijden zijn '
+        f'afgekapt</strong> omdat er per run maximaal 30 diep bekeken kunnen worden.</p>')
+
+    return f'''<title>Run {run_id.upper()} — {nl_date(day)}</title>
+<style>{CSS}</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run {run_id.upper()}</h1>
+    <span class="date">{nl_date(day)}{f" · gedraaid om {esc(started)}" if started else ""}</span>
+  </div>
+
+  <p class="verdict">{verdict}</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">{len(picks)}</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">{matches}</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">{active}</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">{truncated}</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num"{record_colour}>{record}</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>{"De bet" if len(picks) == 1 else f"De {len(picks)} bets" if picks else "Geen bets vandaag"}</h2>
+  </div>
+  {render_bets(picks, prose.get("bets", {}), labels)}
+  {f'<div class="callout" style="margin-top:24px"><p class="prose">{prose["next_best"]}</p></div>' if prose.get("next_best") else ""}
+</section>
+{render_todo(prose.get("todo", []))}
+{render_finding(prose.get("finding"))}
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle {len(comps)} competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        {render_coverage(state, prose.get("coverage_notes", {}), labels)}
+      </tbody>
+    </table>
+  </div>
+  {trunc_line}
+</section>
+{render_settled(prose.get("settled", []), stats)}
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    {gloss}
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">{DISCLAIMER}</p>
+  <p class="meta">Run {run_id.upper()} · {nl_date(day)} · {len(picks)} bets uit {matches} wedstrijden{f" · {esc(prose['sources'])}" if prose.get("sources") else ""}</p>
+</footer>
+
+</div>
+'''
+
+
+CSS = """
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+"""
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    parser.add_argument("--date", required=True, help="YYYY-MM-DD")
+    parser.add_argument("-o", "--output", help="standaard runs/<datum>-run-<id>.html")
+    args = parser.parse_args()
+
+    run_id = args.run.lower()
+    day = date.fromisoformat(args.date)
+
+    state_path = STATE_DIR / f"{day.isoformat()}-run-{run_id}.json"
+    if not state_path.exists():
+        raise SystemExit(f"Geen voortgangsbestand: {state_path}. Draai eerst de run.")
+    state = json.loads(state_path.read_text())
+
+    all_picks = ledger.load_picks()
+    picks = [p for p in all_picks
+             if p.get("run", "").lower() == run_id and p.get("run_date") == day.isoformat()]
+
+    prose_path = RUNS_DIR / f"{day.isoformat()}-run-{run_id}.prose.json"
+    if prose_path.exists():
+        prose = json.loads(prose_path.read_text())
+    else:
+        prose = {}
+        print(f"Let op: geen {prose_path.name} — de pagina komt zonder de verhalende stukken.")
+
+    out = Path(args.output) if args.output else RUNS_DIR / f"{day.isoformat()}-run-{run_id}.html"
+    out.write_text(render(run_id, day, picks, all_picks, state, prose))
+    print(f"{out} geschreven — {len(picks)} bet(s), "
+          f"{len(state.get('competitions', {}))} competities.")
+    print("Publiceer hem daarna als Artifact en zet de link in de notificatie.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
