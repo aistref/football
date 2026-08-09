@@ -55,9 +55,18 @@ repo, niet in de scheduler.**
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
 `prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
 
-Beide wijzen naar dezelfde branch (`claude/zealous-keller-ja4wwn`) en dezelfde `picks.jsonl` —
+Beide wijzen naar dezelfde branch (`claude/serene-babbage-9osl2u`) en dezelfde `picks.jsonl` —
 dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
 hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
+
+**De branchnaam staat op twee plekken** — in `prompts/SCHEDULER-RUN-*.txt` én in de geplande taak
+zelf. Werk je er één bij, werk dan ook de ander bij. Loopt dat uiteen, dan draait de run op een
+branch die achterloopt op de repo, en dat merk je niet vanzelf: de run slaagt gewoon, alleen met
+oude regels en oude scripts. Op 9 aug 2026 gebeurde dat — de scheduler wees nog naar
+`claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`,
+`scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` al zeven commits verder stonden op
+`claude/serene-babbage-9osl2u`. Beide scheduler-teksten dragen de run nu op om bij twijfel de
+branch met de nieuwste commits te nemen en die afwijking bovenaan het runrapport te melden.
 
 ## Het logboek gebruiken
 
