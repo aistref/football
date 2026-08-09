@@ -84,8 +84,23 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
          "has_xg": bool}
 
     `has_xg=False` betekent: deze competitie heeft geen xG bij Fotmob (bevestigd voor tweede
-    divisies als de Eerste Divisie, Liga Portugal 2 en de Scottish Championship op 8 aug 2026).
-    Reken dan niet met deze functie — gebruik hooguit de doelpuntengemiddeldes voor een LIGHT-duiding.
+    divisies als de Eerste Divisie, Liga Portugal 2 en de Scottish Championship op 8 aug 2026,
+    en op 9 aug 2026 ook voor de Czech First League, de Romanian SuperLiga, de Croatian HNL en
+    de Hungarian NB I). Reken dan niet met deze functie — gebruik hooguit de doelpuntengemiddeldes
+    voor een LIGHT-duiding.
+
+    LET OP TWEE DINGEN, allebei gemeten op 9 aug 2026:
+
+    1. `league_id` moet het `primaryId` uit de fixtures-respons zijn, niet de `id`. Bij competities
+       met een seizoensspecifiek id (CZE 938182, ROU 938428, SUI 937880, AUT 938366) geeft
+       `/api/data/leagues` op de `id` een antwoord zonder stand, en klapt dit script eruit.
+    2. Bij een competitie met kampioens-/degradatiesplitsing dekken `mp` (uit de xG-respons) en
+       `played` (uit de tabel) **niet dezelfde wedstrijden**: `mp` telt de split-rondes mee,
+       `played` niet. Gemeten: Zwitserland 38 vs 33, Oostenrijk 32 vs 22. Teams die de split-rondes
+       in de degradatiegroep speelden krijgen daardoor te veel xG toebedeeld ten opzichte van
+       teams uit de kampioensgroep. Vergelijk in dat geval het xG-model met een doelpuntenmodel op
+       de (wél vergelijkbare) reguliere stand voordat je op zo'n competitie bet — wijzen ze niet
+       dezelfde kant op, dan is de invoer conflicterend en hoort er geen bet uit te komen.
     """
     cache_file = _cache_path(league_id, season)
     if use_cache and cache_file.exists():

@@ -11,7 +11,7 @@
     "Actuele bereikbaarheid staat NIET hier maar in source-health.json. Dit bestand beschrijft",
     "wat een bron in principe dekt; source-health.json wat er laatst werkte."
   ],
-  "updated": "2026-08-08",
+  "updated": "2026-08-09",
   "sources": {
     "sportinglife": {
       "role": "fixtures",
@@ -55,7 +55,7 @@
       "role": "prob",
       "independent": true,
       "url_pattern": "https://www.fotmob.com/api/data/{matches?date=YYYYMMDD | leagues?id={id}&season=YYYY%2FYYYY} en https://data.fotmob.com/stats/{leagueId}/season/{seasonId}/{expected_goals_team|expected_goals_conceded_team}.json",
-      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Geen xG voor tweede divisies (Eerste Divisie, Liga Portugal 2, Scottish Championship) — daar alleen doelpunten.",
+      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Geen xG voor tweede divisies (Eerste Divisie, Liga Portugal 2, Scottish Championship) — daar alleen doelpunten. 9 aug 2026: vijf competities toegevoegd aan 'covers' na directe meting, en vijf competities vastgelegd in 'no_xg_confirmed'. Zie ook league_id_valkuil, seizoensnotatie en split_ronde_waarschuwing hierboven.",
       "coverage_verified": true,
       "covers": [
         "Eredivisie (NED)",
@@ -67,8 +67,26 @@
         "League One (ENG)",
         "League Two (ENG)",
         "Serie B (ITA)",
-        "Serie C (ITA)"
-      ]
+        "Serie C (ITA)",
+        "Eliteserien (NOR)",
+        "Allsvenskan (SWE)",
+        "2. Bundesliga (GER)",
+        "Swiss Super League (SUI)",
+        "Austrian Bundesliga (AUT)"
+      ],
+      "no_xg_confirmed": [
+        "Czech First League (CZE)",
+        "Romanian SuperLiga (ROU)",
+        "Croatian HNL (CRO)",
+        "Hungarian NB I (HUN)",
+        "Keuken Kampioen Divisie (NED)",
+        "Eerste Divisie (NED)",
+        "Liga Portugal 2 (POR)",
+        "Scottish Championship (SCO)"
+      ],
+      "league_id_valkuil": "De 'id' uit /api/data/matches is bij sommige competities seizoensspecifiek en werkt NIET op /api/data/leagues. Gebruik 'primaryId' uit hetzelfde object. Bevestigd 9 aug 2026: CZE 938182->122, ROU 938428->189, SUI 937880->69, AUT 938366->38. Voor NOR 59, SWE 67, GER2 146, NED 111, CRO 252 en HUN 212 zijn id en primaryId gelijk.",
+      "seizoensnotatie": "Scandinavische competities lopen per kalenderjaar: gebruik season='2026', niet '2025/2026'. Voordeel: hun seizoen is halverwege, dus dit is lopende-seizoensdata in plaats van cijfers van vorig jaar.",
+      "split_ronde_waarschuwing": "Bij competities met een kampioens-/degradatiesplitsing dekken de xG-set en de stand verschillende wedstrijdsets: 'mp' (uit de xG-respons) telt de split-rondes mee, 'played' (uit de tabel) niet. Gemeten 9 aug 2026: SUI mp=38 vs played=33, AUT mp=32 vs played=22, BEL wisselend per team. Teams uit de degradatiegroep worden daardoor systematisch overschat. Vergelijk beide lezingen voordat je op zo'n competitie bet."
     },
     "footystats": {
       "role": "prob",
@@ -98,7 +116,7 @@
       "role": "odds",
       "independent": false,
       "url_pattern": "https://api.the-odds-api.com/v4/sports/{sport}/odds?apiKey={KEY}",
-      "notes": "ACTIEF sinds 8 aug 2026. Primaire bron voor Over/Under en de enige met een herleidbare bookmaker. Budget: 500 credits/maand bij 2 runs per dag = circa 8 credits per run. Werkwijze die daarin past: 1X2 gratis via BetExplorer; totals via de bulk-endpoint (1 credit per competitie); btts en double_chance alleen per-event (2 credits per wedstrijd) en uitsluitend voor wedstrijden die al een kandidaat-edge tonen. Niet blind alle markten voor alle wedstrijden opvragen — dat is binnen tien dagen door het maandbudget heen.",
+      "notes": "ACTIEF sinds 8 aug 2026. Primaire bron voor Over/Under en de enige met een herleidbare bookmaker. Budget: 500 credits/maand bij 2 runs per dag = circa 8 credits per run. Werkwijze die daarin past: 1X2 gratis via BetExplorer; totals via de bulk-endpoint (1 credit per competitie); btts en double_chance alleen per-event (2 credits per wedstrijd) en uitsluitend voor wedstrijden die al een kandidaat-edge tonen. Niet blind alle markten voor alle wedstrijden opvragen — dat is binnen tien dagen door het maandbudget heen. 9 aug 2026: volledige /v4/sports-lijst uitgelezen (46 actieve voetbalcompetities). Geen sportkey voor Tsjechie, Roemenie, Kroatie, Hongarije of de Nederlandse Eerste Divisie - daar blijft BetExplorer de enige oddsbron.",
       "coverage_verified": true,
       "covers": [
         "Eredivisie (NED)",
@@ -114,7 +132,16 @@
         "Super Lig (TUR)",
         "Danish Superliga (DEN)",
         "DFB Pokal (GER)",
-        "UEFA Champions League (kwalificatie)"
+        "UEFA Champions League (kwalificatie)",
+        "Eliteserien (NOR)",
+        "Allsvenskan (SWE)",
+        "2. Bundesliga (GER)",
+        "Swiss Super League (SUI)",
+        "Austrian Bundesliga (AUT)",
+        "Greek Super League (GRE)",
+        "English League One (ENG)",
+        "English League Two (ENG)",
+        "Segunda Division (ESP)"
       ]
     },
     "api_football": {
@@ -129,7 +156,7 @@
       "role": "odds",
       "independent": false,
       "url_pattern": "https://www.betexplorer.com/next/football/ en https://www.betexplorer.com/football/{country}/{league}/",
-      "notes": "Primaire oddsbron sinds 8 aug 2026. 1X2 server-side in data-odd (gemiddelde) en data-odd-max (beste prijs); data-ts is de aftrap als epoch. ALLEEN 1X2 — ou/bts/ah-endpoints geven 404, en de wedstrijdpagina bevat geen odds. Individuele bookmaker niet herleidbaar.",
+      "notes": "Primaire oddsbron sinds 8 aug 2026. 1X2 server-side in data-odd (gemiddelde) en data-odd-max (beste prijs); data-ts is de aftrap als epoch. ALLEEN 1X2 — ou/bts/ah-endpoints geven 404, en de wedstrijdpagina bevat geen odds. Individuele bookmaker niet herleidbaar. 9 aug 2026: slugs bevestigd voor czech-republic/chance-liga, romania/superliga, croatia/hnl, hungary/nb-i en netherlands/eerste-divisie. Een verkeerde slug geeft HTTP 200 met 0 rijen en faalt dus stil - controleer altijd of de lijst niet leeg is.",
       "coverage_verified": true,
       "covers": "all"
     },
@@ -315,6 +342,86 @@
         "fbref",
         "forebet"
       ]
+    },
+    "Eliteserien (NOR)": {
+      "prob_sources": [
+        "fotmob",
+        "xgscore",
+        "api_football"
+      ],
+      "notes": "Fotmob-xG bevestigd 9 aug 2026, league_id 59, season '2026'. Lopend seizoen: beste datakwaliteit van de Run B-lijst."
+    },
+    "Allsvenskan (SWE)": {
+      "prob_sources": [
+        "fotmob",
+        "xgscore",
+        "api_football"
+      ],
+      "notes": "Fotmob-xG bevestigd 9 aug 2026, league_id 67, season '2026'. Lopend seizoen."
+    },
+    "2. Bundesliga (GER)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG bevestigd 9 aug 2026, league_id 146. De aanname uit run-b.md dat Bundesliga-dekking niets zegt over 2. Bundesliga bleek hier te pessimistisch. Promovendi uit de 3. Liga en degradanten uit de Bundesliga hebben geen vergelijkbare xG - die wedstrijden blijven NONE."
+    },
+    "Swiss Super League (SUI)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG bevestigd 9 aug 2026 via primaryId 69 (niet 937880). LET OP de split-rondes: xG over 38 duels, stand over 33."
+    },
+    "Austrian Bundesliga (AUT)": {
+      "prob_sources": [
+        "fotmob",
+        "prognosist",
+        "api_football"
+      ],
+      "notes": "Fotmob-xG bevestigd 9 aug 2026 via primaryId 38 (niet 938366). LET OP de split-rondes: xG over 32 duels, stand over 22 - teams uit de degradatiegroep worden overschat. prognosist blendt marktdata en telt niet als schone input op zichzelf."
+    },
+    "Czech First League (CZE)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "forebet"
+      ],
+      "notes": "GEEN Fotmob-xG (gemeten 9 aug 2026 op primaryId 122, has_xg=false voor 2025/2026 en 2026/2027). Wel stand met thuis/uit-splits -> LIGHT. Odds via BetExplorer slug 'chance-liga'."
+    },
+    "Romanian SuperLiga (ROU)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "forebet"
+      ],
+      "notes": "GEEN Fotmob-xG (gemeten 9 aug 2026 op primaryId 189). LIGHT op doelpunten. Odds via BetExplorer 'romania/superliga'; niet elke wedstrijd staat in de Next-matches-tabel."
+    },
+    "Croatian HNL (CRO)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "forebet"
+      ],
+      "notes": "GEEN Fotmob-xG (gemeten 9 aug 2026, league_id 252). LIGHT op doelpunten."
+    },
+    "Hungarian NB I (HUN)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "forebet"
+      ],
+      "notes": "GEEN Fotmob-xG (gemeten 9 aug 2026, league_id 212). LIGHT op doelpunten."
+    },
+    "Keuken Kampioen Divisie (NED)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "footystats"
+      ],
+      "notes": "GEEN Fotmob-xG (opnieuw bevestigd 9 aug 2026, league_id 111). LIGHT op doelpunten. Geen The Odds API-sportkey."
     }
   }
 }
