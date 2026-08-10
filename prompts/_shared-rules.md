@@ -82,6 +82,52 @@ net zo goed als je bij een cijfer de bron leest.
 
 ## 3. Pipeline — filter vóór de analyse, niet erna
 
+### Stage -2 — Eén werkbranch (vóór alles, ook vóór het lezen van deze regels)
+
+Elke sessie krijgt een eigen branchnaam, en de twee geplande taken lopen los van elkaar. Zonder
+maatregel schrijven Run A en Run B naar twee takken die elkaars werk niet zien. Dat is geen
+theoretisch risico:
+
+- **9 aug 2026** — de scheduler wees naar een branch die zeven commits achterliep.
+- **10 aug 2026** — Run A en Run B schreven allebei naar een eigen tak, allebei met echt werk erop.
+  Run A startte op de tak van Run B en miste daardoor poort 5 (§1.5) en de vroeg-seizoenscorrectie
+  (Stage 5), regels die Run A zelf de dag ervoor had toegevoegd. Er is een bet gepubliceerd en
+  verstuurd die onder de volledige regelset niet had gemogen, en twee picks van de dag ervoor bleven
+  onafgewikkeld omdat hun tak nooit is aangeraakt.
+
+Daarom, als allereerste handeling van elke run:
+
+```bash
+git fetch origin
+git branch -r
+for b in $(git branch -r | grep -v HEAD); do
+  echo "$b: $(git rev-list --count HEAD..$b) commits die hier nog niet zijn"
+done
+```
+
+Elke branch met méér dan 0 eigen commits wordt **gemerged**, niet weggegooid en niet vervangen.
+"Pak gewoon de nieuwste" is expliciet fout: op 10 aug bevatten beide takken werk dat de ander niet
+had, dus kiezen betekende hoe dan ook iets verliezen.
+
+Bij conflicten:
+
+| Bestand | Regel |
+|---|---|
+| `data/picks.jsonl` | **Vereniging.** Een pick die op één tak staat is een echte, gepubliceerde pick. Staat dezelfde id op beide takken, neem dan de versie die het meest weet — een afgewikkelde regel wint van `pending`. |
+| `data/source-health.json`, `data/coverage.json` | **Vereniging.** Beide runs hebben echt gemeten; bewaar beide waarnemingen naast elkaar in `detail` in plaats van er een te laten winnen. |
+| `prompts/_shared-rules.md`, `scripts/*` | De **nieuwste** versie wint. Regels en rekencode zijn geen metingen. |
+
+Lees deze regels pas ná de merge opnieuw: vóór de merge kun je een oudere versie van dit bestand in
+handen hebben dan er in de repo bestaat. Kom je uit op een andere branch dan de scheduler noemt, meld
+dat dan bovenaan het runrapport én in de notificatie — anders blijft het elke run handwerk.
+
+Controleer na de merge of `picks.jsonl` openstaande picks bevat van een run die op de andere tak
+nooit is afgewikkeld. Die horen bij Stage 0.
+
+Deze stap ruimt op wat al uiteen is gelopen. Dat er niets nieuws bij komt, regelt §6a: je pusht
+aan het eind naar `main`, niet naar de tak die deze sessie toevallig kreeg toegewezen. De twee
+horen bij elkaar — Stage -2 alleen betekent dat je elke run opnieuw hetzelfde opruimwerk doet.
+
 ### Stage -1 — Onderbreking en hervatting (Claude-limiet)
 
 Een sessie kan halverwege stoppen doordat de gebruiker zijn Claude-gebruikslimiet raakt. Zonder
@@ -306,38 +352,30 @@ bookmaker: noteer de aggregator als bron en zeg dat de bookmaker niet herleidbaa
 
 ## 6. Vastleggen in de repo
 
-### 6a. De branch — doe dit vóór Stage 0, niet aan het eind
+### 6a. Waar je naartoe pusht: `main`
 
-**De canonieke branch is `main`.** Niet de branch die de omgeving je deze sessie heeft toegewezen,
-en niet de naam die eventueel in de scheduler-prompt staat.
-
-Claude Code op het web geeft elke sessie een eigen willekeurige branchnaam. Dat is geen instelling
-die je kunt uitzetten, dus je *landt* elke run ergens anders. Zonder tegenmaatregel schrijven Run A
-en Run B daardoor naar aparte branches die uit elkaar groeien — gemeten op 10 aug 2026: twee
-ledgers, allebei onvolledig, en Run B rapporteerde 5 picks waar er 8 waren.
-
-Begin daarom elke run hiermee:
-
-```bash
-git fetch origin main
-git merge origin/main          # of: git checkout -B werk origin/main als je nog nergens zit
-```
-
-en eindig met:
+Stage -2 ruimt aan het begin van de run op wat al uiteen is gelopen. Deze paragraaf zorgt dat er
+niets nieuws bij komt: **je pusht naar `main`.** Niet naar de branch die de omgeving je deze sessie
+heeft toegewezen — die naam is elke run anders, en dat is precies hoe de waaier aan takken ontstaat
+die Stage -2 moet opruimen.
 
 ```bash
 git push origin HEAD:main
 ```
 
-Twee dingen om te weten:
+Drie dingen om te weten:
 
 - **Toestemming.** Een sessie weigert standaard naar een andere branch te pushen dan de toegewezen.
   Beide scheduler-teksten geven daarom expliciet toestemming om naar `main` te pushen. Ontbreekt die
-  toestemming in de prompt waarmee je draait, push dan naar je eigen branch, en **meld bovenaan het
-  runrapport dat de run niet op `main` staat** — dan weet de volgende run dat hij moet samenvoegen.
+  toestemming in de prompt waarmee je draait, push dan naar je eigen branch, **meld bovenaan het
+  runrapport en in de notificatie dat de run niet op `main` staat**, en vraag om de scheduler-tekst
+  bij te werken. Dan weet de volgende run dat er iets te mergen valt.
 - **Botsing.** Wordt de push geweigerd omdat `main` intussen is opgeschoven (de andere run was je
-  voor), dan fetch je opnieuw, merge je, en push je nog een keer. Forceer nooit: aan de andere kant
-  hangt een echte run met echte picks.
+  voor), fetch dan opnieuw, merge volgens de conflictregels van Stage -2, en push nog een keer.
+  Forceer nooit: aan de andere kant hangt een echte run met echte picks. Dit is geen randgeval — het
+  gebeurde op 10 aug 2026 al bij de eerste poging, omdat de twee runs elkaar overlapten.
+- **Tussentijds.** Het voortgangsbestand na elke afgeronde competitie (Stage -1) push je ook naar
+  `main`. Wacht daar niet mee tot het eind: de container wordt weggegooid zodra de sessie stopt.
 
 ### 6b. Wat je vastlegt
 
@@ -396,7 +434,7 @@ De run draait terwijl niemand meekijkt; wat alleen in het transcript staat, bere
 - nul bets om dezelfde reden als de vorige run (bijv. "nog steeds geen dekking voor deze comps");
 - een routinematige, gezonde run zonder gekwalificeerde bets.
 
-**Stuur je er wel een, zet dan de link naar de HTML-pagina uit §6b erin** — dat is de plek waar
+**Stuur je er wel een, zet dan de link naar de HTML-pagina uit §6c erin** — dat is de plek waar
 de gebruiker het hele verhaal kan lezen. Houd de notificatie zelf kort: de beste bet, de koers,
 de bookmaker en de aftraptijd, dan de link. Geen methodediscussie in de notificatie; die staat
 op de pagina en in het markdown-rapport.

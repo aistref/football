@@ -62,26 +62,36 @@ Beide wijzen naar dezelfde branch (**`main`**) en dezelfde `picks.jsonl` — dat
 "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op hetzelfde tijdstip:
 gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
 
-### De branch: waarom `main` en niet een sessienaam
+### De branchval, en de twee dingen die hem dichtzetten
 
 Claude Code op het web geeft **elke sessie een eigen, willekeurige branchnaam** (`claude/<twee
-woorden>-<code>`). Die naam wordt door de omgeving opgelegd; een naam in de scheduler-prompt kan
-dat niet overrulen. Drie keer op rij is het daardoor misgegaan:
+woorden>-<code>`). Die naam wordt door de omgeving opgelegd; een naam in de scheduler-prompt kan dat
+niet overrulen. Loopt het uiteen, dan merk je dat niet vanzelf: de run *slaagt* gewoon, alleen met
+oude regels, oude scripts en een halve ledger. Drie keer misgegaan in drie dagen:
 
 | Datum | Wat er gebeurde |
 |---|---|
-| 9 aug 2026 | Scheduler wees nog naar `zealous-keller` terwijl `model.py`, `xgscore.py`, `progress.py` en `MAX_DEEP_ANALYSES = 30` zeven commits verder stonden op `serene-babbage`. |
-| 9 aug 2026 | Run A en Run B liepen uiteen; één sessie moest twee branches met de hand samenvoegen en trok daarbij een al gepubliceerde bet in. |
-| 10 aug 2026 | Run A landde op `peaceful-brown`, Run B op `stoic-mayer`. Beide ledgers waren onvolledig: Run B rapporteerde 5 picks waar er 8 waren. |
+| 9 aug 2026 | De scheduler wees naar `claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`, `scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` zeven commits verder stonden op een andere tak. |
+| 10 aug 2026 | Run A startte op de tak van Run B en miste poort 5 (§1.5) en de vroeg-seizoenscorrectie — regels die Run A zelf de dag ervoor had toegevoegd. Er is een bet gepubliceerd én per notificatie verstuurd die onder de volledige regelset niet had gemogen, en twee picks van 9 aug bleven onafgewikkeld omdat hun tak nooit is aangeraakt. Zie `runs/2026-08-10-run-a.md`. |
+| 10 aug 2026 | Run A en Run B legden allebei hun run vast op een eigen tak. Beide ledgers waren daardoor onvolledig: Run B rapporteerde 5 picks waar er 8 waren, en concludeerde op die halve set dat het eigen model slechter was dan de markt terwijl het op de volledige set net beter is. |
 
-Dat merk je niet vanzelf, want de run *slaagt* gewoon — alleen met oude regels, oude scripts en een
-halve ledger. Daarom staat er nu één vaste naam, `main`, die nooit meer verandert, plus een harde
-stap in `_shared-rules.md §6`: **elke run begint met `git fetch origin main` en merget die, en
-eindigt met een push daarheen.** Die stap is de eigenlijke beveiliging — hij werkt ook als de
-omgeving de sessie ergens anders neerzet, wat ze standaard doet.
+Er zijn **twee** maatregelen, en ze hebben elkaar nodig:
+
+1. **Stage -2 in `prompts/_shared-rules.md`** — de allereerste handeling van elke run: alle remote
+   branches nalopen en elke tak met eigen commits **mergen**. Let op het verschil met de oude
+   formulering "neem bij twijfel de nieuwste branch": die was fout. Op 10 aug bevatten beide takken
+   werk dat de ander niet had, dus kiezen betekende hoe dan ook iets weggooien. Bij conflicten
+   worden `picks.jsonl`, `source-health.json` en `coverage.json` **verenigd** (het zijn metingen);
+   bij de regels en de scripts wint de nieuwste versie.
+2. **`main` als vast eindpunt** (§6a) — Stage -2 ruimt op wat al uiteen is gelopen, maar zonder een
+   vaste plek om naartoe te pushen blijft het aantal takken groeien en doet elke run dat opruimwerk
+   opnieuw. Daarom pusht elke run naar `main`, een naam die nooit verandert. Beide
+   `SCHEDULER-RUN-*.txt` geven daar expliciet toestemming voor; zonder die toestemming weigert een
+   sessie naar een andere branch te pushen dan de toegewezen.
 
 Zet `main` ook als **default branch** in de GitHub-instellingen (Settings → Branches), zodat een
-nieuwe container hem binnenhaalt.
+nieuwe container hem binnenhaalt. Daarna hoef je de branchnaam nooit meer ergens bij te werken —
+dat was precies de stap die drie keer is vergeten.
 
 ## Het logboek gebruiken
 
