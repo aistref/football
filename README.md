@@ -103,13 +103,20 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 
 | Variabele | Dienst | Levert | Nodig? |
 |---|---|---|---|
-| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Ja — dit is wat de routine deblokkeert** |
-| `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Optioneel, verbetering |
+| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Nee — op het gratis plan waardeloos, zie de waarschuwing hieronder** |
+| `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Ja, dit is de enige bron met een herleidbare bookmaker |
 
-Waarom die volgorde: odds werken al via Oddschecker. Wat ontbreekt is een **onafhankelijke
-kansinput**, want zonder die zou `my_prob` uit de bookmakerprijs komen — precies wat
-`_shared-rules.md §2` verbiedt. `API_FOOTBALL_KEY` vult dat gat; `ODDS_API_KEY` maakt alleen de
-prijskant netter.
+> **Het gratis plan van api-football.com is niet bruikbaar voor deze routine.** Gemeten op 10 aug
+> 2026: de sleutel is geldig en `api_check.py` meldt "OK", maar elk verzoek om een seizoen ná 2024
+> antwoordt met `results = 0` en `errors: {"plan": "Free plans do not have access to this season,
+> try from 2022 to 2024."}`. Nagetrokken op Liga I (283/2026), Eerste Divisie (89/2025) en
+> Allsvenskan (113/2026) — alle drie leeg. Een routine die de wedstrijden van *vandaag* analyseert
+> heeft daar niets aan, ook niet als tier-2-bron. Zie `runs/2026-08-10-run-b.md`.
+>
+> De onafhankelijke kansinput komt daarom van **Fotmob** (team-xG, geen sleutel nodig) en
+> **xGscore** (gepubliceerde modelkansen, geen sleutel nodig). Wie deze bron wél wil, heeft een
+> betaald plan nodig; laat het gratis plan anders gewoon staan, `source-health.json` markeert hem
+> als `plan_limited` en de datadekkingspoort slaat hem dan over.
 
 ### Stappen
 
@@ -160,11 +167,13 @@ draait. Zie de toelichting bij Stage 4 in `_shared-rules.md` voor waarom dit `MA
 van 12 naar 30 heeft gebracht: niet het aantal wedstrijden was de bottleneck, maar het aantal
 competities waarvoor nog geen team-xG was opgehaald.
 
-**3. xG-dekking van API-Football per competitie natrekken.** De sleutel werkt sinds 8 aug 2026
-(was eerder afgewezen, opgelost door de gebruiker), maar xG blijkt per competitie en seizoen
-wisselend aanwezig. Zolang dat niet nagetrokken is, geldt API-Football als tier-2-bron (`LIGHT`),
-niet als xG-bron (`FULL`). Dit weegt inmiddels minder zwaar: Fotmob levert al bevestigde xG voor
-de meeste Run A-competities en drie Run B-competities zonder sleutel nodig te hebben.
+**3. ~~xG-dekking van API-Football per competitie natrekken~~ — nagetrokken (10 aug 2026), en het
+antwoord is een ander dan verwacht.** Het probleem is niet dat xG per competitie wisselt, maar dat
+het **gratis plan geen enkel seizoen na 2024 teruggeeft** — zie de waarschuwing bij "Sleutels
+toevoegen" en `runs/2026-08-10-run-b.md`. De bron staat nu op `plan_limited` in
+`source-health.json` en telt niet mee in de datadekkingspoort. Wil je hem alsnog gebruiken, dan is
+een betaald plan de enige weg; anders verandert er niets, want Fotmob en xGscore dragen de
+kanskant al zonder sleutel.
 
 **4. ~~Fotmob proberen~~ — gedaan (8 aug 2026).** Werkt, zonder sleutel. Bevestigde xG-dekking:
 Eredivisie, Primeira Liga, Belgian Pro League, Ekstraklasa, Scottish Premiership, Championship,

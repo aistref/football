@@ -6,24 +6,27 @@
     "",
     "status: ok | http_403 | http_503 | js_only | blocked | untested",
     "js_only = de HTML komt binnen maar de data wordt client-side ingeladen, dus onbruikbaar",
-    "          voor een fetch-only tool.",
+    "status: ok | plan_limited | http_403 | http_503 | js_only | blocked | untested",
     "",
+    "plan_limited = de sleutel werkt, maar het abonnement geeft geen toegang tot de data die",
+    "               deze routine nodig heeft (bv. het huidige seizoen). api_check.py ziet dit",
+    "               NIET — het meldt alleen dat de sleutel geldig is.",
     "Werk 'last_checked' en 'status' bij, ook als er niets veranderd is. Een bron die drie runs",
     "op rij ok is, mag naar voren in de voorkeursvolgorde in coverage.json."
   ],
-  "last_run": "2026-08-09",
+  "last_run": "2026-08-10",
   "sources": {
     "sportinglife": {
       "status": "ok",
       "last_checked": "2026-08-08",
       "role": "fixtures",
-      "detail": "Volledige fixturelijst per datum, server-side. Bevat match_date in UTC (bruikbaar voor tijdzonecontrole). Let op: match_betting_market was vandaag leeg — geen odds meer via deze bron. | 9 aug: niet gebruikt, Fotmob dekte de fixtures."
+      "detail": "Volledige fixturelijst per datum, server-side. Bevat match_date in UTC (bruikbaar voor tijdzonecontrole). Let op: match_betting_market was vandaag leeg — geen odds meer via deze bron. | 9 aug: niet gebruikt, Fotmob dekte de fixtures. | 10 aug: niet gebruikt, Fotmob dekte de fixtures."
     },
     "oddschecker": {
       "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "odds",
-      "detail": "OMGEVALLEN t.o.v. vorige run: 403 met Cloudflare 'Just a moment...'-challenge op /football en /football/netherlands/eredivisie (server: cloudflare). Was eerder vandaag nog ok. Niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen."
+      "detail": "OMGEVALLEN t.o.v. vorige run: 403 met Cloudflare 'Just a moment...'-challenge op /football en /football/netherlands/eredivisie (server: cloudflare). Was eerder vandaag nog ok. Niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen. | 10 aug: niet opnieuw geprobeerd, status overgenomen."
     },
     "understat": {
       "status": "ok",
@@ -35,25 +38,25 @@
       "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "403 Forbidden op /en/comps/9/Premier-League-Stats. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen."
+      "detail": "403 Forbidden op /en/comps/9/Premier-League-Stats. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen. | 10 aug: niet opnieuw geprobeerd, status overgenomen."
     },
     "forebet": {
       "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "403 op zowel /football-tips-and-predictions-for-today als /by-league. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen."
+      "detail": "403 op zowel /football-tips-and-predictions-for-today als /by-league. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen. | 10 aug: niet opnieuw geprobeerd, status overgenomen."
     },
     "footystats": {
       "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "403 op de homepage. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen."
+      "detail": "403 op de homepage. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen. | 10 aug: niet opnieuw geprobeerd, status overgenomen."
     },
     "predictz": {
       "status": "cloudflare_challenge",
       "last_checked": "2026-08-08",
       "role": "prob",
-      "detail": "403 op /predictions/. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen."
+      "detail": "403 op /predictions/. Oorzaak nagetrokken: Cloudflare 'Just a moment...'-challenge, niet de netwerkpolicy en niet de user-agent. Bewust dichtgezet voor bots — niet omheen werken. | 9 aug: niet opnieuw geprobeerd, status van 8 aug overgenomen. | 10 aug: niet opnieuw geprobeerd, status overgenomen."
     },
     "oddsportal": {
       "status": "js_only",
@@ -63,9 +66,9 @@
     },
     "betexplorer": {
       "status": "ok",
-      "last_checked": "2026-08-09",
+      "last_checked": "2026-08-10",
       "role": "odds",
-      "detail": "Run B 9 aug: 1X2 opnieuw server-side beschikbaar. Nieuwe slugs bevestigd: czech-republic/chance-liga (let op: /czech-republic/1-liga/ geeft HTTP 200 met 0 rijen, dus een fout slug faalt STIL), romania/superliga, croatia/hnl, hungary/nb-i, netherlands/eerste-divisie. Alleen 1X2; scripts/betexplorer.py leest data-odd (gemiddelde), niet data-odd-max."
+      "detail": "Run B 10 aug: 1X2 voor alle 6 wedstrijden van de dag. Nieuwe slug bevestigd: sweden/allsvenskan. Slugs romania/superliga en netherlands/eerste-divisie opnieuw werkend. | 9 aug: czech-republic/chance-liga (let op: /czech-republic/1-liga/ geeft HTTP 200 met 0 rijen, dus een fout slug faalt STIL), croatia/hnl, hungary/nb-i. Alleen 1X2; scripts/betexplorer.py leest data-odd (gemiddelde), niet data-odd-max."
     },
     "flashscore": {
       "status": "js_only",
@@ -81,27 +84,27 @@
     },
     "fotmob": {
       "status": "ok",
-      "last_checked": "2026-08-09",
+      "last_checked": "2026-08-10",
       "role": "prob",
-      "detail": "Run B 9 aug: fixtures en team-xG opnieuw werkend. NIEUW EN BELANGRIJK: de 'id' van een competitie in /api/data/matches is bij sommige competities een SEIZOENSSPECIFIEK id waarop /api/data/leagues geen stand teruggeeft (AttributeError op een leeg antwoord). Het bruikbare id staat in hetzelfde object als 'primaryId' (en 'parentLeagueId'). Bevestigd: CZE 938182 -> 122, ROU 938428 -> 189, SUI 937880 -> 69, AUT 938366 -> 38. Zonder deze stap lijken die vier competities ten onrechte buiten datadekking te vallen. Verder deze run: xG BEVESTIGD voor Eliteserien (seizoen '2026'), Allsvenskan ('2026'), 2. Bundesliga, Swiss Super League en Austrian Bundesliga; xG BEVESTIGD AFWEZIG voor Czech First League, Romanian SuperLiga, Croatian HNL, Hungarian NB I en Eerste Divisie."
+      "detail": "Run B 10 aug: fixtures en team-xG opnieuw werkend, geen wijziging in gedrag. xG BEVESTIGD aanwezig voor Allsvenskan (id 67, seizoen '2026'); xG BEVESTIGD AFWEZIG voor Romanian SuperLiga (primaryId 189) en Eerste Divisie/KKD (111), beide voor 2025/2026 en 2026/2027. | Run B 9 aug: de 'id' van een competitie in /api/data/matches is bij sommige competities een SEIZOENSSPECIFIEK id waarop /api/data/leagues geen stand teruggeeft (AttributeError op een leeg antwoord). Het bruikbare id staat in hetzelfde object als 'primaryId' (en 'parentLeagueId'). Bevestigd: CZE 938182 -> 122, ROU 938428 -> 189, SUI 937880 -> 69, AUT 938366 -> 38. Zonder deze stap lijken die vier competities ten onrechte buiten datadekking te vallen."
     },
     "the_odds_api": {
       "status": "ok",
-      "last_checked": "2026-08-09",
+      "last_checked": "2026-08-10",
       "role": "odds",
-      "detail": "Run B 9 aug: api_check.py OK, 472 credits voor de run, 462 erna (10 gebruikt: markten h2h,totals via de bulk-endpoint x 5 competities x regio eu, 2 credits per competitie). LET OP: de sportkey-lijst die api_check.py print is gefilterd op de Run A-competities. De volledige /v4/sports-lijst (46 actieve voetbalcompetities) bevat ook soccer_norway_eliteserien, soccer_sweden_allsvenskan, soccer_switzerland_superleague, soccer_austria_bundesliga, soccer_greece_super_league, soccer_england_league1, soccer_england_league2, soccer_sweden_superettan en soccer_france_ligue_two. Geen Tsjechie, Roemenie, Kroatie, Hongarije of Nederlandse Eerste Divisie."
+      "detail": "Run B 10 aug: api_check.py OK, 453 credits voor de run, 452 erna (1 gebruikt: markt totals via de bulk-endpoint, soccer_sweden_allsvenskan, regio eu). Deze run gaf api_check.py 42 actieve competities i.p.v. 46 op 9 aug — de lijst krimpt buiten het seizoen, dat is normaal. LET OP: de sportkey-lijst die api_check.py print is gefilterd op de Run A-competities; de volledige /v4/sports-lijst bevat ook soccer_norway_eliteserien, soccer_sweden_allsvenskan, soccer_switzerland_superleague, soccer_austria_bundesliga, soccer_greece_super_league, soccer_england_league1, soccer_england_league2. Geen Tsjechie, Roemenie, Kroatie, Hongarije of Nederlandse Eerste Divisie."
     },
     "api_football": {
-      "status": "ok",
-      "last_checked": "2026-08-09",
+      "status": "plan_limited",
+      "last_checked": "2026-08-10",
       "role": "prob",
-      "detail": "Run B 9 aug: sleutel geldig, plan Free actief tot 2027-07-28, 0 van 100 verzoeken gebruikt. Deze run niet aangesproken omdat Fotmob voor elke competitie met xG-dekking al leverde. xG-dekking per competitie nog steeds niet nagetrokken; blijft tot die tijd een LIGHT-bron."
+      "detail": "Run B 10 aug — HERBEOORDEELD, dit is geen tier-2-bron maar een onbruikbare bron zolang het plan gratis is. De sleutel is geldig en api_check.py zegt OK, maar elk verzoek om data van een recent seizoen antwoordt met errors={'plan': 'Free plans do not have access to this season, try from 2022 to 2024.'} en results=0. Nagetrokken op drie competities: fixtures?league=283&season=2026 (Liga I ROU), league=89&season=2025 (Eerste Divisie NED) en league=113&season=2026 (Allsvenskan SWE) — alle drie 0 resultaten. Het is dus niet 'xG-dekking wisselt per competitie' maar 'seizoenen na 2024 zitten achter een betaald plan'. Voor een routine die de wedstrijden van vandaag analyseert is deze bron daarmee waardeloos, ook als LIGHT-bron. Kostte 5 van de 100 dagverzoeken."
     },
     "xgscore": {
       "status": "ok",
-      "last_checked": "2026-08-09",
+      "last_checked": "2026-08-10",
       "role": "prob",
-      "detail": "Run B 9 aug: 28 voorspellingen op /predictions/today, geen Cloudflare. Van de Run B-lijst alleen Allsvenskan (4 wedstrijden) en Eliteserien (3); geen CZE/ROU/CRO/HUN/KKD. Deze run gebruikt als tweede onafhankelijk model naast Fotmob-xG - en het sprak drie kandidaten met een grote nominale edge tegen (Lillestrom, HamKam, Kristiansund), wat die bets heeft afgevoerd of naar Low confidence gebracht."
+      "detail": "Run B 10 aug: 6 voorspellingen op /predictions/today, geen Cloudflare. Van de Run B-lijst alleen de twee Allsvenskan-duels (Sirius-Brommapojkarna 1 @62%, Vasteras-Djurgarden 2 @50%). Gebruikt als tweede onafhankelijk model; het sprak deze run geen kandidaat tegen maar gaf ook geen doorslag. Bevestigt opnieuw dat de dagpagina een door de site gekozen selectie toont."
     },
     "prognosist": {
       "status": "ok",
