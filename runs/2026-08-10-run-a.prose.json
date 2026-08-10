@@ -1,0 +1,85 @@
+{
+ "_doc": [
+  "De leesbare tekst bij runs/2026-08-10-run-a.html. Structurele data haalt scripts/report.py",
+  "zelf uit picks.jsonl en data/run-state/."
+ ],
+ "started": "05:09",
+ "truncated": 0,
+ "sources": "prijzen uitgelezen om 05:14 · bronnen: Fotmob (cijfers), The Odds API (prijzen), BetExplorer, xGscore",
+ "verdict": "Van de <b>drie wedstrijden</b> op de lijst blijft er <b>geen enkele bet</b> over. Er wás vanochtend één gepubliceerd, en die is voor de aftrap weer ingetrokken — niet omdat de wedstrijd veranderde, maar omdat ik met een halve regelset werkte.",
+
+ "coverage_labels": {
+  "Danish Superliga (DEN)": "Deense Superliga",
+  "League Cup (ENG)": "Engelse League Cup",
+  "Primeira Liga (POR)": "Portugese competitie",
+  "UEFA Champions League": "Champions League",
+  "UEFA Europa League": "Europa League",
+  "UEFA Conference League": "Conference League",
+  "Belgian Pro League (BEL)": "Belgische competitie",
+  "Scottish Premiership (SCO)": "Schotse Premiership"
+ },
+
+ "coverage_notes": {
+  "Danish Superliga (DEN)": "1 wedstrijd, volledige cijfers · <strong>kandidaat, afgevallen op de tweede methode</strong>",
+  "Primeira Liga (POR)": "1 wedstrijd, volledige cijfers · geen bet",
+  "League Cup (ENG)": "1 wedstrijd (eerste ronde), volledige cijfers · geen bet",
+  "Premier League (ENG)": "seizoen nog niet begonnen",
+  "Serie A (ITA)": "seizoen nog niet begonnen",
+  "La Liga (ESP)": "seizoen nog niet begonnen",
+  "Bundesliga (GER)": "seizoen nog niet begonnen",
+  "Ligue 1 (FRA)": "seizoen nog niet begonnen",
+  "Championship (ENG)": "niets op de kalender",
+  "Eredivisie (NED)": "speelronde was het weekend, vandaag niets",
+  "Belgian Pro League (BEL)": "niets op de kalender",
+  "Süper Lig (TUR)": "alleen de 1. Lig speelde",
+  "Scottish Premiership (SCO)": "niets op de kalender",
+  "Ekstraklasa (POL)": "alleen de I Liga speelde",
+  "UEFA Champions League": "voorrondes hervatten later deze week",
+  "UEFA Europa League": "niets op de kalender",
+  "UEFA Conference League": "niets op de kalender",
+  "FA Cup (ENG)": "niets op de kalender",
+  "Coppa Italia (ITA)": "niets op de kalender",
+  "KNVB Beker (NED)": "niets op de kalender",
+  "DFB Pokal (GER)": "niets op de kalender"
+ },
+
+ "bets": {},
+
+ "next_best": "<strong>De bet die is ingetrokken.</strong> Silkeborg – OB Odense, uitzege tegen 2,58 bij Nordic Bet. Op het hoofdmodel — dat rekent met de kwaliteit van de kansen die ploegen creëren — stond OB op 45,5% terwijl de bookmakers 38,8% inprijsden. Ruim voldoende, en het hield stand toen ik aan alle rekenknoppen draaide. Maar het overleeft de tweede methode niet: reken je dezelfde twee ploegen door op wat ze werkelijk scoorden thuis en uit, dan valt het voordeel terug van +6,7 naar +0,5 — praktisch nul. Sinds gisteren is dat een harde afwijsgrond. Daarna: het gelijkspel bij Plymouth – Exeter (+3,0 op het hoofdmodel, maar zakt naar +1,8 zodra je de rekenknoppen anders zet) en de uitzege van Nacional in Portugal (+3,0, met hetzelfde probleem). Geen van de drie haalt de streep. Ik vul de lijst niet aan om hem voller te laten lijken.",
+
+ "todo": [
+  {
+   "title": "Niets inleggen vandaag",
+   "detail": "Er staat geen enkele bet open. De uitzege van OB die je vanochtend in een notificatie kreeg, is ingetrokken; heb je die al geplaatst, dan is dat geen ramp — het model vindt hem nog steeds gunstig — maar hij haalt de eigen kwaliteitsgrens van de routine niet en telt niet mee in het logboek.",
+   "when": "vandaag"
+  },
+  {
+   "title": "Kies één branch voor de routine",
+   "detail": "Dit is de echte oorzaak van vanochtend. Run A en Run B schreven op 9 augustus naar twee verschillende branches, dus vandaag startte ik met de regels van Run B en zonder de twee verbeteringen die Run A gisteren had toegevoegd. Ik heb beide takken nu samengevoegd, maar zolang de twee geplande taken elk hun eigen branch krijgen, gebeurt dit opnieuw. Zet in beide scheduler-taken dezelfde branchnaam, en plan ze niet op hetzelfde tijdstip.",
+   "when": "voor de volgende run"
+  },
+  {
+   "title": "Zeggen wat je inzet per bet is",
+   "detail": "Het logboek rekent nog steeds met “1 eenheid per bet” omdat er nooit iets anders is afgesproken. Zolang dat een verzonnen getal is, zegt de winst- en verliesregel niets over jouw geld. Noem één bedrag en ik reken alles daarin om.",
+   "when": "nog open"
+  }
+ ],
+
+ "finding": {
+  "title": "Waarom de bet van vanochtend weer is ingetrokken",
+  "paragraphs": [
+   "Vanochtend om 05:14 publiceerde ik één bet en stuurde daar een notificatie over. Anderhalf uur later heb ik die weer ingetrokken. De wedstrijd is niet veranderd en de prijs ook niet — ik werkte met een regelset waar twee stukken uit ontbraken.",
+   "De oorzaak zit in de opslag, niet in het voetbal. De routine draait als twee geplande taken, Run A en Run B, en die kregen op 9 augustus elk een eigen werkbranch. Run A voegde die dag twee verbeteringen toe aan de spelregels: een correctie voor het feit dat er begin seizoen méér wordt gescoord dan het jaargemiddelde, en een harde eis dat een tweede, onafhankelijke rekenmethode het voordeel bevestigt. Run B schreef diezelfde dag naar de andere branch. Vanochtend startte ik op de tak van Run B — met de oude regels, zonder te weten dat er nieuwere bestonden.",
+   "Na het samenvoegen van beide takken heb ik alle drie de wedstrijden opnieuw doorgerekend. De niveaucorrectie maakte de bet op OB Odense zelfs iets aantrekkelijker: van +6,7 naar +7,3. Maar de tweede toets sloeg hem af. Waar het hoofdmodel — dat rekent met de kwaliteit van de gecreëerde kansen — OB op 46% zet, komt de methode die rechttoe rekent met wat beide ploegen werkelijk scoorden thuis en uit, uit op 39%: <strong>vrijwel exact de prijs van de bookmaker</strong>. Twee methodes op dezelfde data, twee verschillende antwoorden. Precies waarvoor die poort gisteren is ingevoerd.",
+   "Twee dingen zijn hierdoor ook rechtgezet die anders waren blijven liggen. Twee bets van Run A van 9 augustus stonden nog als onbeslist in het logboek omdat die branch nooit is afgewikkeld: Groningen won zijn wedstrijd (gewonnen), Anderlecht – RAAL ging mis (verloren). En het logboek telt nu alle acht bets van beide runs in plaats van twee losse halve lijsten."
+  ]
+ },
+
+ "settled": [
+  {"label": "Lillestrøm – Rosenborg, minder dan 2,5 goals @2.32", "score": "0 – 2", "result": "won"},
+  {"label": "Hradec Králové wint van Baník Ostrava @2.23", "score": "2 – 1", "result": "won"},
+  {"label": "Kristiansund – Molde, minder dan 2,5 goals @2.58", "score": "2 – 1", "result": "lost"},
+  {"label": "Groningen wint van Utrecht @2.48", "score": "2 – 1", "result": "won"},
+  {"label": "RAAL La Louvière wint bij Anderlecht @5.30", "score": "2 – 1", "result": "lost"}
+ ]
+}

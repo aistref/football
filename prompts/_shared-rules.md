@@ -34,7 +34,15 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
 1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`;
 2. `MIN_ODDS ≤ odds ≤ MAX_ODDS`;
 3. de anti-circulariteitsregel (§2) is voldaan;
-4. `data_tier ≠ NONE`.
+4. `data_tier ≠ NONE`;
+5. **twee methodes bevestigen de edge.** `model.analyze_match` (op xG) én
+   `model.analyze_match_from_splits` (op wat de ploegen thuis en uit werkelijk scoorden) moeten
+   allebei boven de drempel uitkomen. Zakt de tweede eronder, dan hangt de edge aan één
+   modelkeuze en gaat de bet eruit met reden "data conflicterend".
+
+Toegevoegd op 9 aug 2026, met een concreet geval: Gil Vicente – Rio Ave stond op het xG-model op
++10.3 pp — de op één na grootste edge van die dag — en op de tweede methode op +2.7 pp. De twee
+bets die wél werden gepubliceerd, werden door beide bevestigd.
 
 **Een run met nul bets is geen mislukte run.** Nul bets rapporteren met een heldere reden is
 correct gedrag; bets forceren om het format te vullen is dat niet.
@@ -178,6 +186,30 @@ gecached voor de volgende run).
 ### Stage 5 — Analyse en output
 Analyseer de geselecteerde wedstrijden volgens §4 en §5.
 
+**Zet eerst het doelpuntenniveau goed.** Haal per competitie de teamstatistieken van zowel het
+vorige als het lopende seizoen op, en corrigeer de competitiebasis voordat je één wedstrijd
+doorrekent:
+
+```python
+from scripts.model import early_season_uplift, scale_level
+obs = [(vorig["avg_xg_per_match"], huidig["avg_xg_per_match"], speeldagen) for elke competitie]
+factor, pooled, total_md = early_season_uplift(obs)
+league = scale_level(league_uit_vorig_seizoen, factor)
+```
+
+Waarom dit moet: met teamsterktes uit vorig seizoen komt het niveau óók uit vorig seizoen, en
+begin seizoen wordt er meer gescoord dan over een heel jaar gemiddeld. Op 9 aug 2026 lag het
+model daardoor over 17 wedstrijden gemiddeld 3.0 pp onder de markt op P(Over 2.5) — tien van de
+zeventien keer dezelfde kant op — waardoor zeven Under-kandidaten dezelfde scheefstand zeven keer
+telden. Na de correctie: +0.9 pp, gemiddelde absolute fout van 4.5 naar 3.9 pp. De correctie dooft
+vanzelf uit naarmate het seizoen vordert.
+
+**Regel de correctie nooit af op de markt.** Hij komt volledig uit xG-waarnemingen; zou je
+`prior_matchdays` bijstellen tot de afwijking tegenover de bookmakers nul is, dan is `my_prob`
+alsnog van de odds afgeleid en meet de edge niets meer (§2). Meten tegen de markt om te zien of
+de correctie werkt mag wel — dat is controleren, niet fitten. Meld de gemeten afwijking vóór en
+na in het runrapport, zodat een volgende run ziet of de correctie nog klopt.
+
 ### Stage 6 — Vastleggen
 Volg §6. Zonder commit is de run niet gebeurd.
 
@@ -290,6 +322,29 @@ Elke run, ook een run met nul bets:
 Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
 runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
 
+### 6b. Het leesbare dagrapport — verplicht, elke run
+
+Het markdown-runrapport hierboven is voor de repo: methode, metingen, bronstatus. De gebruiker
+leest dat niet, en had daar gelijk in — het opent met bronstatus, gebruikt `edge_pp`, "de-viggen"
+en Brier zonder uitleg, en de bets staan als twee regels tussen alle andere wedstrijden. Daarom
+levert elke run **ook** een HTML-pagina op:
+
+1. Schrijf `runs/YYYY-MM-DD-run-<a|b>.prose.json` — alleen de tekst die een mens moet schrijven:
+   `verdict`, `bets` (per pick-id een `why` in gewone taal + een risicozin), `coverage_notes`,
+   `todo`, `finding` en `settled`. Zie `runs/2026-08-09-run-a.prose.json` als voorbeeld.
+2. Draai `python3 scripts/report.py --run <a|b> --date YYYY-MM-DD`. Bets, dekkingstabel en de
+   stand van het logboek komen automatisch uit `picks.jsonl` en `data/run-state/` — niet
+   overtypen, want dan gaan de twee rapporten uiteenlopen.
+3. Publiceer het bestand als Artifact en **zet die link in de notificatie** (§7).
+
+Schrijf de prose voor iemand die de repo niet kent en het jargon niet spreekt. Geen `edge_pp`,
+geen "de-viggen", geen ρ of shrink: die staan in de woordenlijst onderaan de pagina en horen niet
+in de lopende tekst. Noem bedragen, tijden en bookmakers concreet.
+
+Ook bij **nul bets** draait dit. De pagina zegt dan met zoveel woorden dat er niets gekwalificeerd
+heeft, en de dekkingstabel laat zien dat er wél gekeken is. Dat is precies het geval waarin een
+lege notificatie de gebruiker in het ongewisse laat.
+
 ---
 
 ## 7. Wanneer een notificatie sturen
@@ -305,6 +360,11 @@ De run draait terwijl niemand meekijkt; wat alleen in het transcript staat, bere
 **Stuur geen notificatie bij:**
 - nul bets om dezelfde reden als de vorige run (bijv. "nog steeds geen dekking voor deze comps");
 - een routinematige, gezonde run zonder gekwalificeerde bets.
+
+**Stuur je er wel een, zet dan de link naar de HTML-pagina uit §6b erin** — dat is de plek waar
+de gebruiker het hele verhaal kan lezen. Houd de notificatie zelf kort: de beste bet, de koers,
+de bookmaker en de aftraptijd, dan de link. Geen methodediscussie in de notificatie; die staat
+op de pagina en in het markdown-rapport.
 
 ---
 

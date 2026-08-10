@@ -42,9 +42,12 @@ scripts/
   xgscore.py            gepubliceerde 1X2-modelkansen van xgscore.io ophalen
   model.py              Poisson met Dixon-Coles-correctie + de robuustheidstest
   progress.py           voortgangsbestand: hervat een run na een Claude-limiet i.p.v. opnieuw te beginnen
+  report.py             het leesbare dagrapport als HTML-pagina, voor wie de repo niet kent
 runs/
   TEMPLATE.md           vorm van een runrapport
-  YYYY-MM-DD-run-a.md   het rapport van elke run
+  YYYY-MM-DD-run-a.md   het technische rapport van elke run
+  YYYY-MM-DD-run-a.prose.json   de leesbare tekst bij dat rapport (invoer voor report.py)
+  YYYY-MM-DD-run-a.html         de pagina die de gebruiker krijgt, als Artifact gepubliceerd
 ```
 
 De scheduler-prompt is met opzet kort en verwijst naar `prompts/`. **Regels aanpassen doe je in de
@@ -55,9 +58,18 @@ repo, niet in de scheduler.**
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
 `prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
 
-Beide wijzen naar dezelfde branch (`claude/zealous-keller-ja4wwn`) en dezelfde `picks.jsonl` —
+Beide wijzen naar dezelfde branch (`claude/serene-babbage-9osl2u`) en dezelfde `picks.jsonl` —
 dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
 hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
+
+**De branchnaam staat op twee plekken** — in `prompts/SCHEDULER-RUN-*.txt` én in de geplande taak
+zelf. Werk je er één bij, werk dan ook de ander bij. Loopt dat uiteen, dan draait de run op een
+branch die achterloopt op de repo, en dat merk je niet vanzelf: de run slaagt gewoon, alleen met
+oude regels en oude scripts. Op 9 aug 2026 gebeurde dat — de scheduler wees nog naar
+`claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`,
+`scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` al zeven commits verder stonden op
+`claude/serene-babbage-9osl2u`. Beide scheduler-teksten dragen de run nu op om bij twijfel de
+branch met de nieuwste commits te nemen en die afwijking bovenaan het runrapport te melden.
 
 ## Het logboek gebruiken
 
@@ -81,6 +93,25 @@ bookmakerprijs is afgeleid.
 die van de marktkans, over dezelfde bets. Is Brier eigen niet lager, dan voegt de analyse geen
 kansinformatie toe boven de prijs — hoe goed de hit rate er op korte termijn ook uitziet. Hit rate en
 ROI zijn bij tientallen bets vooral ruis; deze vergelijking is het eerste signaal dat richting geeft.
+
+## Twee rapporten per run, met opzet
+
+`runs/YYYY-MM-DD-run-<a|b>.md` is de vindplaats voor de **methode**: welke bronnen deden wat, hoe
+de kansen tot stand kwamen, welke metingen zijn gedaan. Geschreven voor wie de repo kent.
+
+`runs/YYYY-MM-DD-run-<a|b>.html` is de vindplaats voor de **beslissing**: de bets met koers,
+bookmaker en aftraptijd, wat de gebruiker zelf moet uitzoeken, de dekkingstabel en een
+woordenlijst die het jargon uit het eerste rapport vertaalt. Gegenereerd door `scripts/report.py`
+uit `picks.jsonl`, `data/run-state/` en een prosebestand — dus de cijfers kunnen niet uiteenlopen
+met het technische rapport.
+
+```bash
+python3 scripts/report.py --run a --date 2026-08-09
+```
+
+De aanleiding staat in `runs/2026-08-09-run-a.md`: het markdown-rapport opent met bronstatus,
+gebruikt `edge_pp`, "de-viggen" en Brier zonder uitleg, en de bets staan als twee regels tussen
+27 andere wedstrijden. Voor de gebruiker die de routine alleen leest is dat onbruikbaar.
 
 ## Waarom de bronnen dicht zitten
 
