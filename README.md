@@ -58,7 +58,7 @@ repo, niet in de scheduler.**
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
 `prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
 
-Beide wijzen naar dezelfde branch (**`claude/peaceful-brown-rggg3p`**) en dezelfde `picks.jsonl` —
+Beide wijzen naar dezelfde branch (**`main`**) en dezelfde `picks.jsonl` —
 dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
 hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
 
@@ -80,9 +80,12 @@ werk dat de ander niet had, dus kiezen betekende hoe dan ook iets weggooien. Bij
 `picks.jsonl`, `source-health.json` en `coverage.json` zijn metingen en worden **verenigd**; de regels
 en de scripts zijn dat niet, daar wint de nieuwste versie.
 
-Werk de branchnaam hierboven en in beide `SCHEDULER-RUN-*.txt` bij zodra je de geplande taak aanpast.
-Vergeet je het, dan is dat sindsdien geen stille storing meer — de run merget alsnog en meldt de
-afwijking bovenaan het runrapport en in de notificatie.
+Sinds 10 aug 2026 is de default branch **`main`** (hernoemd vanaf `claude/zealous-keller-ja4wwn`).
+Dat is de plek waar de routine hoort te schrijven; de vier oude `claude/*`-branches wijzen naar
+dezelfde commit en zijn alleen nog historie. Werk de branchnaam hierboven en in beide
+`SCHEDULER-RUN-*.txt` bij zodra je de geplande taak aanpast. Vergeet je het, dan is dat sindsdien
+geen stille storing meer — de run merget alsnog en meldt de afwijking bovenaan het runrapport en in
+de notificatie.
 
 ## Het logboek gebruiken
 
