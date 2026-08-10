@@ -2,13 +2,25 @@ Plak de tekst onder de streep in je geplande taak voor Run A, ter vervanging van
 huidige lange prompt. Hij is kort met opzet: de inhoudelijke regels staan in de repo, dus je
 kunt ze aanpassen zonder de scheduler nog aan te raken.
 
-Doe hetzelfde voor Run B met SCHEDULER-RUN-B.txt.
+Doe hetzelfde voor Run B met SCHEDULER-RUN-B.txt. Beide taken wijzen naar DEZELFDE branch;
+dat is bewust, run: "A"/"B" in het schema houdt ze uit elkaar. Plan ze niet op hetzelfde
+tijdstip.
 
-LET OP — de branchnaam hieronder staat op twee plekken: in dit bestand en in de scheduler
-zelf. Verander je hem hier, werk dan ook de geplande taak bij, anders draait de run op een
-branch die achterloopt op de repo. Dat gebeurde op 9 aug 2026: de scheduler wees nog naar
-claude/zealous-keller-ja4wwn terwijl het werk zeven commits verder stond op
-claude/serene-babbage-9osl2u.
+DE WERKBRANCH IS: claude/peaceful-brown-rggg3p
+
+LET OP — die naam staat op twee plekken: in dit bestand en in de scheduler zelf. Ze lopen
+uiteen zodra je er een aanpast, en dat is twee keer misgegaan:
+
+  9 aug 2026  — de scheduler wees naar claude/zealous-keller-ja4wwn terwijl het werk zeven
+                commits verder stond op claude/serene-babbage-9osl2u.
+  10 aug 2026 — erger: Run A en Run B schreven die dag naar TWEE branches die allebei
+                bestonden en allebei echt werk bevatten. Run A startte op de tak van Run B,
+                miste daardoor twee regels die Run A zelf de dag ervoor had toegevoegd, en
+                publiceerde een bet die onder de volledige regelset niet had gemogen.
+
+Daarom staat stap 0 hieronder in de prompt: de run repareert dit voortaan zelf. "Pak de
+nieuwste branch" is expliciet NIET genoeg — op 10 aug bevatten beide takken werk dat de
+ander niet had, dus kiezen betekende hoe dan ook iets weggooien. Samenvoegen is de opdracht.
 
 ------------------------------------------------------------------------------------------
 
@@ -16,21 +28,38 @@ CONTEXT: Dit is een door de gebruiker zelf aangemaakte, terugkerende geplande ta
 gebruiker heeft deze opdracht vooraf goedgekeurd. Voer 'm zonder verdere bevestiging uit;
 er is geen live gebruiker om iets aan te vragen.
 
-Werk in de repo /home/user/football op branch claude/serene-babbage-9osl2u. Loopt die branch
-achter op een andere werkbranch in de repo, of bestaat hij niet meer? Draai dan op de branch
-met de meest recente commits, en meld die afwijking bovenaan het runrapport.
+Werk in de repo /home/user/football op branch claude/peaceful-brown-rggg3p.
+
+0. EERST DE BRANCHES OP ORDE. Doe dit vóór alle andere stappen, ook als de branchnaam
+   hierboven klopt.
+   a. `git fetch origin` en `git branch -r` — bekijk ALLE branches, niet alleen de genoemde.
+   b. Bepaal per branch of hij commits bevat die niet in jouw werkbranch zitten:
+      `git rev-list --count <werkbranch>..origin/<andere>`. Is dat 0, dan is die branch
+      binnengehaald en kun je hem negeren.
+   c. Bevat een andere branch wél eigen commits, merge hem dan in je werkbranch. Kies niet
+      tussen takken en gooi er geen weg: op 10 aug 2026 hadden beide takken werk dat de
+      ander niet had. Bij conflicten in data/picks.jsonl en data/source-health.json is de
+      VERENIGING het antwoord — beide runs hebben echt gemeten, en een pick die op één tak
+      staat is een echte pick. Wint bij _shared-rules.md en de scripts de nieuwste versie.
+   d. Wijkt de branch waarop je uitkomt af van de naam in deze prompt, meld dat bovenaan het
+      runrapport én in de notificatie, met de vraag om de scheduler bij te werken. Anders
+      blijft het elke run opnieuw handwerk.
+   e. Controleer daarna of picks.jsonl openstaande picks bevat van een run die op de andere
+      tak nooit is afgewikkeld. Die horen bij Stage 0.
 
 1. Lees prompts/run-a.md en prompts/_shared-rules.md. Die twee bestanden zijn de opdracht —
-   volg ze onverkort, inclusief de parameters, de 0-of-1-bet-regel, de
-   anti-circulariteitsregel, de pipeline Stage 0 t/m 6 en het outputformat.
+   volg ze onverkort, inclusief de parameters, de 0-of-1-bet-regel, de vijf poorten in §1
+   (waaronder de bevestiging door een tweede methode), de anti-circulariteitsregel, de
+   pipeline Stage 0 t/m 6 en het outputformat. Lees ze ná stap 0, niet ervoor: vóór de merge
+   kun je een oudere versie van de regels in handen hebben.
 2. Draai eerst `python3 scripts/api_check.py` en lees dan data/source-health.json en
    data/coverage.json, zodat je niet opnieuw tijd verliest aan bronnen die vorige run al
    faalden. Neem de uitvoer van api_check.py over in het runrapport. Wordt een sleutel
    afgewezen of ontbreekt hij, meld dat expliciet — niet stilzwijgend doorgaan.
 3. Voer de run uit voor de wedstrijden van VANDAAG (bepaal zelf de actuele datum).
 4. Leg de run vast volgens _shared-rules.md §6: runrapport, picks.jsonl, source-health.json,
-   afwikkeling van openstaande picks, en commit + push.
-5. Stuur een notificatie volgens _shared-rules.md §7 — dus wél bij een niet-lege topselectie
-   of een nieuwe blokkade, en niet bij een stille run zonder gekwalificeerde bets.
+   afwikkeling van openstaande picks, en commit + push. Maak ook het leesbare dagrapport van
+   §6b (prose.json + scripts/report.py) en publiceer het als Artifact — ook bij nul bets.
+5. Stuur een notificatie volgens _shared-rules.md §7, met de link naar dat dagrapport erin.
 
 Nul bets is een geldige uitkomst. Forceer geen picks om het format te vullen.

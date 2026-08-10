@@ -82,6 +82,48 @@ net zo goed als je bij een cijfer de bron leest.
 
 ## 3. Pipeline — filter vóór de analyse, niet erna
 
+### Stage -2 — Eén werkbranch (vóór alles, ook vóór het lezen van deze regels)
+
+Elke sessie krijgt een eigen branchnaam, en de twee geplande taken lopen los van elkaar. Zonder
+maatregel schrijven Run A en Run B naar twee takken die elkaars werk niet zien. Dat is geen
+theoretisch risico:
+
+- **9 aug 2026** — de scheduler wees naar een branch die zeven commits achterliep.
+- **10 aug 2026** — Run A en Run B schreven allebei naar een eigen tak, allebei met echt werk erop.
+  Run A startte op de tak van Run B en miste daardoor poort 5 (§1.5) en de vroeg-seizoenscorrectie
+  (Stage 5), regels die Run A zelf de dag ervoor had toegevoegd. Er is een bet gepubliceerd en
+  verstuurd die onder de volledige regelset niet had gemogen, en twee picks van de dag ervoor bleven
+  onafgewikkeld omdat hun tak nooit is aangeraakt.
+
+Daarom, als allereerste handeling van elke run:
+
+```bash
+git fetch origin
+git branch -r
+for b in $(git branch -r | grep -v HEAD); do
+  echo "$b: $(git rev-list --count HEAD..$b) commits die hier nog niet zijn"
+done
+```
+
+Elke branch met méér dan 0 eigen commits wordt **gemerged**, niet weggegooid en niet vervangen.
+"Pak gewoon de nieuwste" is expliciet fout: op 10 aug bevatten beide takken werk dat de ander niet
+had, dus kiezen betekende hoe dan ook iets verliezen.
+
+Bij conflicten:
+
+| Bestand | Regel |
+|---|---|
+| `data/picks.jsonl` | **Vereniging.** Een pick die op één tak staat is een echte, gepubliceerde pick. Staat dezelfde id op beide takken, neem dan de versie die het meest weet — een afgewikkelde regel wint van `pending`. |
+| `data/source-health.json`, `data/coverage.json` | **Vereniging.** Beide runs hebben echt gemeten; bewaar beide waarnemingen naast elkaar in `detail` in plaats van er een te laten winnen. |
+| `prompts/_shared-rules.md`, `scripts/*` | De **nieuwste** versie wint. Regels en rekencode zijn geen metingen. |
+
+Lees deze regels pas ná de merge opnieuw: vóór de merge kun je een oudere versie van dit bestand in
+handen hebben dan er in de repo bestaat. Kom je uit op een andere branch dan de scheduler noemt, meld
+dat dan bovenaan het runrapport én in de notificatie — anders blijft het elke run handwerk.
+
+Controleer na de merge of `picks.jsonl` openstaande picks bevat van een run die op de andere tak
+nooit is afgewikkeld. Die horen bij Stage 0.
+
 ### Stage -1 — Onderbreking en hervatting (Claude-limiet)
 
 Een sessie kan halverwege stoppen doordat de gebruiker zijn Claude-gebruikslimiet raakt. Zonder

@@ -58,18 +58,31 @@ repo, niet in de scheduler.**
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
 `prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
 
-Beide wijzen naar dezelfde branch (`claude/serene-babbage-9osl2u`) en dezelfde `picks.jsonl` —
+Beide wijzen naar dezelfde branch (**`claude/peaceful-brown-rggg3p`**) en dezelfde `picks.jsonl` —
 dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
 hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
 
-**De branchnaam staat op twee plekken** — in `prompts/SCHEDULER-RUN-*.txt` én in de geplande taak
-zelf. Werk je er één bij, werk dan ook de ander bij. Loopt dat uiteen, dan draait de run op een
-branch die achterloopt op de repo, en dat merk je niet vanzelf: de run slaagt gewoon, alleen met
-oude regels en oude scripts. Op 9 aug 2026 gebeurde dat — de scheduler wees nog naar
-`claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`,
-`scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` al zeven commits verder stonden op
-`claude/serene-babbage-9osl2u`. Beide scheduler-teksten dragen de run nu op om bij twijfel de
-branch met de nieuwste commits te nemen en die afwijking bovenaan het runrapport te melden.
+### De branchval, en waarom de run hem nu zelf repareert
+
+De branchnaam staat op twee plekken — in `prompts/SCHEDULER-RUN-*.txt` én in de geplande taak zelf —
+en elke sessie krijgt bovendien een eigen branchnaam toegewezen. Loopt dat uiteen, dan merk je dat
+niet vanzelf: de run slaagt gewoon, alleen met oude regels en oude scripts. Twee keer misgegaan:
+
+| Datum | Wat er gebeurde |
+|---|---|
+| 9 aug 2026 | De scheduler wees naar `claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`, `scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` zeven commits verder stonden op een andere tak. |
+| 10 aug 2026 | Erger: Run A en Run B schreven allebei naar een eigen tak, allebei met echt werk erop. Run A startte op de tak van Run B en miste daardoor poort 5 en de vroeg-seizoenscorrectie — regels die Run A zelf de dag ervoor had toegevoegd. Er is een bet gepubliceerd én per notificatie verstuurd die onder de volledige regelset niet had gemogen, en twee picks van 9 aug bleven onafgewikkeld omdat hun tak nooit is aangeraakt. Zie `runs/2026-08-10-run-a.md`. |
+
+Sinds 10 aug 2026 is dit **Stage -2** in `prompts/_shared-rules.md`, de allereerste handeling van elke
+run: alle remote branches nalopen en elke tak met eigen commits **mergen**. Let op het verschil met de
+oude formulering "neem bij twijfel de nieuwste branch" — die was fout. Op 10 aug bevatten beide takken
+werk dat de ander niet had, dus kiezen betekende hoe dan ook iets weggooien. Bij conflicten geldt:
+`picks.jsonl`, `source-health.json` en `coverage.json` zijn metingen en worden **verenigd**; de regels
+en de scripts zijn dat niet, daar wint de nieuwste versie.
+
+Werk de branchnaam hierboven en in beide `SCHEDULER-RUN-*.txt` bij zodra je de geplande taak aanpast.
+Vergeet je het, dan is dat sindsdien geen stille storing meer — de run merget alsnog en meldt de
+afwijking bovenaan het runrapport en in de notificatie.
 
 ## Het logboek gebruiken
 
