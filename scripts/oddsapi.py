@@ -45,6 +45,9 @@ SPORT_KEYS: dict[str, str] = {
     "Danish Superliga (DEN)": "soccer_denmark_superliga",
     "Ekstraklasa (POL)": "soccer_poland_ekstraklasa",
     "DFB Pokal (GER)": "soccer_germany_dfb_pokal",
+    "League Cup (ENG)": "soccer_england_efl_cup",  # bevestigd 10 aug 2026
+    "League One (ENG)": "soccer_england_league1",
+    "League Two (ENG)": "soccer_england_league2",
     "2. Bundesliga (GER)": "soccer_germany_bundesliga2",
     "Serie B (ITA)": "soccer_italy_serie_b",
     "Segunda División (ESP)": "soccer_spain_segunda_division",

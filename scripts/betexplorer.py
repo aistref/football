@@ -3,8 +3,13 @@
 
 Stond tot 8 aug 2026 als `js_only` in data/source-health.json — dat was gemeten op de
 wedstrijdpagina, die inderdaad leeg is. De "Next matches"-tabel op een competitiepagina levert
-1X2 wél server-side, in `data-odd` (gemiddelde) en `data-odd-max` (beste prijs). Alleen 1X2 —
-de ou/bts/ah-ajax-endpoints gaven 404 bij het natrekken.
+1X2 wél server-side, in `data-odd` (gemiddelde). Alleen 1X2 — de ou/bts/ah-ajax-endpoints gaven
+404 bij het natrekken.
+
+LET OP (gemeten 10 aug 2026): `data-odd-max` (beste prijs) en `data-bookmaker` stonden op 8 aug nog
+in de rijen maar zijn daar nu uit verdwenen — alleen het gemiddelde is er nog. Heb je de béste prijs
+nodig, gebruik dan The Odds API; deze bron levert een marktgemiddelde, geen prijs waar je op kunt
+inleggen.
 
     from scripts.betexplorer import fetch_league_odds
 
@@ -82,6 +87,8 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "Scottish Premiership (SCO)": "https://www.betexplorer.com/football/scotland/premiership/",
     "Coppa Italia (ITA)": "https://www.betexplorer.com/football/italy/coppa-italia/",
     "League Cup (ENG)": "https://www.betexplorer.com/football/england/efl-cup/",
+    # 10 aug 2026: 'denmark/superliga' werkt, 'denmark/superligaen' geeft HTTP 200 met 0 rijen.
+    "Danish Superliga (DEN)": "https://www.betexplorer.com/football/denmark/superliga/",
 }
 
 

@@ -110,8 +110,11 @@ KNOWN_COMPETITION_SLUGS: dict[str, str] = {
 
 
 if __name__ == "__main__":
-    # Zelftest: bevat vandaag minstens de bevestigde Eredivisie/Primeira Liga-wedstrijden en
-    # heeft elke rij een geldige kans (0-1) en positieve referentie-odds.
+    # Zelftest: controleert de VORM van de respons, niet welke competities er toevallig in staan.
+    # De eerdere versie eiste een Eredivisie-wedstrijd en faalde daardoor op 10 aug 2026, een dag
+    # waarop xGscore maar zes voorspellingen uit vier andere competities toonde — een falende test
+    # die niets zei over de bron. Welke competities de dagpagina toont wisselt sterk per dag; dat
+    # is bekend gedrag (zie coverage.json), geen storing.
     preds = fetch_today()
     print(f"{len(preds)} voorspellingen gevonden")
     slugs = sorted({p.competition_slug for p in preds})
@@ -122,5 +125,7 @@ if __name__ == "__main__":
     assert preds, "geen voorspellingen gevonden — pagina-structuur kan gewijzigd zijn"
     assert all(0 < p.probability <= 1 for p in preds), "kans buiten (0,1] — parser klopt niet"
     assert all(p.reference_odds > 1.0 for p in preds), "odds <= 1.0 is onmogelijk — parser klopt niet"
-    assert any(p.competition_slug == "eredivisie" for p in preds), "Eredivisie niet gevonden vandaag"
+    assert all(p.home and p.away and p.competition_slug for p in preds), "onvolledige rij geparsed"
+    assert all(p.pick in ("1", "X", "2") for p in preds), "onbekende pick-waarde — parser klopt niet"
+    print("Zelftest geslaagd.")
     print("Zelftest geslaagd.")

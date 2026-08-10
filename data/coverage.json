@@ -11,7 +11,7 @@
     "Actuele bereikbaarheid staat NIET hier maar in source-health.json. Dit bestand beschrijft",
     "wat een bron in principe dekt; source-health.json wat er laatst werkte."
   ],
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "sources": {
     "sportinglife": {
       "role": "fixtures",
@@ -55,7 +55,7 @@
       "role": "prob",
       "independent": true,
       "url_pattern": "https://www.fotmob.com/api/data/{matches?date=YYYYMMDD | leagues?id={id}&season=YYYY%2FYYYY} en https://data.fotmob.com/stats/{leagueId}/season/{seasonId}/{expected_goals_team|expected_goals_conceded_team}.json",
-      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Geen xG voor tweede divisies (Eerste Divisie, Liga Portugal 2, Scottish Championship) — daar alleen doelpunten. 9 aug 2026: vijf competities toegevoegd aan 'covers' na directe meting, en vijf competities vastgelegd in 'no_xg_confirmed'. Zie ook league_id_valkuil, seizoensnotatie en split_ronde_waarschuwing hierboven.",
+      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Geen xG voor tweede divisies (Eerste Divisie, Liga Portugal 2, Scottish Championship) — daar alleen doelpunten. 9 aug 2026: vijf competities toegevoegd aan 'covers' na directe meting, en vijf competities vastgelegd in 'no_xg_confirmed'. Zie ook league_id_valkuil, seizoensnotatie en split_ronde_waarschuwing hierboven. 10 aug 2026: Danish Superliga toegevoegd aan 'covers' na directe meting (primaryId 46, has_xg=true voor 2025/2026 en 2026/2027). Ook gemeten: has_xg is FALSE voor het lopende seizoen 2026/2027 van Championship (48), League One (108) en League Two (109) - voor die drie is alleen 2025/2026 bruikbaar.",
       "coverage_verified": true,
       "covers": [
         "Eredivisie (NED)",
@@ -72,7 +72,8 @@
         "Allsvenskan (SWE)",
         "2. Bundesliga (GER)",
         "Swiss Super League (SUI)",
-        "Austrian Bundesliga (AUT)"
+        "Austrian Bundesliga (AUT)",
+        "Danish Superliga (DEN)"
       ],
       "no_xg_confirmed": [
         "Czech First League (CZE)",
@@ -86,7 +87,7 @@
       ],
       "league_id_valkuil": "De 'id' uit /api/data/matches is bij sommige competities seizoensspecifiek en werkt NIET op /api/data/leagues. Gebruik 'primaryId' uit hetzelfde object. Bevestigd 9 aug 2026: CZE 938182->122, ROU 938428->189, SUI 937880->69, AUT 938366->38. Voor NOR 59, SWE 67, GER2 146, NED 111, CRO 252 en HUN 212 zijn id en primaryId gelijk.",
       "seizoensnotatie": "Scandinavische competities lopen per kalenderjaar: gebruik season='2026', niet '2025/2026'. Voordeel: hun seizoen is halverwege, dus dit is lopende-seizoensdata in plaats van cijfers van vorig jaar.",
-      "split_ronde_waarschuwing": "Bij competities met een kampioens-/degradatiesplitsing dekken de xG-set en de stand verschillende wedstrijdsets: 'mp' (uit de xG-respons) telt de split-rondes mee, 'played' (uit de tabel) niet. Gemeten 9 aug 2026: SUI mp=38 vs played=33, AUT mp=32 vs played=22, BEL wisselend per team. Teams uit de degradatiegroep worden daardoor systematisch overschat. Vergelijk beide lezingen voordat je op zo'n competitie bet."
+      "split_ronde_waarschuwing": "Bij competities met een kampioens-/degradatiesplitsing dekken de xG-set en de stand verschillende wedstrijdsets: 'mp' (uit de xG-respons) telt de split-rondes mee, 'played' (uit de tabel) niet. Gemeten 9 aug 2026: SUI mp=38 vs played=33, AUT mp=32 vs played=22, BEL wisselend per team. Teams uit de degradatiegroep worden daardoor systematisch overschat. Vergelijk beide lezingen voordat je op zo'n competitie bet. Denemarken is de tegenhanger: daar staat elk van de twaalf clubs op mp=32 tegen played=22, dus de xG-set is voor iedereen even breed en de vertekening bestaat niet. Controleer de spreiding van mp voordat je een competitie als vertekend afschrijft."
     },
     "footystats": {
       "role": "prob",
@@ -116,7 +117,7 @@
       "role": "odds",
       "independent": false,
       "url_pattern": "https://api.the-odds-api.com/v4/sports/{sport}/odds?apiKey={KEY}",
-      "notes": "ACTIEF sinds 8 aug 2026. Primaire bron voor Over/Under en de enige met een herleidbare bookmaker. Budget: 500 credits/maand bij 2 runs per dag = circa 8 credits per run. Werkwijze die daarin past: 1X2 gratis via BetExplorer; totals via de bulk-endpoint (1 credit per competitie); btts en double_chance alleen per-event (2 credits per wedstrijd) en uitsluitend voor wedstrijden die al een kandidaat-edge tonen. Niet blind alle markten voor alle wedstrijden opvragen — dat is binnen tien dagen door het maandbudget heen. 9 aug 2026: volledige /v4/sports-lijst uitgelezen (46 actieve voetbalcompetities). Geen sportkey voor Tsjechie, Roemenie, Kroatie, Hongarije of de Nederlandse Eerste Divisie - daar blijft BetExplorer de enige oddsbron.",
+      "notes": "ACTIEF sinds 8 aug 2026. Primaire bron voor Over/Under en de enige met een herleidbare bookmaker. Budget: 500 credits/maand bij 2 runs per dag = circa 8 credits per run. Werkwijze die daarin past: 1X2 gratis via BetExplorer; totals via de bulk-endpoint (1 credit per competitie); btts en double_chance alleen per-event (2 credits per wedstrijd) en uitsluitend voor wedstrijden die al een kandidaat-edge tonen. Niet blind alle markten voor alle wedstrijden opvragen — dat is binnen tien dagen door het maandbudget heen. 9 aug 2026: volledige /v4/sports-lijst uitgelezen (46 actieve voetbalcompetities). Geen sportkey voor Tsjechie, Roemenie, Kroatie, Hongarije of de Nederlandse Eerste Divisie - daar blijft BetExplorer de enige oddsbron. 10 aug 2026: sportkey soccer_england_efl_cup bestaat en is actief - de EFL Cup was geen dekkingsgat. De /v4/sports-lijst opvragen kost geen credits, dus een sportkey natrekken is gratis; alleen odds opvragen kost.",
       "coverage_verified": true,
       "covers": [
         "Eredivisie (NED)",
@@ -141,7 +142,8 @@
         "Greek Super League (GRE)",
         "English League One (ENG)",
         "English League Two (ENG)",
-        "Segunda Division (ESP)"
+        "Segunda Division (ESP)",
+        "League Cup (ENG) / EFL Cup"
       ]
     },
     "api_football": {
@@ -156,7 +158,7 @@
       "role": "odds",
       "independent": false,
       "url_pattern": "https://www.betexplorer.com/next/football/ en https://www.betexplorer.com/football/{country}/{league}/",
-      "notes": "Primaire oddsbron sinds 8 aug 2026. 1X2 server-side in data-odd (gemiddelde) en data-odd-max (beste prijs); data-ts is de aftrap als epoch. ALLEEN 1X2 — ou/bts/ah-endpoints geven 404, en de wedstrijdpagina bevat geen odds. Individuele bookmaker niet herleidbaar. 9 aug 2026: slugs bevestigd voor czech-republic/chance-liga, romania/superliga, croatia/hnl, hungary/nb-i en netherlands/eerste-divisie. Een verkeerde slug geeft HTTP 200 met 0 rijen en faalt dus stil - controleer altijd of de lijst niet leeg is.",
+      "notes": "Primaire oddsbron sinds 8 aug 2026. 1X2 server-side in data-odd (gemiddelde) en data-odd-max (beste prijs); data-ts is de aftrap als epoch. ALLEEN 1X2 — ou/bts/ah-endpoints geven 404, en de wedstrijdpagina bevat geen odds. Individuele bookmaker niet herleidbaar. 9 aug 2026: slugs bevestigd voor czech-republic/chance-liga, romania/superliga, croatia/hnl, hungary/nb-i en netherlands/eerste-divisie. Een verkeerde slug geeft HTTP 200 met 0 rijen en faalt dus stil - controleer altijd of de lijst niet leeg is. 10 aug 2026: slug denmark/superliga bevestigd (denmark/superligaen geeft 200 met 0 rijen). ACHTERUITGANG dezelfde dag: data-odd-max en data-bookmaker stonden niet meer in de Next-matches-rijen, alleen data-odd (gemiddelde) - beste prijs is hier dus niet meer uit te halen.",
       "coverage_verified": true,
       "covers": "all"
     },
@@ -164,7 +166,7 @@
       "role": "prob",
       "independent": true,
       "url_pattern": "https://xgscore.io/predictions/today",
-      "notes": "Bevestigd werkend op 8 aug 2026: HTTP 200, geen Cloudflare. Server-side gerenderde 1X2-kansen per wedstrijd (tijd, teams, kans%, referentie-odds) staan leesbaar in de HTML, regex-parsebaar zoals betexplorer.py. Geverifieerd tegen de echte fixtures van vandaag (Marítimo-Casa Pia, PSV-Fortuna, AZ-Den Haag). Kansen wijken af van zowel het eigen model als de markt (PSV: xgscore 81% vs eigen model 73.5% vs implied ~84%), past bij een zelfstandig xG-model. Tijden lijken UTC (18:00 op de site = 20:00 CEST, bevestigd tegen Fotmob) - net als elke bron, aftraptijd tegen een tweede bron controleren. scripts/xgscore.py haalt en parseert dit (self-test bevestigd op 8 aug 2026). Let op: de dagpagina toont een door de site gekozen selectie competities, niet alle wedstrijden wereldwijd — op 8 aug 2026 bijv. wel Eredivisie en Primeira Liga, geen Ekstraklasa/Belgian Pro League/Scottish Premiership terwijl die dezelfde dag wél speelden. Geen match hier is dus geen bewijs van BUITEN DATADEKKING, alleen dat xGscore hem niet toont.",
+      "notes": "Bevestigd werkend op 8 aug 2026: HTTP 200, geen Cloudflare. Server-side gerenderde 1X2-kansen per wedstrijd (tijd, teams, kans%, referentie-odds) staan leesbaar in de HTML, regex-parsebaar zoals betexplorer.py. Geverifieerd tegen de echte fixtures van vandaag (Marítimo-Casa Pia, PSV-Fortuna, AZ-Den Haag). Kansen wijken af van zowel het eigen model als de markt (PSV: xgscore 81% vs eigen model 73.5% vs implied ~84%), past bij een zelfstandig xG-model. Tijden lijken UTC (18:00 op de site = 20:00 CEST, bevestigd tegen Fotmob) - net als elke bron, aftraptijd tegen een tweede bron controleren. scripts/xgscore.py haalt en parseert dit (self-test bevestigd op 8 aug 2026). Let op: de dagpagina toont een door de site gekozen selectie competities, niet alle wedstrijden wereldwijd — op 8 aug 2026 bijv. wel Eredivisie en Primeira Liga, geen Ekstraklasa/Belgian Pro League/Scottish Premiership terwijl die dezelfde dag wél speelden. Geen match hier is dus geen bewijs van BUITEN DATADEKKING, alleen dat xGscore hem niet toont. 10 aug 2026: dagoverzicht was met 6 voorspellingen uit 4 competities veel smaller dan de 28 van 9 aug - de breedte wisselt sterk per dag. De zelftest in scripts/xgscore.py verwacht een vaste Eredivisie-wedstrijd en faalt daardoor op dagen zonder Eredivisie; dat is een te strakke test, geen bronstoring.",
       "coverage_verified": true,
       "covers": "claimed_all"
     },
@@ -242,7 +244,8 @@
         "fbref",
         "footystats",
         "forebet"
-      ]
+      ],
+      "notes": "Fotmob-xG bevestigd 10 aug 2026 (league_id 61) voor 2025/2026; 2026/2027 heeft wel has_xg=true maar staat pas op speelronde 1, dus reken met vorig seizoen."
     },
     "Belgian Pro League (BEL)": {
       "prob_sources": [
@@ -271,10 +274,11 @@
     "Danish Superliga (DEN)": {
       "prob_sources": [
         "fotmob",
-        "fbref",
-        "footystats",
-        "forebet"
-      ]
+        "api_football",
+        "xgscore",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG bevestigd 10 aug 2026 (primaryId 46) voor 2025/2026 en 2026/2027. Geen split-vertekening: alle twaalf clubs staan op mp=32 tegen played=22. Odds via The Odds API (soccer_denmark_superliga) en BetExplorer slug 'denmark/superliga'."
     },
     "Ekstraklasa (POL)": {
       "prob_sources": [
@@ -318,7 +322,7 @@
         "fbref",
         "forebet"
       ],
-      "notes": "Ronde 1-2 zijn lage-divisieties. Sinds 8 aug 2026 heeft Fotmob wel xG voor League One en League Two, dus dit is geen dekkingsprobleem meer — met 29 ties per speeldag vallen ze vooral buiten MAX_DEEP_ANALYSES."
+      "notes": "Ronde 1-2 zijn lage-divisieties. Sinds 8 aug 2026 heeft Fotmob wel xG voor League One en League Two, dus dit is geen dekkingsprobleem meer — met 29 ties per speeldag vallen ze vooral buiten MAX_DEEP_ANALYSES. 10 aug 2026: The Odds API heeft sportkey soccer_england_efl_cup, dus ook de prijzen zijn gedekt. Fotmob-xG voor League One (108) en League Two (109) bestaat alleen voor 2025/2026, niet voor het lopende seizoen."
     },
     "Coppa Italia (ITA)": {
       "prob_sources": [
