@@ -89,9 +89,10 @@ Er zijn **twee** maatregelen, en ze hebben elkaar nodig:
    `SCHEDULER-RUN-*.txt` geven daar expliciet toestemming voor; zonder die toestemming weigert een
    sessie naar een andere branch te pushen dan de toegewezen.
 
-Zet `main` ook als **default branch** in de GitHub-instellingen (Settings → Branches), zodat een
-nieuwe container hem binnenhaalt. Daarna hoef je de branchnaam nooit meer ergens bij te werken —
-dat was precies de stap die drie keer is vergeten.
+Sinds 10 aug 2026 is `main` ook de **default branch** op GitHub, hernoemd vanaf
+`claude/zealous-keller-ja4wwn`, zodat een nieuwe container hem binnenhaalt. De oude
+`claude/*`-branches zijn alleen nog historie. Hiermee hoeft de branchnaam nergens meer bijgewerkt
+te worden — dat was precies de stap die drie keer is vergeten.
 
 ## Het logboek gebruiken
 

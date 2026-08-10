@@ -39,7 +39,18 @@ Wijzigingen t.o.v. vorige run: [bron X hersteld / bron Y omgevallen / geen]
 |---|---|---|---|---|---|
 | 1 | … | …% | +… pp | Low/Medium/High | … |
 
-**Net niet:** [eerstvolgende bet + waarom die afvalt]
+### Net niet
+
+Elke afgewezen kandidaat met een echte edge, met het cijfer per poort. Ook invullen bij nul bets —
+zie `_shared-rules.md` §5. Dezelfde cijfers gaan als `near_miss` in `data/run-state/`, waar
+`scripts/report.py` de tabel op de HTML-pagina uit opbouwt.
+
+| Wedstrijd | Markt @ koers | xG-model | 2e methode | Zwakste stand | Valt af op |
+|---|---|---|---|---|---|
+| … | … | +x.x pp | +x.x pp | +x.x pp | edge / robuustheid / tweede methode / odds / data |
+
+Waren er geen kandidaten die in de buurt kwamen, schrijf dat dan met zoveel woorden — dat is een
+ander soort dag dan een dag waarop er drie op een haar afvielen.
 
 ## Afwikkeling vorige picks
 

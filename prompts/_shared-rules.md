@@ -330,6 +330,39 @@ deze wél en de eerstvolgende net niet. Maximaal `MAX_LIGHT_IN_SHORTLIST` bets m
 
 Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
 
+### "Net niet" — verplicht, ook (juist) bij nul bets
+
+Elke afgewezen kandidaat die een echte edge liet zien, krijgt een regel met **het cijfer per poort**.
+Niet alleen de poort die hem afwees: alle drie de getallen, zodat zichtbaar is of het één poort was
+of een breed tekort.
+
+| Kolom | Wat erin staat |
+|---|---|
+| xG-model | `edge_pp` uit `analyze_match`, mét de vroeg-seizoenscorrectie |
+| 2e methode | `edge_pp` uit `analyze_match_from_splits` |
+| zwakste stand | `min_edge` uit `robustness_check` — het laagste punt van het (shrink, rho)-grid |
+| valt af op | `edge` / `robuustheid` / `tweede_methode` / `odds` / `data` |
+
+Leg die cijfers vast in `data/run-state/` onder de wedstrijd, als `near_miss`:
+
+```json
+{"match": "Silkeborg – OB Odense", "tier": "FULL", "bet": false,
+ "near_miss": {"market": "1X2 — OB Odense wint", "odds": 2.58,
+               "edge_xg": 7.29, "edge_split": 0.54, "edge_robust_min": 5.65,
+               "failed_gate": "tweede_methode"}}
+```
+
+`scripts/report.py` rendert daar de sectie "Net niet" van het dagrapport uit. **Typ die tabel niet
+over in het prosebestand** — dan lopen de twee rapporten van dezelfde run uiteen, en dat is precies
+de fout die `report.py` moest wegnemen.
+
+Waarom dit moet (verzoek van de gebruiker, 10 aug 2026): een run met nul bets leest anders als "er
+was niets", terwijl het verschil tussen *geen enkele kandidaat* en *drie kandidaten die op een haar
+afvielen* precies is wat je over meerdere dagen wilt kunnen zien. Het is ook de enige manier om te
+merken dat één poort structureel alles wegvangt: valt er een week lang alles af op `tweede_methode`,
+dan is de vraag of de twee methodes systematisch uiteenlopen — en dat is een bevinding, geen ruis.
+Neem dezelfde tabel op in het markdown-runrapport onder de topselectie.
+
 ### Aftraptijden
 
 Rapporteer in **NL-tijd**. Let op de tijdzone van de bron: Britse sites (Sporting Life, Oddschecker,

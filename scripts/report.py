@@ -169,14 +169,35 @@ def render_bets(picks: list[dict], prose: dict, labels: dict) -> str:
     return "\n".join(blocks)
 
 
+def normalise_competitions(state: dict) -> dict:
+    """Maak van elke competitiewaarde een dict, ook als een run er een platte string van maakte.
+
+    `progress.mark()` documenteert {"status": ..., "matches": [...]}, maar Run B van 10 aug 2026
+    schreef "GEANALYSEERD (FULL, 2 van 2; 0 bets - ...)" als kale string. Dit script klapte daar
+    op stuk, en een rapportgenerator die omvalt op de invoer van een andere run is zelf het
+    probleem: de status staat vooraan, de rest is toelichting, dus dat is prima te lezen.
+    """
+    out = {}
+    for name, value in state.get("competitions", {}).items():
+        if isinstance(value, dict):
+            out[name] = value
+            continue
+        text = str(value)
+        status = next((s for s in ("GEANALYSEERD", "BUITEN DATADEKKING", "AFGEKAPT",
+                                    "GEEN WEDSTRIJD") if text.startswith(s)), text)
+        note = text[len(status):].strip(" ()") or None
+        out[name] = {"status": status, "matches": [], **({"note": note} if note else {})}
+    return out
+
+
 def render_coverage(state: dict, notes: dict, labels: dict) -> str:
     order = {"GEANALYSEERD": 0, "BUITEN DATADEKKING": 1, "AFGEKAPT": 2, "GEEN WEDSTRIJD": 3}
-    rows = sorted(state.get("competitions", {}).items(),
+    rows = sorted(normalise_competitions(state).items(),
                   key=lambda kv: (order.get(kv[1].get("status"), 9), kv[0]))
     out = []
     for name, result in rows:
         css, label = STATUS_CHIP.get(result.get("status"), ("none", result.get("status", "?")))
-        note = notes.get(name)
+        note = notes.get(name) or result.get("note")
         if note is None:
             count = len(result.get("matches", []))
             note = (f"{count} wedstrijd{'en' if count != 1 else ''} bekeken" if count
@@ -185,6 +206,75 @@ def render_coverage(state: dict, notes: dict, labels: dict) -> str:
                    f'<td><span class="chip {css}">{esc(label)}</span></td>'
                    f'<td class="note">{note}</td></tr>')
     return "\n        ".join(out)
+
+
+GATE_LABEL = {
+    "edge": "voordeel te klein",
+    "robuustheid": "verdwijnt bij andere rekeninstellingen",
+    "tweede_methode": "tweede rekenmethode is het oneens",
+    "odds": "koers buiten de toegestane band",
+    "data": "te weinig onafhankelijke cijfers",
+}
+
+
+def render_near_misses(state: dict, labels: dict) -> str:
+    """De afgewezen kandidaten, met per poort het cijfer waarop ze sneuvelden.
+
+    Toegevoegd 10 aug 2026 op verzoek van de gebruiker. Zonder dit leest een run met nul bets als
+    "er was niets", terwijl het verschil tussen "geen enkele wedstrijd kwam in de buurt" en "drie
+    kandidaten vielen op een haar af" precies is wat je over meerdere dagen wilt kunnen zien —
+    onder meer om te merken of één poort structureel alles wegvangt.
+
+    De cijfers komen uit `data/run-state/`, niet uit het prosebestand: overtypen is precies hoe
+    twee rapporten van dezelfde run uiteen gaan lopen.
+    """
+    rows = []
+    for comp, result in sorted(normalise_competitions(state).items()):
+        for match in result.get("matches", []):
+            nm = match.get("near_miss")
+            if not nm:
+                continue
+            gate = GATE_LABEL.get(nm.get("failed_gate"), nm.get("failed_gate", "—"))
+            cells = []
+            for key, head in (("edge_xg", "xG-model"), ("edge_split", "2e methode"),
+                              ("edge_robust_min", "zwakste stand")):
+                v = nm.get(key)
+                cls = "num" + (" below" if isinstance(v, (int, float)) and v < 3.0 else "")
+                cells.append(f'<td class="{cls}">{signed(v) + " pp" if isinstance(v, (int, float)) else "—"}</td>')
+            odds = nm.get("odds")
+            price = (f'<br><span class="note">koers {odds:.2f}</span>'
+                     if isinstance(odds, (int, float)) else "")
+            rows.append(
+                f'<tr><td class="comp">{esc(match.get("match", "?"))}<br>'
+                f'<span class="note">{esc(short_competition(comp, labels))}</span></td>'
+                f'<td>{esc(nm.get("market", "—"))}{price}</td>'
+                + "".join(cells)
+                + f'<td><span class="chip gap">{esc(gate)}</span></td></tr>')
+    if not rows:
+        return ""
+    return f'''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. Een getal onder de <strong>3,0 procentpunt</strong> is de reden dat de
+  bet er niet is: dat is de grens waaronder het voordeel niet van rekenruis te onderscheiden is.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Markt</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        {chr(10).join(rows)}
+      </tbody>
+    </table>
+  </div>
+</section>'''
 
 
 def render_finding(finding: dict) -> str:
@@ -302,7 +392,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
            state: dict, prose: dict) -> str:
     labels = prose.get("coverage_labels", {})
     stats = ledger_summary(all_picks)
-    comps = state.get("competitions", {})
+    comps = normalise_competitions(state)
     active = sum(1 for r in comps.values() if r.get("status") != "GEEN WEDSTRIJD")
     matches = sum(len(r.get("matches", [])) for r in comps.values())
     record = f'{stats["won"]}/{stats["settled"]}' if stats["settled"] else "–"
@@ -352,6 +442,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
   {render_bets(picks, prose.get("bets", {}), labels)}
   {f'<div class="callout" style="margin-top:24px"><p class="prose">{prose["next_best"]}</p></div>' if prose.get("next_best") else ""}
 </section>
+{render_near_misses(state, labels)}
 {render_todo(prose.get("todo", []))}
 {render_finding(prose.get("finding"))}
 <section>
@@ -485,6 +576,8 @@ header{padding:44px 0 0}
 .chip.ok{background:var(--pos-wash); color:var(--pos)}
 .chip.none{background:var(--hold-wash); color:var(--hold)}
 .chip.gap{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
 
 .tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
 table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
