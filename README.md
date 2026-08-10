@@ -58,18 +58,30 @@ repo, niet in de scheduler.**
 Vervang de lange prompt van je Run A-taak door de tekst onder de streep in
 `prompts/SCHEDULER-RUN-A.txt`. Doe hetzelfde voor Run B met `prompts/SCHEDULER-RUN-B.txt`.
 
-Beide wijzen naar dezelfde branch (`claude/serene-babbage-9osl2u`) en dezelfde `picks.jsonl` —
-dat is bewust, `run: "A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op
-hetzelfde tijdstip: gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
+Beide wijzen naar dezelfde branch (**`main`**) en dezelfde `picks.jsonl` — dat is bewust, `run:
+"A"`/`"B"` in het schema houdt ze uit elkaar. Plan de twee taken niet op hetzelfde tijdstip:
+gelijktijdige commits + push vanaf twee sessies kunnen tegen elkaar in botsen.
 
-**De branchnaam staat op twee plekken** — in `prompts/SCHEDULER-RUN-*.txt` én in de geplande taak
-zelf. Werk je er één bij, werk dan ook de ander bij. Loopt dat uiteen, dan draait de run op een
-branch die achterloopt op de repo, en dat merk je niet vanzelf: de run slaagt gewoon, alleen met
-oude regels en oude scripts. Op 9 aug 2026 gebeurde dat — de scheduler wees nog naar
-`claude/zealous-keller-ja4wwn` terwijl `scripts/model.py`, `scripts/xgscore.py`,
-`scripts/progress.py` en `MAX_DEEP_ANALYSES = 30` al zeven commits verder stonden op
-`claude/serene-babbage-9osl2u`. Beide scheduler-teksten dragen de run nu op om bij twijfel de
-branch met de nieuwste commits te nemen en die afwijking bovenaan het runrapport te melden.
+### De branch: waarom `main` en niet een sessienaam
+
+Claude Code op het web geeft **elke sessie een eigen, willekeurige branchnaam** (`claude/<twee
+woorden>-<code>`). Die naam wordt door de omgeving opgelegd; een naam in de scheduler-prompt kan
+dat niet overrulen. Drie keer op rij is het daardoor misgegaan:
+
+| Datum | Wat er gebeurde |
+|---|---|
+| 9 aug 2026 | Scheduler wees nog naar `zealous-keller` terwijl `model.py`, `xgscore.py`, `progress.py` en `MAX_DEEP_ANALYSES = 30` zeven commits verder stonden op `serene-babbage`. |
+| 9 aug 2026 | Run A en Run B liepen uiteen; één sessie moest twee branches met de hand samenvoegen en trok daarbij een al gepubliceerde bet in. |
+| 10 aug 2026 | Run A landde op `peaceful-brown`, Run B op `stoic-mayer`. Beide ledgers waren onvolledig: Run B rapporteerde 5 picks waar er 8 waren. |
+
+Dat merk je niet vanzelf, want de run *slaagt* gewoon — alleen met oude regels, oude scripts en een
+halve ledger. Daarom staat er nu één vaste naam, `main`, die nooit meer verandert, plus een harde
+stap in `_shared-rules.md §6`: **elke run begint met `git fetch origin main` en merget die, en
+eindigt met een push daarheen.** Die stap is de eigenlijke beveiliging — hij werkt ook als de
+omgeving de sessie ergens anders neerzet, wat ze standaard doet.
+
+Zet `main` ook als **default branch** in de GitHub-instellingen (Settings → Branches), zodat een
+nieuwe container hem binnenhaalt.
 
 ## Het logboek gebruiken
 
@@ -134,13 +146,20 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 
 | Variabele | Dienst | Levert | Nodig? |
 |---|---|---|---|
-| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Ja — dit is wat de routine deblokkeert** |
-| `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Optioneel, verbetering |
+| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Nee — op het gratis plan waardeloos, zie de waarschuwing hieronder** |
+| `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Ja, dit is de enige bron met een herleidbare bookmaker |
 
-Waarom die volgorde: odds werken al via Oddschecker. Wat ontbreekt is een **onafhankelijke
-kansinput**, want zonder die zou `my_prob` uit de bookmakerprijs komen — precies wat
-`_shared-rules.md §2` verbiedt. `API_FOOTBALL_KEY` vult dat gat; `ODDS_API_KEY` maakt alleen de
-prijskant netter.
+> **Het gratis plan van api-football.com is niet bruikbaar voor deze routine.** Gemeten op 10 aug
+> 2026: de sleutel is geldig en `api_check.py` meldt "OK", maar elk verzoek om een seizoen ná 2024
+> antwoordt met `results = 0` en `errors: {"plan": "Free plans do not have access to this season,
+> try from 2022 to 2024."}`. Nagetrokken op Liga I (283/2026), Eerste Divisie (89/2025) en
+> Allsvenskan (113/2026) — alle drie leeg. Een routine die de wedstrijden van *vandaag* analyseert
+> heeft daar niets aan, ook niet als tier-2-bron. Zie `runs/2026-08-10-run-b.md`.
+>
+> De onafhankelijke kansinput komt daarom van **Fotmob** (team-xG, geen sleutel nodig) en
+> **xGscore** (gepubliceerde modelkansen, geen sleutel nodig). Wie deze bron wél wil, heeft een
+> betaald plan nodig; laat het gratis plan anders gewoon staan, `source-health.json` markeert hem
+> als `plan_limited` en de datadekkingspoort slaat hem dan over.
 
 ### Stappen
 
@@ -191,11 +210,13 @@ draait. Zie de toelichting bij Stage 4 in `_shared-rules.md` voor waarom dit `MA
 van 12 naar 30 heeft gebracht: niet het aantal wedstrijden was de bottleneck, maar het aantal
 competities waarvoor nog geen team-xG was opgehaald.
 
-**3. xG-dekking van API-Football per competitie natrekken.** De sleutel werkt sinds 8 aug 2026
-(was eerder afgewezen, opgelost door de gebruiker), maar xG blijkt per competitie en seizoen
-wisselend aanwezig. Zolang dat niet nagetrokken is, geldt API-Football als tier-2-bron (`LIGHT`),
-niet als xG-bron (`FULL`). Dit weegt inmiddels minder zwaar: Fotmob levert al bevestigde xG voor
-de meeste Run A-competities en drie Run B-competities zonder sleutel nodig te hebben.
+**3. ~~xG-dekking van API-Football per competitie natrekken~~ — nagetrokken (10 aug 2026), en het
+antwoord is een ander dan verwacht.** Het probleem is niet dat xG per competitie wisselt, maar dat
+het **gratis plan geen enkel seizoen na 2024 teruggeeft** — zie de waarschuwing bij "Sleutels
+toevoegen" en `runs/2026-08-10-run-b.md`. De bron staat nu op `plan_limited` in
+`source-health.json` en telt niet mee in de datadekkingspoort. Wil je hem alsnog gebruiken, dan is
+een betaald plan de enige weg; anders verandert er niets, want Fotmob en xGscore dragen de
+kanskant al zonder sleutel.
 
 **4. ~~Fotmob proberen~~ — gedaan (8 aug 2026).** Werkt, zonder sleutel. Bevestigde xG-dekking:
 Eredivisie, Primeira Liga, Belgian Pro League, Ekstraklasa, Scottish Premiership, Championship,

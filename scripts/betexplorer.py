@@ -89,6 +89,14 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "League Cup (ENG)": "https://www.betexplorer.com/football/england/efl-cup/",
     # 10 aug 2026: 'denmark/superliga' werkt, 'denmark/superligaen' geeft HTTP 200 met 0 rijen.
     "Danish Superliga (DEN)": "https://www.betexplorer.com/football/denmark/superliga/",
+    # Bevestigd tijdens Run B van 9 aug 2026:
+    "Czech First League (CZE)": "https://www.betexplorer.com/football/czech-republic/chance-liga/",
+    "Romanian SuperLiga (ROU)": "https://www.betexplorer.com/football/romania/superliga/",
+    "Croatian HNL (CRO)": "https://www.betexplorer.com/football/croatia/hnl/",
+    "Hungarian NB I (HUN)": "https://www.betexplorer.com/football/hungary/nb-i/",
+    "Keuken Kampioen Divisie (NED)": "https://www.betexplorer.com/football/netherlands/eerste-divisie/",
+    # Bevestigd tijdens Run B van 10 aug 2026:
+    "Allsvenskan (SWE)": "https://www.betexplorer.com/football/sweden/allsvenskan/",
 }
 
 

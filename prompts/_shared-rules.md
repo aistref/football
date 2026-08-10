@@ -306,6 +306,41 @@ bookmaker: noteer de aggregator als bron en zeg dat de bookmaker niet herleidbaa
 
 ## 6. Vastleggen in de repo
 
+### 6a. De branch — doe dit vóór Stage 0, niet aan het eind
+
+**De canonieke branch is `main`.** Niet de branch die de omgeving je deze sessie heeft toegewezen,
+en niet de naam die eventueel in de scheduler-prompt staat.
+
+Claude Code op het web geeft elke sessie een eigen willekeurige branchnaam. Dat is geen instelling
+die je kunt uitzetten, dus je *landt* elke run ergens anders. Zonder tegenmaatregel schrijven Run A
+en Run B daardoor naar aparte branches die uit elkaar groeien — gemeten op 10 aug 2026: twee
+ledgers, allebei onvolledig, en Run B rapporteerde 5 picks waar er 8 waren.
+
+Begin daarom elke run hiermee:
+
+```bash
+git fetch origin main
+git merge origin/main          # of: git checkout -B werk origin/main als je nog nergens zit
+```
+
+en eindig met:
+
+```bash
+git push origin HEAD:main
+```
+
+Twee dingen om te weten:
+
+- **Toestemming.** Een sessie weigert standaard naar een andere branch te pushen dan de toegewezen.
+  Beide scheduler-teksten geven daarom expliciet toestemming om naar `main` te pushen. Ontbreekt die
+  toestemming in de prompt waarmee je draait, push dan naar je eigen branch, en **meld bovenaan het
+  runrapport dat de run niet op `main` staat** — dan weet de volgende run dat hij moet samenvoegen.
+- **Botsing.** Wordt de push geweigerd omdat `main` intussen is opgeschoven (de andere run was je
+  voor), dan fetch je opnieuw, merge je, en push je nog een keer. Forceer nooit: aan de andere kant
+  hangt een echte run met echte picks.
+
+### 6b. Wat je vastlegt
+
 Elke run, ook een run met nul bets:
 
 1. **Runrapport** → `runs/YYYY-MM-DD-run-<a|b>.md` (zie `runs/TEMPLATE.md`).
@@ -313,8 +348,8 @@ Elke run, ook een run met nul bets:
    (schema: `schema/pick.schema.json`; valideer met `scripts/ledger.py validate`).
 3. **Bronstatus** → werk `data/source-health.json` bij met wat je deze run gemeten hebt.
 4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
-5. **Commit en push** naar de werkbranch. Zonder push is de run verdwenen zodra de container
-   wordt opgeruimd.
+5. **Commit en push** naar `main` (zie 6a: `git push origin HEAD:main`). Zonder push is de run
+   verdwenen zodra de container wordt opgeruimd.
 6. **Voortgangsbestand afsluiten** — `scripts/progress.py`: `mark_completed(state)` + `save(state)`,
    en nog een keer committen/pushen (zie Stage -1). Zonder deze stap denkt een latere aanroep
    diezelfde dag dat de run nog loopt.
@@ -322,7 +357,7 @@ Elke run, ook een run met nul bets:
 Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
 runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
 
-### 6b. Het leesbare dagrapport — verplicht, elke run
+### 6c. Het leesbare dagrapport — verplicht, elke run
 
 Het markdown-runrapport hierboven is voor de repo: methode, metingen, bronstatus. De gebruiker
 leest dat niet, en had daar gelijk in — het opent met bronstatus, gebruikt `edge_pp`, "de-viggen"
