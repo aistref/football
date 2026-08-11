@@ -242,4 +242,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except BrokenPipeError:
+        # `shadow.py stats | head` sluit de pijp; dat is geen fout van dit script.
+        # stdout expliciet dichtzetten voorkomt dat Python er alsnog over klaagt bij afsluiten.
+        try:
+            sys.stdout.close()
+        finally:
+            raise SystemExit(0)
