@@ -29,20 +29,53 @@ Per geanalyseerde wedstrijd geldt precies één van twee uitkomsten:
 - **BET** — er is één markt/selectie die alle poorten hieronder passeert.
 - **GEEN BET** — met een reden in één regel. Dit is een volwaardige, correcte uitkomst.
 
+**Draai altijd beide methodes** en middel ze tot één schatting:
+
+```python
+p_xg    = analyze_match(...)              # op xG, genormaliseerd op de competitie
+p_split = analyze_match_from_splits(...)  # op wat de ploegen thuis en uit werkelijk scoorden
+my_prob = (p_xg + p_split) / 2            # dit is de kans die in de pick komt
+edge_pp = (my_prob - 1 / odds) * 100
+```
+
 Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
 
-1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`;
+1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`
+   — gemeten op de **gemiddelde** `my_prob` hierboven, niet op één van de twee afzonderlijk;
 2. `MIN_ODDS ≤ odds ≤ MAX_ODDS`;
 3. de anti-circulariteitsregel (§2) is voldaan;
 4. `data_tier ≠ NONE`;
-5. **twee methodes bevestigen de edge.** `model.analyze_match` (op xG) én
-   `model.analyze_match_from_splits` (op wat de ploegen thuis en uit werkelijk scoorden) moeten
-   allebei boven de drempel uitkomen. Zakt de tweede eronder, dan hangt de edge aan één
-   modelkeuze en gaat de bet eruit met reden "data conflicterend".
+5. **de twee methodes spreken elkaar niet tegen.** Beide moeten de markt dezelfde kant op
+   verslaan: `p_xg > 1/odds` **én** `p_split > 1/odds`. Zakt één van de twee onder de
+   marktkans, dan wijzen ze tegengesteld en gaat de bet eruit met reden "data conflicterend";
+6. **de edge draait niet om bij een andere parameterkeuze:**
+   `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid.
 
-Toegevoegd op 9 aug 2026, met een concreet geval: Gil Vicente – Rio Ave stond op het xG-model op
-+10.3 pp — de op één na grootste edge van die dag — en op de tweede methode op +2.7 pp. De twee
-bets die wél werden gepubliceerd, werden door beide bevestigd.
+### Waarom poort 5 en 6 zo staan (herzien 11 aug 2026)
+
+Van 9 t/m 11 aug luidde poort 5 "**beide** methodes moeten boven de drempel uitkomen" en poort 6
+"`min_edge ≥ drempel`". Dat is drie keer dezelfde volle drempel op drie ruizige statistieken, en
+dat bleek in de praktijk een filter dat vrijwel alles wegvangt: **acht kandidaten met een echte
+edge, nul bets** over vier runs (10–11 aug, beide runs).
+
+De constructie was ook statistisch te streng. `min(A, B) ≥ drempel` eisen van twee schatters van
+dezelfde grootheid ligt veel hoger dan `gemiddelde(A, B) ≥ drempel`: het middelen van twee
+schattingen verkleint juist de ruis, terwijl de min-regel de ruis maximaal laat meetellen. Wat je
+wilt uitsluiten is niet "de tweede methode is wat lager", maar "de twee methodes wijzen
+tegengesteld" — en dát is precies wat poort 5 nu toetst.
+
+Op de acht kandidaten tot nu toe geeft de herziene regel 5 bets in plaats van 0, en houdt hij de
+twee gevallen tegen waar de methodes werkelijk tegenover elkaar stonden (Sirius – Brommapojkarna
++3.4 / **−8.4** en Västerås – Djurgården +4.6 / **−4.3**). De aanleiding voor de oude poort,
+Gil Vicente – Rio Ave op 9 aug (+10.3 / +2.7), zou onder de nieuwe regel wél doorgaan — met
+`my_prob` op het gemiddelde, dus met een navenant lagere geclaimde edge.
+
+**Dit is een verruiming zonder bewijs, en daarom loopt er vanaf nu een schaduwlogboek mee.** Er is
+namelijk nooit gemeten of de oude poort iets opleverde: alle acht picks in `picks.jsonl` dateren
+van vóór 9 aug, dus er is geen enkele afgerekende bet onder het oude regime. Zolang dat zo blijft
+is "strenger is beter" een aanname, geen bevinding. §6d legt vast hoe elke afgewezen kandidaat
+alsnog wordt afgerekend, zodat over enkele weken met cijfers te zeggen is of deze poorten geld
+besparen of alleen bets.
 
 **Een run met nul bets is geen mislukte run.** Nul bets rapporteren met een heldere reden is
 correct gedrag; bets forceren om het format te vullen is dat niet.
@@ -419,11 +452,42 @@ Elke run, ook een run met nul bets:
    (schema: `schema/pick.schema.json`; valideer met `scripts/ledger.py validate`).
 3. **Bronstatus** → werk `data/source-health.json` bij met wat je deze run gemeten hebt.
 4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
-5. **Commit en push** naar `main` (zie 6a: `git push origin HEAD:main`). Zonder push is de run
+5. **Schaduwlogboek** → `python3 scripts/shadow.py collect --date <datum> --run <a|b>`, en de
+   schaduwpicks van vorige runs afwikkelen (zie 6d).
+6. **Commit en push** naar `main` (zie 6a: `git push origin HEAD:main`). Zonder push is de run
    verdwenen zodra de container wordt opgeruimd.
-6. **Voortgangsbestand afsluiten** — `scripts/progress.py`: `mark_completed(state)` + `save(state)`,
+7. **Voortgangsbestand afsluiten** — `scripts/progress.py`: `mark_completed(state)` + `save(state)`,
    en nog een keer committen/pushen (zie Stage -1). Zonder deze stap denkt een latere aanroep
    diezelfde dag dat de run nog loopt.
+
+### 6d. Het schaduwlogboek — wat de poorten hebben tegengehouden
+
+`picks.jsonl` bevat alleen wat er wél doorheen kwam. Daaruit is per definitie niet af te lezen of
+een poort je geld bespaart of alleen bets: de afgewezen kandidaten verdwenen tot 11 aug 2026
+spoorloos. `data/shadow.jsonl` sluit dat gat — elke `near_miss` uit `data/run-state/` wordt daar
+een schaduwpick en wordt daarna net zo afgerekend als een echte.
+
+Twee handelingen per run, allebei verplicht:
+
+```bash
+# 1. de kandidaten van vandaag erin (leest data/run-state/, doet niets bij nul kandidaten)
+python3 scripts/shadow.py collect --date YYYY-MM-DD --run <a|b>
+
+# 2. de schaduwpicks van eerdere runs afwikkelen, net als Stage 0 voor echte picks
+python3 scripts/shadow.py open
+python3 scripts/shadow.py settle <id> won|lost|void --score 2-1
+```
+
+Neem `python3 scripts/shadow.py stats` op in het runrapport, náást `ledger.py stats`. De
+uitsplitsing per `failed_gate` is het punt: staat één poort structureel op een positieve ROI, dan
+houdt die poort winnende bets tegen en hoort hij ruimer; is de ROI structureel negatief, dan doet
+hij zijn werk en blijft hij zoals hij is.
+
+**Lees dit niet te vroeg.** Bij minder dan ~30 afgewikkelde schaduwpicks per poort is elk verschil
+ruis — de eerste meting op 11 aug 2026 stond op 5 afgewikkelde kandidaten en zei dus niets. Kijk
+naar de richting over weken, niet naar het getal van vandaag, en pas geen enkele drempel aan op
+basis van één dag. Dat laatste zou dezelfde fout zijn als waarmee de oude poort 5 werd ingevoerd:
+één anekdote tot regel verheffen.
 
 Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
 runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
