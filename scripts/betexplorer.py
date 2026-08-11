@@ -97,6 +97,10 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "Keuken Kampioen Divisie (NED)": "https://www.betexplorer.com/football/netherlands/eerste-divisie/",
     # Bevestigd tijdens Run B van 10 aug 2026:
     "Allsvenskan (SWE)": "https://www.betexplorer.com/football/sweden/allsvenskan/",
+    # Bevestigd op 11 aug 2026: The Odds API heeft GEEN sportkey voor de UEFA Super Cup, dus dit
+    # is voor dat duel de enige oddsbron. 'europe/super-cup' en 'world/uefa-super-cup' geven de
+    # stille faalmodus (HTTP 200, 0 rijen); alleen deze slug werkt.
+    "UEFA Super Cup": "https://www.betexplorer.com/football/europe/uefa-super-cup/",
 }
 
 
