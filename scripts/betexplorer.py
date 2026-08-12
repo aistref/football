@@ -101,6 +101,13 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # is voor dat duel de enige oddsbron. 'europe/super-cup' en 'world/uefa-super-cup' geven de
     # stille faalmodus (HTTP 200, 0 rijen); alleen deze slug werkt.
     "UEFA Super Cup": "https://www.betexplorer.com/football/europe/uefa-super-cup/",
+    # Bevestigd op 12 aug 2026: dit is de enige oddsbron voor de Conference League-voorrondes —
+    # soccer_uefa_europa_conference_league staat bij The Odds API op active=false zolang het
+    # hoofdtoernooi niet loopt. De slug dekt ook de kwalificatierondes (5 rijen op 12 aug, met de
+    # drie Q3-returns van die dag erin). 'europe/uefa-conference-league',
+    # 'europe/europa-conference-league' en 'europe/conference-league-qualification' geven alle
+    # drie de stille faalmodus (HTTP 200, 0 rijen).
+    "UEFA Conference League": "https://www.betexplorer.com/football/europe/conference-league/",
 }
 
 
