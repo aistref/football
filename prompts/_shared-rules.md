@@ -478,6 +478,17 @@ python3 scripts/shadow.py open
 python3 scripts/shadow.py settle <id> won|lost|void --score 2-1
 ```
 
+**Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand na 90 minuten** (reguliere tijd
+plus blessuretijd), nooit op de eindstand na verlenging of strafschoppen. Bij bekerduels en
+Europese voorrondes zijn dat verschillende getallen, en `status.scoreStr` van Fotmob geeft de
+**eind**stand — dus inclusief verlenging. Zoek bij een knock-outduel de doelpuntminuten op en tel
+zelf tot 90'. Dit is geen theoretisch punt: op 12 aug 2026 wikkelde Run B Bodø/Glimt – Union
+St.Gilloise af op 3–2 en zette de gelijkspelpick op `lost`, terwijl het na 90 minuten 2–2 stond en
+die pick dus **gewonnen** was. Die ene regel verschoof de ROI van poort `tweede_methode` met 81
+procentpunt (−33.8% → +47.0% over zes gevallen) en keerde de conclusie eronder om. Bij de kleine
+aantallen waar 6d over gaat, weegt één verkeerd afgerekende regel zwaarder dan alles wat de poort
+werkelijk doet.
+
 Neem `python3 scripts/shadow.py stats` op in het runrapport, náást `ledger.py stats`. De
 uitsplitsing per `failed_gate` is het punt: staat één poort structureel op een positieve ROI, dan
 houdt die poort winnende bets tegen en hoort hij ruimer; is de ROI structureel negatief, dan doet
