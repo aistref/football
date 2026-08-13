@@ -11,7 +11,7 @@
     "Actuele bereikbaarheid staat NIET hier maar in source-health.json. Dit bestand beschrijft",
     "wat een bron in principe dekt; source-health.json wat er laatst werkte."
   ],
-  "updated": "2026-08-10",
+  "updated": "2026-08-13",
   "sources": {
     "sportinglife": {
       "role": "fixtures",
@@ -55,7 +55,7 @@
       "role": "prob",
       "independent": true,
       "url_pattern": "https://www.fotmob.com/api/data/{matches?date=YYYYMMDD | leagues?id={id}&season=YYYY%2FYYYY} en https://data.fotmob.com/stats/{leagueId}/season/{seasonId}/{expected_goals_team|expected_goals_conceded_team}.json",
-      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Zie league_id_valkuil, seizoensnotatie en split_ronde_waarschuwing hierboven. 9 aug 2026: vijf competities toegevoegd aan 'covers' na directe meting, en vijf vastgelegd in 'no_xg_confirmed'. 10 aug 2026, Run A: Danish Superliga toegevoegd na directe meting (primaryId 46, has_xg=true voor 2025/2026 en 2026/2027); ook gemeten dat has_xg FALSE is voor het lopende seizoen 2026/2027 van Championship (48), League One (108) en League Two (109) — daar is alleen 2025/2026 bruikbaar. 10 aug 2026, Run B: xG opnieuw bevestigd aanwezig voor Allsvenskan (67/'2026') en opnieuw bevestigd afwezig voor Romanian SuperLiga (189) en Eerste Divisie/KKD (111), in beide gevallen voor 2025/2026 en 2026/2027.",
+      "notes": "GETEST EN WERKEND (8 aug 2026). xG en xG-tegen per team per seizoen, plus stand met thuis/uit-splits en fixtures met utcTime. Antwoorden van data.fotmob.com zijn gzip. Zie league_id_valkuil, seizoensnotatie en split_ronde_waarschuwing hierboven. 9 aug 2026: vijf competities toegevoegd aan 'covers' na directe meting, en vijf vastgelegd in 'no_xg_confirmed'. 10 aug 2026, Run A: Danish Superliga toegevoegd na directe meting (primaryId 46, has_xg=true voor 2025/2026 en 2026/2027); ook gemeten dat has_xg FALSE is voor het lopende seizoen 2026/2027 van Championship (48), League One (108) en League Two (109) — daar is alleen 2025/2026 bruikbaar. 10 aug 2026, Run B: xG opnieuw bevestigd aanwezig voor Allsvenskan (67/'2026') en opnieuw bevestigd afwezig voor Romanian SuperLiga (189) en Eerste Divisie/KKD (111), in beide gevallen voor 2025/2026 en 2026/2027. 13 aug 2026, Run B: twee nog niet geteste competities uit de Run B-lijst gemeten. Kategoria Superiore (ALB) bestaat wel op Fotmob (league_id 260, tabel met 10 clubs) maar has_xg=false voor '2025/2026', '2026/2027' en '2026' - toegevoegd aan no_xg_confirmed. Segunda Division/LaLiga2 (ESP) heeft primaryId 140 met has_xg=true voor 2025/2026 en false voor het lopende 2026/2027 - hetzelfde patroon als League One/Two, dus reken met vorig seizoen. Voor de Kosovo Superleague is in de daglijsten van 13 t/m 31 aug geen enkele competitie met ccode KOS gevonden.",
       "coverage_verified": true,
       "covers": [
         "Eredivisie (NED)",
@@ -73,7 +73,8 @@
         "2. Bundesliga (GER)",
         "Swiss Super League (SUI)",
         "Austrian Bundesliga (AUT)",
-        "Danish Superliga (DEN)"
+        "Danish Superliga (DEN)",
+        "Segunda Division (ESP)"
       ],
       "no_xg_confirmed": [
         "Czech First League (CZE)",
@@ -83,9 +84,10 @@
         "Keuken Kampioen Divisie (NED)",
         "Eerste Divisie (NED)",
         "Liga Portugal 2 (POR)",
-        "Scottish Championship (SCO)"
+        "Scottish Championship (SCO)",
+        "Kategoria Superiore (ALB)"
       ],
-      "league_id_valkuil": "De 'id' uit /api/data/matches is bij sommige competities seizoensspecifiek en werkt NIET op /api/data/leagues. Gebruik 'primaryId' uit hetzelfde object. Bevestigd 9 aug 2026: CZE 938182->122, ROU 938428->189, SUI 937880->69, AUT 938366->38. Voor NOR 59, SWE 67, GER2 146, NED 111, CRO 252 en HUN 212 zijn id en primaryId gelijk.",
+      "league_id_valkuil": "De 'id' uit /api/data/matches is bij sommige competities seizoensspecifiek en werkt NIET op /api/data/leagues. Gebruik 'primaryId' uit hetzelfde object. Bevestigd 9 aug 2026: CZE 938182->122, ROU 938428->189, SUI 937880->69, AUT 938366->38. Voor NOR 59, SWE 67, GER2 146, NED 111, CRO 252 en HUN 212 zijn id en primaryId gelijk. Bevestigd 13 aug 2026: ESP LaLiga2 938653->140; voor ALB Kategoria Superiore zijn id en primaryId gelijk (260).",
       "seizoensnotatie": "Scandinavische competities lopen per kalenderjaar: gebruik season='2026', niet '2025/2026'. Voordeel: hun seizoen is halverwege, dus dit is lopende-seizoensdata in plaats van cijfers van vorig jaar.",
       "split_ronde_waarschuwing": "Bij competities met een kampioens-/degradatiesplitsing dekken de xG-set en de stand verschillende wedstrijdsets: 'mp' (uit de xG-respons) telt de split-rondes mee, 'played' (uit de tabel) niet. Gemeten 9 aug 2026: SUI mp=38 vs played=33, AUT mp=32 vs played=22, BEL wisselend per team. Teams uit de degradatiegroep worden daardoor systematisch overschat. Vergelijk beide lezingen voordat je op zo'n competitie bet. Denemarken is de tegenhanger: daar staat elk van de twaalf clubs op mp=32 tegen played=22, dus de xG-set is voor iedereen even breed en de vertekening bestaat niet. Controleer de spreiding van mp voordat je een competitie als vertekend afschrijft."
     },
@@ -427,6 +429,56 @@
         "footystats"
       ],
       "notes": "GEEN Fotmob-xG (opnieuw bevestigd 9 aug 2026, league_id 111). LIGHT op doelpunten. Geen The Odds API-sportkey."
+    },
+    "Segunda Division (ESP)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG bevestigd 13 aug 2026 via primaryId 140 (niet 938653): has_xg=true voor 2025/2026 (23 teams), has_xg=false voor het lopende 2026/2027. Reken dus met vorig seizoen, net als bij League One/Two. Odds via The Odds API (soccer_spain_segunda_division) en BetExplorer slug 'spain/laliga2'. FULL is hier haalbaar."
+    },
+    "Kategoria Superiore (ALB)": {
+      "prob_sources": [
+        "fotmob"
+      ],
+      "notes": "GEEN Fotmob-xG (gemeten 13 aug 2026, league_id 260; has_xg=false voor 2025/2026, 2026/2027 en '2026'). Wel een tabel met 10 clubs en thuis/uit-splits -> hooguit LIGHT, nooit FULL. Seizoen 2026/27 begint 22 aug. Geen The Odds API-sportkey en geen werkende BetExplorer-slug gevonden (albania/kategoria-superiore, /superiore en /abissnet-superiore geven alle drie 0 rijen), dus de oddskant is het knelpunt, niet de kansenkant."
+    },
+    "Kosovo Superleague (KOS)": {
+      "prob_sources": [],
+      "notes": "GEEN ENKELE BRON gevonden (stand 13 aug 2026). Niet in de Fotmob-daglijsten van 13 t/m 31 aug, geen werkende BetExplorer-slug (kosovo/superleague, /superliga en /albi-mall-superliga geven alle 0 rijen), geen The Odds API-sportkey. Deze competitie is met de huidige bronnen niet te analyseren; dat is een dekkingsgat, geen storing."
+    },
+    "Serie B (ITA)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG bevestigd (zie fotmob.covers). Seizoen 2026/27 begint 21 aug 2026 (gemeten 13 aug). Odds via The Odds API (soccer_italy_serie_b) en BetExplorer slug 'italy/serie-b'."
+    },
+    "Greek Super League (GRE)": {
+      "prob_sources": [
+        "fotmob",
+        "api_football",
+        "fbref"
+      ],
+      "notes": "Fotmob-xG aanwezig voor 2025/2026 (league_id 135), has_xg=false voor 2026/2027 zolang dat seizoen niet is begonnen. Seizoen 2026/27 start 22 aug 2026 (gemeten 13 aug). LET OP de split-rondes (Olympiacos mp=32 vs played=26). Odds via The Odds API (soccer_greece_super_league) en BetExplorer 'greece/super-league'."
+    },
+    "English League One (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats"
+      ],
+      "notes": "Fotmob-xG alleen voor 2025/2026 (league_id 108); has_xg=false voor het lopende 2026/2027. Odds via The Odds API (soccer_england_league1) en BetExplorer 'england/league-one'."
+    },
+    "English League Two (ENG)": {
+      "prob_sources": [
+        "fotmob",
+        "fbref",
+        "footystats"
+      ],
+      "notes": "Fotmob-xG alleen voor 2025/2026 (league_id 109); has_xg=false voor het lopende 2026/2027. Odds via The Odds API (soccer_england_league2) en BetExplorer 'england/league-two'."
     }
   }
 }
