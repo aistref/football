@@ -108,6 +108,12 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # 'europe/europa-conference-league' en 'europe/conference-league-qualification' geven alle
     # drie de stille faalmodus (HTTP 200, 0 rijen).
     "UEFA Conference League": "https://www.betexplorer.com/football/europe/conference-league/",
+    # Bevestigd op 14 aug 2026 (Run A), alle drie 5 rijen in "Next matches":
+    "Championship (ENG)": "https://www.betexplorer.com/football/england/championship/",
+    "Süper Lig (TUR)": "https://www.betexplorer.com/football/turkey/super-lig/",
+    # Dekt ook de kwalificatierondes — nodig zolang soccer_uefa_europa_league bij The Odds API
+    # op active=false staat (dat volgt het hoofdtoernooi, niet de voorronde).
+    "UEFA Europa League": "https://www.betexplorer.com/football/europe/europa-league/",
 }
 
 
