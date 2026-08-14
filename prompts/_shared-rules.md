@@ -111,14 +111,58 @@ wedstrijd** — vraag die dus pas op voor wedstrijden die al een kandidaat-edge 
 hele kalender. `best_by_line(event, markt)` geeft de beste prijs per (uitkomst, lijn); vergelijk
 nooit prijzen over verschillende lijnen heen, want een andere lijn is een andere bet.
 
-Twee dingen om bij het rangschikken in de gaten te houden. Een handicap of totaal met push is geen
-gewone kans — bij een push komt de inzet terug — dus `asian_prob` geeft de kans terug die bij díe
-koers dezelfde verwachtingswaarde oplevert, zodat `edge_pp` en alle zes poorten er ongewijzigd op
-werken. En dezelfde onderliggende inschatting levert vaak op vier of vijf markten tegelijk een
-edge op (gemeten op Viborg – AGF, 14 aug: 1X2 +17.6, AH +0.5 +15.5, DNB +15.2, Double Chance +12.2,
-Over 2.5 +5.1, BTTS ja +3.0). Dat zijn geen vijf bevindingen maar één, vijf keer uitgedrukt — de
-0-of-1-bet-regel hierboven blijft dus onverkort gelden, en "de sterkste" betekent één selectie per
-wedstrijd, niet één per markt.
+Een handicap of totaal met push is geen gewone kans — bij een push komt de inzet terug — dus
+`asian_prob` geeft de kans terug die bij díe koers dezelfde verwachtingswaarde oplevert, zodat
+`edge_pp` en alle zes poorten er ongewijzigd op werken. Gebruik voor markten met push dus altijd
+`asian_prob` / `dnb_prob` / `totals_prob` en nooit de kale winkans, anders staan de markten niet op
+dezelfde schaal en is de rangschikking hieronder betekenisloos.
+
+### Welke markt je publiceert: `selection_score`, hoogste wint
+
+Dezelfde onderliggende inschatting levert vaak op vier tot zeven markten tegelijk een edge op.
+Gemeten op Viborg – AGF (14 aug 2026): 1X2 +17.6 · AH +0.5 +15.5 · DNB +15.2 · Double Chance +12.2 ·
+AH +1.0 +8.8 · Over 2.5 +5.1 · BTTS ja +3.0. Dat zijn geen zeven bevindingen maar **één, zeven keer
+uitgedrukt**. De 0-of-1-bet-regel blijft dus onverkort gelden: "de sterkste" betekent één selectie
+per wedstrijd, niet één per markt.
+
+Welke van die uitdrukkingen je publiceert, is **vastgesteld op 14 aug 2026 op verzoek van de
+gebruiker** en niet langer aan de run:
+
+```python
+from scripts.model import selection_score
+selection_score(edge_pp, my_prob, data_tier)      # = edge_pp × my_prob × (FULL 1.0 | LIGHT 0.5)
+```
+
+Van alle selecties die **alle zes de poorten** halen, publiceer je die met de hoogste score. Dit is
+dezelfde formule als bij de topselectie in §5 — één weegregel voor beide, zodat de bet die je kiest
+en de plek die hij in de shortlist krijgt niet uit elkaar kunnen lopen.
+
+Waarom deze en niet een andere. Er waren vier redelijke lezingen van "Edge × Probability ×
+Data-betrouwbaarheid", en op de wedstrijden van 14 aug wezen ze niet dezelfde kant op:
+
+| Lezing | Viborg – AGF | Cercle – St.Truiden | Telstar – Sparta |
+|---|---|---|---|
+| hoogste edge in procentpunten | 1X2 | 1X2 | 1X2 |
+| **Edge × kans, letterlijk (gekozen)** | **AH +0.5** | **AH +0.25** | **1X2** |
+| hoogste rendement per euro | 1X2 | 1X2 | 1X2 |
+| grootste Kelly-inzet | AH +0.5 | AH +0.25 | 1X2 |
+
+Tot die datum deed de routine feitelijk de eerste, zonder dat ooit te hebben opgeschreven. De
+gekozen regel geeft de voorkeur aan een hogere trefkans boven een paar procentpunt extra edge. Dat
+is een keuze over risicobereidheid — die hoort bij de gebruiker en niet bij de data — maar er is
+één inhoudelijk argument dat dezelfde kant op wijst: de bekende zwakte van dit model (het kent geen
+competitiesterkte) verschuift kansmassa tussen *winst* en *gelijkspel*. Een 1X2 is daar maximaal
+gevoelig voor, want een gelijkspel is dan puur verlies; een handicap +0.5 of een Draw No Bet is er
+ongevoelig voor, want daar wordt een gelijkspel gewonnen of teruggegeven. Zolang die fout er is,
+kiest deze regel dus ook de minst blootgestelde uitdrukking van dezelfde mening.
+
+**Het gewicht 0.5 voor LIGHT is afgeleid, niet gekozen:** het is `EDGE_THRESHOLD_FULL /
+EDGE_THRESHOLD_LIGHT` = 3.0 / 6.0. Zwakke data moet al twee keer zoveel edge opleveren om mee te
+mogen doen; diezelfde verhouding bij het rangschikken houdt de twee met elkaar in de pas.
+
+Noteer in het runrapport bij elke gepubliceerde bet **welke selectie tweede werd en met welke
+score**. Zonder dat is niet na te gaan of deze weegregel iets doet, en dan staan we over een maand
+weer waar we op 14 aug stonden.
 
 ---
 
@@ -394,9 +438,25 @@ GEEN BET — [reden in één regel: edge onder drempel / geen onafhankelijke inp
 
 ### Topselectie
 
-Rangschik alle gepubliceerde bets op **Edge × Probability × Data-betrouwbaarheid**. Geef de top
-`MAX_SHORTLIST`, met per bet: Probability • Edge • Risicoklasse (Low/Medium/High) • waarom
-deze wél en de eerstvolgende net niet. Maximaal `MAX_LIGHT_IN_SHORTLIST` bets met `LIGHT`.
+Rangschik alle gepubliceerde bets op **Edge × Probability × Data-betrouwbaarheid**, met dezelfde
+formule waarmee je in §1 de markt binnen een wedstrijd hebt gekozen:
+
+```python
+from scripts.model import selection_score
+selection_score(edge_pp, my_prob, data_tier)      # = edge_pp × my_prob × (FULL 1.0 | LIGHT 0.5)
+```
+
+Eén weegregel voor beide, zodat de selectie die je publiceert en de plek die hij in de shortlist
+krijgt niet uit elkaar kunnen lopen. Zet de score in de tabel, zodat de volgorde na te rekenen is
+in plaats van te geloven.
+
+Geef de top `MAX_SHORTLIST`, met per bet: Probability • Edge • Score • Risicoklasse
+(Low/Medium/High) • waarom deze wél en de eerstvolgende net niet. Maximaal
+`MAX_LIGHT_IN_SHORTLIST` bets met `LIGHT`.
+
+**Risicoklasse is iets anders dan score, en dat blijft zo.** De score rangschikt; de risicoklasse
+waarschuwt. Een bet kan bovenaan staan én High risico zijn — dat was op 14 aug het geval bij AGF,
+waar de markt 18 procentpunt afweek van het model. Vervang het een niet door het ander.
 
 Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
 

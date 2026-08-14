@@ -241,6 +241,48 @@ def totals_prob(grid: list[list[float]], line: float, side: str, odds: float) ->
     return asian_prob(grid, line, side, odds, totals=True)
 
 
+DATA_WEIGHT = {"FULL": 1.0, "LIGHT": 0.5}
+"""Het gewicht van `data_tier` in `selection_score`.
+
+0.5 voor LIGHT is niet gekozen maar afgeleid: `EDGE_THRESHOLD_FULL / EDGE_THRESHOLD_LIGHT` =
+3.0 / 6.0. De regels eisen van zwakke data al twee keer zoveel edge om überhaupt mee te doen;
+dezelfde verhouding gebruiken bij het rangschikken houdt die twee met elkaar in de pas. `NONE`
+staat er niet in — die wedstrijden leveren per §2 geen bet op.
+"""
+
+
+def selection_score(edge_pp_value: float, my_prob: float, data_tier: str = "FULL") -> float:
+    """`Edge × Probability × Data-betrouwbaarheid` uit _shared-rules.md §1 en §5, als één getal.
+
+    Vastgesteld op 14 aug 2026, op verzoek van de gebruiker, uit vier lezingen die niet dezelfde
+    kant op wezen. De aanleiding: dezelfde inschatting levert op vier tot zeven markten tegelijk
+    een edge op, en dan bepaalt de weegregel welke daarvan je publiceert. Op Viborg – AGF gaven de
+    vier lezingen twee verschillende antwoorden:
+
+        1X2 AGF wint  @3.55  kans 45.8%  edge +17.6 pp  ->  score  8.05
+        AH +0.5 AGF   @1.87  kans 69.0%  edge +15.5 pp  ->  score 10.71   <- wint
+
+    Rangschikken op edge alleen koos hier de 1X2; deze regel kiest de handicap. Dat is een keuze
+    over risicobereidheid, geen uitkomst van de data — een selectie met een hogere trefkans krijgt
+    de voorkeur boven een selectie met een paar procentpunt meer edge.
+
+    Er is één inhoudelijk argument dat dezelfde kant op wijst: de bekende zwakte van dit model
+    (het kent geen competitiesterkte, zie de runrapporten van 13 en 14 aug) verschuift kansmassa
+    tussen *winst* en *gelijkspel*. Een 1X2 is daar maximaal gevoelig voor, want het gelijkspel is
+    dan puur verlies; een handicap +0.5 of een Draw No Bet is er ongevoelig voor, want daar wordt
+    een gelijkspel gewonnen of teruggegeven. Zolang die fout niet gerepareerd is, ligt het
+    zwaartepunt van deze regel dus ook op de minst blootgestelde uitdrukking van dezelfde mening.
+
+    `my_prob` moet voor elke markt op dezelfde schaal staan; gebruik daarom `asian_prob` /
+    `dnb_prob` / `totals_prob` voor markten met push, niet de kale winkans.
+    """
+    try:
+        weight = DATA_WEIGHT[data_tier]
+    except KeyError:
+        raise ValueError(f"data_tier moet FULL of LIGHT zijn, kreeg {data_tier!r}") from None
+    return edge_pp_value * my_prob * weight
+
+
 @dataclass
 class RobustnessResult:
     edges: dict[tuple[float, float], float] = field(default_factory=dict)
@@ -456,6 +498,24 @@ if __name__ == "__main__":
     # 8. Een kwartlijn is per definitie het gemiddelde van zijn twee buurlijnen.
     assert abs(asian_prob(grid, -0.25, "home", 2.1)
                - (asian_prob(grid, -0.5, "home", 2.1) + asian_prob(grid, 0.0, "home", 2.1)) / 2) < 1e-12
+    # Weegregel (vastgesteld 14 aug 2026). Verankerd op de wedstrijden van die dag, want dit is de
+    # regel die bepaalt wélke van vijf even geldige uitdrukkingen van dezelfde mening wordt
+    # gepubliceerd. Verschuift hij ongemerkt, dan verschuift daarmee elke topselectie.
+    viborg = [("1X2 AGF wint", 17.59, 0.4576), ("AH +0.5 AGF", 15.52, 0.690),
+              ("DNB AGF", 15.16, 0.550), ("DC AGF of gelijk", 12.18, 0.690),
+              ("AH +1.0 AGF", 8.76, 0.807)]
+    beste = max(viborg, key=lambda r: selection_score(r[1], r[2]))
+    assert beste[0] == "AH +0.5 AGF", f"verwacht de handicap, kreeg {beste[0]}"
+    assert abs(selection_score(17.59, 0.4576) - 8.05) < 0.01     # 1X2, tweede
+    assert abs(selection_score(15.52, 0.690) - 10.71) < 0.01     # AH +0.5, eerste
+    # Telstar - Sparta: daar wijst de regel wél naar de 1X2, dus hij kiest niet blind een handicap.
+    telstar = [("1X2 Telstar", 5.67, 0.4877), ("Over 2.5", 3.55, 0.649), ("AH -1.0", 3.05, 0.344)]
+    assert max(telstar, key=lambda r: selection_score(r[1], r[2]))[0] == "1X2 Telstar"
+    # LIGHT weegt half zo zwaar, precies de verhouding van de twee edge-drempels.
+    assert abs(selection_score(10.0, 0.5, "LIGHT") - selection_score(10.0, 0.5, "FULL") / 2) < 1e-12
+    print(f"Weegregel: AH +0.5 AGF {selection_score(15.52, 0.690):.2f} verslaat "
+          f"1X2 AGF {selection_score(17.59, 0.4576):.2f}")
+
     print(f"Markten: AH -0.5 thuis {asian_prob(grid, -0.5, 'home', 2.0) * 100:.1f}%  "
           f"DNB thuis @2.34 {dnb_prob(grid, 'home', 2.34) * 100:.1f}%  "
           f"Over 3.5 {totals_prob(grid, 3.5, 'over', 2.0) * 100:.1f}%  "
