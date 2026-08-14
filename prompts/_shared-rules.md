@@ -83,6 +83,43 @@ correct gedrag; bets forceren om het format te vullen is dat niet.
 Ga alle markten langs — 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS —
 en publiceer alleen de sterkste. Geen "gevoel", geen reputatie-argumenten.
 
+**Dit is tot 14 aug 2026 niet gebeurd, en het lag aan de code.** `MatchProbabilities` had velden
+voor 1X2, Over/Under **2.5** en BTTS en verder niets; Asian Handicap en Draw No Bet waren niet uit
+te rekenen, andere O/U-lijnen evenmin. Aan de oddskant was er wél een `fetch_totals` maar geen
+`fetch_spreads`, en `fetch_event_markets` (voor BTTS en Double Chance) is nooit aangeroepen. Het
+resultaat is te tellen in `data/picks.jsonl`: van de eerste 15 picks waren er **11 een 1X2, 3 een
+Over/Under 2.5 en 1 een Double Chance** — nul Asian Handicap, nul BTTS, nul Draw No Bet. In
+`data/shadow.jsonl` was 19 van de 20 een 1X2. De routine koos dus niet de sterkste markt maar de
+sterkste van de twee die toevallig geïmplementeerd waren.
+
+Sinds 14 aug 2026 kan het wel, en het kost niets extra aan modelwerk — alle markten komen uit
+hetzelfde scoregrid dat `analyze_match` toch al berekent:
+
+```python
+p = analyze_match(...)                              # p.grid is nu beschikbaar
+asian_prob(p.grid, -0.75, "home", odds)             # Asian Handicap, incl. kwart- en hele lijnen
+dnb_prob(p.grid, "away", odds)                      # Draw No Bet (= de handicap op 0.0)
+totals_prob(p.grid, 3.0, "over", odds)              # elke O/U-lijn, niet alleen 2.5
+p.dc_1x, p.dc_x2, p.dc_12                           # Double Chance
+p.btts                                              # BTTS
+```
+
+Aan de oddskant: `fetch_spreads(sport_key)` kost **1 credit**, precies zoveel als `fetch_totals`, en
+levert de handicaplijnen van alle wedstrijden in een competitie. BTTS en Double Chance gaan via
+`fetch_event_markets(sport_key, event_id, ["btts", "double_chance"])` en kosten 2 credits **per
+wedstrijd** — vraag die dus pas op voor wedstrijden die al een kandidaat-edge tonen, niet voor de
+hele kalender. `best_by_line(event, markt)` geeft de beste prijs per (uitkomst, lijn); vergelijk
+nooit prijzen over verschillende lijnen heen, want een andere lijn is een andere bet.
+
+Twee dingen om bij het rangschikken in de gaten te houden. Een handicap of totaal met push is geen
+gewone kans — bij een push komt de inzet terug — dus `asian_prob` geeft de kans terug die bij díe
+koers dezelfde verwachtingswaarde oplevert, zodat `edge_pp` en alle zes poorten er ongewijzigd op
+werken. En dezelfde onderliggende inschatting levert vaak op vier of vijf markten tegelijk een
+edge op (gemeten op Viborg – AGF, 14 aug: 1X2 +17.6, AH +0.5 +15.5, DNB +15.2, Double Chance +12.2,
+Over 2.5 +5.1, BTTS ja +3.0). Dat zijn geen vijf bevindingen maar één, vijf keer uitgedrukt — de
+0-of-1-bet-regel hierboven blijft dus onverkort gelden, en "de sterkste" betekent één selectie per
+wedstrijd, niet één per markt.
+
 ---
 
 ## 2. Anti-circulariteitsregel (hard, niet optioneel)

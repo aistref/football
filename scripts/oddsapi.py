@@ -113,6 +113,31 @@ def fetch_totals(sport_key: str, regions: str = "eu") -> OddsResponse:
                          int(used) if used else None, cost=int(headers.get("x-requests-last", 0) or 0))
 
 
+def fetch_spreads(sport_key: str, regions: str = "eu") -> OddsResponse:
+    """Asian-Handicaplijnen voor alle wedstrijden van één competitie. Kost 1 credit per regio.
+
+    Bevestigd werkend op 14 aug 2026. Dit stond hierboven al in de docstring ("de bulk-endpoint
+    ondersteunt h2h, spreads en totals") maar er was nooit een functie voor, waardoor Asian
+    Handicap in de praktijk nooit is meegenomen: van de eerste 15 picks was er niet één een
+    handicap. De markt kost hetzelfde als `totals` — 1 credit — dus er was ook geen budgetreden.
+
+    Let op: de respons bevat per bookmaker één lijn, en die lijn verschilt per boek (gemeten op
+    Viborg - AGF: -0.5, -1.0 en 0.0 naast elkaar). Groepeer dus op `point` en vergelijk alleen
+    prijzen binnen dezelfde lijn — de beste prijs over verschillende lijnen heen vergelijken is
+    appels met peren, want een andere lijn is een andere bet.
+    """
+    key = _api_key()
+    status, headers, body = _get(
+        f"{BASE}/sports/{sport_key}/odds/?apiKey={key}&regions={regions}&markets=spreads&oddsFormat=decimal")
+    if status != 200:
+        raise OddsApiError(f"HTTP {status} op sport={sport_key}: {body[:200].decode(errors='replace')}")
+    _check_quota(headers)
+    remaining = headers.get("x-requests-remaining")
+    used = headers.get("x-requests-used")
+    return OddsResponse(json.loads(body), int(remaining) if remaining else None,
+                         int(used) if used else None, cost=int(headers.get("x-requests-last", 0) or 0))
+
+
 def fetch_event_markets(sport_key: str, event_id: str, markets: list[str], regions: str = "eu") -> OddsResponse:
     """Markten die niet in de bulk-call zitten (btts, double_chance, draw_no_bet), per wedstrijd.
 
@@ -146,6 +171,31 @@ def best_totals_2_5(event: dict) -> dict[str, tuple[float, str]] | None:
                 if current is None or outcome["price"] > current[0]:
                     best[outcome["name"]] = (outcome["price"], bookmaker["title"])
     return best or None
+
+
+def best_by_line(event: dict, market_key: str) -> dict[tuple[str, float | None], tuple[float, str]]:
+    """Beste prijs per (uitkomst, lijn) uit één event, voor elke markt.
+
+    Werkt op `h2h`, `spreads`, `totals`, `btts` en `double_chance` tegelijk — de sleutel is
+    `(naam, point)`, waarbij `point` `None` is voor markten zonder lijn. Dit vervangt het
+    overtypen van dezelfde geneste lus per markt, en het houdt de lijnen uit elkaar: bij
+    `spreads` en `totals` geeft elke bookmaker zijn eigen lijn, en de beste prijs op -0.5
+    hoort niet vergeleken te worden met de beste prijs op -1.0.
+
+    Exchanges staan in de respons als gewone bookmaker (Betfair, Matchbook) maar hun `h2h_lay`-
+    regels zijn lay-prijzen — daar kun je niet op inzetten. Die worden hier overgeslagen.
+    """
+    best: dict[tuple[str, float | None], tuple[float, str]] = {}
+    for bookmaker in event.get("bookmakers", []):
+        for market in bookmaker.get("markets", []):
+            if market["key"] != market_key or market_key.endswith("_lay"):
+                continue
+            for outcome in market["outcomes"]:
+                key = (outcome["name"], outcome.get("point"))
+                current = best.get(key)
+                if current is None or outcome["price"] > current[0]:
+                    best[key] = (outcome["price"], bookmaker["title"])
+    return best
 
 
 if __name__ == "__main__":

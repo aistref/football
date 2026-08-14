@@ -62,10 +62,26 @@ class MatchProbabilities:
     away: float
     over_2_5: float
     btts: float
+    grid: list[list[float]] | None = None
+    """Het volledige scoregrid. Nodig voor elke markt die niet met een los veld is af te lezen —
+    Asian Handicap, Draw No Bet, andere O/U-lijnen dan 2.5. Toegevoegd op 14 aug 2026; zie de
+    toelichting bij `asian_prob` waarom die velden er eerst niet waren en dat dat scheef liep."""
 
     @property
     def under_2_5(self) -> float:
         return 1 - self.over_2_5
+
+    @property
+    def dc_1x(self) -> float:
+        return self.home + self.draw
+
+    @property
+    def dc_x2(self) -> float:
+        return self.draw + self.away
+
+    @property
+    def dc_12(self) -> float:
+        return self.home + self.away
 
 
 def _poisson(k: int, lam: float) -> float:
@@ -127,12 +143,102 @@ def analyze_match(home: TeamStats, away: TeamStats, league: LeagueContext,
     away_p = 1 - home_p - draw_p
     over_p = sum(grid[i][j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if i + j > 2)
     btts_p = sum(grid[i][j] for i in range(1, MAX_GOALS + 1) for j in range(1, MAX_GOALS + 1))
-    return MatchProbabilities(lambda_home, lambda_away, home_p, draw_p, away_p, over_p, btts_p)
+    return MatchProbabilities(lambda_home, lambda_away, home_p, draw_p, away_p, over_p, btts_p, grid)
 
 
 def edge_pp(my_prob: float, odds: float) -> float:
     """Edge in procentpunten: (my_prob - implied_prob) * 100."""
     return (my_prob - 1 / odds) * 100
+
+
+# --------------------------------------------------------------------------- markten
+#
+# Waarom dit bestaat (14 aug 2026). `_shared-rules.md` §1 schrijft voor: "Ga alle markten langs —
+# 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS — en publiceer alleen de
+# sterkste." Dat gebeurde niet, en de reden zat hier: `MatchProbabilities` had velden voor 1X2,
+# Over/Under **2.5** en BTTS en verder niets. Asian Handicap en Draw No Bet waren met geen
+# mogelijkheid uit te rekenen, andere O/U-lijnen dan 2.5 evenmin. Het gevolg is te tellen in
+# `data/picks.jsonl`: van de eerste 15 picks waren er 11 een 1X2, 3 een Over/Under 2.5 en 1 een
+# Double Chance — nul Asian Handicap, nul BTTS, nul Draw No Bet. De routine zocht dus niet "de
+# sterkste markt" maar "de sterkste van de twee markten die toevallig geïmplementeerd waren".
+#
+# Alles hieronder rekent op hetzelfde scoregrid, zodat één modelaanroep alle markten bedient en een
+# extra markt niets extra's kost aan ophalen.
+
+def _payout_probs(grid: list[list[float]], line: float, side: str,
+                   totals: bool = False) -> tuple[float, float, float]:
+    """(kans op winst, kans op push, kans op verlies) voor één hele of halve lijn.
+
+    `side` is "home"/"away" bij een handicap, of "over"/"under" bij een totaal. De marge is bij een
+    handicap het doelsaldo plus de lijn, bij een totaal het aantal doelpunten min de lijn.
+    """
+    win = push = lose = 0.0
+    n = len(grid)
+    for i in range(n):
+        for j in range(n):
+            p = grid[i][j]
+            if totals:
+                margin = (i + j) - line
+                if side == "under":
+                    margin = -margin
+            else:
+                margin = (i - j) + line if side == "home" else (j - i) + line
+            if margin > 0:
+                win += p
+            elif margin == 0:
+                push += p
+            else:
+                lose += p
+    return win, push, lose
+
+
+def _split_line(line: float) -> list[tuple[float, float]]:
+    """Een kwartlijn (±0.25, ±0.75, ...) is twee halve inzetten op de twee buurlijnen.
+
+    -0.75 is dus een halve inzet op -0.5 en een halve op -1.0. Hele en halve lijnen komen er
+    ongewijzigd uit, met gewicht 1.
+    """
+    if abs(line * 2 - round(line * 2)) < 1e-9:      # hele of halve lijn
+        return [(line, 1.0)]
+    return [(line - 0.25, 0.5), (line + 0.25, 0.5)]
+
+
+def expected_return(grid: list[list[float]], line: float, side: str, odds: float,
+                     totals: bool = False) -> float:
+    """Verwachte uitbetaling per ingezette eenheid, inclusief de inzet zelf.
+
+    Winst betaalt `odds`, push betaalt 1 (inzet terug), verlies 0. Bij een kwartlijn wordt dat over
+    de twee halve inzetten gemiddeld. `> 1` betekent positieve verwachtingswaarde.
+    """
+    total = 0.0
+    for component, weight in _split_line(line):
+        win, push, lose = _payout_probs(grid, component, side, totals)
+        total += weight * (win * odds + push * 1.0 + lose * 0.0)
+    return total
+
+
+def asian_prob(grid: list[list[float]], line: float, side: str, odds: float,
+                totals: bool = False) -> float:
+    """De kans waarmee deze bet zich als een gewone binaire bet gedraagt.
+
+    Een handicap of totaal met push (hele lijn) of halve inzet (kwartlijn) is niet zomaar met een
+    kans te beschrijven: bij een push krijg je je geld terug in plaats van te verliezen. Daarom
+    wordt hier de kans teruggegeven die bij deze koers **dezelfde verwachtingswaarde** oplevert:
+    `p = E[uitbetaling] / odds`. Voor een halve lijn zonder push valt dat exact samen met de gewone
+    winkans, zodat `edge_pp(asian_prob(...), odds)` overal op dezelfde schaal staat als de 1X2-edge
+    en de vijf poorten van §1 er zonder uitzondering op werken.
+    """
+    return expected_return(grid, line, side, odds, totals) / odds
+
+
+def dnb_prob(grid: list[list[float]], side: str, odds: float) -> float:
+    """Draw No Bet is de Aziatische handicap op 0.0: bij gelijkspel komt de inzet terug."""
+    return asian_prob(grid, 0.0, side, odds)
+
+
+def totals_prob(grid: list[list[float]], line: float, side: str, odds: float) -> float:
+    """Over/Under op een willekeurige lijn (1.5, 2.5, 3.0, 3.25, ...), niet alleen 2.5."""
+    return asian_prob(grid, line, side, odds, totals=True)
 
 
 @dataclass
@@ -255,7 +361,7 @@ def analyze_match_from_splits(home: TeamSplits, away: TeamSplits,
     over_p = sum(grid[i][j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if i + j > 2)
     btts_p = sum(grid[i][j] for i in range(1, MAX_GOALS + 1) for j in range(1, MAX_GOALS + 1))
     return MatchProbabilities(lambda_home, lambda_away, home_p, draw_p,
-                              1 - home_p - draw_p, over_p, btts_p)
+                              1 - home_p - draw_p, over_p, btts_p, grid)
 
 
 def splits_from_fotmob(team: dict) -> TeamSplits:
@@ -325,4 +431,33 @@ if __name__ == "__main__":
     print(f"Tweede methode Groningen-Utrecht: thuiszege {split.home * 100:.1f}% "
           f"(verwacht ~46.4%), edge @2.48 {edge_pp(split.home, 2.48):+.1f} pp")
     assert abs(split.home - 0.464) < 0.005, f"verwacht ~46.4%, kreeg {split.home * 100:.1f}%"
+
+    # Markten (toegevoegd 14 aug 2026). Deze acht controles zijn er omdat een handicap of totaal
+    # met push niet zomaar een kans is: bij een push krijg je je inzet terug in plaats van te
+    # verliezen, en bij een kwartlijn staat er maar de helft op elke lijn. De ankers hieronder
+    # leggen vast dat de nieuwe rekenweg op de bekende gevallen exact samenvalt met de oude.
+    probs = analyze_match(standard, cercle, league)
+    grid = probs.grid
+
+    # 1-2. Een halve lijn kent geen push, dus AH -0.5 is exact de thuiszege en AH +0.5 exact 1X.
+    assert abs(asian_prob(grid, -0.5, "home", 2.0) - probs.home) < 1e-9
+    assert abs(asian_prob(grid, 0.5, "home", 2.0) - probs.dc_1x) < 1e-9
+    # 3. Uit op de spiegellijn is het complement: samen precies 1.
+    assert abs(asian_prob(grid, -0.5, "home", 2.0) + asian_prob(grid, 0.5, "away", 2.0) - 1) < 1e-9
+    # 4-5. De generieke totalenweg moet het bestaande veld reproduceren.
+    assert abs(totals_prob(grid, 2.5, "over", 2.0) - probs.over_2_5) < 1e-9
+    assert abs(totals_prob(grid, 2.5, "under", 2.0) - probs.under_2_5) < 1e-9
+    # 6. Hele lijn: winst, push en verlies vormen samen de hele kansmassa.
+    win, push, lose = _payout_probs(grid, 0.0, "home")
+    assert abs(win + push + lose - 1) < 1e-9
+    # 7. Draw No Bet moet nul edge geven op zijn eigen eerlijke koers, (1 - P(X)) / P(1).
+    fair = (1 - probs.draw) / probs.home
+    assert abs(edge_pp(dnb_prob(grid, "home", fair), fair)) < 1e-9
+    # 8. Een kwartlijn is per definitie het gemiddelde van zijn twee buurlijnen.
+    assert abs(asian_prob(grid, -0.25, "home", 2.1)
+               - (asian_prob(grid, -0.5, "home", 2.1) + asian_prob(grid, 0.0, "home", 2.1)) / 2) < 1e-12
+    print(f"Markten: AH -0.5 thuis {asian_prob(grid, -0.5, 'home', 2.0) * 100:.1f}%  "
+          f"DNB thuis @2.34 {dnb_prob(grid, 'home', 2.34) * 100:.1f}%  "
+          f"Over 3.5 {totals_prob(grid, 3.5, 'over', 2.0) * 100:.1f}%  "
+          f"BTTS {probs.btts * 100:.1f}%")
     print("Zelftest geslaagd.")
