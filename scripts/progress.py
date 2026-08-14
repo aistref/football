@@ -110,6 +110,61 @@ def _cmd_show(args: argparse.Namespace) -> int:
     return 0
 
 
+ALL_MARKETS = ("1X2", "DC", "DNB", "AH", "OU", "BTTS")
+"""De zes markten uit _shared-rules.md §1. `markets_checked` in het voortgangsbestand hoort deze
+namen te gebruiken; `verify` rekent af op deze lijst."""
+
+
+def _cmd_verify(args: argparse.Namespace) -> int:
+    """Controleer dat elke geanalyseerde wedstrijd alle zes markten heeft gehad.
+
+    Bestaansreden (14 aug 2026). §1 schreef al vanaf het begin voor om 1X2, Double Chance, Draw No
+    Bet, Asian Handicap, Over/Under en BTTS langs te gaan, en dat gebeurde een week lang niet: van
+    de eerste 15 picks waren er 11 een 1X2 en 0 een handicap. Niemand merkte het, omdat er nergens
+    werd vastgelegd wat er per wedstrijd was bekeken — alleen wat eruit kwam. Een regel die niemand
+    kan nalopen is geen regel maar een voornemen.
+
+    Dit is met opzet een controle op de **administratie**, niet op de uitkomst: nul bets is een
+    geldige uitkomst, een wedstrijd waarbij vier markten niet eens zijn opgezocht niet.
+    """
+    state = load(args.run, date.fromisoformat(args.date))
+    if state is None:
+        print(f"Geen voortgangsbestand voor run {args.run} op {args.date}.")
+        return 1
+
+    gaten: list[str] = []
+    gedekt = 0
+    for comp, block in state["competitions"].items():
+        if not isinstance(block, dict) or block.get("status") != "GEANALYSEERD":
+            continue
+        for match in block.get("matches", []):
+            if not isinstance(match, dict):
+                continue
+            naam = match.get("match", "?")
+            if match.get("tier") == "NONE":
+                continue  # geen kansbron, dus geen markt om te bekijken
+            checked = match.get("markets_checked")
+            if not checked:
+                gaten.append(f"{comp} · {naam}: geen markets_checked vastgelegd")
+                continue
+            mist = [m for m in ALL_MARKETS if m not in checked]
+            if mist:
+                gaten.append(f"{comp} · {naam}: niet bekeken: {', '.join(mist)}")
+            else:
+                gedekt += 1
+
+    if not gaten:
+        print(f"Alle {gedekt} geanalyseerde wedstrijd(en) hebben alle zes markten gehad.")
+        return 0
+    print(f"{len(gaten)} wedstrijd(en) met onvolledige marktdekking "
+          f"({gedekt} wel volledig):\n")
+    for regel in gaten:
+        print(f"  {regel}")
+    print("\nZie _shared-rules.md §1: 'Ga alle markten langs'. Een markt waarvoor geen odds te")
+    print("vinden waren telt ook als bekeken — noteer hem dan met de reden, niet als gat.")
+    return 1
+
+
 def _cmd_reset(args: argparse.Namespace) -> int:
     p = _path(args.run, date.fromisoformat(args.date))
     if p.exists():
@@ -128,6 +183,11 @@ def main() -> int:
     show.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
     show.add_argument("--date", required=True, help="YYYY-MM-DD")
     show.set_defaults(func=_cmd_show)
+
+    verify = sub.add_parser("verify", help="controleer of elke wedstrijd alle zes markten heeft gehad")
+    verify.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    verify.add_argument("--date", required=True, help="YYYY-MM-DD")
+    verify.set_defaults(func=_cmd_verify)
 
     reset = sub.add_parser("reset", help="verwijder het voortgangsbestand, forceer een verse start")
     reset.add_argument("--run", required=True, choices=["A", "B", "a", "b"])

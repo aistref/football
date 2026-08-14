@@ -491,6 +491,24 @@ Elke run, ook een run met nul bets:
 4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
 5. **Schaduwlogboek** → `python3 scripts/shadow.py collect --date <datum> --run <a|b>`, en de
    schaduwpicks van vorige runs afwikkelen (zie 6d).
+5b. **Marktdekking aantonen** → noteer bij elke geanalyseerde wedstrijd in `data/run-state/` een
+   `markets_checked` met de markten die je werkelijk hebt doorgerekend, en draai daarna:
+
+   ```bash
+   python3 scripts/progress.py verify --run <a|b> --date YYYY-MM-DD
+   ```
+
+   Dit moet groen zijn vóór de commit. Namen: `1X2`, `DC`, `DNB`, `AH`, `OU`, `BTTS`. Een markt
+   waarvoor geen odds te vinden waren telt óók als bekeken — noteer hem dan met de reden erbij
+   (`"AH": "geen spreads bij The Odds API voor deze competitie"`), niet als gat. Wedstrijden met
+   `tier = NONE` worden overgeslagen; daar valt geen markt door te rekenen.
+
+   Waarom dit een aparte stap is: §1 schreef "ga alle markten langs" al vanaf het begin voor, en
+   een week lang gebeurde het niet — 11 van de eerste 15 picks waren een 1X2, nul een handicap.
+   Dat bleef onopgemerkt omdat er nergens werd vastgelegd wát er per wedstrijd was bekeken, alleen
+   wát eruit kwam. Een regel die niemand kan nalopen is een voornemen, geen regel. Dit is met opzet
+   een controle op de administratie en niet op de uitkomst: nul bets is een geldige uitkomst, een
+   wedstrijd waarbij vier markten niet eens zijn opgezocht niet.
 6. **Commit en push** naar `main` (zie 6a: `git push origin HEAD:main`). Zonder push is de run
    verdwenen zodra de container wordt opgeruimd.
 7. **Voortgangsbestand afsluiten** — `scripts/progress.py`: `mark_completed(state)` + `save(state)`,
