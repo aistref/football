@@ -154,29 +154,68 @@ def request(path: str, params: dict | None = None, *, count: bool = True) -> dic
 def discover() -> dict:
     """Zoek eenmalig uit welke paden echt bestaan en leg ze vast.
 
-    Kost hooguit een paar verzoeken en hoeft maar één keer; daarna staat het in
-    `data/odds-fallback.json` onder `endpoints`. Draai dit als eerste zodra de sleutel er is —
-    liefst met de hand, niet midden in een run, want een run met een lege oddsbron is een run
-    zonder bets.
+    Hoe de statuscodes gelezen worden — dit is de kern, en het ligt niet voor de hand:
+
+    | Status | Betekenis | Actie |
+    |---|---|---|
+    | 200 | pad bestaat en gaf meteen data | gevonden |
+    | 400 | pad **bestaat**, maar mist verplichte parameters | **ook gevonden** |
+    | 404 | pad bestaat niet | volgende kandidaat |
+    | 401/403 | sleutelprobleem, niet een padprobleem | afbreken, verder zoeken heeft geen zin |
+    | 429 | rate limit | afbreken |
+
+    Dat 400 als tréffer telt is geen detail: een fixture-endpoint eist vrijwel zeker een datum of
+    een competitie, dus de kans is groot dat het juiste pad 400 geeft in plaats van 200. Wie 400
+    als "bestaat niet" leest, zoekt de hele lijst af en concludeert dat er niets werkt.
+
+    Kost hooguit een handvol verzoeken en hoeft maar één keer; daarna staat het resultaat in
+    `data/odds-fallback.json` onder `endpoints`.
     """
     state = FallbackState.load()
     found = dict(state.endpoints)
+    log: list[str] = []
     for naam, kandidaten in (("fixtures", FIXTURE_PATH_CANDIDATES), ("odds", ODDS_PATH_CANDIDATES)):
         if found.get(naam):
             continue
         for pad in kandidaten:
             status, _, body = _get(pad)
             state.used_this_month += 1
-            if status == 200:
+            snippet = body[:120].decode(errors="replace").replace("\n", " ")
+            log.append(f"{pad} -> HTTP {status} {snippet}")
+            if status in (200, 400):
                 found[naam] = pad
                 break
-            if status not in (404, 400):
-                # 401/403 = sleutelprobleem, niet een verkeerd pad: stoppen heeft geen zin verder.
-                found[naam] = f"onbekend (HTTP {status}: {body[:120].decode(errors='replace')})"
-                break
+            if status == 404:
+                continue
+            found[naam] = f"onbepaald (HTTP {status}: {snippet})"
+            break
+        else:
+            found[naam] = "geen van de kandidaten bestaat — zoek het juiste pad in hun documentatie"
     state.endpoints = found
+    state.notes = ("discover gedraaid op " + (state.period or "onbekende datum") + "; "
+                   + " | ".join(log))[:1500]
     state.save()
     return found
+
+
+def ensure_discovered() -> tuple[bool, str]:
+    """Eén keer per omgeving: controleer dat de reserve werkt, vóórdat je hem nodig hebt.
+
+    Draait alleen als de sleutel er is en de paden nog onbekend zijn, en is verder een no-op.
+    Dit staat los van `armed`: het testen van een noodaggregaat hoort niet te wachten tot de
+    stroom uitvalt. Kosten: een handvol van de 250, één keer.
+    """
+    if not api_key():
+        return False, "ODDSPAPI_KEY niet gezet — niets te ontdekken"
+    state = FallbackState.load()
+    # Alleen een pad dat met "/" begint telt als gevonden. Een mislukte poging laat hier
+    # "onbepaald (HTTP 401: ...)" achter, en dát mag een nieuwe poging niet blokkeren: anders
+    # blijft een verkeerd getypte sleutel voor altijd staan als "al ontdekt".
+    if any(str(v).startswith("/") for v in state.endpoints.values()):
+        return False, f"paden al bekend: {state.endpoints}"
+    found = discover()
+    werkt = [k for k, v in found.items() if v.startswith("/")]
+    return True, (f"discover gedraaid, {len(werkt)} van {len(found)} paden gevonden: {found}")
 
 
 if __name__ == "__main__":

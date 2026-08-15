@@ -220,12 +220,23 @@ als hij niet is ingezet. Zo is achteraf te zien dat de reserve er was en waarom 
 
 Twee dingen om te weten voordat je hem gebruikt:
 
-- **De endpoints staan nog niet vast.** Basis-URL (`https://v5.oddspapi.io/{taal}/…`) en de
-  `apiKey`-queryparameter zijn nagetrokken; de precieze fixture- en odds-paden niet, omdat OddsPapi
-  de sleutel vóór de routering controleert en zonder sleutel élk pad 401 geeft. Draai daarom
-  eenmalig `python3 scripts/oddspapi.py discover` zodra de sleutel er is — met de hand en niet
-  midden in een run, want een run die pas tijdens het ophalen ontdekt dat een pad niet klopt, staat
-  zonder odds.
+- **Controleer de reserve in Stage 3, niet pas als je hem nodig hebt.** Basis-URL
+  (`https://v5.oddspapi.io/{taal}/…`) en de `apiKey`-queryparameter zijn nagetrokken; de precieze
+  fixture- en odds-paden niet, omdat OddsPapi de sleutel vóór de routering controleert en zonder
+  sleutel élk pad 401 geeft — een verzonnen pad net zo goed als een echt pad. Roep daarom in Stage 3,
+  direct na `api_check.py`, één keer aan:
+
+  ```python
+  from scripts.oddspapi import ensure_discovered
+  gedraaid, melding = ensure_discovered()   # no-op zodra de paden bekend zijn
+  ```
+
+  Dit staat **los van `armed`** en is geen inzet van de reserve: het is de controle of hij wérkt.
+  Een noodaggregaat test je niet voor het eerst tijdens de stroomstoring — en een verkeerd
+  overgetypte sleutel wil je weten op een dag dat het niet uitmaakt, niet op de dag dat The Odds API
+  op is. Kosten: een handvol van de 250, eenmalig. Meld `melding` in het runrapport en werk
+  `data/source-health.json` bij (`oddspapi` → `status`). Komt er `invalid_api_key` uit, meld dat dan
+  ook in de notificatie: dat is een blokkade die anders weken onopgemerkt blijft.
 - **Tel zelf mee.** OddsPapi geeft `X-RateLimit-*` per seconde en per minuut, maar geen teller voor
   het maandquotum. `scripts/oddspapi.py` houdt `used_this_month` daarom zelf bij in
   `data/odds-fallback.json`; zet die bij een nieuwe periode met de hand op 0.
