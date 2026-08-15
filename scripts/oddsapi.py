@@ -52,6 +52,7 @@ SPORT_KEYS: dict[str, str] = {
     "Serie B (ITA)": "soccer_italy_serie_b",
     "Segunda División (ESP)": "soccer_spain_segunda_division",
     "Ligue 2 (FRA)": "soccer_france_ligue_two",
+    "Coppa Italia (ITA)": "soccer_italy_coppa_italia",  # bevestigd 14 aug 2026 via api_check.py
 }
 
 # Markten die alleen via de per-wedstrijd-endpoint gaan (bevestigd met HTTP 422 op de bulk-call).
@@ -97,6 +98,34 @@ def _check_quota(headers: dict, reserve: int = 20) -> None:
                 raise QuotaWarning(f"nog maar {remaining} credits over (reserve is {reserve}) — stop met opvragen")
         except ValueError:
             pass
+
+
+def fetch_bulk(sport_key: str, markets: list[str], regions: str = "eu") -> OddsResponse:
+    """`h2h`, `spreads` en `totals` in één verzoek voor een hele competitie.
+
+    Kost `len(markets) x regio's` credits — precies evenveel als dezelfde markten los opvragen,
+    maar het scheelt verzoeken en het houdt alle markten van één wedstrijd bij elkaar in één
+    event-object, zodat `best_by_line(event, "h2h" | "spreads" | "totals")` er alle drie uit haalt.
+    Toegevoegd 15 aug 2026: `_shared-rules.md` §6b-5b eist dat elke wedstrijd op alle zes markten
+    is nagelopen, en dan wil je die drie bulkmarkten in één keer binnen hebben.
+
+    `btts` en `double_chance` kunnen hier niet bij (HTTP 422) — die gaan via
+    `fetch_event_markets`, en die rekent per wedstrijd af.
+    """
+    bad = [m for m in markets if m in EVENT_ONLY_MARKETS]
+    if bad:
+        raise OddsApiError(f"markt(en) {bad} kunnen niet via de bulk-endpoint — gebruik fetch_event_markets")
+    key = _api_key()
+    status, headers, body = _get(
+        f"{BASE}/sports/{sport_key}/odds/?apiKey={key}&regions={regions}"
+        f"&markets={','.join(markets)}&oddsFormat=decimal")
+    if status != 200:
+        raise OddsApiError(f"HTTP {status} op sport={sport_key}: {body[:200].decode(errors='replace')}")
+    _check_quota(headers)
+    remaining = headers.get("x-requests-remaining")
+    used = headers.get("x-requests-used")
+    return OddsResponse(json.loads(body), int(remaining) if remaining else None,
+                         int(used) if used else None, cost=int(headers.get("x-requests-last", 0) or 0))
 
 
 def fetch_totals(sport_key: str, regions: str = "eu") -> OddsResponse:
