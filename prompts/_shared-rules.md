@@ -117,6 +117,60 @@ Een handicap of totaal met push is geen gewone kans — bij een push komt de inz
 `asian_prob` / `dnb_prob` / `totals_prob` en nooit de kale winkans, anders staan de markten niet op
 dezelfde schaal en is de rangschikking hieronder betekenisloos.
 
+### 1a. Waar de prijzen vandaan komen — creditbudget (vastgesteld 15 aug 2026)
+
+The Odds API is de gratis Starter met **500 credits per maand**. Op 15 aug verbruikten Run A en
+Run B samen **132 credits op één dag** — een kwart van de maand — doordat alle zes markten voor het
+eerst echt werden doorgerekend. Op dat tempo is het budget in twee dagen op, en een run zonder
+prijzen levert per definitie nul bets. Daarom ligt vanaf nu vast wélke bron welke markt levert:
+
+| Markt | Bron | Kosten |
+|---|---|---|
+| **1X2** | `betexplorer.fetch_league_fixtures(url)` | **gratis** |
+| Asian Handicap, Over/Under | `oddsapi.fetch_bulk(key, ["spreads","totals"])` | 2 credits per competitie |
+| Double Chance, BTTS | `oddsapi.fetch_event_markets(...)` | 2 credits per wedstrijd |
+| Draw No Bet | de 0.0-lijn uit `spreads` — dezelfde bet | gratis, zit al in de bulk |
+
+Gebruik **`fetch_league_fixtures`**, niet `fetch_league_odds`: die tweede leest de "Next matches"-
+tabel en die toont er maar vijf. Op 15 aug had de Championship acht duels; drie zouden zonder 1X2
+zijn gebleven. De fixtures-pagina geeft ze alle acht — gemeten op alle acht competities van die dag,
+32 van de 32 wedstrijden gedekt, nul credits.
+
+**Bepaal aan het begin van de run je plafond en houd je eraan:**
+
+```python
+from scripts.oddsapi import CreditGuard, suggest_cap
+cap = suggest_cap(remaining_uit_api_check, dagen_tot_de_maandwissel)   # 2 runs per dag
+guard = CreditGuard(cap=cap)
+```
+
+Geef de credits uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
+
+1. `spreads,totals` voor de competities met de **beste datakwaliteit** eerst (2 per competitie);
+2. `double_chance,btts` alleen voor wedstrijden die **kans maken op de topselectie** — niet voor elke
+   wedstrijd met een kandidaat-edge, zoals tot 15 aug gebeurde (dat waren er die dag vijftien).
+
+Een markt die je door het plafond niet hebt opgevraagd is **bekeken met een reden**, niet een gat:
+noteer hem in `markets_checked` als `"DC": "niet opgevraagd — creditplafond van de run bereikt"`.
+Zo blijft `progress.py verify` groen zonder dat de administratie liegt. Neem `guard.report()` op in
+het runrapport onder "Bronstatus deze run".
+
+**Wat dit kost aan kwaliteit, en waarom het toch klopt.** BetExplorer geeft het **marktgemiddelde**
+over de getoonde boeken, niet de beste prijs, en de bookmaker is niet herleidbaar. Een 1X2-edge is
+daardoor systematisch **lager** dan tegen de beste prijs — conservatief, dus geen risico op te veel
+bets, maar het maakt de vergelijking tussen markten scheef: een 1X2 op een gemiddelde prijs verliest
+het in `selection_score` van een handicap op een beste prijs, ook als de 1X2 in werkelijkheid beter
+was. Daarom:
+
+- noteer bij een 1X2-pick altijd `odds_source` als marktgemiddelde met het aantal boeken erbij, en
+  vermeld dat de bookmaker niet herleidbaar is (dat deed de routine op 13 aug al zo);
+- **wint een 1X2 de `selection_score` binnen een wedstrijd, dan is die uitkomst betrouwbaar** — hij
+  won immers met de zwakkere prijs. Verliest hij nipt van een handicap, meld dat dan in het
+  runrapport als "mogelijk artefact van de prijsbron", en stel op grond daarvan geen regel bij.
+
+Ga niet alsnog een `h2h`-bulkcall doen om dat recht te trekken: dat kost precies de 8 credits per run
+die deze paragraaf bespaart.
+
 ### Welke markt je publiceert: `selection_score`, hoogste wint
 
 Dezelfde onderliggende inschatting levert vaak op vier tot zeven markten tegelijk een edge op.

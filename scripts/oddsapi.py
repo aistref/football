@@ -63,6 +63,72 @@ class OddsApiError(RuntimeError):
     pass
 
 
+class BudgetExhausted(RuntimeError):
+    """De run heeft zijn creditplafond bereikt. Geen fout: stop met opvragen en meld het."""
+
+
+def suggest_cap(remaining: int, days_left: int, runs_per_day: int = 2, reserve: int = 20) -> int:
+    """Hoeveel credits mag één run uitgeven om het einde van de periode te halen?
+
+    `remaining` komt uit `x-requests-remaining` — dat is de enige harde waarheid over het budget;
+    zelf bijhouden loopt scheef zodra een run halverwege afbreekt. `reserve` blijft over voor
+    api_check.py en voor een dag die uitloopt.
+    """
+    usable = max(0, remaining - reserve)
+    slots = max(1, days_left * runs_per_day)
+    return usable // slots
+
+
+@dataclass
+class CreditGuard:
+    """Bewaakt het creditverbruik binnen één run.
+
+    Bestaansreden (15 aug 2026). Op die dag verbruikten Run A en Run B samen **132 credits** —
+    ruim een kwart van het maandbudget van 500 op één dag — doordat alle zes markten voor het
+    eerst echt werden doorgerekend. Zonder plafond is het budget dan in twee dagen op en leveren
+    de runs daarna nul bets, want zonder prijzen is er geen edge te meten.
+
+    Gebruik:
+
+        guard = CreditGuard(cap=8)
+        ...
+        if guard.can_afford(2):
+            resp = fetch_event_markets(...)
+            guard.record(resp)
+        else:
+            # noteer de markt als bekeken-met-reden (§6b-5b), niet als gat
+            ...
+
+    De bewaker telt wat een aanroep werkelijk kostte (`x-requests-last`), niet wat hij zou moeten
+    kosten — een 422 of een gewijzigd prijsmodel valt dan meteen op.
+    """
+    cap: int
+    spent: int = 0
+    remaining: int | None = None
+    calls: list[tuple[str, int]] = field(default_factory=list)
+
+    def can_afford(self, cost: int) -> bool:
+        return self.spent + cost <= self.cap
+
+    def require(self, cost: int, what: str = "") -> None:
+        """Zelfde als `can_afford`, maar werpt `BudgetExhausted` in plaats van False te geven."""
+        if not self.can_afford(cost):
+            raise BudgetExhausted(
+                f"plafond {self.cap} credits bereikt (al {self.spent} uitgegeven); "
+                f"{what or 'deze aanroep'} kost er {cost}")
+
+    def record(self, response: "OddsResponse", what: str = "") -> None:
+        cost = response.cost if response.cost is not None else 0
+        self.spent += cost
+        self.remaining = response.requests_remaining
+        self.calls.append((what, cost))
+
+    def report(self) -> str:
+        """Eén regel voor het runrapport."""
+        rest = f", nog {self.remaining} over" if self.remaining is not None else ""
+        return f"{self.spent} van {self.cap} credits gebruikt in {len(self.calls)} aanroep(en){rest}"
+
+
 class QuotaWarning(RuntimeError):
     """Geen fout, maar een signaal om te stoppen: quota bijna op."""
 
