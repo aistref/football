@@ -182,7 +182,7 @@ Onderzocht, met de status er eerlijk bij:
 
 | Bron | Gratis? | Bruikbaar hier | Status |
 |---|---|---|---|
-| **Betfair Exchange API** — delayed app key | ja, voor persoonlijk gebruik | **beste kandidaat** | *deels geverifieerd* |
+| **Betfair Exchange API** — delayed app key | ja, voor persoonlijk gebruik | **nee — geen account mogelijk vanuit NL** | *afgevallen 15 aug* |
 | **OddsPapi** | claimt een gratis laag, 350+ boeken | mogelijk | *niet geverifieerd* |
 | **SportsGameOdds** — Amateur | ja | **nee** | *geverifieerd* |
 | **football-data.org** | ja | **nee** | *geverifieerd* |
@@ -191,17 +191,13 @@ Onderzocht, met de status er eerlijk bij:
 
 Per regel, zodat een volgende run niet opnieuw hoeft te zoeken:
 
-- **Betfair Exchange.** De delayed app key is gratis voor persoonlijk gebruik; de eenmalige £499 is
-  alleen nodig om via de API te *wedden*, niet om prijzen te lézen. De vertraging op die sleutel is
-  hier onschadelijk: de runs lezen om 04:00 prijzen voor wedstrijden die 's middags beginnen. De
-  routine gebruikt Betfair-prijzen bovendien al (meerdere picks noteren "Betfair Exchange back,
-  exclusief commissie"), dus de betekenis van het getal is bekend. **Twee dingen om te controleren
-  vóór je hierop bouwt:** (1) of de markttypes `ASIAN_HANDICAP`, `OVER_UNDER_*`, `DOUBLE_CHANCE` en
-  `BOTH_TEAMS_TO_SCORE` in de gewenste competities aanwezig zijn — dat is aannemelijk maar níet
-  nagetrokken, de documentatie gaf op 15 aug een HTTP 403; (2) of je als speler in Nederland een
-  Betfair-account kunt openen, want Betfair heeft hier geen Kansspelautoriteit-vergunning. Zonder
-  account geen app key. Integratie kost een nieuwe `scripts/betfair.py`; de rest van de pijplijn
-  (`best_by_line`, de zes poorten) verandert niet.
+- **Betfair Exchange — afgevallen.** De delayed app key is inderdaad gratis, maar een app key hangt
+  aan een Betfair-account, en dat is vanuit Nederland niet te openen: Betfair heeft hier geen
+  Kansspelautoriteit-vergunning. Bevestigd door de gebruiker op 15 aug 2026. Ter voorkoming van een
+  herhaling van dit onderzoek: het is **geen netwerkprobleem aan onze kant**. Vanuit de container
+  (die in de VS draait, gemeten CloudFront-pop ATL59) antwoorden `identitysso.betfair.com` en
+  `api.betfair.com` allebei netjes met HTTP 403, dus ze zijn bereikbaar. De blokkade zit bij de
+  accountregistratie, en daar helpt de locatie van de container niet tegen.
 - **OddsPapi.** De prijspagina rekent naar "$0.00 per month" bij lage instellingen, maar noemt geen
   concrete limieten, en `/pricing` gaf HTTP 403. Claim uit tweedehandsbronnen: gratis laag met 350+
   boeken. **Niet geverifieerd** — voordat hier tijd in gaat, eerst de werkelijke limieten en de

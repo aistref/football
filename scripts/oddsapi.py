@@ -79,6 +79,24 @@ def suggest_cap(remaining: int, days_left: int, runs_per_day: int = 2, reserve: 
     return usable // slots
 
 
+def rotate_for_day(items: list, day, take: int) -> list:
+    """Kies `take` items uit `items`, en schuif elke dag op zodat na een paar dagen alles is geweest.
+
+    Nodig sinds 15 aug 2026: het creditplafond laat maar een handvol competities per run toe voor
+    `spreads,totals`. Altijd dezelfde vier nemen betekent dat vier competities structureel nooit een
+    handicap of totaal te zien krijgen — en dat is precies de stille blinde vlek die §6b-5b moest
+    wegnemen. Met roulatie heeft elke competitie om de zoveel dagen zijn beurt, en `1X2` is er via
+    BetExplorer sowieso elke dag voor allemaal.
+
+    Geef `items` in volgorde van datakwaliteit mee; bij gelijke beurt wint dan de betere bron.
+    """
+    if take >= len(items) or not items:
+        return list(items)
+    offset = (day.toordinal() * take) % len(items)
+    doubled = list(items) + list(items)
+    return doubled[offset:offset + take]
+
+
 @dataclass
 class CreditGuard:
     """Bewaakt het creditverbruik binnen één run.

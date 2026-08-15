@@ -146,9 +146,31 @@ guard = CreditGuard(cap=cap)
 
 Geef de credits uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
 
-1. `spreads,totals` voor de competities met de **beste datakwaliteit** eerst (2 per competitie);
-2. `double_chance,btts` alleen voor wedstrijden die **kans maken op de topselectie** — niet voor elke
-   wedstrijd met een kandidaat-edge, zoals tot 15 aug gebeurde (dat waren er die dag vijftien).
+1. `spreads,totals` (2 per competitie), voor de competities die **vandaag aan de beurt zijn**:
+
+   ```python
+   from scripts.oddsapi import rotate_for_day
+   vandaag_aan_de_beurt = rotate_for_day(comps_op_datakwaliteit, date.today(), take=cap // 2)
+   ```
+
+   Roteren en niet altijd de beste vier: bij een plafond van 8 credits passen er maar vier, en
+   steeds dezelfde vier nemen betekent dat de andere vier structureel nooit een handicap of totaal
+   krijgen. Dat is precies de stille blinde vlek die §6b-5b moest wegnemen. Met roulatie is elke
+   competitie om de dag aan de beurt, en 1X2 heeft elke competitie sowieso elke dag (gratis).
+2. `double_chance,btts` **alleen als er daarna nog credits over zijn** — in de praktijk dus meestal
+   niet. Dit is geen bezuiniging op gevoel maar op een meting van 15 aug 2026, de dag waarop deze
+   markten voor het eerst werden opgevraagd:
+
+   | Creditgroep | Kosten in Run A | Bets eruit | Per bet |
+   |---|---|---|---|
+   | `spreads,totals` (bulk) | 16 | 12 van de 15 | **1,3 credits** |
+   | `h2h` (bulk, nu gratis via BetExplorer) | 8 | 2 van de 15 | 4 credits |
+   | `double_chance,btts` (per wedstrijd, 15x) | **30** | **1 van de 15** | **30 credits** |
+
+   Dertig credits voor één bet, tegen 1,3 voor de bulkmarkten: een factor 23. Zolang het budget
+   krap is, is dit de eerste die eraf gaat. **Let op dat dit één dag meten is** (§6d), dus het is
+   een budgetkeuze en geen bevinding over de markten zelf: komt er ooit meer ruimte, zet ze dan
+   terug en meet opnieuw voordat je concludeert dat DC en BTTS weinig opleveren.
 
 Een markt die je door het plafond niet hebt opgevraagd is **bekeken met een reden**, niet een gat:
 noteer hem in `markets_checked` als `"DC": "niet opgevraagd — creditplafond van de run bereikt"`.
