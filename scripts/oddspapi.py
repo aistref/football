@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""OddsPapi — **reservebron** voor odds. Staat standaard uit en draait nooit vanzelf.
+
+WAAROM DIT BESTAAT (15 aug 2026, op verzoek van de gebruiker)
+-------------------------------------------------------------
+The Odds API is de gratis Starter: 500 credits per maand. OddsPapi komt daar naast te staan met
+**250 verzoeken per maand** — dat is krap, ongeveer vier per run bij twee runs per dag. Het is dus
+uitdrukkelijk een noodvoorraad voor als de credits van The Odds API op zijn, en geen tweede bron
+die elke ochtend meedraait.
+
+DE TWEE SLOTEN
+--------------
+De gebruiker vroeg expliciet: reserve, en niet automatisch draaien. Daarom moeten er **twee**
+onafhankelijke voorwaarden waar zijn voordat er ook maar één verzoek uitgaat:
+
+1. `data/odds-fallback.json` staat op `"armed": true`. Dat bestand is versiebeheerd en de run
+   **mag hem nooit zelf omzetten** — anders kan een run zichzelf toestemming geven en is de
+   voorraad in één ochtend weg. Alleen een mens zet hem aan.
+2. The Odds API is werkelijk (bijna) op: `remaining <= threshold` uit datzelfde bestand.
+
+Ontbreekt `ODDSPAPI_KEY`, dan gebeurt er sowieso niets. De sleutel mag dus rustig in de omgeving
+staan zonder dat er iets verandert — dat was precies de vraag.
+
+WAT HIER NOG NIET VASTSTAAT
+---------------------------
+Basis-URL en authenticatie zijn wél nagetrokken op 15 aug 2026 uit hun documentatie:
+
+    https://v5.oddspapi.io/{taal}/...?apiKey=...        (taal: en, es, fr, pt, de, it, ru, zh)
+    fout zonder sleutel: {"error":401,"message":"missing apiKey","code":"missing_api_key"}
+
+De **exacte fixture- en odds-paden niet**. OddsPapi controleert de sleutel vóór de routering, dus
+zonder sleutel geeft élk pad 401 — ook een verzonnen pad. Bestaande en niet-bestaande endpoints zijn
+daardoor niet te onderscheiden zolang er geen sleutel is. `discover()` lost dat op zodra hij er wel
+is: die probeert de kandidaten één voor één en onthoudt wat werkt in `data/odds-fallback.json`, zodat
+het maar één keer hoeft.
+
+Alleen de standaardbibliotheek.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import urllib.error
+import urllib.parse
+import urllib.request
+from dataclasses import dataclass, field
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+STATE = ROOT / "data" / "odds-fallback.json"
+
+BASE = "https://v5.oddspapi.io"
+LANG = "en"
+TIMEOUT = 35
+
+# Kandidaatpaden uit de endpointlijst in hun documentatie-index ("Fixtures Today", "Fixtures
+# Filtered", "Fixture Odds"). Welke spelling het werkelijk is, wijst `discover()` uit.
+FIXTURE_PATH_CANDIDATES = ("/fixtures/today", "/fixtures", "/fixtures/filtered")
+ODDS_PATH_CANDIDATES = ("/fixtures/odds", "/fixture-odds", "/odds")
+
+
+class OddsPapiError(RuntimeError):
+    pass
+
+
+class NotArmed(RuntimeError):
+    """Geen fout: de reservebron staat uit, of is niet nodig. Ga gewoon verder zonder."""
+
+
+@dataclass
+class FallbackState:
+    armed: bool = False
+    threshold: int = 20
+    monthly_quota: int = 250
+    used_this_month: int = 0
+    period: str = ""
+    endpoints: dict = field(default_factory=dict)
+    notes: str = ""
+
+    @classmethod
+    def load(cls) -> "FallbackState":
+        if not STATE.exists():
+            return cls()
+        raw = json.loads(STATE.read_text())
+        known = {k: v for k, v in raw.items() if k in cls.__dataclass_fields__}
+        return cls(**known)
+
+    def save(self) -> None:
+        current = json.loads(STATE.read_text()) if STATE.exists() else {}
+        current.update({k: getattr(self, k) for k in self.__dataclass_fields__})
+        STATE.write_text(json.dumps(current, ensure_ascii=False, indent=1) + "\n")
+
+
+def api_key() -> str | None:
+    return os.environ.get("ODDSPAPI_KEY") or None
+
+
+def should_use(odds_api_remaining: int | None) -> tuple[bool, str]:
+    """Mag de reservebron deze run aan? Geeft (ja/nee, reden) — de reden gaat in het runrapport.
+
+    Beide sloten moeten open: handmatig gewapend, én The Odds API daadwerkelijk (bijna) op.
+    """
+    state = FallbackState.load()
+    if not api_key():
+        return False, "ODDSPAPI_KEY niet gezet"
+    if not state.armed:
+        return False, "reservebron staat uit (armed=false in data/odds-fallback.json)"
+    if state.used_this_month >= state.monthly_quota:
+        return False, (f"maandquotum op ({state.used_this_month}/{state.monthly_quota}); "
+                       f"periode {state.period or 'onbekend'}")
+    if odds_api_remaining is None:
+        return False, "credits van The Odds API onbekend — bij twijfel de reserve niet aanspreken"
+    if odds_api_remaining > state.threshold:
+        return False, (f"niet nodig: The Odds API heeft nog {odds_api_remaining} credits "
+                       f"(drempel {state.threshold})")
+    return True, (f"The Odds API staat op {odds_api_remaining} credits (drempel {state.threshold}) "
+                  f"en de reserve is gewapend; nog "
+                  f"{state.monthly_quota - state.used_this_month} verzoeken over deze maand")
+
+
+def _get(path: str, params: dict | None = None) -> tuple[int, dict, bytes]:
+    key = api_key()
+    if not key:
+        raise OddsPapiError("ODDSPAPI_KEY niet gezet")
+    query = dict(params or {})
+    query["apiKey"] = key
+    url = f"{BASE}/{LANG}{path}?{urllib.parse.urlencode(query)}"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(
+                url, headers={"User-Agent": "Mozilla/5.0"}), timeout=TIMEOUT) as resp:
+            return resp.status, dict(resp.headers), resp.read()
+    except urllib.error.HTTPError as exc:
+        return exc.code, dict(exc.headers or {}), exc.read() or b""
+
+
+def request(path: str, params: dict | None = None, *, count: bool = True) -> dict | list:
+    """Eén verzoek, en tel hem mee tegen het maandquotum.
+
+    Zelf tellen is hier nodig: OddsPapi geeft `X-RateLimit-*` voor verzoeken per seconde en per
+    minuut, maar geen teller voor het maandquotum. Zonder eigen boekhouding merk je pas dat de 250
+    op zijn wanneer hij op is.
+    """
+    status, headers, body = _get(path, params)
+    if count:
+        state = FallbackState.load()
+        state.used_this_month += 1
+        state.save()
+    if status != 200:
+        raise OddsPapiError(f"HTTP {status} op {path}: {body[:200].decode(errors='replace')}")
+    return json.loads(body)
+
+
+def discover() -> dict:
+    """Zoek eenmalig uit welke paden echt bestaan en leg ze vast.
+
+    Kost hooguit een paar verzoeken en hoeft maar één keer; daarna staat het in
+    `data/odds-fallback.json` onder `endpoints`. Draai dit als eerste zodra de sleutel er is —
+    liefst met de hand, niet midden in een run, want een run met een lege oddsbron is een run
+    zonder bets.
+    """
+    state = FallbackState.load()
+    found = dict(state.endpoints)
+    for naam, kandidaten in (("fixtures", FIXTURE_PATH_CANDIDATES), ("odds", ODDS_PATH_CANDIDATES)):
+        if found.get(naam):
+            continue
+        for pad in kandidaten:
+            status, _, body = _get(pad)
+            state.used_this_month += 1
+            if status == 200:
+                found[naam] = pad
+                break
+            if status not in (404, 400):
+                # 401/403 = sleutelprobleem, niet een verkeerd pad: stoppen heeft geen zin verder.
+                found[naam] = f"onbekend (HTTP {status}: {body[:120].decode(errors='replace')})"
+                break
+    state.endpoints = found
+    state.save()
+    return found
+
+
+if __name__ == "__main__":
+    import sys
+    state = FallbackState.load()
+    ok, reden = should_use(odds_api_remaining=None)
+    print("OddsPapi — reservebron")
+    print(f"  sleutel gezet   : {'ja' if api_key() else 'nee'}")
+    print(f"  gewapend        : {state.armed}")
+    print(f"  drempel         : The Odds API <= {state.threshold} credits")
+    print(f"  maandquotum     : {state.used_this_month}/{state.monthly_quota} gebruikt"
+          f"{' — periode ' + state.period if state.period else ''}")
+    print(f"  bekende paden   : {state.endpoints or 'nog niet ontdekt (draai: discover)'}")
+    print(f"  nu inzetbaar    : {ok} — {reden}")
+    if len(sys.argv) > 1 and sys.argv[1] == "discover":
+        if not api_key():
+            raise SystemExit("ODDSPAPI_KEY niet gezet — niets te ontdekken.")
+        print("\nontdekken...", discover())

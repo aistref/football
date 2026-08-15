@@ -193,6 +193,43 @@ was. Daarom:
 Ga niet alsnog een `h2h`-bulkcall doen om dat recht te trekken: dat kost precies de 8 credits per run
 die deze paragraaf bespaart.
 
+### 1b. De reservebron: OddsPapi — uit, tenzij een mens hem aanzet
+
+Er is een tweede oddsbron beschikbaar, met **250 verzoeken per maand**. Dat is ongeveer vier per run
+en dus geen tweede leverancier maar een noodvoorraad. Hij is er voor precies één geval: The Odds API
+is door zijn maandbudget heen en de runs zouden anders zonder prijzen komen te staan — en een run
+zonder prijzen levert per definitie nul bets.
+
+**De run zet hem nooit zelf aan.** Er zijn twee sloten en ze moeten allebei open:
+
+1. `data/odds-fallback.json` staat op `"armed": true`. Dit veld is **van de gebruiker**. Een run die
+   het zelf zou mogen omzetten, kan zichzelf toestemming geven en de hele voorraad in één ochtend
+   opmaken. Kom je een run tegen waarin dat nodig lijkt: doe het niet, meld het in het runrapport en
+   in de notificatie, en laat de gebruiker beslissen.
+2. The Odds API zit op of onder `threshold` credits (standaard 20).
+
+In code:
+
+```python
+from scripts.oddspapi import should_use
+inzetbaar, reden = should_use(odds_api_remaining)   # remaining komt uit api_check.py
+```
+
+Neem `reden` **elke run** letterlijk over in het runrapport onder "Bronstatus deze run", ook — juist —
+als hij niet is ingezet. Zo is achteraf te zien dat de reserve er was en waarom hij bleef staan.
+
+Twee dingen om te weten voordat je hem gebruikt:
+
+- **De endpoints staan nog niet vast.** Basis-URL (`https://v5.oddspapi.io/{taal}/…`) en de
+  `apiKey`-queryparameter zijn nagetrokken; de precieze fixture- en odds-paden niet, omdat OddsPapi
+  de sleutel vóór de routering controleert en zonder sleutel élk pad 401 geeft. Draai daarom
+  eenmalig `python3 scripts/oddspapi.py discover` zodra de sleutel er is — met de hand en niet
+  midden in een run, want een run die pas tijdens het ophalen ontdekt dat een pad niet klopt, staat
+  zonder odds.
+- **Tel zelf mee.** OddsPapi geeft `X-RateLimit-*` per seconde en per minuut, maar geen teller voor
+  het maandquotum. `scripts/oddspapi.py` houdt `used_this_month` daarom zelf bij in
+  `data/odds-fallback.json`; zet die bij een nieuwe periode met de hand op 0.
+
 ### Welke markt je publiceert: `selection_score`, hoogste wint
 
 Dezelfde onderliggende inschatting levert vaak op vier tot zeven markten tegelijk een edge op.

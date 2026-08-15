@@ -130,10 +130,36 @@ def check_api_football() -> bool:
     return True
 
 
+def check_oddspapi() -> None:
+    """Toon de stand van de reservebron. Doet met opzet **geen** enkel verzoek.
+
+    De reserve is 250 verzoeken per maand; die opmaken aan een statuscontrole zou hem waardeloos
+    maken. Deze functie leest alleen de schakelaar in data/odds-fallback.json en of de sleutel
+    gezet is.
+    """
+    print("\n=== OddsPapi (reserve-oddsbron) ===")
+    try:
+        from scripts.oddspapi import FallbackState, api_key
+    except ImportError:
+        from oddspapi import FallbackState, api_key  # type: ignore
+    state = FallbackState.load()
+    if not api_key():
+        print("  ODDSPAPI_KEY niet gezet — reserve niet beschikbaar.")
+    else:
+        print(f"  Sleutel gezet. Gewapend: {'JA' if state.armed else 'nee'} "
+              f"(armed in data/odds-fallback.json).")
+    print(f"  Springt pas bij: The Odds API <= {state.threshold} credits over.")
+    print(f"  Maandquotum: {state.used_this_month} van {state.monthly_quota} gebruikt.")
+    if api_key() and not state.endpoints:
+        print("  Endpoints nog niet ontdekt — draai eenmalig: python3 scripts/oddspapi.py discover")
+    print("  (Deze controle doet geen verzoek; dat zou de reserve aanspreken.)")
+
+
 def main() -> int:
     print("Controle van de databronnen die een sleutel nodig hebben.")
     odds_ok = check_odds_api()
     stats_ok = check_api_football()
+    check_oddspapi()
 
     print("\n=== Samenvatting ===")
     print(f"  odds (prijzen)        {'OK' if odds_ok else 'niet beschikbaar'}")

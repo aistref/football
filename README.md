@@ -159,6 +159,7 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 |---|---|---|---|
 | `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Nee — op het gratis plan waardeloos, zie de waarschuwing hieronder** |
 | `ODDS_API_KEY` | the-odds-api.com (gratis: 500 credits/maand) | odds per bookmaker als JSON | Ja, dit is de enige bron met een herleidbare bookmaker |
+| `ODDSPAPI_KEY` | oddspapi.io (gratis: 250 verzoeken/maand) | reserve-oddsbron | Optioneel — **staat standaard uit**, zie hieronder |
 
 > **Het gratis plan van api-football.com is niet bruikbaar voor deze routine.** Gemeten op 10 aug
 > 2026: de sleutel is geldig en `api_check.py` meldt "OK", maar elk verzoek om een seizoen ná 2024
@@ -198,10 +199,23 @@ Per regel, zodat een volgende run niet opnieuw hoeft te zoeken:
   (die in de VS draait, gemeten CloudFront-pop ATL59) antwoorden `identitysso.betfair.com` en
   `api.betfair.com` allebei netjes met HTTP 403, dus ze zijn bereikbaar. De blokkade zit bij de
   accountregistratie, en daar helpt de locatie van de container niet tegen.
-- **OddsPapi.** De prijspagina rekent naar "$0.00 per month" bij lage instellingen, maar noemt geen
-  concrete limieten, en `/pricing` gaf HTTP 403. Claim uit tweedehandsbronnen: gratis laag met 350+
-  boeken. **Niet geverifieerd** — voordat hier tijd in gaat, eerst de werkelijke limieten en de
-  Europese competitiedekking opvragen.
+- **OddsPapi — ingebouwd als reserve op 15 aug 2026.** De gebruiker heeft een sleutel met **250
+  verzoeken per maand**. Dat is ongeveer vier per run, dus geen tweede leverancier maar een
+  noodvoorraad. `scripts/oddspapi.py` implementeert hem met **twee sloten**: de sleutel alleen doet
+  niets, er moet óók `"armed": true` staan in `data/odds-fallback.json`, én The Odds API moet op of
+  onder de drempel (20 credits) zitten. De run mag `armed` **nooit zelf omzetten** — anders kan een
+  run zichzelf toestemming geven en is de voorraad in één ochtend weg.
+
+  Nagetrokken: basis-URL `https://v5.oddspapi.io/{taal}/…` met de sleutel als `apiKey`-queryparameter,
+  en de foutvorm zonder sleutel (`{"error":401,...,"code":"missing_api_key"}`). Níet nagetrokken: de
+  exacte fixture- en odds-paden, want OddsPapi controleert de sleutel vóór de routering, dus zonder
+  sleutel geeft élk pad 401 — een verzonnen pad net zo goed als een echt pad. Draai daarom eenmalig,
+  met de hand, zodra de sleutel in de omgeving staat:
+
+  ```bash
+  python3 scripts/oddspapi.py            # toont de stand, doet geen enkel verzoek
+  python3 scripts/oddspapi.py discover   # zoekt de juiste paden, kost een paar verzoeken
+  ```
 - **SportsGameOdds, Amateur-plan.** Geverifieerd afgevallen: gratis dekt acht competities, waarvan
   qua voetbal alleen Champions League en MLS. Binnenlandse Europese competities beginnen bij het
   betaalde Rookie-plan ($99/maand). Ook een maandcap van 2,5k objecten.
