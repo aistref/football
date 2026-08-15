@@ -172,6 +172,56 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 > betaald plan nodig; laat het gratis plan anders gewoon staan, `source-health.json` markeert hem
 > als `plan_limited` en de datadekkingspoort slaat hem dan over.
 
+### Reservebronnen als de credits op zijn (onderzocht 15 aug 2026)
+
+Sinds 15 aug komt 1X2 gratis van BetExplorer en geldt er een creditplafond per run (`_shared-rules.md`
+§1a). Wat dan nog credits kost is **Asian Handicap en Over/Under** (2 per competitie) en **Double
+Chance en BTTS** (2 per wedstrijd). Een reservebron hoeft dus alleen díe markten te dekken.
+
+Onderzocht, met de status er eerlijk bij:
+
+| Bron | Gratis? | Bruikbaar hier | Status |
+|---|---|---|---|
+| **Betfair Exchange API** — delayed app key | ja, voor persoonlijk gebruik | **beste kandidaat** | *deels geverifieerd* |
+| **OddsPapi** | claimt een gratis laag, 350+ boeken | mogelijk | *niet geverifieerd* |
+| **SportsGameOdds** — Amateur | ja | **nee** | *geverifieerd* |
+| **football-data.org** | ja | **nee** | *geverifieerd* |
+| **api-football.com** — gratis plan | ja | **nee** | *geverifieerd, zie hierboven* |
+| **Een tweede gratis The Odds API-account** | ja | technisch triviaal | **afgeraden** |
+
+Per regel, zodat een volgende run niet opnieuw hoeft te zoeken:
+
+- **Betfair Exchange.** De delayed app key is gratis voor persoonlijk gebruik; de eenmalige £499 is
+  alleen nodig om via de API te *wedden*, niet om prijzen te lézen. De vertraging op die sleutel is
+  hier onschadelijk: de runs lezen om 04:00 prijzen voor wedstrijden die 's middags beginnen. De
+  routine gebruikt Betfair-prijzen bovendien al (meerdere picks noteren "Betfair Exchange back,
+  exclusief commissie"), dus de betekenis van het getal is bekend. **Twee dingen om te controleren
+  vóór je hierop bouwt:** (1) of de markttypes `ASIAN_HANDICAP`, `OVER_UNDER_*`, `DOUBLE_CHANCE` en
+  `BOTH_TEAMS_TO_SCORE` in de gewenste competities aanwezig zijn — dat is aannemelijk maar níet
+  nagetrokken, de documentatie gaf op 15 aug een HTTP 403; (2) of je als speler in Nederland een
+  Betfair-account kunt openen, want Betfair heeft hier geen Kansspelautoriteit-vergunning. Zonder
+  account geen app key. Integratie kost een nieuwe `scripts/betfair.py`; de rest van de pijplijn
+  (`best_by_line`, de zes poorten) verandert niet.
+- **OddsPapi.** De prijspagina rekent naar "$0.00 per month" bij lage instellingen, maar noemt geen
+  concrete limieten, en `/pricing` gaf HTTP 403. Claim uit tweedehandsbronnen: gratis laag met 350+
+  boeken. **Niet geverifieerd** — voordat hier tijd in gaat, eerst de werkelijke limieten en de
+  Europese competitiedekking opvragen.
+- **SportsGameOdds, Amateur-plan.** Geverifieerd afgevallen: gratis dekt acht competities, waarvan
+  qua voetbal alleen Champions League en MLS. Binnenlandse Europese competities beginnen bij het
+  betaalde Rookie-plan ($99/maand). Ook een maandcap van 2,5k objecten.
+- **football-data.org.** Geverifieerd afgevallen: het gratis plan geeft fixtures, standen en
+  vertraagde uitslagen — dingen die Fotmob hier al gratis levert. Odds zijn een add-on van €15/maand,
+  xG zit er niet in.
+- **Een tweede The Odds API-account.** Zou 500 credits per maand extra geven en kost nul
+  integratiewerk. Toch afgeraden: meerdere gratis accounts om een limiet te omzeilen is vrijwel zeker
+  in strijd met hun voorwaarden, en dat is dezelfde soort omzeiling die §3 voor de dichtgezette sites
+  verbiedt. Wie meer volume nodig heeft, koopt het 20K-plan ($30/maand) — dat geeft 40x de ruimte en
+  maakt deze hele paragraaf overbodig.
+
+**Waar géén reservebron voor nodig is:** de kanskant. `api_check.py` noemt de statistieken-sleutel
+"de sleutel die telt", maar dat is achterhaald sinds Fotmob team-xG levert zonder sleutel — op 15 aug
+voor negen competities over twee seizoenen, foutloos. De bottleneck is uitsluitend de prijskant.
+
 ### Stappen
 
 1. Maak een gratis account op api-football.com en kopieer de sleutel uit je dashboard.
