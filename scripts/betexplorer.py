@@ -190,6 +190,13 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "Serie A (ITA)": "https://www.betexplorer.com/football/italy/serie-a/",
     "Bundesliga (GER)": "https://www.betexplorer.com/football/germany/bundesliga/",
     "Ligue 1 (FRA)": "https://www.betexplorer.com/football/france/ligue-1/",
+    # Toegevoegd 16 aug 2026 (Run B), alle vier nagetrokken met fetch_league_fixtures en niet-leeg
+    # bevonden. Dit waren de laatste vier competities van de Run B-runlijst met wedstrijden waarvoor
+    # de slug nog elke run opnieuw geraden moest worden.
+    "Eliteserien (NOR)": "https://www.betexplorer.com/football/norway/eliteserien/",
+    "Segunda División (ESP)": "https://www.betexplorer.com/football/spain/laliga2/",
+    "2. Bundesliga (GER)": "https://www.betexplorer.com/football/germany/2-bundesliga/",
+    "Austrian Bundesliga (AUT)": "https://www.betexplorer.com/football/austria/bundesliga/",
 }
 
 
