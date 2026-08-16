@@ -162,14 +162,29 @@ def cmd_settle(args: argparse.Namespace) -> int:
             r["settled_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
             if args.score:
                 r["settled_score"] = args.score
+            if args.units is not None:
+                r["settled_units"] = args.units
             save(rows)
-            print(f"{args.id} -> {args.result}")
+            extra = f" ({args.units:+.2f}u)" if args.units is not None else ""
+            print(f"{args.id} -> {args.result}{extra}")
             return 0
     die(f"schaduwpick niet gevonden: {args.id}")
     return 1
 
 
 # ------------------------------------------------------------------------ meten
+
+def ledger_units(row: dict) -> float:
+    """Netto resultaat bij 1u inzet — zie ledger.pick_units.
+
+    Een kwartlijn splitst in twee halve bets en kan dus half winnen of half verliezen. Staat er
+    een expliciete `settled_units`, dan telt die; anders is het een hele win of een heel verlies.
+    """
+    units = row.get("settled_units")
+    if units is not None:
+        return float(units)
+    return row["odds"] - 1 if row["result"] == "won" else -1.0
+
 
 def summarise(rows: list[dict], label: str) -> None:
     decided = [r for r in rows if r.get("result") in ("won", "lost")]
@@ -182,7 +197,7 @@ def summarise(rows: list[dict], label: str) -> None:
         print("  Nog niets afgewikkeld — er valt nog niets te meten.")
         return
 
-    profit = sum(r["odds"] - 1 for r in won) - (len(decided) - len(won))
+    profit = sum(ledger_units(r) for r in decided)
     print(f"  hit rate         {len(won)}/{len(decided)} = {100 * len(won) / len(decided):.1f}%")
     print(f"  ROI (1u flat)    {profit:+.2f}u over {len(decided)} = {100 * profit / len(decided):+.1f}%")
     print(f"  gem. odds        {sum(r['odds'] for r in decided) / len(decided):.2f}"
@@ -232,6 +247,9 @@ def main() -> int:
     p_set.add_argument("id")
     p_set.add_argument("result", choices=CLOSED)
     p_set.add_argument("--score", help="eindstand, bv. 2-1")
+    p_set.add_argument("--units", type=float, default=None,
+                       help="netto eenheden bij 1u inzet, alleen bij een halve uitkomst op een "
+                            "kwartlijn (half verlies = -0.5, half winst = (odds-1)/2)")
 
     p_st = sub.add_parser("stats", help="hit rate en ROI van wat er is tegengehouden")
     p_st.add_argument("--gate", help="filter op afwijsgrond, bv. tweede_methode")

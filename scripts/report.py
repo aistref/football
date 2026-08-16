@@ -122,7 +122,7 @@ def risk_class(pick: dict, prose: dict) -> tuple[str, str]:
 def ledger_summary(picks: list[dict]) -> dict:
     settled = [p for p in picks if p.get("result") in ("won", "lost")]
     won = [p for p in settled if p["result"] == "won"]
-    profit = sum(p["odds"] - 1 for p in won) - len(settled) + len(won)
+    profit = sum(ledger.pick_units(p) for p in settled)
     own = ledger.brier([(p["my_prob"], 1 if p["result"] == "won" else 0) for p in settled])
     market = ledger.brier([(p["implied_prob"], 1 if p["result"] == "won" else 0) for p in settled])
     return {"settled": len(settled), "won": len(won), "profit": profit,

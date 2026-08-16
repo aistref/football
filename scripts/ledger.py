@@ -229,8 +229,11 @@ def cmd_settle(args: argparse.Namespace) -> int:
             pick["settled_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
             if args.score:
                 pick["settled_score"] = args.score
+            if args.units is not None:
+                pick["settled_units"] = args.units
             save_picks(picks)
-            print(f"{args.id} -> {args.result}")
+            extra = f" ({args.units:+.2f}u)" if args.units is not None else ""
+            print(f"{args.id} -> {args.result}{extra}")
             return 0
     die(f"pick niet gevonden: {args.id}")
     return 1
@@ -267,6 +270,20 @@ def brier(pairs: list[tuple[float, int]]) -> float | None:
     return sum((p - o) ** 2 for p, o in pairs) / len(pairs) if pairs else None
 
 
+def pick_units(pick: dict) -> float:
+    """Netto resultaat van een afgewikkelde pick bij 1u inzet.
+
+    Een kwartlijn (AH +0.25, Over 2.25) splitst in twee halve bets en kan dus half winnen of
+    half verliezen. Dat past niet in won/lost/void, en het als hele win of heel verlies boeken
+    vertekent de ROI — sinds 15 aug 2026 is Asian Handicap de grootste markt in het logboek, dus
+    dat is geen randgeval meer. Staat er een expliciete `settled_units`, dan telt die.
+    """
+    units = pick.get("settled_units")
+    if units is not None:
+        return float(units)
+    return pick["odds"] - 1 if pick["result"] == "won" else -1.0
+
+
 def summarise(picks: list[dict], label: str) -> None:
     closed = [p for p in picks if p.get("result") in RESULTS_CLOSED]
     decided = [p for p in closed if p["result"] != "void"]
@@ -281,12 +298,16 @@ def summarise(picks: list[dict], label: str) -> None:
         print("  Nog geen beslist resultaat — hit rate, ROI en Brier volgen zodra er afgewikkeld is.")
         return
 
-    profit = sum(p["odds"] - 1 for p in won) - (len(decided) - len(won))
+    profit = sum(pick_units(p) for p in decided)
+    partials = [p for p in decided if p.get("settled_units") is not None]
     avg_edge = sum(p["edge_pp"] for p in decided) / len(decided)
     avg_odds = sum(p["odds"] for p in decided) / len(decided)
 
     print(f"  hit rate         {len(won)}/{len(decided)} = {100 * len(won) / len(decided):.1f}%")
     print(f"  ROI (1u flat)    {profit:+.2f}u over {len(decided)} bets = {100 * profit / len(decided):+.1f}%")
+    if partials:
+        print(f"  waarvan {len(partials)} halve uitkomst(en) op een kwartlijn, geboekt op hun "
+              f"werkelijke inzetdeel")
     print(f"  gem. odds        {avg_odds:.2f}   gem. geclaimde edge {avg_edge:+.1f} pp")
 
     mine = brier([(p["my_prob"], 1 if p["result"] == "won" else 0) for p in decided])
@@ -342,6 +363,9 @@ def main() -> int:
     p_settle.add_argument("id")
     p_settle.add_argument("result", choices=RESULTS_CLOSED)
     p_settle.add_argument("--score", help="eindstand, bv. 2-1")
+    p_settle.add_argument("--units", type=float, default=None,
+                          help="netto eenheden bij 1u inzet, alleen bij een halve uitkomst op een "
+                               "kwartlijn (half verlies = -0.5, half winst = (odds-1)/2)")
 
     p_stats = sub.add_parser("stats", help="hit rate, ROI, Brier en kalibratie")
     p_stats.add_argument("--run", choices=("A", "B"))
