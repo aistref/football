@@ -763,7 +763,8 @@ in de lopende tekst. Noem bedragen, tijden en bookmakers concreet.
 
 Ook bij **nul bets** draait dit. De pagina zegt dan met zoveel woorden dat er niets gekwalificeerd
 heeft, en de dekkingstabel laat zien dat er wél gekeken is. Dat is precies het geval waarin een
-lege notificatie de gebruiker in het ongewisse laat.
+lege notificatie de gebruiker in het ongewisse laat — en sinds 17 aug 2026 gaat er bij nul bets dus
+ook echt een notificatie uit, met deze pagina eraan (§7).
 
 ---
 
@@ -771,20 +772,62 @@ lege notificatie de gebruiker in het ongewisse laat.
 
 De run draait terwijl niemand meekijkt; wat alleen in het transcript staat, bereikt niemand.
 
-**Stuur een notificatie bij:**
-- een niet-lege topselectie (leid met de beste bet en de aftraptijd);
-- een run die niet kon draaien, of nul bets door een **nieuwe** oorzaak (bron omgevallen,
-  fixtures onvindbaar, push geweigerd);
-- een afwikkelingsresultaat dat opvalt (bijv. een reeks van 5+ verliezende picks).
+**Elke run stuurt precies één notificatie. Altijd, ook bij nul bets, ook als er niets bijzonders
+is gebeurd.** Geen uitzonderingen, geen afweging — de afweging gaat alleen over de *inhoud*, niet
+over het wel of niet sturen. Dit is een wijziging van 17 aug 2026; de reden staat onderaan deze
+paragraaf en is belangrijk genoeg om te lezen voordat je hem terugdraait.
 
-**Stuur geen notificatie bij:**
-- nul bets om dezelfde reden als de vorige run (bijv. "nog steeds geen dekking voor deze comps");
-- een routinematige, gezonde run zonder gekwalificeerde bets.
+Zet in **elke** notificatie de link naar de HTML-pagina uit §6c. Dat is de plek waar de gebruiker
+het hele verhaal kan lezen, en zonder die link is de melding een dood bericht.
 
-**Stuur je er wel een, zet dan de link naar de HTML-pagina uit §6c erin** — dat is de plek waar
-de gebruiker het hele verhaal kan lezen. Houd de notificatie zelf kort: de beste bet, de koers,
-de bookmaker en de aftraptijd, dan de link. Geen methodediscussie in de notificatie; die staat
-op de pagina en in het markdown-rapport.
+### Welke vorm
+
+**Zijn er bets** — leid met de beste: markt en selectie, de koers, de bookmaker, de aftraptijd in
+NL-tijd. Dan het aantal overige bets, dan de link. Geen methodediscussie; die staat op de pagina en
+in het markdown-rapport.
+
+> Beste bet vandaag: Sønderjyske +1.25 @ 1.94 (Pinnacle), aftrap 20:00. Nog 2 andere bets in de
+> selectie. Hele verhaal: <link>
+
+**Zijn er geen bets** — dan is dit een hartslag: kort, feitelijk, en het moet er ondubbelzinnig in
+staan dat de run *gedraaid* heeft. Noem het aantal wedstrijden dat je bekeek, hoeveel er door de
+datadekkingspoort kwamen, en in één halve zin waaróm er niets kwalificeerde.
+
+> Run B gedraaid, 0 bets. 9 wedstrijden, 1 met datadekking; die viel af op robuustheid. Bronnen
+> allemaal in orde. <link>
+
+**Is er iets mis** — een afgewezen sleutel, een omgevallen bron, een geweigerde push, een run die
+niet op `main` staat, een afwikkelingsreeks die opvalt (5+ verliezers) — dan gaat dat **vooraan**,
+vóór de bets of de hartslag. Dit is het enige geval waarin de notificatie langer mag zijn dan drie
+regels: noem wat er stuk is en wat de gebruiker eraan kan doen.
+
+Meer dan één notificatie per run is niet de bedoeling. Heb je zowel bets als een blokkade, zet ze
+in hetzelfde bericht — blokkade eerst.
+
+### Waarom dit is veranderd (17 aug 2026, op verzoek van de gebruiker)
+
+Tot vandaag stond hier het omgekeerde: géén notificatie bij "een routinematige, gezonde run zonder
+gekwalificeerde bets". De bedoeling was de aandacht van de gebruiker te sparen, en op zichzelf is
+dat een goed doel. Maar de regel had een gat dat niemand had gezien: **een gezonde run met nul bets
+en een run die nooit is afgegaan, zien er van de telefoon af precies hetzelfde uit.** Beide zijn
+stilte.
+
+Dat is geen theoretisch bezwaar. Run B stuurde op 11, 12, 13 en 17 aug 2026 geen notificatie, elke
+keer correct volgens de oude regel, elke keer met een gepubliceerd dagrapport dat de gebruiker niet
+wist te bestaan. Op 17 aug was de eerste vraag van de gebruiker na die vier dagen: *"Why did run b
+didn't run this morning?"* — terwijl hij die ochtend om 05:11 gedraaid had, negen wedstrijden had
+bekeken, alle zes markten had doorgerekend en drie commits naar `main` had gepusht. De routine had
+vier dagen lang niet te onderscheiden gezwegen van een kapotte scheduler.
+
+De winst van de nieuwe regel zit niet in het bericht zelf maar in wat stilte nu betekent: zolang er
+elke run één melding komt, is **een uitgebleven melding zelf het signaal** dat er iets stuk is.
+Onder de oude regel was die informatie er niet, en kon de gebruiker een defect alleen ontdekken
+door in de repo te gaan kijken.
+
+De kosten zijn eerlijk te noemen: dit is één extra bericht per dag per run op dagen dat er niets te
+melden valt. Dat is precies wat de oude regel wilde voorkomen. De afweging is bewust die kant op
+gemaakt — een melding die de gebruiker één seconde kost weegt niet op tegen dagen waarin hij niet
+weet of zijn routine nog leeft. Draai dit niet terug zonder de vier dagen hierboven mee te wegen.
 
 ---
 
