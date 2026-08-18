@@ -139,15 +139,16 @@ def check_oddspapi() -> None:
     """
     print("\n=== OddsPapi (reserve-oddsbron) ===")
     try:
-        from scripts.oddspapi import FallbackState, api_key
+        from scripts.oddspapi import FallbackState, api_key, api_key_source, KEY_ENV_NAMES
     except ImportError:
-        from oddspapi import FallbackState, api_key  # type: ignore
+        from oddspapi import FallbackState, api_key, api_key_source, KEY_ENV_NAMES  # type: ignore
     state = FallbackState.load()
     if not api_key():
-        print("  ODDSPAPI_KEY niet gezet — reserve niet beschikbaar.")
+        print("  Geen sleutel gevonden onder een van de bekende namen "
+              f"({', '.join(KEY_ENV_NAMES)}) — reserve niet beschikbaar.")
     else:
-        print(f"  Sleutel gezet. Gewapend: {'JA' if state.armed else 'nee'} "
-              f"(armed in data/odds-fallback.json).")
+        print(f"  Sleutel gezet (omgevingsvariabele {api_key_source()}). "
+              f"Gewapend: {'JA' if state.armed else 'nee'} (armed in data/odds-fallback.json).")
     print(f"  Springt pas bij: The Odds API <= {state.threshold} credits over.")
     print(f"  Maandquotum: {state.used_this_month} van {state.monthly_quota} gebruikt.")
     if api_key() and not state.endpoints:

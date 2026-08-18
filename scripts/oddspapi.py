@@ -92,8 +92,38 @@ class FallbackState:
         STATE.write_text(json.dumps(current, ensure_ascii=False, indent=1) + "\n")
 
 
+#: Namen waaronder de sleutel in de omgeving kan staan. Nodig sinds 18 aug 2026: de gebruiker had
+#: hem al dagen gezet als `ODDSPapi_API_Key`, terwijl deze code alleen naar `ODDSPAPI_KEY` keek.
+#: Namen van omgevingsvariabelen zijn hoofdlettergevoelig, dus vier runs lang meldde de routine
+#: "ODDSPAPI_KEY niet gezet" terwijl de sleutel er gewoon was. Dat is precies de stille storing die
+#: §1b wilde voorkomen — vandaar dat er nu hoofdletterongevoelig op een handvol spellingen wordt
+#: gezocht in plaats van op één exacte naam.
+KEY_ENV_NAMES: tuple[str, ...] = ("ODDSPAPI_KEY", "ODDSPAPI_API_KEY", "ODDS_PAPI_KEY",
+                                   "ODDSPAPI_APIKEY", "ODDSPAPI")
+
+
 def api_key() -> str | None:
-    return os.environ.get("ODDSPAPI_KEY") or None
+    for name in KEY_ENV_NAMES:
+        value = os.environ.get(name)
+        if value:
+            return value
+    wanted = {n.replace("_", "").lower() for n in KEY_ENV_NAMES}
+    for name, value in os.environ.items():
+        if value and name.replace("_", "").lower() in wanted:
+            return value
+    return None
+
+
+def api_key_source() -> str | None:
+    """Onder welke naam de sleutel gevonden is — voor het runrapport en `api_check.py`."""
+    for name in KEY_ENV_NAMES:
+        if os.environ.get(name):
+            return name
+    wanted = {n.replace("_", "").lower() for n in KEY_ENV_NAMES}
+    for name, value in os.environ.items():
+        if value and name.replace("_", "").lower() in wanted:
+            return name
+    return None
 
 
 def should_use(odds_api_remaining: int | None) -> tuple[bool, str]:

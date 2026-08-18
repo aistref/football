@@ -16,8 +16,11 @@
  "armed": false,
  "threshold": 20,
  "monthly_quota": 250,
- "used_this_month": 0,
- "period": "",
- "endpoints": {},
- "notes": "Nog niet in gebruik. Basis-URL en apiKey-parameter zijn nagetrokken op 15 aug 2026; de exacte fixture- en odds-paden nog niet, want zonder sleutel geeft elk pad 401. Draai eenmalig 'python3 scripts/oddspapi.py discover' zodra ODDSPAPI_KEY in de omgeving staat."
+ "used_this_month": 11,
+ "period": "2026-08",
+ "endpoints": {
+  "fixtures": "onbepaald (HTTP 401: {\"error\":401,\"message\":\"invalid apiKey\",\"code\":\"invalid_api_key\"})",
+  "odds": "onbepaald (HTTP 401: {\"error\":401,\"message\":\"invalid apiKey\",\"code\":\"invalid_api_key\"})"
+ },
+ "notes": "18 aug 2026 (Run A, nagekomen): de sleutel STAAT in de omgeving, maar onder de naam 'ODDSPapi_API_Key' terwijl scripts/oddspapi.py alleen naar 'ODDSPAPI_KEY' keek. Namen van omgevingsvariabelen zijn hoofdlettergevoelig, dus vier runs lang meldde de routine 'niet gezet' terwijl hij er gewoon was. api_key() zoekt nu hoofdletterongevoelig over KEY_ENV_NAMES. Daarna ensure_discovered() gedraaid: beide padfamilies HTTP 401 invalid_api_key. Vervolgens uitgezocht of het aan de verzendwijze lag, met 9 extra verzoeken: 'apiKey' als queryparameter en 'x-api-key' als header geven allebei 'invalid apiKey'; api_key, apikey, key, token, de apiKey-header en Authorization: Bearer geven 'missing apiKey'. Dat verschil is het bewijs: de twee namen die de API kent lezen de sleutel WEL en wijzen de WAARDE af. Het pad en de verzendwijze uit §1b kloppen dus; de sleutel zelf is bij OddsPapi niet geldig (niet geactiveerd, verlopen, verkeerd project, of een overgetypte waarde). De endpoints blijven daarom 'onbepaald' -- dat is geen padprobleem en discover hoeft pas opnieuw als de sleutel werkt. Verbruik: 11 van de 250 deze periode."
 }

@@ -277,7 +277,21 @@ def render_near_misses(state: dict, labels: dict) -> str:
 </section>'''
 
 
-def render_finding(finding: dict) -> str:
+def render_finding(finding) -> str:
+    """Rendert één bevinding, of een lijst bevindingen achter elkaar.
+
+    De lijstvorm is toegevoegd op 18 aug 2026: die dag had de run twee losstaande dingen uit te
+    leggen (waarom een bet met voldoende voordeel toch niet is aanbevolen, en wat het kost dat een
+    databron definitief geblokkeerd is). Die in één blok proppen maakt beide verhalen slechter, en
+    ze in `todo` zetten is fout — het zijn geen handelingen voor de gebruiker maar uitleg.
+    """
+    if isinstance(finding, list):
+        items = [f for f in finding if f]
+        # Alleen de eerste is "de belangrijkste bevinding"; die kop twee keer op één pagina zetten
+        # is niet waar. Een bevinding mag zijn eigen `eyebrow` meegeven.
+        for i, f in enumerate(items):
+            f.setdefault("eyebrow", "De belangrijkste bevinding" if i == 0 else "Ook uit deze run")
+        return "\n".join(render_finding(f) for f in items)
     if not finding:
         return ""
     paragraphs = "\n    ".join(f'<p class="prose">{p}</p>' for p in finding.get("paragraphs", []))
@@ -302,7 +316,7 @@ def render_finding(finding: dict) -> str:
     return f'''
 <section>
   <div class="sectionhead">
-    <span class="eyebrow">De belangrijkste bevinding</span>
+    <span class="eyebrow">{esc(finding.get("eyebrow", "De belangrijkste bevinding"))}</span>
     <h2>{esc(finding.get("title", "Wat deze run opleverde"))}</h2>
   </div>
   <div class="stack g16 measure">
