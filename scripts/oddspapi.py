@@ -39,6 +39,7 @@ Alleen de standaardbibliotheek.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import urllib.error
@@ -76,6 +77,10 @@ class FallbackState:
     used_this_month: int = 0
     period: str = ""
     endpoints: dict = field(default_factory=dict)
+    #: Kenmerk (sha256[:12]/lengte) van de sleutel waarmee `discover()` het laatst getest heeft.
+    #: Zo is een run die een oude omgevingswaarde testte te onderscheiden van een nieuwe sleutel
+    #: die ook wordt afgewezen. Zie `api_key_fingerprint`.
+    key_fingerprint: str = ""
     notes: str = ""
 
     @classmethod
@@ -112,6 +117,22 @@ def api_key() -> str | None:
         if value and name.replace("_", "").lower() in wanted:
             return value
     return None
+
+
+def api_key_fingerprint() -> str | None:
+    """Onomkeerbaar kenmerk van de sleutel: `sha256[:12]/lengte`. Nooit de sleutel zelf.
+
+    Nodig sinds 18 aug 2026. De sleutel werd die dag vernieuwd, maar een draaiende container houdt
+    de omgeving die hij bij het starten meekreeg — dus een run kan een oude waarde testen en
+    `invalid_api_key` melden zonder dat er iets mis is met de nieuwe. Zonder kenmerk is dat
+    achteraf niet te onderscheiden van een nieuwe sleutel die ook wordt afgewezen, en dat zijn twee
+    heel verschillende problemen met twee heel verschillende oplossingen. Twaalf hex-tekens uit een
+    sha256 zijn niet terug te rekenen naar de sleutel; ze mogen dus in de repo.
+    """
+    key = api_key()
+    if not key:
+        return None
+    return f"{hashlib.sha256(key.encode()).hexdigest()[:12]}/{len(key)}"
 
 
 def api_key_source() -> str | None:
@@ -229,7 +250,9 @@ def discover() -> dict:
         else:
             found[naam] = "geen van de kandidaten bestaat — zoek het juiste pad in hun documentatie"
     state.endpoints = found
-    state.notes = ("discover gedraaid op " + (state.period or "onbekende datum") + "; "
+    state.key_fingerprint = api_key_fingerprint() or ""
+    state.notes = ("discover gedraaid op " + (state.period or "onbekende datum")
+                   + f" met sleutel {state.key_fingerprint or 'onbekend'}; "
                    + " | ".join(log))[:1500]
     state.save()
     return found
