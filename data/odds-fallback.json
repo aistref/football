@@ -16,11 +16,11 @@
  "armed": false,
  "threshold": 20,
  "monthly_quota": 250,
- "used_this_month": 11,
+ "used_this_month": 12,
  "period": "2026-08",
  "endpoints": {
   "fixtures": "onbepaald (HTTP 401: {\"error\":401,\"message\":\"invalid apiKey\",\"code\":\"invalid_api_key\"})",
   "odds": "onbepaald (HTTP 401: {\"error\":401,\"message\":\"invalid apiKey\",\"code\":\"invalid_api_key\"})"
  },
- "notes": "18 aug 2026 (Run A, nagekomen): de sleutel STAAT in de omgeving, maar onder de naam 'ODDSPapi_API_Key' terwijl scripts/oddspapi.py alleen naar 'ODDSPAPI_KEY' keek. Namen van omgevingsvariabelen zijn hoofdlettergevoelig, dus vier runs lang meldde de routine 'niet gezet' terwijl hij er gewoon was. api_key() zoekt nu hoofdletterongevoelig over KEY_ENV_NAMES. Daarna ensure_discovered() gedraaid: beide padfamilies HTTP 401 invalid_api_key. Vervolgens uitgezocht of het aan de verzendwijze lag, met 9 extra verzoeken: 'apiKey' als queryparameter en 'x-api-key' als header geven allebei 'invalid apiKey'; api_key, apikey, key, token, de apiKey-header en Authorization: Bearer geven 'missing apiKey'. Dat verschil is het bewijs: de twee namen die de API kent lezen de sleutel WEL en wijzen de WAARDE af. Het pad en de verzendwijze uit §1b kloppen dus; de sleutel zelf is bij OddsPapi niet geldig (niet geactiveerd, verlopen, verkeerd project, of een overgetypte waarde). De endpoints blijven daarom 'onbepaald' -- dat is geen padprobleem en discover hoeft pas opnieuw als de sleutel werkt. Verbruik: 11 van de 250 deze periode."
+ "notes": "18 aug 2026: de sleutel is door de gebruiker vernieuwd, maar de omgeving van deze sessie draagt nog de oude waarde (containers krijgen hun omgeving bij het starten mee). Getest met wat hier staat: nog steeds HTTP 401 invalid_api_key. De eerstvolgende run in een verse container leest de nieuwe waarde vanzelf en meldt de uitkomst. Daarnaast een bug in discover() gerepareerd: die sloeg een padfamilie over zodra er iets in endpoints stond, ook als dat een mislukking was ('onbepaald (HTTP 401: ...)'), waardoor de hertest na de eerste 401 nooit meer een verzoek deed en stil dezelfde oude fout bleef terugmelden. Alleen een waarde die met '/' begint telt nu als gevonden. Offline nagetest: discover() probeert weer alle kandidaten. Verbruik: 12 van de 250 (2 discover + 9 diagnose + 1 hertest)."
 }

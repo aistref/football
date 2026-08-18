@@ -205,7 +205,14 @@ def discover() -> dict:
     found = dict(state.endpoints)
     log: list[str] = []
     for naam, kandidaten in (("fixtures", FIXTURE_PATH_CANDIDATES), ("odds", ODDS_PATH_CANDIDATES)):
-        if found.get(naam):
+        # Alleen een echt pad telt als "al gevonden". Een mislukte poging laat hier
+        # "onbepaald (HTTP 401: ...)" achter, en dat is óók een niet-lege string — die als treffer
+        # lezen betekent dat `discover()` daarna nooit meer een verzoek doet en stil de oude
+        # mislukking blijft terugmelden, alsof hij het opnieuw geprobeerd had. `ensure_discovered`
+        # hanteerde die "/"-controle al; hier ontbrak hij, waardoor de hertest na de eerste 401
+        # dood was. Gevonden op 18 aug 2026, nadat de sleutel vernieuwd werd en de controle
+        # onveranderd 401 bleef melden zonder het net te hebben geprobeerd.
+        if str(found.get(naam, "")).startswith("/"):
             continue
         for pad in kandidaten:
             status, _, body = _get(pad)
