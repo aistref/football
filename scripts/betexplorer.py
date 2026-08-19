@@ -202,6 +202,18 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # 1X2 over 10 boeken. 'europe/uefa-champions-league' en 'europe/champions-league-qualification'
     # geven allebei de stille faalmodus (HTTP 200, 0 rijen).
     "UEFA Champions League": "https://www.betexplorer.com/football/europe/champions-league/",
+    # Toegevoegd 19 aug 2026 (Run B). Dit waren de laatste vijf competities van de Run B-runlijst
+    # waarvoor de slug elke run opnieuw geraden moest worden; alle vijf nagetrokken met
+    # fetch_league_fixtures en niet-leeg bevonden (6, 10, 4, 12 en 12 komende duels). Daarmee staat
+    # elke Run B-competitie mét een werkende slug hier, en blijven alleen Kategoria Superiore (ALB)
+    # en Kosovo Superleague (KOS) over — daarvoor is er geen slug die iets teruggeeft.
+    # 'greece/super-league-1' geeft de stille faalmodus (HTTP 200, 0 rijen), 'greece/super-league'
+    # niet.
+    "Greek Super League (GRE)": "https://www.betexplorer.com/football/greece/super-league/",
+    "Serie B (ITA)": "https://www.betexplorer.com/football/italy/serie-b/",
+    "Swiss Super League (SUI)": "https://www.betexplorer.com/football/switzerland/super-league/",
+    "English League One (ENG)": "https://www.betexplorer.com/football/england/league-one/",
+    "English League Two (ENG)": "https://www.betexplorer.com/football/england/league-two/",
 }
 
 
