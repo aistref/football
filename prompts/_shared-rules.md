@@ -336,12 +336,33 @@ theoretisch risico:
 Daarom, als allereerste handeling van elke run:
 
 ```bash
-git fetch origin
+git rev-parse --is-shallow-repository        # ZIE HIERONDER — doe dit eerst
+git fetch --unshallow origin || git fetch origin
 git branch -r
 for b in $(git branch -r | grep -v HEAD); do
   echo "$b: $(git rev-list --count HEAD..$b) commits die hier nog niet zijn"
 done
 ```
+
+**Haal eerst de volledige geschiedenis op, anders meet je iets anders dan je denkt.** De container
+krijgt de repo als **ondiepe kloon** aangeleverd (`--is-shallow-repository` → `true`, en dat was op
+20 aug 2026 opnieuw zo, in een verse container). Bij een ondiepe kloon ontbreekt alles van vóór de
+knip, en dus ook het punt waar twee takken uit elkaar zijn gegaan: `git merge-base main <tak>` geeft
+**niets** terug en `rev-list --count HEAD..<tak>` telt élke commit van vóór de knip als "nog niet
+hier". Het resultaat is een vals alarm dat er precies uitziet als het echte geval van 10 aug —
+takken met tientallen "eigen" commits die er in werkelijkheid allemaal al in zitten.
+
+Zo zag dat er op 20 aug 2026 uit, dezelfde repo, vóór en na één commando:
+
+| | ondiep (60 commits lokaal) | na `--unshallow` (109 commits) |
+|---|---|---|
+| takken met "eigen" commits | 7 van de 15 (3 t/m 39 stuks) | **0 van de 15** |
+| `merge-base` met `main` | leeg | gewoon een commit |
+
+Kost dit één extra opdracht per run, dan is dat het waard: zonder die stap doet elke run opnieuw
+het handwerk van 19 en 20 aug (per tak de picks, de runrapporten en de scripts vergelijken) om
+uiteindelijk vast te stellen dat er niets te mergen viel. Blijkt ná het unshallowen dat er tóch
+takken met eigen commits zijn, dan is dat het echte geval en geldt alles hieronder onverkort.
 
 Elke branch met méér dan 0 eigen commits wordt **gemerged**, niet weggegooid en niet vervangen.
 "Pak gewoon de nieuwste" is expliciet fout: op 10 aug bevatten beide takken werk dat de ander niet
