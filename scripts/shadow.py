@@ -92,12 +92,20 @@ def cmd_collect(args: argparse.Namespace) -> int:
             if not isinstance(odds, (int, float)) or odds <= 1:
                 continue
             e_xg, e_split = nm.get("edge_xg"), nm.get("edge_split")
-            if not all(isinstance(v, (int, float)) for v in (e_xg, e_split)):
+            edges = [v for v in (e_xg, e_split) if isinstance(v, (int, float))]
+            if not edges:
                 continue
 
             implied = 1 / odds
-            # my_prob volgens de herziene §1: het gemiddelde van beide methodes.
-            my_prob = implied + ((e_xg + e_split) / 2) / 100
+            # my_prob volgens de herziene §1: het gemiddelde van beide methodes. Bestaat er maar
+            # één methode (de competitie van één van beide ploegen heeft geen xG bij Fotmob), dan
+            # telt die ene — de kandidaat wordt wél vastgelegd, maar met `methods: 1` gemarkeerd
+            # zodat `stats` hem buiten de hoofdcijfers houdt. Tot 20 aug 2026 werd zo'n kandidaat
+            # weggegooid; op 19 aug kostte dat 2 van de 5 rijen en op 20 aug 11 van de 20,
+            # waaronder telkens de scherpste getallen van de dag. Weggooien is geen neutrale
+            # keuze: het maakt de meting van poort `data` juist blind voor de wedstrijden waar
+            # die poort het vaakst toeslaat.
+            my_prob = implied + (sum(edges) / len(edges)) / 100
             slug = "".join(c if c.isalnum() else "-" for c in match.get("match", "")).strip("-").lower()
             pid = f"shadow-{state['date']}-{state['run'].lower()}-{slug}"[:120]
             if pid in seen:
@@ -117,6 +125,7 @@ def cmd_collect(args: argparse.Namespace) -> int:
                 "edge_pp": round((my_prob - implied) * 100, 2),
                 "edge_xg": e_xg,
                 "edge_split": e_split,
+                "methods": len(edges),
                 "edge_robust_min": nm.get("edge_robust_min"),
                 "failed_gate": nm.get("failed_gate"),
                 "result": OPEN,
@@ -222,10 +231,19 @@ def cmd_stats(args: argparse.Namespace) -> int:
         print("Schaduwlogboek is leeg. Nog niets te meten.")
         return 0
 
+    # Rijen zonder `methods` komen van vóór 20 aug 2026 en hadden toen altijd twee methodes.
+    single = [r for r in rows if r.get("methods") == 1]
+    if not args.include_single:
+        rows = [r for r in rows if r.get("methods", 2) >= 2]
+
     summarise(rows, "ALLE AFGEWEZEN KANDIDATEN")
     if not args.gate:
         for gate in sorted({r.get("failed_gate") for r in rows if r.get("failed_gate")}):
             summarise([r for r in rows if r.get("failed_gate") == gate], f"viel af op: {gate}")
+    if single and not args.include_single:
+        summarise(single, "APART GEHOUDEN: kandidaten met maar één methode (`--include-single`)")
+        print("  Deze staan buiten de cijfers hierboven: hun my_prob komt uit één schatter in")
+        print("  plaats van het gemiddelde van twee, dus ze zijn niet op dezelfde schaal.")
     print("\nLees dit naast `python3 scripts/ledger.py stats`: dat is wat er wél doorheen kwam,")
     print("dit is wat er is tegengehouden. Het verschil tussen die twee is wat de poorten doen.")
     return 0
@@ -253,6 +271,8 @@ def main() -> int:
 
     p_st = sub.add_parser("stats", help="hit rate en ROI van wat er is tegengehouden")
     p_st.add_argument("--gate", help="filter op afwijsgrond, bv. tweede_methode")
+    p_st.add_argument("--include-single", action="store_true",
+                      help="tel kandidaten met maar één methode mee in de hoofdcijfers")
 
     args = parser.parse_args()
     return {"collect": cmd_collect, "open": cmd_open,
