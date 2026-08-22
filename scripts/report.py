@@ -106,17 +106,71 @@ def short_competition(name: str, labels: dict) -> str:
     return name.split(" (")[0]
 
 
+RISK_LEVELS = {"low": "low", "laag": "low",
+               "med": "med", "medium": "med", "gemiddeld": "med", "mid": "med",
+               "high": "high", "hoog": "high"}
+
+
+def normalise_risk(level: str, pick: dict) -> str:
+    """Breng een risk_level uit een prosebestand terug tot low/med/high.
+
+    Nodig sinds 22 aug 2026: Run A schreef "med" en Run B "medium" voor hetzelfde niveau. Dat
+    bleef onopgemerkt zolang de waarde alleen als CSS-klasse werd gebruikt — een onbekende klasse
+    geeft geen fout, alleen een chip zonder kleur. Zodra er ook een label uit moest komen, klapte
+    het rapport eruit. Een onbekende waarde valt hier terug op de kans in plaats van te falen.
+    """
+    return RISK_LEVELS.get(str(level).strip().lower(),
+                           "high" if pick["my_prob"] < 0.35 else "med")
+
+
 def risk_class(pick: dict, prose: dict) -> tuple[str, str]:
     """(css-klasse, zin). Prosebestand wint; anders afgeleid van de kans."""
     given = prose.get("risk")
     if given:
-        return prose.get("risk_level", "high" if pick["my_prob"] < 0.35 else "med"), given
+        return normalise_risk(prose.get("risk_level", ""), pick), given
     if pick["my_prob"] >= 0.45:
         return "med", "Middelmatig risico — kans rond de helft, geen gok op een stunt"
     if pick["my_prob"] >= 0.30:
         return "med", f"Verhoogd risico — dit lukt ongeveer {pick['my_prob'] * 100:.0f} keer per 100"
     return "high", (f"Hoog risico — dit lukt ongeveer {pick['my_prob'] * 100:.0f} keer per 100, "
                     "en de markt is het stevig oneens")
+
+
+def max_shortlist(day: date) -> int:
+    """3 op ma-do, 5 op vr-zo — `MAX_SHORTLIST` uit _shared-rules.md §0."""
+    return 5 if day.weekday() >= 4 else 3
+
+
+def selection_score(pick: dict) -> float:
+    """edge_pp x my_prob x (FULL 1.0 | LIGHT 0.5) — dezelfde formule als model.selection_score.
+
+    Hier opnieuw uitgeschreven in plaats van geimporteerd, omdat dit script alleen uit
+    picks.jsonl leest en niet uit de rekenkern; de velden die de formule nodig heeft staan
+    allemaal in de pick zelf.
+    """
+    weight = 1.0 if pick.get("data_tier") == "FULL" else 0.5
+    return pick["edge_pp"] * pick["my_prob"] * weight
+
+
+def rank_picks(picks: list[dict], day: date) -> tuple[list[dict], list[dict]]:
+    """(topselectie, rest), gesorteerd op selection_score.
+
+    Bestaansreden (22 aug 2026, op verzoek van de gebruiker). §5 schrijft een topselectie voor en
+    `picks.jsonl` heeft er een `shortlisted`-veld voor, maar deze pagina deed er niets mee: alle
+    bets stonden ongeordend onder elkaar. Op een dag met dertien bets is dat precies de vraag die
+    onbeantwoord blijft — welke zou ik nou spelen. De rangschikking is die van §5 en §1, zodat de
+    volgorde hier niet kan afwijken van die in het markdown-runrapport.
+
+    Het opgeslagen `shortlisted`-veld is leidend, want dat is het besluit van de run zelf
+    (inclusief `MAX_LIGHT_IN_SHORTLIST`). Staat het nergens aan — oudere runs — dan valt dit
+    terug op de bovenste `max_shortlist(day)` op score.
+    """
+    order = sorted(picks, key=selection_score, reverse=True)
+    flagged = [p for p in order if p.get("shortlisted")]
+    if not flagged:
+        flagged = order[:max_shortlist(day)]
+    rest = [p for p in order if p not in flagged]
+    return flagged, rest
 
 
 def ledger_summary(picks: list[dict]) -> dict:
@@ -188,6 +242,74 @@ def normalise_competitions(state: dict) -> dict:
         note = text[len(status):].strip(" ()") or None
         out[name] = {"status": status, "matches": [], **({"note": note} if note else {})}
     return out
+
+
+def render_shortlist(picks: list[dict], prose: dict, labels: dict, day: date) -> str:
+    """De topselectie als tabel: welke bets zou je spelen als je er maar een paar speelt."""
+    if not picks:
+        return ""
+    top, rest = rank_picks(picks, day)
+    cap = max_shortlist(day)
+    dagsoort = "vrijdag t/m zondag" if day.weekday() >= 4 else "maandag t/m donderdag"
+
+    rows = []
+    for i, pick in enumerate(top, 1):
+        text = prose.get(pick["id"], {})
+        level, _ = risk_class(pick, text)
+        risk_label = {"low": "laag", "med": "gemiddeld", "high": "hoog"}[level]
+        rows.append(f'''<tr>
+          <td class="num rank">{i}</td>
+          <td>
+            <span class="sl-match">{esc(pick["home"])} – {esc(pick["away"])}</span>
+            <span class="sl-pick">{esc(pick["selection"])} · {esc(short_competition(pick["competition"], labels))} · aftrap {esc(kickoff_time(pick))}</span>
+          </td>
+          <td class="num">{pick["odds"]:.2f}</td>
+          <td class="num">{pct(pick["my_prob"])}</td>
+          <td class="num">+{pick["edge_pp"]:.1f}</td>
+          <td class="num">{selection_score(pick):.2f}</td>
+          <td><span class="chip {level}">{risk_label}</span></td>
+        </tr>''')
+
+    if len(top) < cap:
+        tail = (f'<p class="prose measure" style="margin-top:18px">Er waren maar {len(top)} '
+                f'{"bet" if len(top) == 1 else "bets"}, dus de lijst is korter dan de {cap} plekken '
+                f'die er op {dagsoort} zijn. Hij wordt niet aangevuld om hem voller te laten lijken.</p>')
+    elif rest:
+        nxt = rest[0]
+        tail = (f'<p class="prose measure" style="margin-top:18px">Er staan er {len(rest)} '
+                f'buiten deze lijst. De eerste die net afviel is '
+                f'<strong>{esc(nxt["home"])} – {esc(nxt["away"])}</strong> '
+                f'({esc(nxt["selection"])}, score {selection_score(nxt):.2f}).</p>')
+    else:
+        tail = ""
+
+    return f'''<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>{"De bet" if len(top) == 1 else f"De beste {len(top)}"} als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op {dagsoort} houd ik maximaal
+  <strong>{cap}</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        {"".join(rows)}
+      </tbody>
+    </table>
+  </div>
+  {tail}
+</section>'''
 
 
 def render_coverage(state: dict, notes: dict, labels: dict) -> str:
@@ -409,6 +531,8 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     comps = normalise_competitions(state)
     active = sum(1 for r in comps.values() if r.get("status") != "GEEN WEDSTRIJD")
     matches = sum(len(r.get("matches", [])) for r in comps.values())
+    # De bets zelf ook op score tonen, zodat de volgorde daar niet afwijkt van de topselectie.
+    ranked_picks = [p for group in rank_picks(picks, day) for p in group] if picks else picks
     record = f'{stats["won"]}/{stats["settled"]}' if stats["settled"] else "–"
     record_colour = ' style="color:var(--neg)"' if stats["settled"] and not stats["won"] else ""
     started = prose.get("started")
@@ -453,9 +577,10 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     <span class="eyebrow">Het antwoord</span>
     <h2>{"De bet" if len(picks) == 1 else f"De {len(picks)} bets" if picks else "Geen bets vandaag"}</h2>
   </div>
-  {render_bets(picks, prose.get("bets", {}), labels)}
-  {f'<div class="callout" style="margin-top:24px"><p class="prose">{prose["next_best"]}</p></div>' if prose.get("next_best") else ""}
+  {render_bets(ranked_picks, prose.get("bets", {}), labels)}
 </section>
+{render_shortlist(picks, prose.get("bets", {}), labels, day)}
+{f'<div class="wrap-callout"><div class="callout"><p class="prose">{prose["next_best"]}</p></div></div>' if prose.get("next_best") else ""}
 {render_near_misses(state, labels)}
 {render_todo(prose.get("todo", []))}
 {render_finding(prose.get("finding"))}
@@ -590,6 +715,9 @@ header{padding:44px 0 0}
 .chip.ok{background:var(--pos-wash); color:var(--pos)}
 .chip.none{background:var(--hold-wash); color:var(--hold)}
 .chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
 /* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
 .num.below{color:var(--neg); font-weight:600}
 
@@ -601,6 +729,14 @@ td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:t
 tr:last-child td{border-bottom:0}
 td.comp{font-weight:640; white-space:nowrap}
 td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
 
 .todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
 .task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}

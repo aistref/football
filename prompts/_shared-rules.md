@@ -599,6 +599,20 @@ Geef de top `MAX_SHORTLIST`, met per bet: Probability • Edge • Score • Ris
 (Low/Medium/High) • waarom deze wél en de eerstvolgende net niet. Maximaal
 `MAX_LIGHT_IN_SHORTLIST` bets met `LIGHT`.
 
+**Deze topselectie hoort óók op de HTML-pagina van §6c, niet alleen in het markdown-runrapport.**
+Dat is toegevoegd op 22 aug 2026, op verzoek van de gebruiker, nadat hij hem in beide dagrapporten
+miste. En terecht: `report.py` rendert de bets sinds zijn bestaan ongeordend onder elkaar en deed
+niets met het `shortlisted`-veld dat wél in `picks.jsonl` staat — `grep -c shortlisted scripts/report.py`
+gaf 0. Op een dag met dertien bets bleef daarmee precies de vraag onbeantwoord die de gebruiker
+stelt: welke zou ik nou spelen. `render_shortlist()` doet dat nu, en `rank_picks()` zet ook de
+bets zelf op scorevolgorde, zodat de twee rapporten van dezelfde run niet uiteen kunnen lopen.
+
+Het opgeslagen `shortlisted`-veld is daarbij leidend, want dat is het besluit van de run zelf
+(inclusief `MAX_LIGHT_IN_SHORTLIST`). **Zet dat veld dus goed** — staat het op elke pick `false`,
+dan valt de pagina terug op de bovenste `MAX_SHORTLIST` op score en gaat `MAX_LIGHT_IN_SHORTLIST`
+verloren. `report.py` leidt de dagsoort zelf af uit de datum (`max_shortlist()`: 3 op ma–do, 5 op
+vr–zo), dus die hoeft nergens te worden meegegeven.
+
 **Risicoklasse is iets anders dan score, en dat blijft zo.** De score rangschikt; de risicoklasse
 waarschuwt. Een bet kan bovenaan staan én High risico zijn — dat was op 14 aug het geval bij AGF,
 waar de markt 18 procentpunt afweek van het model. Vervang het een niet door het ander.
@@ -696,6 +710,9 @@ Elke run, ook een run met nul bets:
 4. **Afwikkeling** → uitkomsten van Stage 0 verwerkt in `data/picks.jsonl`.
 5. **Schaduwlogboek** → `python3 scripts/shadow.py collect --date <datum> --run <a|b>`, en de
    schaduwpicks van vorige runs afwikkelen (zie 6d).
+5c. **Kalibratielogboek** → een `calibration`-blok per doorgerekende wedstrijd in
+   `data/run-state/`, en daarna `python3 scripts/calibration.py collect --run <a|b> --date <datum>`.
+   Zie 6e; neem `calibration.py stats` op in het runrapport.
 5b. **Marktdekking aantonen** → noteer bij elke geanalyseerde wedstrijd in `data/run-state/` een
    `markets_checked` met de markten die je werkelijk hebt doorgerekend, en draai daarna:
 
@@ -763,6 +780,68 @@ basis van één dag. Dat laatste zou dezelfde fout zijn als waarmee de oude poor
 Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
 runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
 
+### 6e. Het kalibratielogboek — zit het model systematisch scheef?
+
+`ledger.py` meet of de bets winnen en `shadow.py` of de poorten iets tegenhouden. Geen van beide
+beantwoordt de vraag daaronder: **staat `my_prob` als schatter systematisch scheef, en waar?**
+
+Op 22 aug 2026 bleek dat te kunnen. Run A publiceerde die dag dertien bets, en nameten liet zien dat
+het niet dertien vondsten waren maar grotendeels één afwijking: over de dertig doorgerekende duels lag
+het model **+4.19 pp boven** de de-vigde marktkans op uitkomsten die de markt onder de 25% zet, en
+**−6.67 pp eronder** bij favorieten. Tien van de dertien bets lagen daardoor in dezelfde hoek.
+
+De uitsplitsing wees bovendien een andere oorzaak aan dan verwacht. Niet `shrink`:
+
+| | longshots (<25%) | favorieten (>50%) |
+|---|---|---|
+| `analyze_match` bij `shrink = 1.0` | **+0.47 pp** | **+0.55 pp** |
+| `analyze_match_from_splits` | **+5.75 pp** | **−9.87 pp** |
+
+De xG-methode is vlak; de afwijking komt vrijwel volledig uit de splitsmethode. En dat is
+rekenkundig: `analyze_match` **vermenigvuldigt** sterkteverhoudingen, terwijl
+`analyze_match_from_splits` twee doelpuntgemiddelden **optelt en door twee deelt**. Middelen trekt
+naar het midden — gemeten gebruikte de splitsmethode 62% van de spreiding in verwacht doelsaldo van
+de xG-methode. Dat slijt dus niet naarmate het seizoen vordert; het is geen vroeg-seizoenseffect.
+
+Omdat `my_prob` het **ongewogen gemiddelde** van die twee is, komt de helft van elke gepubliceerde
+kans uit een structureel samengedrukte schatter. Dat is een reden om te meten, nog niet om te
+verbouwen — één dag is geen bevinding (§6d). Daarom, **elke run**:
+
+```bash
+python3 scripts/calibration.py collect --run <a|b> --date YYYY-MM-DD
+python3 scripts/calibration.py stats
+```
+
+Leg daarvoor per doorgerekende wedstrijd een `calibration`-blok in `data/run-state/` vast, met de
+**de-vigde** marktkans en de modelkansen voor de drie 1X2-uitkomsten:
+
+```json
+"calibration": {
+  "market":        [0.45, 0.27, 0.28],
+  "p_xg":          [0.41, 0.28, 0.31],
+  "p_xg_noshrink": [0.43, 0.28, 0.29],
+  "p_split":       [0.38, 0.29, 0.33]
+}
+```
+
+`scripts/calibration.devig(odds)` doet het wegdelen. 1X2 is met opzet de meetmarkt: die is via
+BetExplorer elke run gratis en voor vrijwel elke wedstrijd beschikbaar, en de drie uitkomsten
+sommeren tot 1. `p_xg_noshrink` is één extra `analyze_match(..., shrink=1.0)` per wedstrijd en kost
+dus vrijwel niets — zonder dat veld is het aandeel van `shrink` niet te scheiden van dat van de
+splitsmethode. Neem de uitvoer van `stats` op in het runrapport, naast `ledger.py stats` en
+`shadow.py stats`.
+
+**Lees dit net zo voorzichtig als 6d.** Onder ~150 waarnemingen in de longshotbak (ruwweg vijf volle
+rundagen) is een paar procentpunt ruis. Twee dingen die pas daarna aan de orde zijn, en géén van
+beide vandaag: de splitsmethode multiplicatief en op het competitiegemiddelde genormaliseerd maken
+zodat §1 twee schatters van dezelfde grootheid middelt, of `shrink` laten aflopen naarmate het
+seizoen vordert — die staat nu hard op 0.8 zonder afloopmechanisme, terwijl de docstring hem met
+"vroeg seizoen" verantwoordt.
+
+Let ten slotte op wat poort 6 hier **niet** doet: het `(shrink, rho)`-grid van `robustness_check`
+varieert alleen `analyze_match` — precies de methode die vlak blijkt. "Deze bet overleeft het hele
+grid" zegt dus niets over de methode die de afwijking veroorzaakt.
+
 ### 6c. Het leesbare dagrapport — verplicht, elke run
 
 Het markdown-runrapport hierboven is voor de repo: methode, metingen, bronstatus. De gebruiker
@@ -773,6 +852,9 @@ levert elke run **ook** een HTML-pagina op:
 1. Schrijf `runs/YYYY-MM-DD-run-<a|b>.prose.json` — alleen de tekst die een mens moet schrijven:
    `verdict`, `bets` (per pick-id een `why` in gewone taal + een risicozin), `coverage_notes`,
    `todo`, `finding` en `settled`. Zie `runs/2026-08-09-run-a.prose.json` als voorbeeld.
+   Gebruik voor `risk_level` **`low` / `med` / `high`**; `report.py` normaliseert sinds 22 aug 2026
+   ook `medium`, `laag`, `gemiddeld` en `hoog`, maar tot die datum leverde het verschil tussen
+   Run A's `med` en Run B's `medium` stilzwijgend een chip zonder kleur op.
 2. Draai `python3 scripts/report.py --run <a|b> --date YYYY-MM-DD`. Bets, dekkingstabel en de
    stand van het logboek komen automatisch uit `picks.jsonl` en `data/run-state/` — niet
    overtypen, want dan gaan de twee rapporten uiteenlopen.
