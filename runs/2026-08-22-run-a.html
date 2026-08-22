@@ -1,0 +1,641 @@
+<title>Run A — zaterdag 22 augustus 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run A</h1>
+    <span class="date">zaterdag 22 augustus 2026 · gedraaid om 04:10</span>
+  </div>
+
+  <p class="verdict">De eerste volle zaterdag van het seizoen: <b>eenenzestig wedstrijden</b> in twaalf van mijn competities. Dat is er veel te veel om allemaal door te rekenen — ik mag er dertig — dus ik heb de dertig gekozen waarvan ik de beste cijfers had. Daar kwamen <b>dertien bets</b> uit, veruit het meeste in weken. De sterkste op papier is <b>Fortuna Sittard dat wint van AZ Alkmaar, tegen 4,95</b>, aftrap 16:30. Maar leest u vooral eerst het stuk onderaan onder 'Wat mij vandaag opviel': die dertien bets zijn voor een groot deel <i>één en dezelfde afwijking, dertien keer opgeschreven</i>. Mijn rekenmethode zit er structureel naast in het voordeel van de underdog, en bijna al mijn bets van vandaag zitten precies in die hoek. Ik heb ze niet weggelaten — ze halen alle zes mijn controles — maar wie ze alle dertien speelt, zet niet dertien keer op iets anders.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">13</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">50</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">12</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">18</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">25/60</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 13 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Eredivisie · aftrap 16:30</span>
+        <span class="bet-match">Fortuna Sittard – AZ Alkmaar</span>
+        <span class="bet-pick">thuiszege Fortuna Sittard</span>
+      </div>
+      <div class="price">
+        <span class="odds num">4.95</span>
+        <span class="book">bij marktgemiddelde over 3 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">20,2%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">34,5%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+14,3</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Fortuna Sittard wint van AZ Alkmaar. De bookmakers geven daar één kans op vijf; ik kom op ruim één op drie. Dat verschil komt vrijwel helemaal uit één cijfer: AZ was vorig seizoen buitenshuis zwak. In zeventien uitwedstrijden maakten ze negentien doelpunten en kregen er vijfentwintig tegen — een negatief saldo, terwijl AZ over het hele seizoen juist ruim positief stond. Fortuna hield thuis 28 om 29 bij, wat niet goed is maar ook niet ver van AZ&#x27;s uitreeks. Reken ik het duel door met wat elke ploeg thuis en uit werkelijk deed, dan komt Fortuna zelfs op veertig procent.</p>
+      <span class="risk"><span class="dot high"></span>Dit is de grootste bet van de dag en tegelijk de wankelste, en ik zet hem daarom op hoog risico. Drie dingen. Ten eerste komt de prijs van een gemiddelde over slechts drie boeken; bij zo weinig aanbieders is één afwijkende koers al genoeg om het gemiddelde te vertekenen. Ten tweede hangt vrijwel het hele voordeel aan die ene uitreeks van AZ van vorig seizoen — één cijfer dat om allerlei redenen niet meer hoeft te gelden. Ten derde: AZ heeft deze zomer gewoon een selectie kunnen verbouwen en daar weet ik niets van, want mijn cijfers stoppen in mei.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Premier League · aftrap 18:30</span>
+        <span class="bet-match">Brentford – Tottenham</span>
+        <span class="bet-pick">Brentford (handicap 0.0)</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.81</span>
+        <span class="book">bij 1xBet</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">55,2%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">62,7%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+7,5</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Brentford wint van Tottenham; bij een gelijkspel krijgt u uw inzet gewoon terug, en alleen bij een Tottenham-zege bent u hem kwijt. Dat maakt dit de veiligste vorm waarin ik mijn mening kan inzetten. En die mening is niet gek: Brentford creëerde vorig seizoen duidelijk meer kansenwaarde per wedstrijd dan Tottenham (1,59 tegen 1,05) en kreeg er ook nog minder tegen. Thuis stond Brentford 33 om 21 in negentien wedstrijden, terwijl Tottenham buitenshuis op 26 om 26 bleef steken — precies gelijkspel dus. Van alle bets van vandaag is dit degene die overeind blijft hoe ik ook aan de knoppen van mijn model draai.</p>
+      <span class="risk"><span class="dot low"></span>Het gewone risico van deze tijd van het jaar: mijn cijfers komen uit vorig seizoen en de Premier League is één speelronde oud, dus zomerse aankopen zitten er niet in. Verder is dit een van de weinige bets van vandaag waarbij ik de bookmaker gewoon kan noemen en het de beste prijs in de markt is, niet een gemiddelde.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Portugese Liga · aftrap 21:30</span>
+        <span class="bet-match">Sporting CP – Alverca</span>
+        <span class="bet-pick">Alverca +1.75</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.04</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">49,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">56,8%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+7,8</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Alverca met minder dan twee goals verliest, gelijkspeelt of wint. Bij precies twee goals verschil krijgt u de helft van uw inzet terug. Ik betwist niet dat Sporting veruit de betere ploeg is — die maakte vorig seizoen thuis 51 goals in 17 wedstrijden en kreeg er 11 tegen. De vraag is alleen of bijna twee goals verschil de juiste prijs is. Reken ik het duel door, dan kom ik op een verwacht verschil van ruim één goal, niet van twee. Beide rekenmethodes komen hier bijna exact op hetzelfde uit, wat zeldzaam is.</p>
+      <span class="risk"><span class="dot med"></span>Sporting speelt thuis en kan een kleine tegenstander eenvoudig met 4-0 of 5-0 wegspelen; dan is deze bet meteen weg. Belangrijker: dit is de bet die het slechtst tegen een stootje kan van mijn vijf beste. Draai ik aan de instellingen van mijn model, dan houdt hij nog maar een klein voordeel over — bij de andere vier blijft er veel meer staan. Vandaar &#x27;gemiddeld&#x27; en niet &#x27;laag&#x27;.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Schotse Premiership · aftrap 18:45</span>
+        <span class="bet-match">Dundee United – Dundee FC</span>
+        <span class="bet-pick">Dundee United -0.25</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.99</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">50,2%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">56,7%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+6,5</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">De stadsderby van Dundee. U wint als Dundee United wint; bij een gelijkspel bent u de helft van uw inzet kwijt en krijgt u de andere helft terug. De reden is de uitreeks van Dundee FC, en die is ronduit slecht: tien doelpunten in zeventien uitwedstrijden vorig seizoen, met zevenentwintig tegen. Dat is de zwakste reeks van alle honderd ploegen die ik vandaag heb bekeken. Dundee United was thuis niet geweldig, maar wel gewoon middelmatig. Ook als ik mijn model helemaal anders afstel, blijft er een fors voordeel staan.</p>
+      <span class="risk"><span class="dot low"></span>Een derby is nu juist de wedstrijd waarin ranglijsten er het minst toe doen, en dat is geen cliché maar precies het soort effect dat mijn cijfers niet kennen. Daarnaast was dit de enige Schotse wedstrijd van vandaag waar überhaupt een koers voor te vinden was — bij de andere vijf stond er niets. Dat betekent dat er weinig bookmakers naar deze competitie kijken, en dat maakt de prijs beweeglijker dan bij een Premier League-duel.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Poolse Ekstraklasa · aftrap 17:30</span>
+        <span class="bet-match">Piast Gliwice – Legia Warszawa</span>
+        <span class="bet-pick">thuiszege Piast Gliwice</span>
+      </div>
+      <div class="price">
+        <span class="odds num">3.38</span>
+        <span class="book">bij marktgemiddelde over 5 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">29,6%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">38,7%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+9,1</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Piast Gliwice thuis wint van Legia Warschau. Legia is de grotere naam en de bookmakers prijzen dat ook zo, maar de cijfers van vorig seizoen zijn veel dichter bij elkaar dan die reputatie suggereert: in kansenwaarde per wedstrijd ontliepen ze elkaar niets (1,40 om 1,42). Legia&#x27;s voordeel zat in de verdediging, en juist die was buitenshuis niet best — negentien goals gemaakt en vijfentwintig tegen in zeventien uitwedstrijden. Allebei mijn rekenmethodes zien hier hetzelfde, en dat is bij lange na niet altijd zo.</p>
+      <span class="risk"><span class="dot med"></span>Dit is wel de competitie waar ik de meeste actuele cijfers van heb — vijf gespeelde speelronden, meer dan waar ook — maar ik reken nog steeds hoofdzakelijk op vorig seizoen. Legia speelt bovendien Europees, wat betekent dat er doordeweeks wedstrijden tussen zitten en de opstelling kan wisselen; dat weet ik niet en de bookmakers wel.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Premier League · aftrap 16:00</span>
+        <span class="bet-match">Everton – Crystal Palace</span>
+        <span class="bet-pick">Crystal Palace +0.25</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.00</span>
+        <span class="book">bij Matchbook</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">50,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">55,5%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+5,5</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Crystal Palace wint bij Everton; bij een gelijkspel krijgt u de helft terug. Palace maakte vorig seizoen meer kansenwaarde per wedstrijd dan Everton (1,53 om 1,23) en kreeg er minder tegen, terwijl de bookmakers Everton thuis licht favoriet maken. Dat is een klein maar consistent verschil: allebei mijn methodes wijzen dezelfde kant op, en het voordeel blijft staan hoe ik mijn model ook afstel.</p>
+      <span class="risk"><span class="dot med"></span>Everton speelt thuis en thuisvoordeel is in de Premier League reëel; mijn model rekent daar wel mee, maar niet met wie er deze zomer gekomen en gegaan is. Dit is een van de bets waarbij het verschil met de markt klein genoeg is dat één blessure van een sleutelspeler hem al onjuist maakt.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Portugese Liga · aftrap 19:00</span>
+        <span class="bet-match">Estoril – Rio Ave</span>
+        <span class="bet-pick">Over 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.89</span>
+        <span class="book">bij Matchbook</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">52,9%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">57,6%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+4,7</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als er in Estoril – Rio Ave drie of meer doelpunten vallen. Beide ploegen kregen vorig seizoen meer tegen dan ze maakten: Estoril 29 om 26 thuis, Rio Ave 18 om 28 uit. Twee ploegen die allebei makkelijk doelpunten weggeven, en dat is de kortste weg naar een wedstrijd met veel goals. Bij elkaar opgeteld verwacht ik ruim drie doelpunten. Dit is de enige doelpuntenbet die vandaag door al mijn controles kwam.</p>
+      <span class="risk"><span class="dot med"></span>Doelpuntenbets zijn gevoeliger voor toeval dan uitslagbets: één vroege rode kaart of een 1-0 die stand houdt, en het is meteen mis. Verder is het voordeel hier met bijna vijf procentpunt reëel maar niet groot, en dit is de bet waarbij mijn correctie voor het vroege seizoen — waarin doorgaans wat meer gescoord wordt — het zwaarst meeweegt.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Franse Ligue 1 · aftrap 20:45</span>
+        <span class="bet-match">Nice – Lorient</span>
+        <span class="bet-pick">uitzege Lorient</span>
+      </div>
+      <div class="price">
+        <span class="odds num">3.35</span>
+        <span class="book">bij marktgemiddelde over 4 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">29,8%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">36,1%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+6,2</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Lorient wint bij Nice. Nice had vorig seizoen thuis een negatief doelsaldo — negentien gemaakt, zevenentwintig tegen in zeventien wedstrijden — en de zwakste verdedigende cijfers van de twee. Lorient is geen sterke ploeg, maar wel beter dan een koers van 3,35 suggereert. Allebei mijn methodes zien hier hetzelfde voordeel.</p>
+      <span class="risk"><span class="dot med"></span>De prijs komt van een gemiddelde over vier boeken en de bookmaker is niet te achterhalen; bij zo weinig aanbieders is de prijs minder betrouwbaar dan bij een Premier League-wedstrijd. De Franse competitie is één speelronde oud, dus alles rust op vorig seizoen.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Italiaanse Serie A · aftrap 20:45</span>
+        <span class="bet-match">Genoa – Napoli</span>
+        <span class="bet-pick">thuiszege Genoa</span>
+      </div>
+      <div class="price">
+        <span class="odds num">4.55</span>
+        <span class="book">bij marktgemiddelde over 5 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">22,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">29,5%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+7,5</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Genoa thuis wint van Napoli. Napoli is de betere ploeg, dat betwist ik niet — maar het verschil in de cijfers is kleiner dan de koers van 4,55 doet vermoeden. In kansenwaarde per wedstrijd stond het 1,35 om 1,19 in het voordeel van Napoli, en verdedigend 1,01 om 1,28. Dat is een verschil, maar geen kloof. Beide rekenmethodes komen op hetzelfde uit.</p>
+      <span class="risk"><span class="dot med"></span>Dit is de bet met de grootste onzekerheid over hoe vers mijn informatie is. De Serie A begint vandaag, dus ik reken volledig op vorig seizoen en heb nul wedstrijden van dit seizoen gezien. Bij een club als Napoli, die in de zomer stevig kan investeren, is dat een reëel bezwaar — de bookmakers weten daar meer van dan ik.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Turkse Süper Lig · aftrap 18:00</span>
+        <span class="bet-match">Rizespor – Samsunspor</span>
+        <span class="bet-pick">Samsunspor +0.25</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.02</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">49,5%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">53,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+3,7</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Samsunspor wint bij Rizespor; bij een gelijkspel krijgt u de helft van uw inzet terug. Samsunspor had vorig seizoen de betere verdediging (1,20 om 1,39 aan kansenwaarde tegen) bij een vergelijkbare aanval. Het voordeel is klein — de kleinste van alle dertien bets — maar het bijzondere is dat alle drie mijn controlegetallen vrijwel gelijk uitvallen: er is geen enkel cijfer dat deze bet in zijn eentje draagt.</p>
+      <span class="risk"><span class="dot med"></span>Het voordeel is met bijna vier procentpunt net boven mijn ondergrens, dus er is weinig marge voor fouten. De prijs is wel de beste in de markt bij een bookmaker die ik kan noemen.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Engelse Championship · aftrap 16:00</span>
+        <span class="bet-match">Wrexham – Watford</span>
+        <span class="bet-pick">uitzege Watford</span>
+      </div>
+      <div class="price">
+        <span class="odds num">3.79</span>
+        <span class="book">bij marktgemiddelde over 11 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">26,4%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">31,8%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+5,5</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Watford wint bij Wrexham. De twee ploegen maakten vorig seizoen even veel kansenwaarde per wedstrijd, maar Watford kreeg er minder tegen. Wat deze bet extra body geeft is dat de Championship zesenveertig wedstrijden per seizoen speelt — meer dan welke andere competitie op mijn lijst — dus ik heb hier veruit de meeste waarnemingen per ploeg.</p>
+      <span class="risk"><span class="dot med"></span>Mijn tweede rekenmethode is hier een stuk voorzichtiger dan mijn eerste, en dat komt doordat Watford buitenshuis zwak was: 23 gemaakt tegen 38 tegen in 23 uitwedstrijden. Het gemiddelde van de twee blijft ruim boven mijn grens, maar dit is geen bet waarbij alles dezelfde kant op wijst. Wrexham speelt bovendien thuis voor een uitverkocht huis, wat niet in mijn cijfers zit.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Italiaanse Serie A · aftrap 20:45</span>
+        <span class="bet-match">Parma – Cagliari</span>
+        <span class="bet-pick">uitzege Cagliari</span>
+      </div>
+      <div class="price">
+        <span class="odds num">3.16</span>
+        <span class="book">bij marktgemiddelde over 5 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">31,6%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">35,3%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+3,7</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Cagliari wint bij Parma. Parma had vorig seizoen met afstand de zwakste aanval van alle ploegen die ik vandaag heb bekeken — 0,84 aan kansenwaarde per wedstrijd — en stond thuis 16 om 25. Cagliari is nauwelijks beter, maar wel beter, en dat is genoeg om een koers van 3,16 aan de royale kant te maken.</p>
+      <span class="risk"><span class="dot med"></span>Mijn tweede rekenmethode ziet hier maar een heel klein voordeel (nog geen twee procentpunt), waar de eerste er ruim vijf ziet. Het gemiddelde haalt mijn grens maar net. En net als bij Genoa – Napoli: de Serie A begint vandaag, dus ik reken volledig op vorig seizoen.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Spaanse La Liga · aftrap 21:30</span>
+        <span class="bet-match">Espanyol – Real Madrid</span>
+        <span class="bet-pick">gelijkspel</span>
+      </div>
+      <div class="price">
+        <span class="odds num">4.55</span>
+        <span class="book">bij marktgemiddelde over 11 boeken; welke bookmaker de beste prijs geeft, is bij deze bron niet te zien</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">22,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">25,9%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+3,9</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als Espanyol en Real Madrid gelijkspelen. Dit is de enige bet van vandaag waarbij ik niet tegen de favoriet in ga maar op het gelijkspel zit. Real is duidelijk de betere ploeg — daar gaat het niet om — maar bij een koers van 4,55 hoeft een gelijkspel maar iets waarschijnlijker te zijn dan één op vijf, en dat is het volgens mijn cijfers.</p>
+      <span class="risk"><span class="dot high"></span>Dit is de zwakste van de dertien en hij staat niet voor niets onderaan. Draai ik aan de instellingen van mijn model, dan blijft er nog maar heel weinig voordeel over. Er speelt bovendien iets vervelends mee: mijn model is er notoir slecht in om winst en gelijkspel uit elkaar te houden, en juist die zwakte is hier wat de bet draagt in plaats van ondermijnt. Als u er één van de dertien overslaat, sla deze dan over.</span>
+    </div>
+  </div>
+  <div class="callout" style="margin-top:24px"><p class="prose">Vlak buiten de vijf beste viel Everton – Crystal Palace (Palace met een kwart goal voorsprong, tegen 2,00 bij Matchbook). Inhoudelijk is dat een stevigere bet dan zijn plek suggereert — hij blijft beter overeind als ik aan mijn model draai dan de Sporting- en Piast-bets — maar mijn rangschikking weegt de grootte van het voordeel zwaar mee, en dat is bij Palace kleiner.</p></div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. Een getal onder de <strong>3,0 procentpunt</strong> is de reden dat de
+  bet er niet is: dat is de grens waaronder het voordeel niet van rekenruis te onderscheiden is.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Markt</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Sporting Charleroi – KV Mechelen<br><span class="note">Belgische Pro League</span></td><td>1X2 — uitzege KV Mechelen<br><span class="note">koers 4.41</span></td><td class="num below">-1,4 pp</td><td class="num">+13,9 pp</td><td class="num below">-3,8 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Royal Antwerp – Genk<br><span class="note">Belgische Pro League</span></td><td>1X2 — thuiszege Royal Antwerp<br><span class="note">koers 3.18</span></td><td class="num below">+0,6 pp</td><td class="num">+9,6 pp</td><td class="num below">-1,4 pp</td><td><span class="chip gap">verdwijnt bij andere rekeninstellingen</span></td></tr>
+<tr><td class="comp">Birmingham – Bristol City<br><span class="note">Engelse Championship</span></td><td>1X2 — uitzege Bristol City<br><span class="note">koers 4.21</span></td><td class="num below">-0,5 pp</td><td class="num below">+2,7 pp</td><td class="num below">-2,4 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Millwall – Norwich<br><span class="note">Engelse Championship</span></td><td>1X2 — uitzege Norwich<br><span class="note">koers 3.09</span></td><td class="num below">-4,0 pp</td><td class="num">+4,0 pp</td><td class="num below">-4,8 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Southampton – Stoke<br><span class="note">Engelse Championship</span></td><td>1X2 — gelijkspel<br><span class="note">koers 4.01</span></td><td class="num below">-2,0 pp</td><td class="num">+3,3 pp</td><td class="num below">-3,3 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Korona Kielce – Motor Lublin<br><span class="note">Poolse Ekstraklasa</span></td><td>1X2 — thuiszege Korona Kielce<br><span class="note">koers 1.95</span></td><td class="num">+7,5 pp</td><td class="num below">-3,5 pp</td><td class="num">+6,0 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Athletic Club – Sevilla<br><span class="note">Spaanse La Liga</span></td><td>1X2 — uitzege Sevilla<br><span class="note">koers 5.15</span></td><td class="num below">-3,1 pp</td><td class="num">+8,6 pp</td><td class="num below">-5,2 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Valencia – Celta Vigo<br><span class="note">Spaanse La Liga</span></td><td>1X2 — thuiszege Valencia<br><span class="note">koers 2.46</span></td><td class="num">+7,1 pp</td><td class="num below">-4,9 pp</td><td class="num">+6,5 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Toulouse – Lyon<br><span class="note">Franse Ligue 1</span></td><td>1X2 — thuiszege Toulouse<br><span class="note">koers 2.61</span></td><td class="num below">+2,0 pp</td><td class="num below">-1,6 pp</td><td class="num below">+0,8 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Nottm Forest – Leeds<br><span class="note">Premier League</span></td><td>Over/Under — Over 2.5<br><span class="note">koers 2.05</span></td><td class="num">+5,8 pp</td><td class="num below">-1,1 pp</td><td class="num">+5,7 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Udinese – Como<br><span class="note">Italiaanse Serie A</span></td><td>1X2 — thuiszege Udinese<br><span class="note">koers 4.57</span></td><td class="num below">-0,8 pp</td><td class="num below">+1,0 pp</td><td class="num below">-4,5 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Fenerbahçe – Konyaspor<br><span class="note">Turkse Süper Lig</span></td><td>Asian Handicap — Torku Konyaspor +1.5<br><span class="note">koers 1.97</span></td><td class="num">+4,1 pp</td><td class="num">+14,2 pp</td><td class="num below">-2,5 pp</td><td><span class="chip gap">verdwijnt bij andere rekeninstellingen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat jij nog moet doen</h2>
+  </div>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">De belangrijkste sleutel ontbreekt nog steeds</span>
+        <span class="d">API-Football is nog altijd niet ingesteld, de achtste ochtend op rij. Daardoor komt élk kanscijfer in dit rapport van één leverancier (Fotmob). Als die morgen dichtgaat, ligt de hele routine stil en heb ik geen tweede been om op te staan. Hoe u de sleutel toevoegt staat in het README onder &#x27;Sleutels toevoegen&#x27;.</span>
+        <span class="when">wanneer het uitkomt</span>
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">De reservesleutel voor prijzen wordt geweigerd</span>
+        <span class="d">Ik heb vandaag voor het eerst echt kunnen testen of mijn noodvoorraad aan prijzen werkt, en dat doet hij niet: OddsPapi antwoordt op elk verzoek met &#x27;invalid apiKey&#x27;. Dat is niet urgent — mijn gewone prijzenbron heeft nog 195 opvragingen over en dat is ruim voldoende voor de rest van de maand — maar de noodvoorraad is er juist voor het geval dát opraakt, en die blijkt dus leeg. Een nieuwe sleutel bij OddsPapi lost het op.</span>
+        <span class="when">voor het einde van de maand</span>
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Ik koppel ploegen op naam, en dat ging vandaag bijna mis</span>
+        <span class="d">Mijn twee bronnen schrijven clubnamen verschillend op (&#x27;Man United&#x27; tegenover &#x27;Manchester United&#x27;). Bij het automatisch koppelen werd Le Mans vandaag aangezien voor Le Havre — een andere club. Ik heb dat opgevangen door de koppeling met de hand na te lopen, maar dat is geen houdbare oplossing. De nette fix is koppelen op het interne nummer dat de bron aan elke club geeft in plaats van op de naam.</span>
+        <span class="when">voor een volgende drukke dag</span>
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Wat mij vandaag opviel: dertien bets, maar eigenlijk één en dezelfde afwijking</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Dertien bets is veel — de afgelopen weken waren het er nul tot vier. Dat verdient uitleg, want het is geen dertien keer goed nieuws.</p>
+    <p class="prose">Ik heb na afloop mijn eigen kansinschattingen naast die van de bookmakers gelegd voor alle dertig doorgerekende wedstrijden, uitkomst voor uitkomst. Gemiddeld genomen zit ik er nauwelijks naast. Maar splits ik het op naar hoe waarschijnlijk de bookmakers een uitkomst vinden, dan valt het uit elkaar: bij uitkomsten die zij onder de één op vier inschatten zit ik er structureel <b>ruim vier procentpunt boven</b>, en bij uitkomsten die zij waarschijnlijker dan fifty-fifty vinden zit ik er bijna <b>zeven procentpunt onder</b>.</p>
+    <p class="prose">In gewone taal: mijn rekenmethode maakt alle ploegen wat gelijkwaardiger dan ze zijn. Ze trekt sterke ploegen naar beneden en zwakke omhoog. Dat is een bewuste instelling — vroeg in het seizoen weet je nog weinig, en dan is voorzichtigheid verstandig — maar het gevolg is dat vrijwel élk voordeel dat ik vind, bij de underdog ligt. En inderdaad: van mijn dertien bets liggen er tien op een uitkomst die de bookmakers onder de veertig procent inschatten.</p>
+    <p class="prose">Dat betekent dat deze dertien bets voor een groot deel <i>dezelfde weddenschap</i> zijn, dertien keer opgeschreven. Wie ze alle dertien speelt, spreidt zijn risico veel minder dan het lijkt: gaan underdogs vandaag over de hele linie onderuit — en dat is precies wat er meestal gebeurt — dan verliezen ze grotendeels samen.</p>
+    <p class="prose">Twee dingen die het verzachten, en het hoort erbij die ook te noemen. Ten eerste heb ik een controle die precies hierop is gebouwd: ik reken elke bet ook door met de voorzichtigheid volledig uitgezet, en alleen bets die ook dán een voordeel houden komen erdoor. Alle dertien halen die controle. Ten tweede is dit geen nieuwe verdenking maar een bevestiging: mijn logboek liet al zien dat ik meer winnaars voorspel dan er komen (vijfentwintig in plaats van eenendertig over alle bets tot nu toe), en deze meting laat zien wáár dat vandaan komt.</p>
+    <p class="prose">Ik heb vandaag geen enkele regel aangepast, en dat is met opzet. Eén dag meten is geen bevinding, en mijn eigen regels verbieden het om op grond van één dag aan de grenzen te draaien — dat is precies de fout waarmee eerder een te strenge regel is ingevoerd die weken lang alles wegving. Wat ik wel doe is het opschrijven en over een paar dagen opnieuw meten. Staat het er dan nog, dan is er iets aan te doen dat op cijfers rust in plaats van op één zaterdag.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Ook uit deze run</span>
+    <h2>De oplossing van gisteren werkt: negen wedstrijden gered die anders waren afgevallen</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Gisteren viel meer dan een derde van de wedstrijden af omdat er clubs meededen die vorig seizoen een divisie hoger of lager speelden. Mijn cijfers komen per competitie binnen, dus van een net gepromoveerde club sta ik met lege handen: die staat in de ranglijst waar ik uit put simpelweg niet.</p>
+    <p class="prose">Sinds gisteren heb ik een bron die meerdere divisies in hetzelfde formaat aanlevert, over vijftien seizoenen. Daarmee is te méten hoeveel een divisie werkelijk scheelt, in plaats van het te moeten raden. Vandaag is dat voor het eerst echt gebruikt, en het scheelde: elf clubs stonden niet in hun eigen ranglijst — Hull en Ipswich, Monza, Le Mans en Troyes, Lincoln, Cardiff en Bolton, Wolves en West Ham, en St Johnstone. Voor alle elf heb ik de sterkte uit de andere divisie gehaald en omgerekend.</p>
+    <p class="prose">Zonder die brug waren dat elf wedstrijden geweest die ik moest laten lopen. Nu bleven er <b>twee</b> over, en dat zijn precies de twee waar de bron geen tweede divisie van heeft: Maritimo – Academico Viseu in Portugal en Çorum FK – Kasımpaşa in Turkije. Van Portugal, België, Turkije en Polen heeft deze bron alleen de hoogste divisie.</p>
+    <p class="prose">Wel met een slag om de arm: zo'n omgerekende sterkte komt uit doelpunten in plaats van uit kansenwaarde, en gaat door een factor die over meerdere jaren is gemiddeld. Dat is minder scherp dan mijn gewone cijfers, dus ik heb die elf wedstrijden een lagere betrouwbaarheid gegeven en er een hogere drempel op gezet. Omdat het vandaag zo druk was, vielen ze alle elf buiten de dertig die ik mocht doorrekenen — ze hebben dus nog geen enkele bet opgeleverd. Op een rustigere dag zullen ze dat wel doen.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Ook uit deze run</span>
+    <h2>Vijf Schotse wedstrijden zonder één enkele prijs</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Van de zes wedstrijden in de Schotse competitie had ik er vijf gewoon kunnen doorrekenen: de cijfers waren er, de ploegen speelden vorig seizoen allemaal op dit niveau. Maar bij géén van mijn twee prijzenbronnen stond een koers — niet bij de gratis bron, en niet bij de betaalde waar ik vandaag juist krediet aan Schotland had toegewezen. Alleen de Dundee-derby had een prijs, en dat is meteen de enige Schotse bet geworden.</p>
+    <p class="prose">Dat is een ander soort gat dan 'ik heb geen cijfers'. Hier had ik alles behalve het enige wat ik niet zelf kan maken. Ik meld het omdat het anders onzichtbaar blijft: in de dekkingstabel staat de Schotse competitie gewoon als bekeken, en dat is ook zo — er was alleen niets om tegen af te zetten.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 21 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Belgische Pro League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">3 wedstrijden · 2 doorgerekend · bij Antwerp – Genk en Charleroi – Mechelen zag ik allebei een flink voordeel, maar mijn twee rekenmethodes waren het oneens · <strong>geen bet</strong></td></tr>
+        <tr><td class="comp">Engelse Championship</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">11 wedstrijden, de drukste competitie van de dag · 6 doorgerekend · vijf clubs kwamen vorig seizoen uit een andere divisie (Lincoln, Cardiff, Bolton, Wolves, West Ham) · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">Poolse Ekstraklasa</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">3 wedstrijden · 2 doorgerekend · dit is de competitie waar ik de meeste actuele cijfers van heb, vijf gespeelde speelronden · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">Eredivisie</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">4 wedstrijden · 3 doorgerekend · van NEC Nijmegen – Excelsior kon ik bij geen enkele bron een koers vinden · <strong>1 bet, en meteen de grootste van de dag</strong></td></tr>
+        <tr><td class="comp">Spaanse La Liga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">3 wedstrijden, alle drie doorgerekend · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">Franse Ligue 1</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">5 wedstrijden · 3 doorgerekend · Le Mans en Troyes komen uit de divisie eronder · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">Premier League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">5 wedstrijden · 3 doorgerekend · bij Hull en Ipswich speelde vorig seizoen een divisie lager, dus die twee kregen minder gewicht en vielen buiten mijn dertig · <strong>2 bets</strong></td></tr>
+        <tr><td class="comp">Portugese Liga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">3 wedstrijden · 2 doorgerekend · Maritimo – Academico Viseu gaat tussen twee net gepromoveerde clubs, van geen van beide heb ik cijfers op dit niveau · <strong>2 bets</strong></td></tr>
+        <tr><td class="comp">Schotse Premiership</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">6 wedstrijden, en dit is het pijnlijkste gat van de dag · van vijf ervan had ik gewoon goede cijfers, maar bij <em>geen enkele</em> prijzenbron stond een koers — niet bij de gratis bron en niet bij de betaalde. Alleen de Dundee-derby had een prijs · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">Italiaanse Serie A</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">4 wedstrijden · 3 doorgerekend · de Italiaanse competitie begint vandaag, dus ik reken volledig op vorig seizoen; van zomerse transfers weet ik niets · <strong>2 bets</strong></td></tr>
+        <tr><td class="comp">Turkse Süper Lig</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">3 wedstrijden · 2 doorgerekend · Çorum FK is net gepromoveerd en heeft geen historie op dit niveau · <strong>1 bet</strong></td></tr>
+        <tr><td class="comp">DFB Pokal</td><td><span class="chip gap">geen cijfers</span></td><td class="note">11 wedstrijden in de eerste ronde · een bekertoernooi heeft geen ranglijst, en dus heb ik van geen van deze clubs kansencijfers; de tegenstanders van de grote clubs zijn bovendien amateur- en derdedivisieclubs die nergens in mijn bronnen voorkomen · <strong>geen analyse</strong></td></tr>
+        <tr><td class="comp">Duitse Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint later dit weekend</td></tr>
+        <tr><td class="comp">Italiaanse beker</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">vandaag geen wedstrijden</td></tr>
+        <tr><td class="comp">Deense Superliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">vandaag geen wedstrijden</td></tr>
+        <tr><td class="comp">FA Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">vandaag geen wedstrijden</td></tr>
+        <tr><td class="comp">KNVB Beker</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">vandaag geen wedstrijden</td></tr>
+        <tr><td class="comp">Engelse League Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">de tweede ronde speelt 25 tot 27 augustus</td></tr>
+        <tr><td class="comp">Champions League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">de play-offs zijn 26 en 27 augustus</td></tr>
+        <tr><td class="comp">Conference League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">de returns zijn 27 augustus</td></tr>
+        <tr><td class="comp">Europa League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">de returns zijn 27 augustus</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px"><strong>18 wedstrijden zijn afgekapt</strong> omdat er per run maximaal 30 diep bekeken kunnen worden.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Geen openstaande bets van gisteren</td><td class="num">Alle bets van eerdere runs waren al afgerekend; er stond vanochtend niets meer open.</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Tien afgewezen kandidaten van gisteren, en die vielen opvallend goed uit</td><td class="num">Zeven van de tien zouden gewonnen hebben: Cracovia won 3-2, Preussen Münster – Karlsruhe bleef met 1-2 onder de 3,5 goals, in Ried – Grazer AK scoorde inderdaad maar één ploeg (1-0), en Paksi, Den Bosch, Emmen en Almere City wonnen allemaal. Drie zouden verloren hebben: Strasbourg ging met 4-0 onderuit bij Marseille, Sirius verloor met 0-3 en Helmond speelde 1-1. Dat is geen goed nieuws — dit zijn wedstrijden waarbij ik zei &#x27;hier vertrouw ik mijn eigen voordeel niet&#x27;, en achteraf hadden zeven ervan gewonnen. Bij deze aantallen is dat nog steeds toeval, maar het is precies waarom ik ze bijhoud.</td><td><span class="chip ok">gewonnen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.215 tegen mijn 0.230 — lager is beter). Bij 60 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Onder de 3 wordt er niets gepubliceerd. <em>In de repo: “edge_pp”.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run A · zaterdag 22 augustus 2026 · 13 bets uit 50 wedstrijden · prijzen uitgelezen om 04:20 · cijfers van Fotmob en football-data.co.uk · prijzen van BetExplorer (marktgemiddelde over 3 tot 18 boeken) en The Odds API (beste prijs per bookmaker)</p>
+</footer>
+
+</div>
