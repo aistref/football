@@ -104,11 +104,32 @@ class TeamContext:
 
 
 @dataclass
+class Venue:
+    """Waar er gespeeld wordt, en of dat het gebruikelijke stadion van de thuisploeg is.
+
+    Toegevoegd 23 aug 2026, nadat de gebruiker wees op Rennes – PSG: dat was **PSG's thuiswedstrijd**,
+    verplaatst naar Roazhon Park omdat de mat van het Parc des Princes na de hittegolven onbespeelbaar
+    was verklaard. Fotmob, BetExplorer én The Odds API noteerden alle drie gewoon "Rennes thuis"; in de
+    cijfers was er niets te zien. Een verplaatsing raakt precies de aanname waar het model het meest op
+    leunt — wie het thuisvoordeel krijgt — en een run die dat niet eens kán zien, kan er ook niet over
+    rapporteren.
+    """
+    stadium: str = ""
+    city: str = ""
+    home_ground: str = ""      #: het gebruikelijke stadion van de genoteerde thuisploeg
+    away_ground: str = ""      #: ... en dat van de uitploeg
+    relocated: bool = False    #: er wordt niet in het stadion van de thuisploeg gespeeld
+    at_away_ground: bool = False   #: ... maar wél in dat van de uitploeg
+    note: str = ""
+
+
+@dataclass
 class MatchContext:
     home: TeamContext
     away: TeamContext
     source: str = "fotmob"
     lineup_type: str = ""
+    venue: Venue = field(default_factory=Venue)
 
     def for_side(self, side: str) -> TeamContext:
         return self.home if side == "home" else self.away
@@ -153,6 +174,45 @@ def _parse_form(entries: list, kickoff: datetime | None) -> tuple[str, int, int,
     return "".join(letters), points, len(letters), rest, congested
 
 
+def _norm_ground(s: str) -> str:
+    return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+
+
+def team_ground(team_id: int) -> tuple[str, str]:
+    """(stadionnaam, plaats) van één ploeg, uit de JSON-LD op de Fotmob-teampagina."""
+    try:
+        data = _get_json(f"https://www.fotmob.com/api/data/teams?id={team_id}")
+    except ContextError:
+        return "", ""
+    loc = ((data.get("details") or {}).get("sportsTeamJSONLD") or {}).get("location") or {}
+    return loc.get("name") or "", ((loc.get("address") or {}).get("addressLocality") or "")
+
+
+def check_venue(stadium: str, city: str, home_id: int | None, away_id: int | None) -> Venue:
+    """Wordt er gespeeld waar de thuisploeg normaal speelt?"""
+    v = Venue(stadium=stadium or "", city=city or "")
+    if not stadium or not home_id:
+        v.note = "stadion of thuisploeg-id onbekend; verplaatsing niet te controleren"
+        return v
+    v.home_ground, _ = team_ground(home_id)
+    if not v.home_ground:
+        v.note = "eigen stadion van de thuisploeg niet gevonden"
+        return v
+    if _norm_ground(v.home_ground) == _norm_ground(stadium):
+        v.note = f"{stadium} — het eigen stadion van de thuisploeg"
+        return v
+    v.relocated = True
+    if away_id:
+        v.away_ground, _ = team_ground(away_id)
+        if v.away_ground and _norm_ground(v.away_ground) == _norm_ground(stadium):
+            v.at_away_ground = True
+    v.note = (f"VERPLAATST: gespeeld in {stadium}"
+              + (f" ({city})" if city else "")
+              + f", niet in {v.home_ground}"
+              + (" — dat is het stadion van de tegenstander" if v.at_away_ground else ""))
+    return v
+
+
 def fetch_match_context(match_id: int, kickoff_utc: str | None = None) -> MatchContext:
     """Blessures, vorm en rust voor één wedstrijd.
 
@@ -195,8 +255,13 @@ def fetch_match_context(match_id: int, kickoff_utc: str | None = None) -> MatchC
             form=letters, form_points=pts if played else None, form_matches=played,
             rest_days=rest, congested=cong,
         ))
+    stadium_info = (facts.get("infoBox") or {}).get("Stadium") or {}
+    general = data.get("general") or {}
+    venue = check_venue(stadium_info.get("name") or "", stadium_info.get("city") or "",
+                        (general.get("homeTeam") or {}).get("id"),
+                        (general.get("awayTeam") or {}).get("id"))
     return MatchContext(home=teams[0], away=teams[1],
-                        lineup_type=lineup.get("lineupType") or "")
+                        lineup_type=lineup.get("lineupType") or "", venue=venue)
 
 
 @dataclass

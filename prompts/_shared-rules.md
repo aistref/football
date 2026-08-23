@@ -80,6 +80,22 @@ De poort is met opzet **asymmetrisch en grof**:
   benadelen, en in welke richting context een *totaal* verschuift is zonder meting niet te zeggen.
 - Ontbrekende data laat de poort open. Een meting die er niet is, is geen bewijs van een probleem.
 
+**Derde controle: wordt er wel gespeeld waar je denkt?** `context.check_venue` vergelijkt het
+stadion van de wedstrijd met het eigen stadion van de genoteerde thuisploeg (beide uit Fotmob) en
+zet `relocated` als die verschillen. Aanleiding, 23 aug 2026: Rennes – PSG was in werkelijkheid
+**PSG's thuiswedstrijd**, verplaatst naar Roazhon Park omdat de mat van het Parc des Princes na de
+hittegolven onbespeelbaar was. Thuisvoordeel is de aanname waar het model het zwaarst op leunt, en
+een verplaatsing raakt hem rechtstreeks.
+
+Let op wat deze controle wél en niet vangt. Op 23 aug sloeg hij **niet** aan, en terecht: Fotmob,
+BetExplorer en The Odds API hadden de omwisseling alle drie al verwerkt en noteerden Rennes als
+thuisploeg in Roazhon Park — wat feitelijk klopt. Wat geen enkele van die bronnen laat zien, is dat
+het oorspronkelijk PSG's thuiswedstrijd was. Dat is **nieuws, geen data**, en een geplande run heeft
+geen nieuwsbron. De controle vangt dus het geval waarin een ploeg buiten de eigen deur speelt zonder
+dat de bronnen dat verwerken; hij vangt niet dat een fixture van eigenaar is gewisseld. Zet
+`relocated` en de stadionnaam altijd in `data/run-state/`, en noem een verplaatsing in het
+runrapport — ook als de poort opengaat.
+
 Twee criteria, allebei **voorlopig** — ze zijn niet gefit, want er is nog geen enkele afgerekende
 bet mét contextdata:
 
@@ -224,7 +240,35 @@ guard = CreditGuard(cap=cap)
 
 Geef de credits uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
 
-1. `spreads,totals` (2 per competitie), voor de competities die **vandaag aan de beurt zijn**:
+0. **`totals` eerst, en voor zoveel mogelijk competities** (1 credit per competitie). Dit staat
+   sinds 23 aug 2026 bovenaan, op aanwijzing van de gebruiker en bevestigd door de cijfers. Van de
+   eerste 113 picks ging **78% over de uitkomst** (1X2, AH, DNB) en maar 22% over doelpunten (O/U,
+   BTTS) — en dat is precies de verkeerde kant op, want de doelpuntenmarkten renderen beter:
+
+   | | bets | hit rate | ROI |
+   |---|---|---|---|
+   | uitkomst | 66 | 34.8% | −19.9% |
+   | **doelpunten** | 22 | **45.5%** | **−10.5%** |
+
+   Die scheefstand kwam niet uit de analyse maar uit dit budget: `spreads,totals` kost er 2 per
+   competitie en ging naar vier competities, dus zeven competities hielden alleen 1X2 over — en
+   1X2 is een uitkomstmarkt. `fetch_totals(sport_key)` kost er **1**, dus voor hetzelfde geld
+   krijgt elke competitie een doelpuntenmarkt in plaats van vier competities twee markten. Gemeten
+   op 23 aug: het aandeel doelpuntenbets ging van 7% naar **43%**.
+
+   Een doelpuntenmarkt heeft bovendien een eigenschap die na de herziening van §1c/§1d telt: hij
+   **kiest geen kant**, en gaat dus vrijuit door poort 7 én ontsnapt aan de underdog-neiging die
+   §1d beschrijft.
+
+   ```python
+   from scripts.oddsapi import fetch_totals
+   for comp in comps_op_datakwaliteit:          # zoveel als het plafond toelaat
+       if guard.can_afford(1):
+           guard.record(fetch_totals(sport_key[comp]), comp)
+   ```
+1. `spreads` (1 per competitie) — of `spreads,totals` (2) waar de vorige stap nog niet is geweest —
+   voor de competities die **vandaag aan de beurt zijn** in de rotatie. Dit levert Asian Handicap
+   en Draw No Bet, en het is met opzet nu de tweede prioriteit:
 
    ```python
    from scripts.oddsapi import rotate_for_day
