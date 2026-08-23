@@ -214,6 +214,13 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "Swiss Super League (SUI)": "https://www.betexplorer.com/football/switzerland/super-league/",
     "English League One (ENG)": "https://www.betexplorer.com/football/england/league-one/",
     "English League Two (ENG)": "https://www.betexplorer.com/football/england/league-two/",
+    # Toegevoegd 23 aug 2026 (Run B). Dit was de laatste Run B-competitie zonder werkende slug.
+    # De naamgevende slugs geven alle drie de stille faalmodus (HTTP 200, 0 rijen):
+    # 'albania/kategoria-superiore', 'albania/superiore' en 'albania/kategoria-superiore-2026-2027'.
+    # BetExplorer noemt de competitie bij haar sponsornaam; die slug geeft wel rijen (2 op 23 aug,
+    # allebei van die dag, met 1X2). Daarmee heeft ALB voor het eerst een prijsbron — The Odds API
+    # heeft geen sportkey voor deze competitie.
+    "Kategoria Superiore (ALB)": "https://www.betexplorer.com/football/albania/abissnet-superiore/",
 }
 
 
