@@ -33,7 +33,7 @@ Per geanalyseerde wedstrijd geldt precies één van twee uitkomsten:
 
 ```python
 p_xg    = analyze_match(...)              # op xG, genormaliseerd op de competitie
-p_split = analyze_match_from_splits(...)  # op wat de ploegen thuis en uit werkelijk scoorden
+p_split = analyze_match_from_splits(..., league=league)   # LET OP: league meegeven, zie §1d
 my_prob = (p_xg + p_split) / 2            # dit is de kans die in de pick komt
 edge_pp = (my_prob - 1 / odds) * 100
 ```
@@ -49,7 +49,51 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
    verslaan: `p_xg > 1/odds` **én** `p_split > 1/odds`. Zakt één van de twee onder de
    marktkans, dan wijzen ze tegengesteld en gaat de bet eruit met reden "data conflicterend";
 6. **de edge draait niet om bij een andere parameterkeuze:**
-   `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid.
+   `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid;
+7. **de context spreekt de bet niet tegen** (§1c): `context.check(ctx, side).passed`.
+
+### Poort 7 — contextfactoren (toegevoegd 23 aug 2026, op aanwijzing van de gebruiker)
+
+Tot deze datum rekende de routine uitsluitend met xG en doelpuntensplits van vórig seizoen. Alles
+wat een mens als eerste noemt — blessures, schorsingen, vorm, een zware midweekse wedstrijd — zat
+niet in `my_prob` en werd nergens vastgelegd, terwijl §4 die factoren nadrukkelijk als geldige
+categorie-1-input noemt. De code deed er niets mee.
+
+Dat gat wijst één kant op. Ontbrekende context is gemiddeld slecht nieuws voor de ploeg die het
+treft, en de routine zette structureel op de zwakkere ploeg: **89% van alle picks die een ploeg
+speelden, speelde de zwakkere kant**, met een ROI van −29.7% tegen −14.4% voor de markten zonder
+kant (O/U, BTTS). Juist bij een zwakke ploeg hakt een uitgevallen spits of een Europese
+uitwedstrijd op woensdag er het hardst in.
+
+```python
+from scripts import context
+ctx = context.fetch_match_context(match_id, kickoff_utc)   # Fotmob, geen credits
+gate = context.check(ctx, side)                            # side: "home" | "away" | None
+```
+
+De poort is met opzet **asymmetrisch en grof**:
+
+- Hij houdt alleen tegen; hij laat nooit iets extra's door en stelt `my_prob` niet bij. Er is geen
+  enkele meting die zegt hoeveel procentpunt een geblesseerde middenvelder waard is, en zo'n getal
+  verzinnen is precies wat §2 en §4 verbieden.
+- Bij `side = None` (Over/Under, BTTS, gelijkspel) staat hij altijd open: er is geen kant om te
+  benadelen, en in welke richting context een *totaal* verschuift is zonder meting niet te zeggen.
+- Ontbrekende data laat de poort open. Een meting die er niet is, is geen bewijs van een probleem.
+
+Twee criteria, allebei **voorlopig** — ze zijn niet gefit, want er is nog geen enkele afgerekende
+bet mét contextdata:
+
+| Criterium | Drempel | Bron |
+|---|---|---|
+| blessures/schorsingen | de gespeelde kant mist ≥ 10 procentpunt méér selectiewaarde dan de tegenstander | `lineup.*.unavailable` + `totalStarterMarketValue` |
+| rust | de gespeelde kant heeft ≤ 4 dagen rust én ≥ 2 dagen minder dan de tegenstander | data uit `matchFacts.teamForm` |
+
+Marktwaarde is een grove maat voor hoe belangrijk een speler is, maar het is de enige die Fotmob
+per uitvaller meegeeft, en hij onderscheidt in elk geval een eerste spits van een derde keeper.
+**Leg de volledige context van élke doorgerekende wedstrijd vast in `data/run-state/`**, ook als de
+poort opengaat — pas als er enkele weken aan regels liggen, zijn deze twee drempels tegen uitkomsten
+te leggen en te vervangen door een gemeten bijstelling. Tot die tijd geldt dezelfde discipline als
+bij §6d: liever een bet te veel tegengehouden dan een verzonnen kansbijstelling.
 
 ### Waarom poort 5 en 6 zo staan (herzien 11 aug 2026)
 
@@ -116,6 +160,40 @@ Een handicap of totaal met push is geen gewone kans — bij een push komt de inz
 `edge_pp` en alle zes poorten er ongewijzigd op werken. Gebruik voor markten met push dus altijd
 `asian_prob` / `dnb_prob` / `totals_prob` en nooit de kale winkans, anders staan de markten niet op
 dezelfde schaal en is de rangschikking hieronder betekenisloos.
+
+### 1d. De splitsmethode is multiplicatief (gewijzigd 23 aug 2026)
+
+`analyze_match_from_splits` deed tot 23 aug `lambda = (aanval + verdediging) / 2`: twee
+doelpuntgemiddeldes optellen en door twee delen. Dat is geen sterktemodel maar een gemiddelde, en
+**middelen trekt naar het midden**. Omdat `my_prob` het ongewogen gemiddelde van deze methode en de
+xG-methode is, sloeg die samendrukking door in elke gepubliceerde kans: over 165 waarnemingen
+(22–23 aug) gaf de splitsmethode longshots +6.61 pp meer kans dan de markt en favorieten −11.86 pp
+minder. Dat is de rekenkundige oorzaak van de 89% picks op de zwakkere kant uit §1c.
+
+Geef daarom **altijd `league=` mee**. De methode rekent dan met verhoudingen tegen het
+competitiegemiddelde, net als `analyze_match`, en beide schatters van §1 staan op dezelfde
+grootheid — precies wat §6e als remedie aanwees. Gemeten op de 25 duels van 23 aug:
+
+| | longshots | favorieten | gem. abs. fout |
+|---|---|---|---|
+| additief (t/m 22 aug) | +6.02 pp | −11.02 pp | 6.23 pp |
+| **multiplicatief** | **+4.09 pp** | **−7.38 pp** | **5.61 pp** |
+
+**Regresseer de splits niet — dat is geprobeerd en het werkt averechts.** Twee varianten zijn
+gebouwd en gemeten: een vaste credibiliteitsweging `n/(n+9.5)` gaf +5.53 / −10.09, en een netjes
+uit de competitiespreiding gemeten Bühlmann-credibiliteit (Z = 0.36 tot 0.76) gaf +6.09 / −11.11 —
+slechter dan doen alsof er geen ruis is. Dat is geen toeval: regressie naar het gemiddelde ís de
+samendrukking. Ze duwt elke wedstrijd richting "de ploegen ontlopen elkaar niet veel", en tegen een
+markt die favoriet en underdog wél scheidt komt dat er als schijnedge op de zwakke kant uit. Ruis in
+de invoer is een echt probleem, maar regresseren is er niet het antwoord op. Zie de docstring van
+`analyze_match_from_splits` voor de volledige tabel.
+
+**Wat hiermee níet is opgelost.** De scheefstand is kleiner, niet weg (+4.09 pp op longshots), en
+het aandeel picks op de zwakkere kant bleef op de duels van 23 aug vrijwel gelijk (83% → 86%; in
+absolute aantallen 10 → 6). Wat er nog staat, is werk voor de kalibratiereeks van §6e: zodra de
+longshotbak ~150 waarnemingen heeft, hoort de gemeten afwijking van `my_prob` te worden afgetrokken
+vóórdat `edge_pp` wordt bepaald. Dat is nú niet gedaan — met 50 waarnemingen zou dat dezelfde fout
+zijn als waarmee de oude poort 5 werd ingevoerd: één anekdote tot regel verheffen.
 
 ### 1a. Waar de prijzen vandaan komen — creditbudget (vastgesteld 15 aug 2026)
 

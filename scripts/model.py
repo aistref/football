@@ -119,6 +119,14 @@ def team_strength(stats: TeamStats, league: LeagueContext, shrink: float = DEFAU
     `shrink=1.0` is de ruwe xG-verhouding; `shrink=0.0` is volledig het competitiegemiddelde
     (elk team even sterk). Vroeg seizoen (§4 van _shared-rules.md) rechtvaardigt shrink < 1.0
     omdat rolling xG dan niet bestaat en transfers niet in de cijfers zitten.
+
+    LET OP — de richting van deze knop, gemeten 23 aug 2026. Regressie maakt ploegen onderling
+    gelijker, en gelijker betekent dat de underdog meer kans krijgt dan hij verdient. Op de 25
+    duels van die dag lag `analyze_match` bij `shrink=0.80` op +4.82 pp boven de markt op
+    longshots en −8.70 pp eronder bij favorieten; bij `shrink=1.00` was dat +3.07 en −5.43. Minder
+    regressie is daar dus béter gekalibreerd. Het niveau is niettemin niet verlaagd: twee dagen is
+    onder de leesdrempel van §6e, en `ROBUSTNESS_COMBOS` varieert deze parameter juist met opzet
+    van 0.70 tot 1.00 — een edge die alleen bij lage shrink bestaat, valt daar al op poort 6.
     """
     attack = 1 + shrink * (stats.xg_per_match / league.avg_xg_per_match - 1)
     defense = 1 + shrink * (stats.xga_per_match / league.avg_xg_per_match - 1)
@@ -383,20 +391,80 @@ class TeamSplits:
 
 
 def analyze_match_from_splits(home: TeamSplits, away: TeamSplits,
-                              rho: float = DEFAULT_RHO) -> MatchProbabilities:
+                              rho: float = DEFAULT_RHO,
+                              league: LeagueContext | None = None) -> MatchProbabilities:
     """Tweede kansschatting, op echte doelpunten in plaats van op xG.
 
     Dit is met opzet een andere doorsnede van dezelfde data: `analyze_match` normaliseert
-    teamsterkte op het competitiegemiddelde en rekent met kansenkwaliteit, deze rekent recht­toe
-    met wat de thuisploeg thuis deed en de uitploeg uit. Waar beide methodes hetzelfde zeggen,
-    hangt een edge niet aan één modelkeuze.
+    teamsterkte op het competitiegemiddelde en rekent met kansenkwaliteit, deze rekent met wat de
+    thuisploeg thuis deed en de uitploeg uit. Waar beide methodes hetzelfde zeggen, hangt een edge
+    niet aan één modelkeuze.
 
     Nut, concreet: op 9 aug 2026 gaf het xG-model Gil Vicente – Rio Ave +10.3 pp — nominaal de op
     één na grootste edge van die dag — terwijl deze methode op +2.7 pp uitkwam, onder de drempel.
     Groningen en Anderlecht werden door beide bevestigd en zijn wel gepubliceerd.
+
+    **MULTIPLICATIEF SINDS 23 AUG 2026 — lees dit voordat je `league` weglaat.**
+
+    Tot die datum deed deze functie `lambda_home = (aanval_thuis + verdediging_uit) / 2`: twee
+    doelpuntgemiddeldes optellen en door twee delen. Dat is geen sterktemodel maar een gemiddelde,
+    en middelen trekt naar het midden. Het gevolg was over 165 waarnemingen (22–23 aug) te meten:
+    deze methode gaf longshots **+6.61 pp** meer kans dan de markt en favorieten **−11.86 pp**
+    minder, terwijl `analyze_match` op dezelfde duels veel vlakker lag. Omdat `my_prob` het
+    ongewogen gemiddelde van de twee is, sloeg die samendrukking door in elke gepubliceerde kans —
+    en in de picks: **89% van alle picks die een ploeg speelden, speelde de zwakkere kant**, met
+    een ROI van −29.7% tegen −14.4% voor de markten zonder kant.
+
+    Geef je `league` mee, dan rekent deze functie net als `analyze_match` met verhoudingen:
+
+        aanval_thuis   = (thuisdoelpunten per duel)   / competitiegemiddelde thuis
+        verdediging_uit = (uitgoals tegen per duel)   / competitiegemiddelde thuis
+        lambda_home     = competitiegemiddelde thuis x aanval_thuis x verdediging_uit
+
+    Vermenigvuldigen behoudt de spreiding die middelen wegdrukt, en zet beide schatters van §1 op
+    dezelfde grootheid — precies wat _shared-rules.md §6e als remedie aanwees.
+
+    `league=None` houdt het oude additieve gedrag, alleen nog voor de historische ankers in de
+    zelftest hieronder. Gebruik het niet in een run.
+
+    **WAT HIER NIET IN ZIT, EN WAAROM — een negatief resultaat, om herhaling te voorkomen.**
+    Bij het bouwen hiervan lag het voor de hand om de verhoudingen óók te regresseren naar het
+    competitiegemiddelde, naar rato van de steekproef: een thuisreeks van 11 duels (Denemarken na
+    de kampioenssplitsing) is nu eenmaal ruiziger dan een van 19. Twee varianten zijn gebouwd en
+    gemeten op de 25 duels van 23 aug 2026, tegen de de-vigde marktkans:
+
+    | variant | longshots | favorieten | gem. abs. fout |
+    |---|---|---|---|
+    | additief (t/m 22 aug) | +6.02 | −11.02 | 6.23 |
+    | **multiplicatief, geen regressie** | **+4.09** | **−7.38** | **5.61** |
+    | multiplicatief + `n/(n+9.5)` | +5.53 | −10.09 | 5.87 |
+    | multiplicatief + gemeten Bühlmann-credibiliteit | +6.09 | −11.11 | 6.10 |
+
+    Beide regressievarianten maken het dus **slechter**, en de netjes uit de competitiespreiding
+    gemeten credibiliteit het slechtst van de drie — die kwam op Z = 0.36 tot 0.76 uit en drukte
+    daarmee precies de spreiding weg die het probleem was. Regressie naar het gemiddelde ís de
+    samendrukking: hij duwt elke wedstrijd richting "de ploegen ontlopen elkaar niet veel", en
+    tegen een markt die favoriet en underdog wél scheidt, komt dat er als schijnedge op de zwakke
+    kant uit. Ruis in de invoer is een echt probleem, maar regresseren is er niet het antwoord op.
     """
-    lambda_home = (home.home_gf / home.home_played + away.away_ga / away.away_played) / 2
-    lambda_away = (away.away_gf / away.away_played + home.home_ga / home.home_played) / 2
+    if league is None:
+        lambda_home = (home.home_gf / home.home_played + away.away_ga / away.away_played) / 2
+        lambda_away = (away.away_gf / away.away_played + home.home_ga / home.home_played) / 2
+    else:
+        base_home = league.home_goals_per_match
+        base_away = league.away_goals_per_match
+
+        # Elke verhouding krijgt de regressie die bij háár eigen steekproef hoort. Een thuis/uit-
+        # split gaat over de helft van een seizoen, en na een kampioenssplitsing (Denemarken,
+        # België) over nog minder: 11 duels op 23 aug 2026. Zonder deze weging telde zo'n reeks
+        # van 11 even zwaar als een van 19, en dat gaf op die dag de grootste geclaimde edge van
+        # de run (Sønderjyske, +31 pp op de splitsmethode alleen) — op de dunste data van de dag.
+        attack_home = (home.home_gf / home.home_played) / base_home
+        defence_away = (away.away_ga / away.away_played) / base_home
+        attack_away = (away.away_gf / away.away_played) / base_away
+        defence_home = (home.home_ga / home.home_played) / base_away
+        lambda_home = base_home * attack_home * defence_away
+        lambda_away = base_away * attack_away * defence_home
     grid = score_grid(lambda_home, lambda_away, rho)
     home_p = sum(grid[i][j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if i > j)
     draw_p = sum(grid[i][i] for i in range(MAX_GOALS + 1))
