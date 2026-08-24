@@ -51,6 +51,17 @@ class LeagueContext:
     home_goals_per_match: float
     away_goals_per_match: float
     avg_xg_per_match: float
+    level_factor: float = 1.0
+    """Met welke factor `scale_level` het doelpuntenniveau al heeft opgeschroefd (1.0 = niet).
+
+    Alleen `analyze_match_from_splits` heeft dit nodig, en wel om de reden die in de docstring
+    van `scale_level` staat: die functie houdt `avg_xg_per_match` met opzet op de ongeschaalde
+    waarde, omdat dat de **noemer** is waartegen teamsterktes uit hetzelfde seizoen genormaliseerd
+    zijn. De splitsmethode heeft zo'n apart noemerveld niet — die gebruikt
+    `home_goals_per_match` tegelijk als noemer én als niveau. Zonder dit veld deelt hij de
+    correctie dus niet alleen weg maar **keert hij hem om**: gemeten op 24 aug 2026 gaf een
+    niveaucorrectie van +10% een splitsmethode die 9% mínder doelpunten voorspelde. Zie
+    `analyze_match_from_splits`."""
 
 
 @dataclass
@@ -376,6 +387,7 @@ def scale_level(league: LeagueContext, factor: float) -> LeagueContext:
         home_goals_per_match=league.home_goals_per_match * factor,
         away_goals_per_match=league.away_goals_per_match * factor,
         avg_xg_per_match=league.avg_xg_per_match,
+        level_factor=league.level_factor * factor,
     )
 
 
@@ -427,6 +439,25 @@ def analyze_match_from_splits(home: TeamSplits, away: TeamSplits,
     `league=None` houdt het oude additieve gedrag, alleen nog voor de historische ankers in de
     zelftest hieronder. Gebruik het niet in een run.
 
+    **DE VROEG-SEIZOENSCORRECTIE WERKTE HIER OMGEKEERD — gerepareerd 24 aug 2026 (Run B).**
+    De verhoudingen hierboven delen door het competitieniveau en vermenigvuldigen er daarna weer
+    mee, zodat `lambda_home` netto op `(gf/duel) x (ga/duel) / niveau` uitkomt: **omgekeerd
+    evenredig** met het niveau. Werd `league` door `scale_level` opgeschroefd, dan voorspelde deze
+    methode dus mínder doelpunten in plaats van meer. Gemeten op een niveaucorrectie van +10%:
+    lambda-som 2.683 -> 2.439, oftewel 9% omlaag waar 10% omhoog bedoeld was.
+
+    Dat is geen detail dat alleen de doelpuntenmarkten raakt. Omdat §1 `my_prob` als het ongewogen
+    gemiddelde van deze methode en `analyze_match` neemt, en die twee sinds Stage 5 tegengesteld op
+    de correctie reageerden, **hief de correctie zichzelf grotendeels op in elke gepubliceerde
+    kans**. Dat verklaart waarom het effect van de correctie tegenover de markt in de runrapporten
+    van 22 en 23 aug 2026 steeds "marginaal" heette (4.83 -> 4.78 pp gemiddelde absolute fout),
+    terwijl de gemeten factor die dagen 1.069 resp. 1.084 was.
+
+    De reparatie deelt door het **ongeschaalde** niveau (`LeagueContext.level_factor`) en
+    vermenigvuldigt met het geschaalde, waarna `lambda` net als bij `analyze_match` recht evenredig
+    met de factor meebeweegt. Bij `level_factor = 1.0` — elke aanroep zonder `scale_level` — is er
+    geen verschil met het gedrag van vóór deze datum.
+
     **WAT HIER NIET IN ZIT, EN WAAROM — een negatief resultaat, om herhaling te voorkomen.**
     Bij het bouwen hiervan lag het voor de hand om de verhoudingen óók te regresseren naar het
     competitiegemiddelde, naar rato van de steekproef: een thuisreeks van 11 duels (Denemarken na
@@ -453,16 +484,22 @@ def analyze_match_from_splits(home: TeamSplits, away: TeamSplits,
     else:
         base_home = league.home_goals_per_match
         base_away = league.away_goals_per_match
+        # De noemer is het niveau waarin de splits zelf gemeten zijn — dus vóór de
+        # vroeg-seizoenscorrectie. Zie `LeagueContext.level_factor`: met de geschaalde waarde als
+        # noemer werkt de correctie omgekeerd, omdat lambda dan met 1/factor gaat in plaats van
+        # met factor. Bij level_factor 1.0 verandert er niets aan het gedrag van vóór 24 aug 2026.
+        norm_home = base_home / league.level_factor
+        norm_away = base_away / league.level_factor
 
         # Elke verhouding krijgt de regressie die bij háár eigen steekproef hoort. Een thuis/uit-
         # split gaat over de helft van een seizoen, en na een kampioenssplitsing (Denemarken,
         # België) over nog minder: 11 duels op 23 aug 2026. Zonder deze weging telde zo'n reeks
         # van 11 even zwaar als een van 19, en dat gaf op die dag de grootste geclaimde edge van
         # de run (Sønderjyske, +31 pp op de splitsmethode alleen) — op de dunste data van de dag.
-        attack_home = (home.home_gf / home.home_played) / base_home
-        defence_away = (away.away_ga / away.away_played) / base_home
-        attack_away = (away.away_gf / away.away_played) / base_away
-        defence_home = (home.home_ga / home.home_played) / base_away
+        attack_home = (home.home_gf / home.home_played) / norm_home
+        defence_away = (away.away_ga / away.away_played) / norm_home
+        attack_away = (away.away_gf / away.away_played) / norm_away
+        defence_home = (home.home_ga / home.home_played) / norm_away
         lambda_home = base_home * attack_home * defence_away
         lambda_away = base_away * attack_away * defence_home
     grid = score_grid(lambda_home, lambda_away, rho)
