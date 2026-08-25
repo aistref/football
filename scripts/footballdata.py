@@ -467,6 +467,86 @@ def gap_for(higher: str, lower: str, direction: str) -> GapResult:
     return GapResult(a, d, n, f"{direction} (gepoold — {higher}/{lower} niet apart gemeten)")
 
 
+#: Binnen welke **invoersterktes** de factoren hierboven zijn gemeten. Zelfde meting, zelfde
+#: seizoenen (2014/15 t/m 2024/25); dit is de relatieve sterkte die een ploeg had in de divisie
+#: waar hij vandáán kwam, vóór de stap.
+#:
+#: Waarde per sleutel: `(aanval_min, aanval_max, verdediging_min, verdediging_max, n)`.
+CONVERSION_RANGE: dict[tuple[str, str, str], tuple[float, float, float, float, int]] = {
+    ("E0", "E1", "up"): (0.933, 1.837, 0.284, 1.022, 33),
+    ("E0", "E1", "down"): (0.391, 0.941, 0.990, 1.669, 33),
+    ("E1", "E2", "up"): (0.939, 1.714, 0.497, 0.965, 33),
+    ("E1", "E2", "down"): (0.473, 0.939, 0.918, 1.632, 33),
+    ("E2", "E3", "up"): (0.976, 1.547, 0.565, 1.068, 43),
+    ("E2", "E3", "down"): (0.526, 1.012, 1.033, 1.861, 43),
+    ("SP1", "SP2", "up"): (0.991, 1.651, 0.523, 1.135, 33),
+    ("SP1", "SP2", "down"): (0.436, 1.089, 1.078, 1.809, 33),
+    ("D1", "D2", "up"): (0.999, 1.673, 0.613, 0.996, 23),
+    ("D1", "D2", "down"): (0.481, 1.039, 1.000, 1.668, 23),
+    ("I1", "I2", "up"): (1.004, 1.667, 0.565, 1.019, 33),
+    ("I1", "I2", "down"): (0.468, 1.001, 1.086, 1.652, 32),
+    ("F1", "F2", "up"): (0.899, 1.889, 0.415, 0.997, 28),
+    ("F1", "F2", "down"): (0.431, 0.975, 0.929, 1.729, 29),
+    ("SC0", "SC1", "up"): (1.157, 1.829, 0.457, 1.053, 14),
+    ("SC0", "SC1", "down"): (0.553, 0.935, 1.156, 1.619, 14),
+}
+
+#: De omhullende over alle acht paren, voor een divisiepaar dat hierboven niet staat.
+POOLED_RANGE: dict[str, tuple[float, float, float, float, int]] = {
+    "up": (0.899, 1.889, 0.284, 1.135, 240),
+    "down": (0.391, 1.089, 0.918, 1.861, 240),
+}
+
+
+def conversion_in_range(higher: str, lower: str, direction: str,
+                        attack: float, defence: float) -> tuple[bool, str]:
+    """Valt deze ploeg binnen de sterktes waarop `gap_for` is gemeten?
+
+    **Waarom dit bestaat (gemeten 25 aug 2026, Run A).** De factoren in `MEASURED_GAPS` zijn
+    gemeten aan ploegen die daadwerkelijk tussen twee divisies zijn verhuisd, en die groep is per
+    definitie **eenzijdig**: `down` is gemeten aan degradanten en `up` aan promovendi. Over alle
+    acht divisieparen heen kwam geen enkele degradant boven een relatieve aanval van **1.089** uit
+    en geen enkele promovendus onder **0.899**. `convert_strength` is vermenigvuldigend, dus buiten
+    dat bereik loopt de omrekening hard uit de hand in plaats van geleidelijk minder nauwkeurig te
+    worden.
+
+    Concreet, de aanleiding: Coventry City won in 2025/2026 de Championship met een relatieve
+    aanval van **1.619** — 72% boven de hoogste waarneming waarop de `E1->E2 down`-factor rust.
+    Vermenigvuldigd met x1.559 kwam Coventry uit op 2.27x het League One-gemiddelde, oftewel 2.96
+    xG per duel. Dat leverde in de bekerwedstrijd bij Plymouth Argyle **+21.6 pp** op een handicap
+    en +17.5 pp op Over 2.5 op — een schijnedge die alle zes de andere poorten haalde. Dezelfde val
+    staat sinds 19 aug 2026 in `data/coverage.json` bij La Liga beschreven, met exact hetzelfde
+    getal: "+21.4 pp op een handicap +1.5 die alle andere vijf poorten haalde".
+
+    De correctie haalt de systematische fout eruit (zie `RESIDUAL_SPREAD`), maar alleen op het
+    terrein waar hij gemeten is. Buiten dat bereik is er geen meting, en dan is er ook geen
+    onafhankelijke kansinput op het niveau waarop het duel gespeeld wordt: `data_tier = NONE`,
+    dus geen bet. Vergelijk `_shared-rules.md` §1c — liever een bet te veel tegengehouden dan een
+    verzonnen kansbijstelling.
+
+    Geeft `(binnen_bereik, toelichting)` terug. `attack`/`defence` zijn de relatieve sterktes uit
+    `relative_strength()`, dus in de divisie waar de ploeg vandáán komt.
+    """
+    if direction not in ("up", "down"):
+        raise FootballDataError("direction moet 'up' of 'down' zijn")
+    key = (higher, lower, direction)
+    rng = CONVERSION_RANGE.get(key)
+    label = f"{higher}/{lower} {direction}"
+    if rng is None:
+        rng = POOLED_RANGE[direction]
+        label = f"gepoold {direction} ({higher}/{lower} niet apart gemeten)"
+    a_min, a_max, d_min, d_max, n = rng
+    buiten = []
+    if not a_min <= attack <= a_max:
+        buiten.append(f"aanval {attack:.3f} buiten {a_min:.3f}-{a_max:.3f}")
+    if not d_min <= defence <= d_max:
+        buiten.append(f"verdediging {defence:.3f} buiten {d_min:.3f}-{d_max:.3f}")
+    if buiten:
+        return False, f"{label} (n={n}): " + "; ".join(buiten)
+    return True, (f"{label} (n={n}): aanval {attack:.3f} in {a_min:.3f}-{a_max:.3f}, "
+                  f"verdediging {defence:.3f} in {d_min:.3f}-{d_max:.3f}")
+
+
 if __name__ == "__main__":
     # Zelftest tegen echte, actuele data. Bewust drie dingen: dat de hoofdbestanden schoten
     # bevatten, dat de extra bestanden het lopende seizoen halen, en dat een nog niet gepubliceerd
