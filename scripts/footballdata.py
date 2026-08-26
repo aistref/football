@@ -524,11 +524,32 @@ def conversion_in_range(higher: str, lower: str, direction: str,
     dus geen bet. Vergelijk `_shared-rules.md` §1c — liever een bet te veel tegengehouden dan een
     verzonnen kansbijstelling.
 
+    **Tweede blinde vlek, gemeten 26 aug 2026 (Run A): het divisiepaar zelf.** De controle
+    hierboven kijkt naar de *invoersterkte* en niet naar de *afstand* tussen de twee divisies.
+    Elke factor in `MEASURED_GAPS` — en dus ook `POOLED_GAP` — is gemeten aan ploegen die één
+    divisie op of neer gingen; niemand degradeert in één stap van de Premier League naar League
+    One. Vroeg een run toch zo'n stap, dan viel `gap_for` stilletjes terug op de gepoolde
+    één-divisiefactor, en `POOLED_RANGE` is een omhullende over alle acht paren en dus ruim genoeg
+    om die stap te laten passeren. De uitkomst zag er precies zo uit als de Coventry-val hierboven:
+    Bradford City – Burnley (League Cup ronde 2, 26 aug 2026) gaf **+30.3 pp** op de thuiszege en
+    +28.4 pp op Draw No Bet, met Burnley — vorig seizoen laatste in de Premier League — omgerekend
+    alsof hij één divisie was gezakt in plaats van twee. Een niet-aangrenzend paar is daarom geen
+    minder nauwkeurige omrekening maar een ongemeten omrekening: `False`, dus `data_tier = NONE`.
+
     Geeft `(binnen_bereik, toelichting)` terug. `attack`/`defence` zijn de relatieve sterktes uit
     `relative_strength()`, dus in de divisie waar de ploeg vandáán komt.
     """
     if direction not in ("up", "down"):
         raise FootballDataError("direction moet 'up' of 'down' zijn")
+    hoog, laag = MAIN_DIVISIONS.get(higher), MAIN_DIVISIONS.get(lower)
+    if hoog is not None and laag is not None:
+        if hoog.country != laag.country:
+            return False, (f"{higher}/{lower}: {hoog.country} en {laag.country} zijn verschillende "
+                           "landen — er is geen gemeten omrekenfactor tussen twee competities")
+        stappen = laag.tier - hoog.tier
+        if stappen != 1:
+            return False, (f"{higher}/{lower} {direction}: {stappen} divisies uit elkaar, maar alle "
+                           "factoren zijn gemeten aan overgangen van één divisie (zie docstring)")
     key = (higher, lower, direction)
     rng = CONVERSION_RANGE.get(key)
     label = f"{higher}/{lower} {direction}"
