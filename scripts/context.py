@@ -66,6 +66,7 @@ def _get_json(url: str) -> dict:
 class TeamContext:
     """De drie factoren voor één ploeg in één wedstrijd."""
     name: str
+    team_id: int = 0                  #: Fotmob-club-id; nodig voor scripts/squad.py (transfers)
     out_count: int = 0
     out_value: float = 0.0            #: marktwaarde van de uitvallers
     squad_value: float = 0.0          #: marktwaarde van de vermoedelijke basiself
@@ -250,6 +251,7 @@ def fetch_match_context(match_id: int, kickoff_utc: str | None = None) -> MatchC
             forms[idx] if idx < len(forms) else [], ko)
         teams.append(TeamContext(
             name=t.get("name") or ("thuis" if idx == 0 else "uit"),
+            team_id=int(t.get("id") or 0),
             out_count=n, out_value=value, out_names=names,
             squad_value=float(t.get("totalStarterMarketValue") or 0),
             form=letters, form_points=pts if played else None, form_matches=played,

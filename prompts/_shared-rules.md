@@ -10,7 +10,7 @@ aanpassen zonder de geplande taak aan te raken.
 
 | Parameter | Waarde | Waarom |
 |---|---|---|
-| `MAX_DEEP_ANALYSES` | **30** | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. Verhoogd van 12 naar 30 op 8 aug 2026 nadat `scripts/fotmob.py`, `scripts/model.py`, `scripts/betexplorer.py` en `scripts/oddsapi.py` de ophaal- en rekenlogica herbruikbaar maakten — zie de toelichting eronder. |
+| `MAX_DEEP_ANALYSES` | **30** (ma–do) / **35** (vr–zo) | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. Verhoogd van 12 naar 30 op 8 aug 2026 nadat `scripts/fotmob.py`, `scripts/model.py`, `scripts/betexplorer.py` en `scripts/oddsapi.py` de ophaal- en rekenlogica herbruikbaar maakten. **Weekendwaarde 35 toegevoegd 29 aug 2026, op verzoek van de gebruiker**: die zaterdag stonden er 49 duels op de Run A-runlijst en 59 op die van Run B, dus er paste ongeveer 60%. Gebruik `ranking.max_deep_analyses(date.today())`; dezelfde dagindeling als `MAX_SHORTLIST`. |
 | `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
 | `EDGE_THRESHOLD_FULL` | **3.0 procentpunt** | Onder deze grens is de schatting niet te onderscheiden van modelruis. |
 | `EDGE_THRESHOLD_LIGHT` | **6.0 procentpunt** | Zwakkere data eist een grotere marge. |
@@ -221,9 +221,36 @@ prijzen levert per definitie nul bets. Daarom ligt vanaf nu vast wélke bron wel
 | Markt | Bron | Kosten |
 |---|---|---|
 | **1X2** | `betexplorer.fetch_league_fixtures(url)` | **gratis** |
-| Asian Handicap, Over/Under | `oddsapi.fetch_bulk(key, ["spreads","totals"])` | 2 credits per competitie |
-| Double Chance, BTTS | `oddsapi.fetch_event_markets(...)` | 2 credits per wedstrijd |
-| Draw No Bet | de 0.0-lijn uit `spreads` — dezelfde bet | gratis, zit al in de bulk |
+| **Asian Handicap** | `oddsapi.fetch_spreads(key)` | 1 credit per competitie |
+| **Draw No Bet** | de **0.0**-lijn uit diezelfde `spreads` | **gratis, zit er al in** |
+| **Double Chance** | de **±0.5**-lijn uit diezelfde `spreads` | **gratis, zit er al in** |
+| Over/Under | `oddsapi.fetch_totals(key)` | 1 credit per competitie |
+| BTTS | `oddsapi.fetch_event_markets(...)` | 2 credits per wedstrijd |
+
+### Eén credit levert drie markten, niet één (gemeten 29 aug 2026)
+
+`fetch_spreads` is de enige aanroep die voor **één** credit **drie** van de zes markten levert, en
+dat is geen schatting maar een identiteit in de uitbetaling:
+
+```
+asian_prob(grid,  0.0, "home", odds) == dnb_prob(grid, "home", odds)     # AH 0.0  = Draw No Bet
+asian_prob(grid, +0.5, "home", odds) == p.dc_1x  (bij dezelfde koers)    # AH +0.5 = Double Chance 1X
+asian_prob(grid, +0.5, "away", odds) == p.dc_x2                          # AH +0.5 = Double Chance X2
+```
+
+Een handicap van +0.5 wint bij winst **en** bij gelijkspel — dat ís Double Chance; een handicap van
+0.0 geeft bij gelijkspel de inzet terug — dat ís Draw No Bet. Nagerekend op het scoregrid komen ze
+tot op zes decimalen uit.
+
+**Dit betekent dat §1a stap 2 tot 29 aug 2026 geld weggooide.** Double Chance werd daar apart
+gekocht via `fetch_event_markets`, à **2 credits per wedstrijd**, terwijl dezelfde bet voor
+1 credit per héle competitie in de spreads-respons zat. De meting van 15 aug die DC en BTTS op
+"30 credits per bet" zette, mat dus niet dat DC weinig oplevert — ze mat dat DC via de duurste
+mogelijke weg werd ingekocht. Koop Double Chance nooit meer los; lees hem uit de ±0.5-lijn.
+
+Bij het rapporteren: noem de bet zoals hij bij de bookmaker heet. Een +0.5 die je als Double
+Chance publiceert, noteer je als `Double Chance` met de handicaplijn erbij in `notes`, zodat de
+gebruiker hem terugvindt op de site waar hij hem speelt.
 
 Gebruik **`fetch_league_fixtures`**, niet `fetch_league_odds`: die tweede leest de "Next matches"-
 tabel en die toont er maar vijf. Op 15 aug had de Championship acht duels; drie zouden zonder 1X2
@@ -240,62 +267,66 @@ guard = CreditGuard(cap=cap)
 
 Geef de credits uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
 
-0. **`totals` eerst, en voor zoveel mogelijk competities** (1 credit per competitie). Dit staat
-   sinds 23 aug 2026 bovenaan, op aanwijzing van de gebruiker en bevestigd door de cijfers. Van de
-   eerste 113 picks ging **78% over de uitkomst** (1X2, AH, DNB) en maar 22% over doelpunten (O/U,
-   BTTS) — en dat is precies de verkeerde kant op, want de doelpuntenmarkten renderen beter:
-
-   | | bets | hit rate | ROI |
-   |---|---|---|---|
-   | uitkomst | 66 | 34.8% | −19.9% |
-   | **doelpunten** | 22 | **45.5%** | **−10.5%** |
-
-   Die scheefstand kwam niet uit de analyse maar uit dit budget: `spreads,totals` kost er 2 per
-   competitie en ging naar vier competities, dus zeven competities hielden alleen 1X2 over — en
-   1X2 is een uitkomstmarkt. `fetch_totals(sport_key)` kost er **1**, dus voor hetzelfde geld
-   krijgt elke competitie een doelpuntenmarkt in plaats van vier competities twee markten. Gemeten
-   op 23 aug: het aandeel doelpuntenbets ging van 7% naar **43%**.
-
-   Een doelpuntenmarkt heeft bovendien een eigenschap die na de herziening van §1c/§1d telt: hij
-   **kiest geen kant**, en gaat dus vrijuit door poort 7 én ontsnapt aan de underdog-neiging die
-   §1d beschrijft.
+0. **`spreads` eerst, en voor zoveel mogelijk competities** (1 credit per competitie). Dit staat
+   hier sinds **29 aug 2026**, op aanwijzing van de gebruiker, en het is de enige stap die per
+   credit drie markten oplevert: Asian Handicap, Draw No Bet (de 0.0-lijn) én Double Chance (de
+   ±0.5-lijn). Samen met het gratis 1X2 van BetExplorer heeft elke competitie daarmee **vier van
+   de zes markten**, voor één credit.
 
    ```python
-   from scripts.oddsapi import fetch_totals
+   from scripts.oddsapi import fetch_spreads
    for comp in comps_op_datakwaliteit:          # zoveel als het plafond toelaat
        if guard.can_afford(1):
-           guard.record(fetch_totals(sport_key[comp]), comp)
+           guard.record(fetch_spreads(sport_key[comp]), comp)
    ```
-1. `spreads` (1 per competitie) — of `spreads,totals` (2) waar de vorige stap nog niet is geweest —
-   voor de competities die **vandaag aan de beurt zijn** in de rotatie. Dit levert Asian Handicap
-   en Draw No Bet, en het is met opzet nu de tweede prioriteit:
+1. **`totals`** (1 credit per competitie) voor de competities die **vandaag aan de beurt zijn** in
+   de rotatie:
 
    ```python
    from scripts.oddsapi import rotate_for_day
-   vandaag_aan_de_beurt = rotate_for_day(comps_op_datakwaliteit, date.today(), take=cap // 2)
+   vandaag_aan_de_beurt = rotate_for_day(comps_op_datakwaliteit, date.today(), take=resterend)
    ```
 
-   Roteren en niet altijd de beste vier: bij een plafond van 8 credits passen er maar vier, en
-   steeds dezelfde vier nemen betekent dat de andere vier structureel nooit een handicap of totaal
-   krijgen. Dat is precies de stille blinde vlek die §6b-5b moest wegnemen. Met roulatie is elke
-   competitie om de dag aan de beurt, en 1X2 heeft elke competitie sowieso elke dag (gratis).
-2. `double_chance,btts` **alleen als er daarna nog credits over zijn** — in de praktijk dus meestal
-   niet. Dit is geen bezuiniging op gevoel maar op een meting van 15 aug 2026, de dag waarop deze
-   markten voor het eerst werden opgevraagd:
+   Roteren en niet altijd dezelfde nemen: steeds de bovenste vier pakken betekent dat de andere
+   structureel nooit een doelpuntenmarkt krijgen. Dat is precies de stille blinde vlek die §6b-5b
+   moest wegnemen.
+2. `btts` per wedstrijd (2 credits) **alleen als er daarna nog credits over zijn** — in de praktijk
+   dus zelden. Double Chance staat hier met opzet níet meer bij: die zit sinds 29 aug in stap 0.
 
-   | Creditgroep | Kosten in Run A | Bets eruit | Per bet |
-   |---|---|---|---|
-   | `spreads,totals` (bulk) | 16 | 12 van de 15 | **1,3 credits** |
-   | `h2h` (bulk, nu gratis via BetExplorer) | 8 | 2 van de 15 | 4 credits |
-   | `double_chance,btts` (per wedstrijd, 15x) | **30** | **1 van de 15** | **30 credits** |
+### Waarom deze volgorde op 29 aug 2026 is omgedraaid
 
-   Dertig credits voor één bet, tegen 1,3 voor de bulkmarkten: een factor 23. Zolang het budget
-   krap is, is dit de eerste die eraf gaat. **Let op dat dit één dag meten is** (§6d), dus het is
-   een budgetkeuze en geen bevinding over de markten zelf: komt er ooit meer ruimte, zet ze dan
-   terug en meet opnieuw voordat je concludeert dat DC en BTTS weinig opleveren.
+Van 23 t/m 29 aug stond `totals` bovenaan en `spreads` in de rotatie. De aanleiding was goed — van
+de eerste 113 picks ging 78% over de uitkomst tegen 22% over doelpunten, terwijl de doelpuntenmarkten
+beter renderden (ROI −10.5% tegen −19.9%) — maar de remedie sloeg door naar de andere kant. Op
+29 aug kocht Run A `totals` voor alle elf competities en `spreads` voor twee, en het resultaat was
+**12 van de 14 bets op Over/Under**. De gebruiker noemde dat "weer te eenzijdig", en terecht: dit is
+niet de analyse die spreekt maar de inkoop.
+
+De rekensom die de omkering afdwingt:
+
+| Aanroep | Kosten | Markten eruit | Markten per credit |
+|---|---|---|---|
+| `fetch_totals` | 1 | OU | **1** |
+| `fetch_spreads` | 1 | AH + DNB + DC | **3** |
+| `fetch_event_markets(["double_chance","btts"])` | 2 **per wedstrijd** | DC + BTTS | ~0,1 |
+
+Met `spreads` bovenaan heeft élke competitie vier markten (1X2, AH, DNB, DC) in plaats van twee
+(1X2, OU), en de rotatie zorgt dat de doelpuntenmarkt om de dag terugkomt in plaats van de
+handicapmarkt. Dat de doelpuntenmarkten beter renderen blijft staan; het antwoord daarop is niet
+"koop alleen doelpunten" maar "zorg dat alle zes de markten kúnnen meedingen en laat
+`selection_score` kiezen".
+
+**Marktbalans is vanaf nu een controle op de inkoop, niet op de uitkomst.** Geen enkele run mag
+voor de hele runlijst maar één soort markt kopen. Concreet: als `guard` klaar is, moet gelden dat
+er minstens één competitie met een doelpuntenmarkt én minstens één met een uitkomstmarkt in de
+run zit — is dat niet zo, dan is het plafond te krap voor deze runlijst en meld je dat in het
+runrapport. Noteer per run in `data/run-state/` onder `credits` de verdeling `markten_gekocht`,
+en in het runrapport de verdeling van de gepubliceerde bets over doelpunten- en uitkomstmarkten.
+Dat is geen quotum op bets — bets forceren om een verdeling te halen is precies wat §1 verbiedt —
+maar het maakt zichtbaar wanneer een scheve uitkomst uit de portemonnee komt en niet uit de data.
 
 Een markt die je door het plafond niet hebt opgevraagd is **bekeken met een reden**, niet een gat:
-noteer hem in `markets_checked` als `"DC": "niet opgevraagd — creditplafond van de run bereikt"`.
+noteer hem in `markets_checked` als `"BTTS": "niet opgevraagd — creditplafond van de run bereikt"`.
 Zo blijft `progress.py verify` groen zonder dat de administratie liegt. Neem `guard.report()` op in
 het runrapport onder "Bronstatus deze run".
 
@@ -512,7 +543,7 @@ horen bij elkaar — Stage -2 alleen betekent dat je elke run opnieuw hetzelfde 
 ### Stage -1 — Onderbreking en hervatting (Claude-limiet)
 
 Een sessie kan halverwege stoppen doordat de gebruiker zijn Claude-gebruikslimiet raakt. Zonder
-maatregel begint de volgende poging weer bij wedstrijd 1 — met `MAX_DEEP_ANALYSES = 30` is dat
+maatregel begint de volgende poging weer bij wedstrijd 1 — met een cap van 30 tot 35 duels is dat
 zonde van precies het werk dat al gedaan was. Daarom, **vóór Stage 0**:
 
 ```python
@@ -591,13 +622,66 @@ Deze stap maakt de routine zelfherstellend: zodra een bron terugkomt of er een A
 beschikbaar is, stroomt het werk automatisch weer door — zonder de prompt te wijzigen.
 
 ### Stage 4 — Rangschikken en afkappen
-Rangschik de overgebleven wedstrijden op verwachte datakwaliteit (FULL boven LIGHT, meer
-onafhankelijke inputs boven minder). Neem de top `MAX_DEEP_ANALYSES` mee naar de diepe analyse.
-Noteer expliciet hoeveel wedstrijden hierdoor zijn afgekapt — **stille truncatie is verboden**;
-een afgekapte lijst leest anders als volledige dekking.
 
-**Gebruik `scripts/fotmob.py`, `scripts/betexplorer.py`, `scripts/oddsapi.py`, `scripts/xgscore.py`
-en `scripts/model.py` voor Stage 3-5** in plaats van de ophaal- en rekenlogica opnieuw te schrijven.
+Rangschik de overgebleven wedstrijden en neem de top `MAX_DEEP_ANALYSES` mee naar de diepe analyse
+(30 op ma–do, 35 op vr–zo). Noteer expliciet hoeveel wedstrijden hierdoor zijn afgekapt —
+**stille truncatie is verboden**; een afgekapte lijst leest anders als volledige dekking.
+
+```python
+from scripts.ranking import max_deep_analyses, data_richness, sort_key
+from scripts import squad
+```
+
+De sortering heeft vier sleutels, in deze volgorde:
+
+1. **datakwaliteit** — `FULL` boven `LIGHT` boven `NONE`. Onveranderd, dit blijft de primaire regel.
+2. **datarijkdom** — `ranking.data_richness(...)`, zie hieronder.
+3. **aantal beschikbare markten** — bij gelijke informatie krijgt het duel waar vier markten om de
+   publicatie kunnen strijden de plek, boven een duel waar er maar één ligt. Dit is een eigenschap
+   van de *prijs* en niet van de kansinput, en staat daarom achteraan.
+4. **aftrap**, zodat de volgorde reproduceerbaar is.
+
+#### De datarijkdom-score (ingevoerd 29 aug 2026, op aanwijzing van de gebruiker)
+
+Tot deze datum was de tie-break binnen `FULL` het aantal speeldagen dat de **competitie** dit
+seizoen al gespeeld had. Dat criterium is op 29 aug afgeschaft omdat het bijna niets meet: de
+teamsterktes komen bij álle competities uit het volledige vorige seizoen, en het aantal speeldagen
+van dit seizoen gaat alleen de gepoolde vroeg-seizoenscorrectie in — die is competitie-overstijgend.
+Het gevolg die dag was dat de **hele Bundesliga** (vier duels met volledige dekking) uit de run
+viel omdat die competitie pas één speeldag had gespeeld. De gebruiker noemde die regel nutteloos,
+en dat is hij ook: hij gooide vier analyses weg op een getal dat aan die vier analyses niets
+verandert.
+
+De vervangende vraag is: **hoe goed beschrijft wat ik weet, deze twee ploegen vandaag?** Dat is te
+meten, en het kost geen credits — alles komt gratis van Fotmob:
+
+| Onderdeel | Punten | Bron |
+|---|---|---|
+| **selectiecontinuïteit** | 0–3 | `squad.turnover(team_id, squad_value)` — transfers sinds 1 juni, gewogen op marktwaarde. Een ploeg die de helft van zijn selectiewaarde heeft omgezet, wordt door de cijfers van vorig seizoen slechter beschreven dan een ploeg die intact bleef. |
+| **opstelling** | 0–2 | `lineupType`: bevestigd (2) boven voorspeld (1) boven niets (0). |
+| **blessures/schorsingen** | 0–2 | het opstellingsblok bestaat voor beide ploegen, dus poort 7 kan werkelijk werken. Een lege uitvallerslijst telt als informatie, niet als gat. |
+| **vorm en rust** | 0–2 | `matchFacts.teamForm`: een reeks van ≥ 3 duels én bekende rustdagen, per ploeg. |
+| **lopend seizoen** | 0–1 | de duels die **déze twee ploegen** dit seizoen al speelden — een teammaat, geen competitiemaat. |
+
+**Ontbrekende metingen krijgen het middenpunt, nooit nul.** Een meting die er niet is, is geen
+bewijs van een probleem — dezelfde regel als bij poort 7 (§1c). Een wedstrijd waarvan de context
+niet op te halen was, zakt daardoor niet stilletjes naar de achterkant van de lijst.
+
+**De gewichten zijn niet gefit, en dat staat er met opzet bij.** Er is geen enkele meting die zegt
+hoeveel een bevestigde opstelling waard is ten opzichte van een lage transferomzet. Wat de score
+wél doet, is de rangschikking baseren op gemeten aanwezigheid van *actuele* informatie in plaats
+van op een proxy die met de wedstrijd niets te maken heeft. Leg de score en de deelscores per duel
+vast in `data/run-state/` onder `datarijkdom`, en noem in het runrapport de score van de laagste
+wedstrijd die het nog haalde en van de hoogste die afviel — zonder die twee getallen is niet na te
+gaan of de afkapping ergens op sloeg.
+
+**Haal de context dus vóór de afkapping op, niet erna.** Dat is een Fotmob-verzoek per kandidaat
+en kost geen credits. Doe je het pas na de afkapping, dan rangschik je opnieuw op iets dat je niet
+gemeten hebt.
+
+**Gebruik `scripts/fotmob.py`, `scripts/betexplorer.py`, `scripts/oddsapi.py`, `scripts/xgscore.py`,
+`scripts/context.py`, `scripts/squad.py`, `scripts/ranking.py` en `scripts/model.py` voor
+Stage 3-5** in plaats van de ophaal- en rekenlogica opnieuw te schrijven.
 Dat is precies wat de vorige aanpak duur maakte: niet het aantal wedstrijden, maar het aantal
 **nieuwe, nog niet opgehaalde competities** — voor elke competitie moet één keer een team-xG-
 dossier worden opgebouwd (`fotmob.fetch_league_stats`, met caching per dag), maar zodra dat er
@@ -740,6 +824,28 @@ waarschuwt. Een bet kan bovenaan staan én High risico zijn — dat was op 14 au
 waar de markt 18 procentpunt afweek van het model. Vervang het een niet door het ander.
 
 Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
+
+### Marktbalans — verplicht, elke run (toegevoegd 29 aug 2026)
+
+Zet onder de topselectie een tabel met **welke markten er te koop waren en wat eruit kwam**:
+
+| Markt | Competities met prijzen | Selecties doorgerekend | Bets |
+|---|---|---|---|
+| 1X2 | 11 van 11 (gratis) | 33 | … |
+| Asian Handicap · DNB · Double Chance | … | … | … |
+| Over/Under | … | … | … |
+| BTTS | 0 — niet opgevraagd | 0 | 0 |
+
+Reden: op 29 aug 2026 kwamen 12 van de 14 bets uit één markt, en de gebruiker las dat — terecht —
+als een eenzijdige analyse. Het was geen analyse maar inkoop: `Over/Under` was in negen van de elf
+competities de enige betaalde markt. **Zonder deze tabel is dat verschil van buitenaf niet te
+zien**, want het runrapport toont alleen wat eruit kwam. Twee bets uit één markt op een dag dat
+alleen die markt te koop was, is iets heel anders dan twee bets uit één markt op een dag dat alle
+zes meededen.
+
+Dit is een rapportageplicht, geen quotum. Als alle zes markten meedingen en er komt toch een
+eenzijdige lijst uit, dan is dat de uitkomst — bets forceren om een verdeling te halen is precies
+wat §1 verbiedt.
 
 ### "Net niet" — verplicht, ook (juist) bij nul bets
 
