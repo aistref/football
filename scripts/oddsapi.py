@@ -53,6 +53,14 @@ SPORT_KEYS: dict[str, str] = {
     "Segunda División (ESP)": "soccer_spain_segunda_division",
     "Ligue 2 (FRA)": "soccer_france_ligue_two",
     "Coppa Italia (ITA)": "soccer_italy_coppa_italia",  # bevestigd 14 aug 2026 via api_check.py
+    # Bevestigd 29 aug 2026 (Run B). Deze vier stonden hier nog niet, terwijl ze wel in de
+    # /sports/-lijst staan — vier competities van de Run B-runlijst hadden daardoor elke run
+    # alleen 1X2 van BetExplorer, zonder dat er een reden voor was. De /sports/-lijst opvragen
+    # kost 0 credits (x-requests-last: 0), dus een key natrekken is gratis.
+    "Allsvenskan (SWE)": "soccer_sweden_allsvenskan",
+    "Swiss Super League (SUI)": "soccer_switzerland_superleague",
+    "Austrian Bundesliga (AUT)": "soccer_austria_bundesliga",
+    "Greek Super League (GRE)": "soccer_greece_super_league",
 }
 
 # Markten die alleen via de per-wedstrijd-endpoint gaan (bevestigd met HTTP 422 op de bulk-call).
