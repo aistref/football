@@ -87,6 +87,63 @@ def suggest_cap(remaining: int, days_left: int, runs_per_day: int = 2, reserve: 
     return usable // slots
 
 
+def split_budget(cap: int, n_competitions: int, totals_share: float = 0.25,
+                 min_totals: int = 1) -> tuple[int, int]:
+    """Verdeel het creditplafond over `spreads` (stap 0) en `totals` (stap 1).
+
+    Geeft `(aantal_spreads, aantal_totals)` terug — allebei in competities, want beide aanroepen
+    kosten 1 credit per competitie.
+
+    **Waarom dit bestaat (30 aug 2026, op verzoek van de gebruiker).** §1a zegt sinds 29 aug
+    "spreads eerst, en voor zoveel mogelijk competities", omdat één credit daar drie markten
+    oplevert (AH + DNB + DC) tegen één bij `totals`. Puur op markten-per-credit is dat juist, en
+    aan het begin van de maand valt er niets te kiezen: het plafond is dan groter dan het aantal
+    competities en er blijft vanzelf geld over voor `totals`.
+
+    Aan het **eind** van de maand niet. Op 30 aug 2026 gaf `suggest_cap(68, 2)` een plafond van 12
+    bij elf inkoopbare competities. "Zoveel mogelijk" betekende toen elf keer spreads, en er bleef
+    één credit over voor `totals` — de doelpuntenmarkt kon dus in **één van de twaalf** competities
+    meedingen. De marktbalans-controle van §1a werd gehaald, maar met de kleinst mogelijke marge,
+    en dat is de spiegel van 29 aug (toen negen van de elf competities alleen een doelpuntenmarkt
+    hadden en 12 van de 14 bets uit die ene markt kwamen). Beide keren was de uitkomst niet de
+    analyse maar de inkoop.
+
+    Deze functie reserveert daarom **eerst** een deel voor `totals` en geeft de rest aan `spreads`,
+    in plaats van andersom. De volgorde van uitgeven verandert niet — spreads blijft stap 0 — maar
+    het aantal ligt vooraf vast in plaats van dat het de restpost is.
+
+    Drie gevallen, en let op het derde:
+
+    >>> split_budget(12, 11)      # eind van de maand: krap plafond
+    (9, 3)
+    >>> split_budget(20, 11)      # ruim plafond: alle competities spreads, rest naar totals
+    (11, 9)
+    >>> split_budget(1, 11)       # één credit: dan is totals de enige juiste keuze
+    (0, 1)
+
+    Dat laatste is geen afrondingsartefact. Met één credit kun je óf één competitie spreads geven
+    óf één competitie totals. Spreads levert AH, DNB en DC — maar dat zijn alle drie
+    **uitkomstmarkten**, net als het gratis 1X2 van BetExplorer, dus dan heeft de run geen enkele
+    doelpuntenmarkt en faalt de marktbalans-controle. Eén `totals` haalt hem wel. Meer markten is
+    hier dus niet meer informatie.
+
+    `totals_share` is niet gemeten en dat staat er met opzet bij: er is geen waarneming die zegt
+    dat een kwart de juiste verhouding is. Wat de waarde wél doet, is de doelpuntenmarkt een vaste
+    plaats in de inkoop geven in plaats van een restpost, zodat een scheve bettenlijst voortaan
+    over de analyse gaat en niet over de portemonnee. Zie `data/calibration.jsonl` en de
+    marktbalans-tabel in het runrapport om hem over enkele weken tegen uitkomsten te leggen.
+    """
+    if cap <= 0 or n_competitions <= 0:
+        return (0, 0)
+    want = max(min_totals, round(cap * totals_share))
+    totals = min(want, cap, n_competitions)
+    spreads = min(cap - totals, n_competitions)
+    leftover = cap - spreads - totals
+    if leftover > 0:                      # meer plafond dan competities: rest naar de doelpunten
+        totals = min(totals + leftover, n_competitions)
+    return (spreads, totals)
+
+
 def rotate_for_day(items: list, day, take: int) -> list:
     """Kies `take` items uit `items`, en schuif elke dag op zodat na een paar dagen alles is geweest.
 

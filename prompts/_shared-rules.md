@@ -257,39 +257,61 @@ tabel en die toont er maar vijf. Op 15 aug had de Championship acht duels; drie 
 zijn gebleven. De fixtures-pagina geeft ze alle acht — gemeten op alle acht competities van die dag,
 32 van de 32 wedstrijden gedekt, nul credits.
 
-**Bepaal aan het begin van de run je plafond en houd je eraan:**
+**Bepaal aan het begin van de run je plafond, verdeel het, en houd je eraan:**
 
 ```python
-from scripts.oddsapi import CreditGuard, suggest_cap
+from scripts.oddsapi import CreditGuard, suggest_cap, split_budget
 cap = suggest_cap(remaining_uit_api_check, dagen_tot_de_maandwissel)   # 2 runs per dag
+n_spreads, n_totals = split_budget(cap, len(comps_met_sport_key))
 guard = CreditGuard(cap=cap)
 ```
 
-Geef de credits uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
+**Verdeel vóórdat je uitgeeft — de doelpuntenmarkt is een reservering, geen restpost**
+(toegevoegd 30 aug 2026, op verzoek van de gebruiker). `split_budget` legt vooraf vast hoeveel
+competities `spreads` krijgen en hoeveel `totals`. De volgorde van uitgeven verandert niet —
+spreads blijft stap 0 — maar het aantal ligt vast in plaats van dat de doelpuntenmarkt krijgt wat
+er toevallig overblijft.
 
-0. **`spreads` eerst, en voor zoveel mogelijk competities** (1 credit per competitie). Dit staat
-   hier sinds **29 aug 2026**, op aanwijzing van de gebruiker, en het is de enige stap die per
-   credit drie markten oplevert: Asian Handicap, Draw No Bet (de 0.0-lijn) én Double Chance (de
-   ±0.5-lijn). Samen met het gratis 1X2 van BetExplorer heeft elke competitie daarmee **vier van
-   de zes markten**, voor één credit.
+Waarom dat nodig was: aan het begin van de maand is het plafond groter dan het aantal competities
+en blijft er vanzelf geld over voor `totals`. Aan het eind van de maand niet. Op **30 aug 2026**
+gaf `suggest_cap(68, 2)` een plafond van 12 bij elf inkoopbare competities; "zoveel mogelijk"
+betekende toen elf keer spreads en één credit over, dus de doelpuntenmarkt dong mee in **één van
+de twaalf** competities. De marktbalans-controle hieronder werd gehaald, maar met de kleinst
+mogelijke marge — en dat is de spiegel van 29 aug, toen negen van de elf competities alleen een
+doelpuntenmarkt hadden en 12 van de 14 bets uit die ene markt kwamen. Beide keren was de scheve
+uitkomst de inkoop en niet de analyse. Met `split_budget(12, 11)` → `(9, 3)` wordt dat 9 om 3.
+
+Geef de credits daarna uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
+
+0. **`spreads` eerst, voor `n_spreads` competities** (1 credit per competitie). Dit staat hier
+   sinds **29 aug 2026**, op aanwijzing van de gebruiker, en het is de enige stap die per credit
+   drie markten oplevert: Asian Handicap, Draw No Bet (de 0.0-lijn) én Double Chance (de
+   ±0.5-lijn). Samen met het gratis 1X2 van BetExplorer heeft zo'n competitie **vier van de zes
+   markten** voor één credit.
 
    ```python
    from scripts.oddsapi import fetch_spreads
-   for comp in comps_op_datakwaliteit:          # zoveel als het plafond toelaat
+   for comp in comps_op_datakwaliteit[:n_spreads]:
        if guard.can_afford(1):
            guard.record(fetch_spreads(sport_key[comp]), comp)
    ```
-1. **`totals`** (1 credit per competitie) voor de competities die **vandaag aan de beurt zijn** in
-   de rotatie:
+1. **`totals`** (1 credit per competitie) voor de `n_totals` competities die **vandaag aan de
+   beurt zijn** in de rotatie:
 
    ```python
    from scripts.oddsapi import rotate_for_day
-   vandaag_aan_de_beurt = rotate_for_day(comps_op_datakwaliteit, date.today(), take=resterend)
+   vandaag_aan_de_beurt = rotate_for_day(comps_op_datakwaliteit, date.today(), take=n_totals)
    ```
 
    Roteren en niet altijd dezelfde nemen: steeds de bovenste vier pakken betekent dat de andere
    structureel nooit een doelpuntenmarkt krijgen. Dat is precies de stille blinde vlek die §6b-5b
    moest wegnemen.
+
+   **Bij een plafond van 1 credit gaat die ene credit naar `totals`, niet naar `spreads`** —
+   `split_budget(1, n)` geeft `(0, 1)`. Dat is geen afrondingsfout. Asian Handicap, Draw No Bet en
+   Double Chance zijn alle drie **uitkomstmarkten**, net als het gratis 1X2; een run die alleen
+   spreads koopt heeft dus geen enkele doelpuntenmarkt en faalt de marktbalans-controle hieronder.
+   Drie markten voor één credit is hier minder wáárd dan één markt die de enige van zijn soort is.
 2. `btts` per wedstrijd (2 credits) **alleen als er daarna nog credits over zijn** — in de praktijk
    dus zelden. Double Chance staat hier met opzet níet meer bij: die zit sinds 29 aug in stap 0.
 
@@ -320,7 +342,12 @@ handicapmarkt. Dat de doelpuntenmarkten beter renderen blijft staan; het antwoor
 voor de hele runlijst maar één soort markt kopen. Concreet: als `guard` klaar is, moet gelden dat
 er minstens één competitie met een doelpuntenmarkt én minstens één met een uitkomstmarkt in de
 run zit — is dat niet zo, dan is het plafond te krap voor deze runlijst en meld je dat in het
-runrapport. Noteer per run in `data/run-state/` onder `credits` de verdeling `markten_gekocht`,
+runrapport. Sinds 30 aug 2026 zorgt `split_budget` daar vooraf voor in plaats van achteraf: die
+controle hoort dus altijd te slagen, en slaagt hij níet, dan is er iets mis met de verdeling en
+niet alleen met het plafond. Meld ook **hoe ruim** hij slaagt — één competitie met een
+doelpuntenmarkt op twaalf is iets anders dan drie op twaalf, en dat verschil is van buitenaf
+alleen te zien als je het opschrijft.
+Noteer per run in `data/run-state/` onder `credits` de verdeling `markten_gekocht`,
 en in het runrapport de verdeling van de gepubliceerde bets over doelpunten- en uitkomstmarkten.
 Dat is geen quotum op bets — bets forceren om een verdeling te halen is precies wat §1 verbiedt —
 maar het maakt zichtbaar wanneer een scheve uitkomst uit de portemonnee komt en niet uit de data.
