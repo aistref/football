@@ -126,7 +126,14 @@ def find_team(table: dict, name: str) -> str | None:
     for row in table:
         if norm(row) == target:
             return row
-    return None
+    # Deelstring, maar **alleen als hij uniek is**. De daglijst kort namen af ("Ipswich" waar de
+    # stand "Ipswich Town" zegt), en die moeten meekomen. De eis van uniciteit is wat dit
+    # onderscheidt van gokken: op 30 aug 2026 koppelde een losse deelstringmatch "Deportivo A
+    # Coruña" aan "Deportivo Alaves" — een andere club, en het zou een promovendus stilzwijgend
+    # als FULL hebben doorgelaten. Twee treffers is dus geen keuze maar een weigering.
+    hits = [row for row in table
+            if target and (target in norm(row) or norm(row) in target)]
+    return hits[0] if len(hits) == 1 else None
 
 
 def convert(top_competition: str, team: str, season: str, top_league: LeagueContext,
