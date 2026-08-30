@@ -130,43 +130,10 @@ def check_api_football() -> bool:
     return True
 
 
-def check_oddspapi() -> None:
-    """Toon de stand van de reservebron. Doet met opzet **geen** enkel verzoek.
-
-    De reserve is 250 verzoeken per maand; die opmaken aan een statuscontrole zou hem waardeloos
-    maken. Deze functie leest alleen de schakelaar in data/odds-fallback.json en of de sleutel
-    gezet is.
-    """
-    print("\n=== OddsPapi (reserve-oddsbron) ===")
-    try:
-        from scripts.oddspapi import FallbackState, api_key, api_key_source, api_key_fingerprint, KEY_ENV_NAMES
-    except ImportError:
-        from oddspapi import FallbackState, api_key, api_key_source, api_key_fingerprint, KEY_ENV_NAMES  # type: ignore
-    state = FallbackState.load()
-    if not api_key():
-        print("  Geen sleutel gevonden onder een van de bekende namen "
-              f"({', '.join(KEY_ENV_NAMES)}) — reserve niet beschikbaar.")
-    else:
-        print(f"  Sleutel gezet (omgevingsvariabele {api_key_source()}, kenmerk "
-              f"{api_key_fingerprint()}). Gewapend: {'JA' if state.armed else 'nee'} "
-              f"(armed in data/odds-fallback.json).")
-        if state.key_fingerprint and state.key_fingerprint != api_key_fingerprint():
-            print(f"  LET OP: dit is een ANDERE sleutel dan bij de vorige controle "
-                  f"({state.key_fingerprint}) — de vorige uitslag zegt niets over deze.")
-        elif state.key_fingerprint:
-            print(f"  Dit is dezelfde sleutel als bij de vorige controle ({state.key_fingerprint}).")
-    print(f"  Springt pas bij: The Odds API <= {state.threshold} credits over.")
-    print(f"  Maandquotum: {state.used_this_month} van {state.monthly_quota} gebruikt.")
-    if api_key() and not state.endpoints:
-        print("  Endpoints nog niet ontdekt — draai eenmalig: python3 scripts/oddspapi.py discover")
-    print("  (Deze controle doet geen verzoek; dat zou de reserve aanspreken.)")
-
-
 def main() -> int:
     print("Controle van de databronnen die een sleutel nodig hebben.")
     odds_ok = check_odds_api()
     stats_ok = check_api_football()
-    check_oddspapi()
 
     print("\n=== Samenvatting ===")
     print(f"  odds (prijzen)        {'OK' if odds_ok else 'niet beschikbaar'}")

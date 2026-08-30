@@ -373,54 +373,6 @@ was. Daarom:
 Ga niet alsnog een `h2h`-bulkcall doen om dat recht te trekken: dat kost precies de 8 credits per run
 die deze paragraaf bespaart.
 
-### 1b. De reservebron: OddsPapi — uit, tenzij een mens hem aanzet
-
-Er is een tweede oddsbron beschikbaar, met **250 verzoeken per maand**. Dat is ongeveer vier per run
-en dus geen tweede leverancier maar een noodvoorraad. Hij is er voor precies één geval: The Odds API
-is door zijn maandbudget heen en de runs zouden anders zonder prijzen komen te staan — en een run
-zonder prijzen levert per definitie nul bets.
-
-**De run zet hem nooit zelf aan.** Er zijn twee sloten en ze moeten allebei open:
-
-1. `data/odds-fallback.json` staat op `"armed": true`. Dit veld is **van de gebruiker**. Een run die
-   het zelf zou mogen omzetten, kan zichzelf toestemming geven en de hele voorraad in één ochtend
-   opmaken. Kom je een run tegen waarin dat nodig lijkt: doe het niet, meld het in het runrapport en
-   in de notificatie, en laat de gebruiker beslissen.
-2. The Odds API zit op of onder `threshold` credits (standaard 20).
-
-In code:
-
-```python
-from scripts.oddspapi import should_use
-inzetbaar, reden = should_use(odds_api_remaining)   # remaining komt uit api_check.py
-```
-
-Neem `reden` **elke run** letterlijk over in het runrapport onder "Bronstatus deze run", ook — juist —
-als hij niet is ingezet. Zo is achteraf te zien dat de reserve er was en waarom hij bleef staan.
-
-Twee dingen om te weten voordat je hem gebruikt:
-
-- **Controleer de reserve in Stage 3, niet pas als je hem nodig hebt.** Basis-URL
-  (`https://v5.oddspapi.io/{taal}/…`) en de `apiKey`-queryparameter zijn nagetrokken; de precieze
-  fixture- en odds-paden niet, omdat OddsPapi de sleutel vóór de routering controleert en zonder
-  sleutel élk pad 401 geeft — een verzonnen pad net zo goed als een echt pad. Roep daarom in Stage 3,
-  direct na `api_check.py`, één keer aan:
-
-  ```python
-  from scripts.oddspapi import ensure_discovered
-  gedraaid, melding = ensure_discovered()   # no-op zodra de paden bekend zijn
-  ```
-
-  Dit staat **los van `armed`** en is geen inzet van de reserve: het is de controle of hij wérkt.
-  Een noodaggregaat test je niet voor het eerst tijdens de stroomstoring — en een verkeerd
-  overgetypte sleutel wil je weten op een dag dat het niet uitmaakt, niet op de dag dat The Odds API
-  op is. Kosten: een handvol van de 250, eenmalig. Meld `melding` in het runrapport en werk
-  `data/source-health.json` bij (`oddspapi` → `status`). Komt er `invalid_api_key` uit, meld dat dan
-  ook in de notificatie: dat is een blokkade die anders weken onopgemerkt blijft.
-- **Tel zelf mee.** OddsPapi geeft `X-RateLimit-*` per seconde en per minuut, maar geen teller voor
-  het maandquotum. `scripts/oddspapi.py` houdt `used_this_month` daarom zelf bij in
-  `data/odds-fallback.json`; zet die bij een nieuwe periode met de hand op 0.
-
 ### Welke markt je publiceert: `selection_score`, hoogste wint
 
 Dezelfde onderliggende inschatting levert vaak op vier tot zeven markten tegelijk een edge op.
@@ -773,6 +725,41 @@ Volg §6. Zonder commit is de run niet gebeurd.
 verzin het niet. Gebruik xG van vorig seizoen en markeer expliciet transfers en
 selectiewisselingen als onzekerheid. Bij promovendi/nieuwkomers zonder vergelijkbare historie:
 `LIGHT` of `NONE`.
+
+### Promovendi: eerst omrekenen, dan pas `NONE` (toegevoegd 30 aug 2026)
+
+Een ploeg die niet in de tabel van vorig seizoen staat, is bijna nooit een ploeg zonder historie —
+hij heeft die historie alleen in de divisie eronder. Reken hem daarom eerst om, en zet hem pas op
+`NONE` als dat aantoonbaar niet kan:
+
+```python
+from scripts.promotion import convert, TIER2, PromotionError
+c = convert("Eredivisie (NED)", "ADO Den Haag", "2025/2026", league)   # league ná scale_level
+c.tier      # "LIGHT" binnen het gemeten bereik, "NONE" erbuiten — nooit FULL
+c.stats, c.splits, c.note
+```
+
+`scripts/promotion.py` haalt de stand van de divisie eronder bij **Fotmob** (dertien
+divisieparen in `TIER2`, alle dertien op naam en land geverifieerd) en rekent hem om met dezelfde
+`gap_for` / `convert_strength` / `conversion_in_range` uit `scripts/footballdata.py`. Waar dat
+laatste bestand een gemeten divisiepaar heeft (E0/E1, SP1/SP2, D1/D2, I1/I2, F1/F2, SC0/SC1) wordt
+die factor gebruikt; voor de rest valt `gap_for` terug op `POOLED_GAP` en **zegt hij dat zelf** in
+`GapResult.direction`. Neem die tekst over in het runrapport, zodat zichtbaar is welke ploegen op
+een gepoolde factor draaien.
+
+Aanleiding: op 30 aug 2026 kregen vier duels `NONE` — Feyenoord – ADO Den Haag, Willem II – SC
+Heerenveen, Cambuur – FC Twente en Lyngby – OB — omdat football-data.co.uk de Eerste Divisie en de
+Deense 1. Division niet dekt. Fotmob heeft die divisies wél, met doelpunten en thuis/uit-splits
+voor alle vier de ploegen. Er was dus geen datagat maar een bronngat, en het kostte vier analyses.
+
+Twee dingen die hier blijven gelden:
+
+- **`conversion_in_range` is een poort, geen aantekening.** Buiten het gemeten bereik is er geen
+  meting, dus geen onafhankelijke kansinput op het niveau waarop gespeeld wordt: `NONE`, geen bet.
+  Dat is de Coventry-val uit de docstring van die functie, en hij kost anders +21 pp schijnedge die
+  alle andere poorten haalt.
+- **Een omgerekende ploeg is nooit `FULL`.** `RESIDUAL_SPREAD` houdt na correctie nog ~0.16
+  relatieve sterkte over. De omrekening haalt de systematische fout eruit, niet de onzekerheid.
 
 ---
 
