@@ -1,0 +1,449 @@
+<title>Welke databron is het geld waard</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  line-height:1.55; -webkit-font-smoothing:antialiased}
+.wrap{max-width:960px; margin:0 auto; padding:0 20px 80px}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+  font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.measure{max-width:66ch}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+h3{font-size:1.02rem; font-weight:740; letter-spacing:-.012em}
+a{color:var(--accent-ink)}
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+
+.masthead{padding:52px 0 34px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05; margin-top:10px}
+.verdict{margin-top:20px; font-size:clamp(1.12rem,2.7vw,1.34rem); line-height:1.45;
+  font-weight:600; letter-spacing:-.012em; max-width:44ch; color:var(--ink-2)}
+.stamp{margin-top:18px; font-size:.78rem; color:var(--muted)}
+
+section{margin-top:44px}
+.lede{margin-top:12px}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+  background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px;
+  overflow:hidden; margin-top:24px}
+.fact{background:var(--surface); padding:15px 16px}
+.fact .v{font-size:1.42rem; font-weight:780; letter-spacing:-.03em; display:block}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; margin-top:3px; display:block}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px;
+  background:var(--surface); margin-top:18px; box-shadow:var(--shadow)}
+table{border-collapse:collapse; width:100%; font-size:.87rem; min-width:640px}
+th{text-align:left; font-size:.68rem; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--muted); font-weight:700; padding:11px 13px; border-bottom:1px solid var(--line);
+  background:var(--surface-2); white-space:nowrap}
+td{padding:11px 13px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:none}
+td.name{font-weight:660; white-space:nowrap}
+td.price{white-space:nowrap; font-variant-numeric:tabular-nums}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.72rem;
+  font-weight:700; white-space:nowrap}
+.chip.yes{background:var(--pos-wash); color:var(--pos)}
+.chip.no{background:var(--neg-wash); color:var(--neg)}
+.chip.maybe{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.flat{background:var(--hold-wash); color:var(--hold)}
+
+.rung{background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  box-shadow:var(--shadow); padding:22px 24px; margin-top:16px;
+  display:grid; grid-template-columns:auto 1fr; gap:0 22px; align-items:start}
+.rung .cost{font-size:1.72rem; font-weight:800; letter-spacing:-.04em; line-height:1;
+  font-variant-numeric:tabular-nums; color:var(--accent-ink); white-space:nowrap}
+.rung .costl{font-size:.68rem; color:var(--muted); font-weight:650; letter-spacing:.04em;
+  text-transform:uppercase; margin-top:6px}
+.rung .body{grid-column:2}
+.rung .head{grid-column:2; display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.rung .colspan{grid-column:1 / -1}
+.rung p{margin:9px 0 0; color:var(--ink-2); font-size:.93rem; line-height:1.55}
+.rung ul{margin:10px 0 0; padding-left:19px; color:var(--ink-2); font-size:.92rem}
+.rung li{margin-top:5px}
+.rung.quiet .cost{color:var(--pos)}
+
+.note{border-left:3px solid var(--accent); background:var(--accent-wash);
+  padding:14px 18px; border-radius:0 8px 8px 0; margin-top:20px; font-size:.92rem; color:var(--ink-2)}
+.note strong{color:var(--ink)}
+.warn{border-left-color:var(--neg); background:var(--neg-wash)}
+.good{border-left-color:var(--pos); background:var(--pos-wash)}
+
+.srcs{margin-top:14px; font-size:.83rem; color:var(--muted); line-height:1.7}
+.srcs a{color:var(--muted); text-decoration:underline; text-underline-offset:2px}
+footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--line);
+  font-size:.8rem; color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+@media (max-width:560px){
+  .rung{grid-template-columns:1fr}
+  .rung .body,.rung .head{grid-column:1}
+  .rung .cost{font-size:1.5rem}
+}
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">Bronnenafweging · 30 augustus 2026</div>
+  <h1>Welke databron is het geld waard</h1>
+  <p class="verdict">Eén abonnement lost een echt knelpunt op. De sleutel waar de routine
+  negentien dagen op wacht, lost bijna niets op — en het gat van vanochtend was gratis te
+  dichten.</p>
+  <p class="stamp">Prijzen nagetrokken op 30 aug 2026. Alles wat hieronder <span class="chip yes">gemeten</span>
+  heet, is in deze repo zelf vastgesteld; <span class="chip flat">opgegeven</span> komt van de
+  aanbieder en is niet door mij geverifieerd.</p>
+</header>
+
+<section>
+  <h2>Eerst: wat is er werkelijk kapot?</h2>
+  <p class="prose measure lede">Een lijst met API's is pas nuttig als je weet welk gat hij moet
+  vullen. Uit de runs van deze week komen drie knelpunten, en ze zijn niet even groot. Ze staan
+  hier op volgorde van wat ze de routine vandaag kosten.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">1 van 12</span><span class="l">competities kreeg een doelpuntenmarkt</span></div>
+    <div class="fact"><span class="v num">4</span><span class="l">wedstrijden onbeoordeeld door promovendi</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">reservebronnen voor de kanskant</span></div>
+    <div class="fact"><span class="v num">12/68</span><span class="l">credits over toen het plafond dichtsloeg</span></div>
+  </div>
+
+  <div class="note warn">
+    <strong>Knelpunt 1 — het creditbudget bij The Odds API.</strong> Dit is het enige knelpunt dat
+    vandaag aantoonbaar bets heeft gekost. Het gratis plan geeft 500 credits per maand; twee runs
+    per dag betekent dat <code class="num">suggest_cap</code> eind augustus op <b>12 credits</b>
+    uitkwam bij elf inkoopbare competities. Gevolg: de doelpuntenmarkt kon in één van de twaalf
+    competities meedingen. Op 29 augustus was het spiegelbeeld waar: negen van de elf competities
+    hadden alléén een doelpuntenmarkt, en 12 van de 14 bets kwamen daaruit. Beide keren bepaalde de
+    portemonnee de uitkomst, niet de analyse.
+  </div>
+
+  <div class="note good">
+    <strong>Knelpunt 2 — promovendi uit een tweede divisie.</strong> Vier duels van vandaag
+    (Feyenoord&nbsp;–&nbsp;ADO Den Haag, Willem&nbsp;II&nbsp;–&nbsp;Heerenveen,
+    Cambuur&nbsp;–&nbsp;Twente, Lyngby&nbsp;–&nbsp;OB) kregen <code>tier NONE</code> omdat
+    football-data.co.uk de Eerste Divisie en de Deense 1.&nbsp;Division niet dekt.
+    <b>Dit blijkt geen inkoopprobleem.</b> Zie de eerste trede hieronder.
+  </div>
+
+  <div class="note">
+    <strong>Knelpunt 3 — de kanskant hangt aan één onofficiële bron.</strong> Alle xG, alle
+    context en alle opstellingen komen van Fotmob, zonder sleutel en zonder contract. Dat werkt
+    al drie weken foutloos, maar er is geen tweede been: valt Fotmob om, dan heeft de routine geen
+    enkele onafhankelijke kansinput meer en levert hij tot nader order nul bets. Dat is een risico,
+    geen storing — en het is het enige argument om aan de statistiekenkant iets te kopen.
+  </div>
+</section>
+
+<section>
+  <h2>De ladder: wat het kost en wat het oplost</h2>
+  <p class="prose measure lede">Op volgorde van prijs. De eerste trede is de belangrijkste, en die
+  kost niets.</p>
+
+  <div class="rung quiet">
+    <div><div class="cost">€0</div><div class="costl">nu meteen</div></div>
+    <div class="head"><h3>Fotmob heeft de tweede divisies al</h3><span class="chip yes">gemeten</span></div>
+    <div class="body">
+      <p>Ik heb dit vanochtend nagetrokken in plaats van aangenomen. Fotmob levert gewoon volledige
+      standen voor de <b>Eerste Divisie</b> (competitie&nbsp;<span class="num">111</span>, 20 ploegen)
+      en de <b>Deense 1.&nbsp;Division</b> (<span class="num">85</span>, 12 ploegen), met alle vier
+      de promovendi van vandaag erin:</p>
+      <ul>
+        <li>ADO Den Haag <span class="num">90&nbsp;voor / 37&nbsp;tegen</span> in 38 duels</li>
+        <li>Cambuur <span class="num">75 / 48</span>, Willem&nbsp;II <span class="num">59 / 42</span> in 38</li>
+        <li>Lyngby <span class="num">49 / 25</span> in 22</li>
+      </ul>
+      <p>Geen xG in die divisies, maar dat is ook niet nodig: <code>convert_strength()</code> en
+      <code>POOLED_GAP</code> in <code>scripts/footballdata.py</code> rekenen op <em>relatieve
+      doelpuntsterkte</em>, en die staat er. ADO's aanval komt uit op ongeveer
+      <span class="num">1,48×</span> het divisiegemiddelde — ruim binnen de band
+      <span class="num">0,899–1,889</span> waarop de omrekenfactor gemeten is, dus
+      <code>conversion_in_range</code> zou hem doorlaten.</p>
+      <p><b>Dit maakt knelpunt 2 een codewijziging en geen aankoop.</b> Geen enkele betaalde API
+      hieronder verdient het om hiervoor gekocht te worden.</p>
+    </div>
+  </div>
+
+  <div class="rung quiet">
+    <div><div class="cost">€0</div><div class="costl">al betaald, niet gebruikt</div></div>
+    <div class="head"><h3>De OddsPapi-sleutel staat niet in de omgeving</h3><span class="chip yes">gemeten</span></div>
+    <div class="body">
+      <p><code>scripts/oddspapi.py</code> is af, met twee sloten en een eigen maandteller — maar
+      <code>api_check.py</code> vindt onder geen van de vijf bekende namen een sleutel. De reserve
+      bestaat dus alleen in code. 250 verzoeken per maand is geen tweede leverancier, maar het is
+      wel precies de noodvoorraad waarvoor hij bedoeld is. Kost niets om te repareren.</p>
+    </div>
+  </div>
+
+  <div class="rung">
+    <div><div class="cost">$30</div><div class="costl">per maand · aanrader</div></div>
+    <div class="head"><h3>The Odds API — 20K-plan</h3><span class="chip yes">knelpunt 1 verdwijnt</span></div>
+    <div class="body">
+      <p>500 → <b>20.000 credits per maand</b>. Twee runs per dag met alle zes markten voor alle
+      competities kostten op de duurste dag tot nu toe <span class="num">132</span> credits; op
+      20.000 is dat <span class="num">645</span> per dag. Het plafond houdt dan feitelijk op te
+      bestaan.</p>
+      <p>Wat er concreet mee verdwijnt: <code>split_budget</code>, de rotatie over competities, de
+      marktbalans-waarschuwing, en de hele paragraaf in §1a over de volgorde van inkopen. Elke
+      competitie krijgt elke run alle zes markten, en een scheve bettenlijst gaat dan gegarandeerd
+      over de analyse in plaats van over het budget. Dat is precies wat je op 29 augustus wilde
+      weten en toen niet kon zien.</p>
+      <p><b>Dit is de enige aankoop die ik zonder voorbehoud zou doen.</b> Het lost het enige
+      knelpunt op dat vandaag meetbaar bets heeft gekost, en het is het goedkoopste item in de hele
+      lijst behalve gratis.</p>
+    </div>
+  </div>
+
+  <div class="rung">
+    <div><div class="cost">$19</div><div class="costl">per maand · alleen als verzekering</div></div>
+    <div class="head"><h3>API-Football — Pro</h3><span class="chip maybe">met voorbehoud</span></div>
+    <div class="body">
+      <p>7.500 verzoeken per dag, en — dit is het punt — <b>alle 1.200+ competities zitten in élk
+      plan</b>. Dat geeft de routine een tweede been onder de kanskant als Fotmob wegvalt, plus
+      tweede en derde divisies overal.</p>
+      <p>Drie voorbehouden, en ze zijn niet klein:</p>
+      <ul>
+        <li><b>Het gratis plan is hier waardeloos</b> <span class="chip yes">gemeten, 10 aug</span> —
+        elk verzoek om een seizoen ná 2024 geeft <code>results = 0</code> met
+        <code>"Free plans do not have access to this season"</code>. Je kunt dus niet gratis
+        uitproberen of het werkt; de eerste $19 is de test.</li>
+        <li><b>De xG is onzeker.</b> Meerdere vergelijkingen melden dat xG per competitie en seizoen
+        wisselt en stil kan ontbreken. Die bron is wel een concurrent, dus lees het als "verifiëren
+        vóór je erop bouwt", niet als vaststaand.</li>
+        <li>Dat maakt hem als xG-bron twijfelachtig, maar als <b>doelpunten- en standenbron</b> voor
+        de splitsmethode en de divisie-omrekening is hij onbetwist bruikbaar — en dat is nu net waar
+        de redundantie zit.</li>
+      </ul>
+      <p>Koop dit alleen als je het risico uit knelpunt 3 wil afdekken. Het maakt vandaag geen enkele
+      bet beter.</p>
+    </div>
+  </div>
+
+  <div class="rung">
+    <div><div class="cost">€54</div><div class="costl">per maand · de nette optie</div></div>
+    <div class="head"><h3>Sportmonks — European Basic + xG Basic</h3><span class="chip flat">opgegeven</span></div>
+    <div class="body">
+      <p>€39 voor het Europese basisplan plus €15 voor de xG-add-on (jaarbetaling). Dit is de enige
+      aanbieder in de lijst die <b>xG onder contract en gedocumenteerd</b> levert: 13 metrieken per
+      wedstrijd en per speler, inclusief xGoT, npxG en xGA, over de Premier League en 40+ andere
+      competities. Er is een permanent gratis plan, maar dat dekt twee competities en is dus alleen
+      geschikt om de integratie te testen.</p>
+      <p>Wat je ervoor terugkrijgt boven Fotmob: zekerheid en verhaal. Wat je niet terugkrijgt: méér
+      bets. Fotmob leverde vandaag xG voor <b>alle twaalf</b> spelende competities, foutloos.
+      Bijna drie keer de prijs van API-Football voor een probleem dat vandaag niet bestaat — tenzij
+      je de onofficiële bron principieel niet wil vertrouwen.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Alle opties aan de oddskant</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Aanbieder</th><th>Gratis</th><th>Instapprijs</th><th>Oordeel</th><th>Waarom</th></tr></thead>
+      <tbody>
+        <tr><td class="name">The Odds API</td><td class="price num">500 cr/mnd</td>
+          <td class="price num">$30 → 20k<br>$59 → 100k</td>
+          <td><span class="chip yes">kopen</span></td>
+          <td>Huidige bron, werkt, herleidbare bookmaker per prijs. Eén stap omhoog wist het enige echte knelpunt uit.</td></tr>
+        <tr><td class="name">OddsPapi</td><td class="price num">250 vz/mnd</td><td class="price">op aanvraag</td>
+          <td><span class="chip maybe">sleutel plaatsen</span></td>
+          <td>Al ingebouwd als noodvoorraad met twee sloten. Sleutel ontbreekt in de omgeving. 350+ boeken inclusief scherpe Aziatische, volgens de aanbieder.</td></tr>
+        <tr><td class="name">SharpAPI</td><td class="price num">12 vz/min</td><td class="price num">$79–$399</td>
+          <td><span class="chip flat">onbekend</span></td>
+          <td>Ruime gratis laag op papier, maar niet door mij nagetrokken en niet in deze repo geprobeerd. Alleen interessant als The Odds API zou omvallen.</td></tr>
+        <tr><td class="name">SportsGameOdds</td><td class="price">beperkt</td><td class="price num">$99–$499</td>
+          <td><span class="chip no">afgevallen</span></td>
+          <td><span class="chip yes">gemeten</span> Gratis dekt qua voetbal alleen Champions League en MLS; Europese competities beginnen bij $99.</td></tr>
+        <tr><td class="name">football-data.org <span style="font-weight:400;color:var(--muted)">odds-add-on</span></td>
+          <td class="price">nee</td><td class="price num">€15 + basisplan</td>
+          <td><span class="chip no">afgevallen</span></td>
+          <td>Alleen pre-match odds over 40 competities, bovenop een abonnement. Geen handicap- of totalenlijnen zoals de routine nodig heeft.</td></tr>
+        <tr><td class="name">Betfair Exchange</td><td class="price">ja</td><td class="price">—</td>
+          <td><span class="chip no">onmogelijk</span></td>
+          <td><span class="chip yes">gemeten</span> De sleutel is gratis, maar een account is vanuit Nederland niet te openen — geen Kansspelautoriteit-vergunning. Niet op te lossen met een andere serverlocatie.</td></tr>
+        <tr><td class="name">OddsJam</td><td class="price">nee</td><td class="price num">$99–$499</td>
+          <td><span class="chip no">geen API</span></td>
+          <td>Een webproduct voor eindgebruikers, geen publieke API.</td></tr>
+        <tr><td class="name">OpticOdds</td><td class="price">nee</td><td class="price">~$5.000/mnd</td>
+          <td><span class="chip no">buiten bereik</span></td>
+          <td>Enterprise, prijs achter een verkoopgesprek. Genoemd voor de volledigheid.</td></tr>
+        <tr><td class="name">Tweede gratis account</td><td class="price">ja</td><td class="price">—</td>
+          <td><span class="chip no">niet doen</span></td>
+          <td>Technisch triviaal, maar het omzeilen van een limiet — dezelfde soort omzeiling die §3 voor de dichtgezette sites verbiedt. Voor $30 is het niet nodig.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Alle opties aan de statistiekenkant</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Aanbieder</th><th>Gratis</th><th>Instapprijs</th><th>xG?</th><th>Oordeel</th><th>Waarom</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Fotmob <span style="font-weight:400;color:var(--muted)">huidig</span></td>
+          <td class="price">volledig</td><td class="price">—</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip yes">houden</span></td>
+          <td><span class="chip yes">gemeten</span> xG voor alle 12 competities vandaag, plus opstellingen, blessures, vorm, rust, stadion én transfers. Ook de tweede divisies. Onofficieel en zonder contract — dat is de enige zwakte.</td></tr>
+        <tr><td class="name">football-data.co.uk <span style="font-weight:400;color:var(--muted)">huidig</span></td>
+          <td class="price">volledig</td><td class="price">—</td>
+          <td><span class="chip no">nee</span></td>
+          <td><span class="chip yes">houden</span></td>
+          <td>Uitslagen én schoten over 22 divisies en 15 seizoenen. De basis onder de divisie-omrekening. Dekt geen Eerste Divisie of Deense 1. Division.</td></tr>
+        <tr><td class="name">Understat</td><td class="price">scrape</td><td class="price">—</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip maybe">reserve</span></td>
+          <td>Een van de laatste gratis xG-bronnen, maar alleen de zes grootste competities. Staat al op <code>ok</code> in <code>source-health.json</code> en wordt niet gebruikt — een goedkoop tweede been voor de topcompetities.</td></tr>
+        <tr><td class="name">API-Football</td><td class="price num">100/dag*</td>
+          <td class="price num">$19 · $29 · $39</td>
+          <td><span class="chip maybe">wisselend</span></td>
+          <td><span class="chip maybe">verzekering</span></td>
+          <td>*Gratis plan geeft geen seizoen na 2024 <span class="chip yes">gemeten</span>, dus onbruikbaar hier. Betaald: 1.200+ competities in élk plan. Sterk als redundantie, onzeker als xG-bron.</td></tr>
+        <tr><td class="name">Sportmonks</td><td class="price">2 comps</td>
+          <td class="price num">€39 + €15 xG</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip maybe">de nette optie</span></td>
+          <td>Enige aanbieder met gedocumenteerde xG onder contract, 13 metrieken. €159/mnd voor live xG tijdens de wedstrijd — voor een routine die 's ochtends draait niet nodig.</td></tr>
+        <tr><td class="name">TheStatsAPI</td><td class="price">7 dagen</td><td class="price num">$50 · $129 · $379</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip no">te duur</span></td>
+          <td>xG per wedstrijd, per ploeg én per schot op elk plan, 150+ competities. Maar geen blijvende gratis laag en tweeënhalf keer API-Football voor wat Fotmob gratis doet.</td></tr>
+        <tr><td class="name">football-data.org</td><td class="price num">12 comps</td><td class="price num">€12–€199</td>
+          <td><span class="chip no">nee</span></td>
+          <td><span class="chip no">afgevallen</span></td>
+          <td><span class="chip yes">gemeten</span> Fixtures, standen, vertraagde uitslagen — alles wat Fotmob hier al gratis levert. Statistieken kosten €15 extra en xG zit er niet in.</td></tr>
+        <tr><td class="name">StatsBomb open data</td><td class="price">volledig</td><td class="price">enterprise</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip no">verkeerde vorm</span></td>
+          <td>Event-niveau xG van uitzonderlijke kwaliteit, maar historische steekproeven — geen wedstrijden van vandaag. Waardevol om het model tegen te ijken, nutteloos om ermee te draaien.</td></tr>
+        <tr><td class="name">Opta · Sportradar</td><td class="price">nee</td><td class="price">enterprise</td>
+          <td><span class="chip yes">ja</span></td>
+          <td><span class="chip no">buiten bereik</span></td>
+          <td>Contractueel, prijs op aanvraag, gericht op operators en omroepen. Genoemd voor de volledigheid.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <h2>Wat elkaar aanvult, en wat elkaar dubbelt</h2>
+  <p class="prose measure lede">De vraag was welke bronnen elkaar aanvullen. Het antwoord valt uiteen
+  in drie rollen, en de routine heeft ze allemaal al — alleen niet allemaal even stevig.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Rol</th><th>Nu</th><th>Zwakte</th><th>Beste aanvulling</th></tr></thead>
+      <tbody>
+        <tr><td class="name">Prijzen — uitkomst</td><td>BetExplorer, gratis</td>
+          <td>marktgemiddelde, bookmaker niet herleidbaar; soms 3 boeken</td>
+          <td>The Odds API <span class="num">h2h</span>, maar alleen met ruimer budget</td></tr>
+        <tr><td class="name">Prijzen — handicap &amp; doelpunten</td><td>The Odds API, 500/mnd</td>
+          <td><b>het bindende knelpunt</b></td>
+          <td>hetzelfde abonnement, één trede hoger: <span class="num">$30</span></td></tr>
+        <tr><td class="name">Kansinput — xG</td><td>Fotmob, gratis</td>
+          <td>één onofficiële bron, geen contract</td>
+          <td>Understat gratis voor de top-6, of API-Football <span class="num">$19</span> voor de breedte</td></tr>
+        <tr><td class="name">Kansinput — context</td><td>Fotmob, gratis</td>
+          <td>zelfde afhankelijkheid; poort 7 valt stil als hij wegvalt</td>
+          <td>API-Football heeft blessures en opstellingen in elk plan</td></tr>
+        <tr><td class="name">Lagere divisies</td><td>football-data.co.uk</td>
+          <td>8 tweede divisies, geen NED/DEN</td>
+          <td><b>Fotmob, dat het al heeft</b> — code, geen aankoop</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note">
+    <strong>De dubbeling om te vermijden.</strong> Sportmonks, TheStatsAPI en API-Football doen
+    alle drie in grote lijnen hetzelfde: statistieken, standen, opstellingen, xG. Er is geen enkele
+    reden om er twee van te nemen. De echte aanvulling loopt tussen de <em>rollen</em> — prijzen
+    tegenover kansen — en daar zit de routine al goed, op één abonnement na.
+  </div>
+</section>
+
+<section>
+  <h2>Wat ik zou doen</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Volgorde</th><th>Actie</th><th>Kosten</th><th>Wat het oplevert</th></tr></thead>
+      <tbody>
+        <tr><td class="name">1</td><td>Fotmob-tabellen van tweede divisies gebruiken voor promovendi</td>
+          <td class="price">€0 · code</td><td>4 wedstrijden per weekenddag terug in de analyse</td></tr>
+        <tr><td class="name">2</td><td>The Odds API naar het 20K-plan</td>
+          <td class="price num">$30/mnd</td><td>alle zes markten, elke competitie, elke run</td></tr>
+        <tr><td class="name">3</td><td>OddsPapi-sleutel in de omgeving zetten</td>
+          <td class="price">€0</td><td>de noodvoorraad gaat echt werken</td></tr>
+        <tr><td class="name">4</td><td>Understat aanzetten voor de zes grootste competities</td>
+          <td class="price">€0 · code</td><td>tweede xG-been waar het meeste geld omgaat</td></tr>
+        <tr><td class="name">5</td><td>API-Football Pro, alleen als je knelpunt 3 wil afdekken</td>
+          <td class="price num">$19/mnd</td><td>redundantie; vandaag geen betere bets</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn">
+    <strong>Eén ding dat rechtgezet moet worden, ongeacht wat je koopt.</strong>
+    <code>scripts/api_check.py</code> noemt de statistiekensleutel nog altijd "de sleutel die telt",
+    en de runrapporten tellen inmiddels tot de negentiende dag zonder hem. Dat is achterhaald: het
+    gratis plan is hier onbruikbaar en Fotmob dekt de kanskant volledig. Zoals het er nu staat leest
+    het als een storing die de routine tegenhoudt, terwijl de werkelijke rem al drie weken aan de
+    prijskant zit. Die tekst hoort aangepast — anders blijft elke run een probleem melden dat geen
+    probleem is en het probleem dat wél telt onderbelicht laten.
+  </div>
+</section>
+
+<section>
+  <h2>Bronnen</h2>
+  <p class="srcs">
+    Prijzen en limieten opgehaald op 30 augustus 2026 bij:
+    <a href="https://the-odds-api.com/#get-access">The Odds API</a> ·
+    <a href="https://www.api-football.com/pricing">API-Football</a> ·
+    <a href="https://www.sportmonks.com/football-api/xg-data/">Sportmonks xG</a> ·
+    <a href="https://www.sportmonks.com/football-api/plans-pricing/">Sportmonks plannen</a> ·
+    <a href="https://www.football-data.org/pricing">football-data.org</a> ·
+    <a href="https://www.thestatsapi.com/blog/thestatsapi-vs-api-football">TheStatsAPI vs API-Football</a> ·
+    <a href="https://oddspapi.io/blog/odds-api-pricing-2026-comparison/">OddsPapi prijsvergelijking</a> ·
+    <a href="https://sharpapi.io/compare/best-sports-betting-apis">SharpAPI vergelijking</a>.
+    De laatste drie zijn blogs van aanbieders die zelf in de vergelijking staan; hun oordeel over
+    concurrenten is met die belangenpositie gelezen, hun eigen prijzen als opgave overgenomen.
+    De regels met <span class="chip yes">gemeten</span> komen uit deze repo:
+    <code>data/source-health.json</code>, <code>README.md</code> en de runs van 10, 15 en 30 augustus.
+  </p>
+</section>
+
+<footer>
+  <p>Opgesteld naast Run A van 30 augustus 2026 · alle bedragen per maand, exclusief btw waar de
+  aanbieder dat zo noteert · jaarbetaling verlaagt de meeste tarieven met 10 tot 20 procent.</p>
+</footer>
+
+</div>
