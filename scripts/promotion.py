@@ -79,6 +79,59 @@ TIER2: dict[str, Tier2] = {
 }
 
 
+#: Gemeten divisiegat voor de zes paren die football-data.co.uk niet heeft. Gemeten op
+#: **31 aug 2026** met `measure_gap(...)` over de seizoenen 2016/2017 t/m 2024/2025, op Fotmob,
+#: aan ploegen die daadwerkelijk promoveerden. Mediaan, niet gemiddelde — één ingestorte
+#: promovendus trekt bij deze aantallen een gemiddelde ver mee.
+#:
+#: Waarde: `(aanvalsfactor, verdedigingsfactor, n, inv_aanval_min, inv_aanval_max,
+#: inv_verdediging_min, inv_verdediging_max)`. De laatste vier zijn het bereik van de
+#: **invoersterkte** van de gemeten ploegen — daarbuiten is er geen meting en hoort de omrekening
+#: te weigeren, precies zoals `footballdata.CONVERSION_RANGE` dat voor de andere acht paren doet.
+#:
+#: Waarom dit moest (aanleiding: 30 aug 2026). Tot deze meting draaiden alle zes op `POOLED_GAP`
+#: (0.605 / 1.513), en dat leverde die dag de grootste edge van de run op — ADO Den Haag +2.5 bij
+#: Feyenoord, +23.6 pp. De meting bevestigt de gepoolde factor voor Nederland grotendeels
+#: (0.614 / 1.564) maar corrigeert Denemarken duidelijk: de verdedigingsfactor is daar **1.807**
+#: tegen 1.513 gepoold, oftewel een Deense promovendus incasseert fors meer dan de gepoolde factor
+#: aannam. Voor Polen geldt hetzelfde in mindere mate (1.743).
+MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, float]] = {
+    "Eredivisie (NED)":         (0.614, 1.564, 23, 0.941, 1.775, 0.407, 0.979),
+    "Danish Superliga (DEN)":   (0.624, 1.807, 18, 0.989, 1.747, 0.462, 0.989),
+    "Primeira Liga (POR)":      (0.615, 1.504, 22, 1.093, 1.717, 0.457, 0.950),
+    "Belgian Pro League (BEL)": (0.696, 1.604, 13, 0.759, 1.691, 0.462, 1.109),
+    "Süper Lig (TUR)":          (0.708, 1.497, 27, 0.979, 1.912, 0.497, 1.124),
+    "Ekstraklasa (POL)":        (0.680, 1.743, 24, 1.069, 1.516, 0.505, 0.929),
+}
+
+
+def gap_and_range(top_competition: str, t2: "Tier2", attack: float, defence: float):
+    """De factor voor dit divisiepaar plus de controle of de ploeg binnen het gemeten bereik valt.
+
+    Drie bronnen, in deze volgorde: het gemeten paar bij football-data.co.uk, de eigen meting uit
+    `MEASURED_TIER2_GAP`, en pas als laatste de gepoolde factor.
+    """
+    if t2.fd_pair:
+        hi, lo = t2.fd_pair
+        return fd.gap_for(hi, lo, "up"), *fd.conversion_in_range(hi, lo, "up", attack, defence)
+    m = MEASURED_TIER2_GAP.get(top_competition)
+    if m is None:
+        hi, lo = top_competition, t2.name
+        return fd.gap_for(hi, lo, "up"), *fd.conversion_in_range(hi, lo, "up", attack, defence)
+    a, d, n, a_min, a_max, d_min, d_max = m
+    gap = fd.GapResult(a, d, n, f"up (gemeten 31 aug 2026 op Fotmob, {top_competition}/{t2.name})")
+    buiten = []
+    if not a_min <= attack <= a_max:
+        buiten.append(f"aanval {attack:.3f} buiten {a_min:.3f}-{a_max:.3f}")
+    if not d_min <= defence <= d_max:
+        buiten.append(f"verdediging {defence:.3f} buiten {d_min:.3f}-{d_max:.3f}")
+    label = f"{top_competition}/{t2.name} up (eigen meting, n={n})"
+    if buiten:
+        return gap, False, f"{label}: " + "; ".join(buiten)
+    return gap, True, (f"{label}: aanval {attack:.3f} in {a_min:.3f}-{a_max:.3f}, "
+                       f"verdediging {defence:.3f} in {d_min:.3f}-{d_max:.3f}")
+
+
 class PromotionError(RuntimeError):
     pass
 
@@ -126,13 +179,23 @@ def find_team(table: dict, name: str) -> str | None:
     for row in table:
         if norm(row) == target:
             return row
-    # Deelstring, maar **alleen als hij uniek is**. De daglijst kort namen af ("Ipswich" waar de
-    # stand "Ipswich Town" zegt), en die moeten meekomen. De eis van uniciteit is wat dit
-    # onderscheidt van gokken: op 30 aug 2026 koppelde een losse deelstringmatch "Deportivo A
-    # Coruña" aan "Deportivo Alaves" — een andere club, en het zou een promovendus stilzwijgend
-    # als FULL hebben doorgelaten. Twee treffers is dus geen keuze maar een weigering.
+    # Afgekorte naam, maar **alleen als voorvoegsel en alleen als hij uniek is**. De daglijst kort
+    # namen achteraan af ("Ipswich" waar de stand "Ipswich Town" zegt), en die moeten meekomen.
+    #
+    # Twee eisen, allebei door schade opgelegd:
+    #
+    # 1. **Uniek.** Op 30 aug 2026 koppelde een losse deelstringmatch "Deportivo A Coruña" aan
+    #    "Deportivo Alaves" — een andere club, en het zou een promovendus stilzwijgend als FULL
+    #    hebben doorgelaten.
+    # 2. **Voorvoegsel, niet zomaar deelstring.** Op 31 aug 2026 koppelde de uniciteitsregel alléén
+    #    "Jong Ajax" aan "Ajax" en "Jong FC Utrecht" aan "FC Utrecht": beloftenelftallen spelen
+    #    permanent in de Eerste Divisie en kunnen niet promoveren, maar hun naam bevát die van de
+    #    hoofdmacht. In de gapmeting leverde dat "een promovendus behoudt zijn aanval" (factor
+    #    1.010) op — onzin, en het zou de omrekening van élke Nederlandse promovendus hebben
+    #    bepaald. Met de voorvoegsel-eis valt "Ajax" niet meer op "Jong Ajax" en andersom, terwijl
+    #    "Ipswich" op "Ipswich Town" gewoon blijft werken.
     hits = [row for row in table
-            if target and (target in norm(row) or norm(row) in target)]
+            if target and (norm(row).startswith(target) or target.startswith(norm(row)))]
     return hits[0] if len(hits) == 1 else None
 
 
@@ -174,11 +237,7 @@ def convert(top_competition: str, team: str, season: str, top_league: LeagueCont
     defence = (ts["ga"] / played) / low_avg
 
     higher_slug, lower_slug = t2.fd_pair or (top_competition, t2.name)
-    gap = fd.gap_for(higher_slug, lower_slug, "up")
-    # Zonder `fd_pair` staan de namen niet in MAIN_DIVISIONS, dus valt `conversion_in_range`
-    # terug op POOLED_RANGE en slaat hij de tier-afstandscontrole over. Dat mag hier: elke regel
-    # in TIER2 is per constructie de divisie er direct onder, dus de afstand is altijd één.
-    in_range, range_note = fd.conversion_in_range(higher_slug, lower_slug, "up", attack, defence)
+    gap, in_range, range_note = gap_and_range(top_competition, t2, attack, defence)
     new_attack, new_defence = fd.convert_strength(attack, defence, gap)
 
     # Relatieve sterkte -> xG-totalen op het niveau van de hogere divisie. `team_strength`
@@ -254,3 +313,86 @@ def _selftest() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(_selftest())
+
+
+# --------------------------------------------------------------------------- het gat meten
+#
+# `footballdata.MEASURED_GAPS` dekt acht divisieparen; de vijf andere paren in TIER2 draaiden tot
+# 31 aug 2026 op `POOLED_GAP` — de mediaan over die acht, uit andere landen. Op 30 aug leverde dat
+# de grootste edge van de dag op (ADO Den Haag +2.5 tegen Feyenoord, +23.6 pp) en dat is precies de
+# vorm waar `conversion_in_range` voor waarschuwt: een gepoolde factor met een ruime band eronder.
+#
+# Fotmob heeft beide divisies over tien seizoenen, dus het gat is gewoon te meten — met exact
+# dezelfde methode als `footballdata.division_gap()`: per ploeg die daadwerkelijk verhuisde, de
+# relatieve sterkte ná gedeeld door die vóór, en dan de mediaan (niet het gemiddelde, want één
+# ingestorte promovendus trekt dat bij deze aantallen ver mee).
+
+def _norm_name(s: str) -> str:
+    import re, unicodedata
+    out = "".join({"ł": "l", "ø": "o", "æ": "ae", "å": "a", "ß": "ss", "đ": "d"}.get(c, c)
+                  for c in (s or "").lower())
+    return re.sub(r"[^a-z0-9]", "",
+                  unicodedata.normalize("NFKD", out).encode("ascii", "ignore").decode())
+
+
+def _rel(row: dict, table: dict) -> tuple[float, float]:
+    """(aanval, verdediging) van een ploeg t.o.v. het competitiegemiddelde in datzelfde seizoen."""
+    played = row.get("played") or 0
+    if not played:
+        return 0.0, 0.0
+    tot_g = sum(t.get("gf", 0) for t in table.values())
+    tot_p = sum(t.get("played", 0) for t in table.values())
+    avg = (tot_g / tot_p) if tot_p else 0.0
+    if not avg:
+        return 0.0, 0.0
+    return (row["gf"] / played) / avg, (row["ga"] / played) / avg
+
+
+def measure_gap(top_competition: str, top_id: int, years: range, *, direction: str = "up",
+                min_played: int = 10) -> "fd.GapResult":
+    """Meet het gat tussen een competitie en de divisie eronder, aan ploegen die verhuisden.
+
+    Zelfde definitie als `footballdata.division_gap()`, maar op Fotmob-standen, zodat ook de
+    divisieparen meetbaar zijn die football-data.co.uk niet heeft.
+    """
+    import statistics
+    t2 = TIER2[top_competition]
+    att, dfn, samples = [], [], []
+    for y in years:
+        s_from, s_to = f"{y}/{y + 1}", f"{y + 1}/{y + 2}"
+        lo, hi = (t2.fotmob_id, top_id) if direction == "up" else (top_id, t2.fotmob_id)
+        try:
+            t_from = fotmob.fetch_league_stats(lo, s_from)["teams"]
+            t_to = fotmob.fetch_league_stats(hi, s_to)["teams"]
+        except Exception:
+            continue
+        for name, before in t_from.items():
+            # Exact of genormaliseerd-exact, en verder niets: een ploeg die echt verhuisde houdt
+            # bij Fotmob dezelfde naam. Elke soepelere match haalt hier beloftenelftallen binnen
+            # (zie find_team) en die verhuizen nooit.
+            hit = name if name in t_to else next(
+                (r for r in t_to if _norm_name(r) == _norm_name(name)), None)
+            after = t_to.get(hit) if hit else None
+            if after is None:
+                continue
+            if (before.get("played") or 0) < min_played or (after.get("played") or 0) < min_played:
+                continue
+            a0, d0 = _rel(before, t_from)
+            a1, d1 = _rel(after, t_to)
+            if a0 <= 0 or d0 <= 0:
+                continue
+            att.append(a1 / a0)
+            dfn.append(d1 / d0)
+            # ook de INVOERsterkte bewaren: daarop rust het bereik waarbinnen de factor geldig is
+            samples.append((name, y, round(a1 / a0, 3), round(d1 / d0, 3),
+                            round(a0, 3), round(d0, 3)))
+    if not att:
+        return fd.GapResult(1.0, 1.0, 0, direction)
+
+    def spread(xs):
+        xs = sorted(xs)
+        return ((statistics.quantiles(xs, n=4)[0], statistics.quantiles(xs, n=4)[2])
+                if len(xs) >= 4 else (xs[0], xs[-1]))
+
+    return fd.GapResult(statistics.median(att), statistics.median(dfn), len(att), direction,
+                        spread(att), spread(dfn), samples)

@@ -707,6 +707,30 @@ Volg §6. Zonder commit is de run niet gebeurd.
 
 ## 4. Datahiërarchie en labels
 
+**Twee onafhankelijke xG-bronnen sinds 31 aug 2026.** Naast Fotmob levert
+`scripts/understat.py` team-xG voor vijf competities (PL, La Liga, Bundesliga, Serie A, Ligue 1),
+gratis en zonder sleutel. Dat is er niet om `my_prob` te veranderen — dat blijft het gemiddelde van
+de twee methodes uit §1 — maar om drie dingen:
+
+- **Redundantie.** Tot 31 aug kwam élke kansinput van Fotmob. Viel die om, dan faalde §2 voor elke
+  wedstrijd en leverde elke run nul bets. Nu niet meer, voor de competities waar het meeste omgaat.
+- **Een echt onafhankelijke tweede bron in `prob_sources`.** Fotmob-xG en Fotmob-splits zijn twee
+  doorsnedes van dezelfde meting; Understat is een ander xG-model.
+- **Rollende xG over de laatste 5–8 duels** (`understat.rolling_xg`). Dat staat hieronder al vanaf
+  het begin als categorie-1-input, maar er was geen bron voor — Fotmob geeft alleen seizoenstotalen.
+
+Let op één gemeten verschil vóór je ze door elkaar gebruikt: **Understat ligt structureel ~0.13 xG
+per ploeg per duel hoger dan Fotmob** (gemeten 31 aug 2026 over alle vijf competities: 1.529 tegen
+1.398 in de PL, 1.501 tegen 1.354 in La Liga, enzovoort), terwijl beide exact dezelfde doelpunten
+geven. Dat is een niveauverschil tussen twee xG-modellen, geen meningsverschil over welke ploegen
+goed zijn. Het valt weg zodra je normaliseert op het **eigen** competitiegemiddelde van die bron —
+`understat.league_context()` geeft dat — maar meng nooit een Understat-teamsterkte met een
+Fotmob-competitiegemiddelde, want dan telt dat verschil van 9% wél mee.
+
+`p_xg_understat` gaat sinds 31 aug mee in het kalibratieblok (§6e), zodat over enkele weken met
+cijfers te zeggen is of het ene xG-model beter voorspelt dan het andere. Pas dán is het een vraag
+of `my_prob` erop moet worden aangepast; vandaag is het een meting, geen wijziging.
+
 1. **Hard data** (indien beschikbaar): team xG/xGA (seizoen); rolling xG-trend (laatste 5–8);
    match-level predicted xG (home/away); shots, SOT, big chances; fitheid, blessures/schorsingen
    key-players.
@@ -740,12 +764,27 @@ c.stats, c.splits, c.note
 ```
 
 `scripts/promotion.py` haalt de stand van de divisie eronder bij **Fotmob** (dertien
-divisieparen in `TIER2`, alle dertien op naam en land geverifieerd) en rekent hem om met dezelfde
-`gap_for` / `convert_strength` / `conversion_in_range` uit `scripts/footballdata.py`. Waar dat
-laatste bestand een gemeten divisiepaar heeft (E0/E1, SP1/SP2, D1/D2, I1/I2, F1/F2, SC0/SC1) wordt
-die factor gebruikt; voor de rest valt `gap_for` terug op `POOLED_GAP` en **zegt hij dat zelf** in
-`GapResult.direction`. Neem die tekst over in het runrapport, zodat zichtbaar is welke ploegen op
-een gepoolde factor draaien.
+divisieparen in `TIER2`, alle dertien op naam en land geverifieerd) en rekent hem om met
+`convert_strength` uit `scripts/footballdata.py`. Welke factor daarbij hoort, bepaalt
+`gap_and_range()` in drie stappen:
+
+1. het gemeten divisiepaar bij football-data.co.uk (E0/E1, SP1/SP2, D1/D2, I1/I2, F1/F2, SC0/SC1);
+2. anders `promotion.MEASURED_TIER2_GAP` — **zelf gemeten op 31 aug 2026** over de seizoenen
+   2016/2017 t/m 2024/2025, op Fotmob, voor NED, DEN, POR, BEL, TUR en POL;
+3. en pas als laatste `POOLED_GAP`.
+
+Na stap 2 draait geen enkele competitie uit de runlijst nog op een gepoolde factor. Dat was tot
+31 aug wél zo, en het was geen detail: op 30 aug leverde de gepoolde factor de grootste edge van
+de run op (ADO Den Haag +2.5 bij Feyenoord, +23.6 pp). De meting bevestigde Nederland grotendeels
+(0.614/1.564 tegen 0.605/1.513 gepoold) maar corrigeerde **Denemarken** duidelijk: de
+verdedigingsfactor is daar 1.807 in plaats van 1.513, oftewel een Deense promovendus incasseert
+fors meer dan de gepoolde factor aannam.
+
+**Meet zo'n gat nooit met een soepele naamvergelijking.** De eerste poging koppelde `Jong Ajax` aan
+`Ajax` en `Jong FC Utrecht` aan `FC Utrecht` — beloftenelftallen spelen permanent in de Eerste
+Divisie en promoveren nooit — en dat gaf een "promovendus behoudt zijn aanval"-factor van 1.010.
+`measure_gap` eist daarom exacte of genormaliseerd-exacte namen, en `find_team` accepteert een
+afkorting alleen als **voorvoegsel** (`Ipswich` op `Ipswich Town` wel, `Ajax` op `Jong Ajax` niet).
 
 Aanleiding: op 30 aug 2026 kregen vier duels `NONE` — Feyenoord – ADO Den Haag, Willem II – SC
 Heerenveen, Cambuur – FC Twente en Lyngby – OB — omdat football-data.co.uk de Eerste Divisie en de
@@ -1062,7 +1101,8 @@ Leg daarvoor per doorgerekende wedstrijd een `calibration`-blok in `data/run-sta
   "market":        [0.45, 0.27, 0.28],
   "p_xg":          [0.41, 0.28, 0.31],
   "p_xg_noshrink": [0.43, 0.28, 0.29],
-  "p_split":       [0.38, 0.29, 0.33]
+  "p_split":       [0.38, 0.29, 0.33],
+  "p_xg_understat":[0.42, 0.28, 0.30]
 }
 ```
 
