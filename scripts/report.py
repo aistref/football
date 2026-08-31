@@ -476,10 +476,13 @@ def render_todo(items: list[dict]) -> str:
 
 
 def render_settled(entries: list[dict], stats: dict) -> str:
+    # Een push (inzet terug) is geen verlies. Tot 31 aug 2026 rendeerde elke uitkomst die niet
+    # 'won' was als "verloren", en dat maakte van een teruggegeven inzet stilzwijgend een nederlaag.
+    chip = {"won": ("ok", "gewonnen"), "lost": ("gap", "verloren"), "void": ("", "inzet terug")}
     rows = "\n        ".join(
         f'<tr><td class="comp">{esc(e["label"])}</td><td class="num">{esc(e["score"])}</td>'
-        f'<td><span class="chip {"ok" if e["result"] == "won" else "gap"}">'
-        f'{"gewonnen" if e["result"] == "won" else "verloren"}</span></td></tr>'
+        f'<td><span class="chip {chip.get(e.get("result"), ("gap", "verloren"))[0]}">'
+        f'{chip.get(e.get("result"), ("gap", "verloren"))[1]}</span></td></tr>'
         for e in entries)
     table = f'''
   <div class="tablewrap" style="margin-bottom:22px">
