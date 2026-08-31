@@ -1,33 +1,27 @@
-"""Stage 3 vervolg + Stage 4-voorbereiding: tier per wedstrijd, referentieseizoen, kandidaten."""
 import json, sys
-sys.path.insert(0, "tmp-run")
+sys.path.insert(0,'tmp-run')
 from scripts import fotmob
 from rb_names import resolve
-
-fx = json.load(open("tmp-run/rb_fixtures.json"))
-st = json.load(open("tmp-run/rb_stats.json"))
-
-CURRENT_BASE = {"Eliteserien (NOR)", "Allsvenskan (SWE)"}   # kalenderjaar, lopend seizoen ruim gespeeld
-
-cands = []
-for name, v in fx.items():
-    if not v["matches"]:
-        continue
-    s = st[name]
-    base = "cur" if name in CURRENT_BASE else "prev"
-    season = v["s_cur"] if base == "cur" else v["s_prev"]
-    full = s[base].get("has_xg")
-    teams = fotmob.fetch_league_stats(v["primaryId"], season)["teams"]
-    for m in v["matches"]:
-        rh, ra = resolve(m["home"], teams), resolve(m["away"], teams)
-        tier = "NONE" if not (rh and ra) else ("FULL" if full else "LIGHT")
-        cands.append({"competition": name, "season": season, "base": base,
-                      "primaryId": v["primaryId"], "slug": v["slug"], "sportkey": v["sportkey"],
-                      "tier": tier, "table_home": rh, "table_away": ra, **m,
-                      "missing": [t for t, r in ((m["home"], rh), (m["away"], ra)) if not r]})
-json.dump(cands, open("tmp-run/rb_cands.json", "w"), ensure_ascii=False, indent=1)
-print("FULL", sum(c["tier"]=="FULL" for c in cands), "LIGHT", sum(c["tier"]=="LIGHT" for c in cands),
-      "NONE", sum(c["tier"]=="NONE" for c in cands), "totaal", len(cands))
-for c in cands:
-    if c["tier"] == "NONE":
-        print("  NONE:", c["competition"], "|", c["home"], "-", c["away"], "| mist", c["missing"])
+S3=json.load(open('tmp-run/rb_stage3.json'))['stats']
+CTX=json.load(open('tmp-run/rb_ctx.json'))
+FIX=json.load(open('tmp-run/rb_fixtures.json'))
+cands=[]
+tcache={}
+for f in FIX:
+    comp=f['comp']; meta=S3[comp]
+    if comp not in tcache:
+        tcache[comp]=fotmob.fetch_league_stats(meta['primaryId'], meta['base_season'])['teams']
+    teams=tcache[comp]
+    th=resolve(f['home'],teams); ta=resolve(f['away'],teams)
+    missing=[n for n,r in ((f['home'],th),(f['away'],ta)) if r is None]
+    tier = "NONE" if missing else meta['tier']
+    rec=CTX[str(f['match_id'])]
+    cands.append({"competition":comp,"home":f['home'],"away":f['away'],"match_id":f['match_id'],
+        "kickoff_utc":f['utc'],"primaryId":meta['primaryId'],"season":meta['base_season'],
+        "sportkey":meta['sportkey'],"tier":tier,"table_home":th,"table_away":ta,"missing":missing,
+        "richness":(rec.get('richness') or {}).get('score'),
+        "richness_parts":(rec.get('richness') or {}).get('deelscores'),
+        "understat":None,
+        "ctx":rec.get('context')})
+    print(f"{comp[:28]:30} {f['home'][:20]:22}-{f['away'][:20]:22} tier={tier:5} rich={cands[-1]['richness']} missing={missing}")
+json.dump(cands, open('tmp-run/rb_cands.json','w'), ensure_ascii=False, indent=1)

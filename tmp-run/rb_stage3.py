@@ -1,50 +1,31 @@
-"""Run B, 30 aug 2026 — Stage 1/2/3: fixtures, competitiepoort, bronprobe."""
-import json, sys
-from datetime import date, datetime
+import json, unicodedata
 from scripts import fotmob
+def norm(s):
+    return unicodedata.normalize('NFKD',s).encode('ascii','ignore').decode().lower().replace('.',' ').replace('-',' ').split()
+def key(s): return ' '.join(norm(s))
 
-DAY = date(2026, 8, 30)
-
-# naam in de runlijst -> (fotmob daglijst-naam, ccode, primaryId voor stats, seizoen vorig, seizoen huidig, betexplorer slug, sportkey)
-LEAGUES = {
- "Czech First League (CZE)":      ("1. Liga", "CZE", 122, "2025/2026", "2026/2027", "czech-republic/chance-liga", None),
- "Greek Super League (GRE)":      ("Super League", "GRE", 135, "2025/2026", "2026/2027", "greece/super-league", "soccer_greece_super_league"),
- "Eliteserien (NOR)":             ("Eliteserien", "NOR", 59, "2025", "2026", "norway/eliteserien", "soccer_norway_eliteserien"),
- "Allsvenskan (SWE)":             ("Allsvenskan", "SWE", 67, "2025", "2026", "sweden/allsvenskan", "soccer_sweden_allsvenskan"),
- "Croatian HNL (CRO)":            ("HNL", "CRO", 252, "2025/2026", "2026/2027", "croatia/hnl", None),
- "Hungarian NB I (HUN)":          ("NB I", "HUN", 212, "2025/2026", "2026/2027", "hungary/nb-i", None),
- "Romanian SuperLiga (ROU)":      ("Superliga", "ROU", 189, "2025/2026", "2026/2027", "romania/superliga", None),
- "Segunda División (ESP)":        ("LaLiga2", "ESP", 140, "2025/2026", "2026/2027", "spain/laliga2", "soccer_spain_segunda_division"),
- "Serie B (ITA)":                 ("Serie B", "ITA", 86, "2025/2026", "2026/2027", "italy/serie-b", "soccer_italy_serie_b"),
- "2. Bundesliga (GER)":           ("2. Bundesliga", "GER", 146, "2025/2026", "2026/2027", "germany/2-bundesliga", "soccer_germany_bundesliga2"),
- "Swiss Super League (SUI)":      ("Super League", "SUI", 69, "2025/2026", "2026/2027", "switzerland/super-league", "soccer_switzerland_superleague"),
- "Austrian Bundesliga (AUT)":     ("Bundesliga", "AUT", 38, "2025/2026", "2026/2027", "austria/bundesliga", "soccer_austria_bundesliga"),
- "Keuken Kampioen Divisie (NED)": ("Eerste Divisie", "NED", 111, "2025/2026", "2026/2027", "netherlands/eerste-divisie", None),
- "English League One (ENG)":      ("League One", "ENG", 108, "2025/2026", "2026/2027", "england/league-one", "soccer_england_league1"),
- "English League Two (ENG)":      ("League Two", "ENG", 109, "2025/2026", "2026/2027", "england/league-two", "soccer_england_league2"),
- "Kategoria Superiore (ALB)":     ("Kategoria Superiore", "ALB", 260, "2025/2026", "2026/2027", "albania/kategoria-superiore", None),
- "Kosovo Superleague (KOS)":      ("Superliga", "KOS", None, None, None, None, None),
+COMPS={
+ "Greek Super League (GRE)":   dict(pid=135, base="2025/2026", cur="2026/2027", sportkey="soccer_greece_super_league"),
+ "Allsvenskan (SWE)":          dict(pid=67,  base="2026",      cur="2026",      sportkey="soccer_sweden_allsvenskan"),
+ "Croatian HNL (CRO)":         dict(pid=252, base="2025/2026", cur="2026/2027", sportkey=None),
+ "Romanian SuperLiga (ROU)":   dict(pid=189, base="2025/2026", cur="2026/2027", sportkey=None),
+ "Segunda Division (ESP)":     dict(pid=140, base="2025/2026", cur="2026/2027", sportkey="soccer_spain_segunda_division"),
+ "Keuken Kampioen Divisie (NED)":dict(pid=111,base="2025/2026",cur="2026/2027", sportkey=None),
+ "Kategoria Superiore (ALB)":  dict(pid=260, base="2025/2026", cur="2026/2027", sportkey=None),
 }
-
-fx = fotmob.fetch_fixtures(DAY)
-out = {}
-for name, (fm_name, ccode, pid, s_prev, s_cur, slug, key) in LEAGUES.items():
-    lg = fotmob.find_league(fx, fm_name, ccode)
-    if lg is None:
-        out[name] = {"status": "GEEN WEDSTRIJD", "matches": []}
-        continue
-    ms = []
-    for m in lg.get("matches", []):
-        ms.append({"match_id": m.get("id"),
-                   "home": m["home"]["name"], "away": m["away"]["name"],
-                   "home_id": m["home"].get("id"), "away_id": m["away"].get("id"),
-                   "kickoff_utc": m.get("status", {}).get("utcTime"),
-                   "started": m.get("status", {}).get("started")})
-    out[name] = {"status": "?", "fotmob_day_id": lg.get("id"), "primaryId": pid,
-                 "slug": slug, "sportkey": key, "s_prev": s_prev, "s_cur": s_cur,
-                 "matches": ms}
-json.dump(out, open("tmp-run/rb_fixtures.json", "w"), ensure_ascii=False, indent=1)
-tot = sum(len(v["matches"]) for v in out.values())
-for k, v in out.items():
-    print(f"{k:32s} {len(v['matches'])}")
-print("TOTAAL", tot)
+out={"stats":{},"understat":{}}
+for comp,c in COMPS.items():
+    prev=fotmob.fetch_league_stats(c['pid'], c['base'])
+    cur =fotmob.fetch_league_stats(c['pid'], c['cur']) if c['cur']!=c['base'] else prev
+    def summ(d):
+        t=d['teams']
+        return {"has_xg":d.get('has_xg'),"avg_xg":d.get('avg_xg_per_match'),
+                "hg":d.get('home_goals_per_match'),"ag":d.get('away_goals_per_match'),
+                "n_teams":len(t),"played":max([x.get('played',0) or 0 for x in t.values()],default=0),
+                "mp":max([x.get('mp',0) or 0 for x in t.values()],default=0)}
+    out['stats'][comp]={"prev":summ(prev),"cur":summ(cur),"base_season":c['base'],
+                        "cur_season":c['cur'],"primaryId":c['pid'],"sportkey":c['sportkey'],
+                        "tier":"FULL" if prev.get('has_xg') else "LIGHT"}
+    print(f"{comp:32} tier={out['stats'][comp]['tier']:5} prev={summ(prev)}")
+    print(f"{'':32} cur ={summ(cur)}")
+json.dump(out, open('tmp-run/rb_stage3.json','w'), ensure_ascii=False, indent=1)
