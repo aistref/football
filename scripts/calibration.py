@@ -73,6 +73,7 @@ OUTCOMES = ("thuis", "gelijk", "uit")
 METHODS = (("p_xg", "xG-methode (standaard shrink)"),
            ("p_xg_noshrink", "xG-methode (shrink 1.0)"),
            ("p_split", "splitsmethode"),
+           ("p_xg_understat", "xG-methode op Understat (2e xG-model)"),
            ("p_mean", "gemiddelde van beide (= my_prob)"))
 
 # De grenzen waarop gebucket wordt. Longshot/favoriet is bewust ruim genomen: bij smallere
@@ -109,7 +110,7 @@ def _rows_from_state(state: dict, run: str, day: str) -> list[dict]:
             market = cal["market"]
             if len(market) != 3:
                 continue
-            probs = {k: cal[k] for k in ("p_xg", "p_xg_noshrink", "p_split")
+            probs = {k: cal[k] for k in ("p_xg", "p_xg_noshrink", "p_split", "p_xg_understat")
                      if isinstance(cal.get(k), list) and len(cal[k]) == 3}
             if "p_xg" in probs and "p_split" in probs:
                 probs["p_mean"] = [(a + b) / 2 for a, b in zip(probs["p_xg"], probs["p_split"])]
