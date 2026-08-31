@@ -12,11 +12,49 @@ aanpassen zonder de geplande taak aan te raken.
 |---|---|---|
 | `MAX_DEEP_ANALYSES` | **30** (ma–do) / **35** (vr–zo) | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. Verhoogd van 12 naar 30 op 8 aug 2026 nadat `scripts/fotmob.py`, `scripts/model.py`, `scripts/betexplorer.py` en `scripts/oddsapi.py` de ophaal- en rekenlogica herbruikbaar maakten. **Weekendwaarde 35 toegevoegd 29 aug 2026, op verzoek van de gebruiker**: die zaterdag stonden er 49 duels op de Run A-runlijst en 59 op die van Run B, dus er paste ongeveer 60%. Gebruik `ranking.max_deep_analyses(date.today())`; dezelfde dagindeling als `MAX_SHORTLIST`. |
 | `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
-| `EDGE_THRESHOLD_FULL` | **3.0 procentpunt** | Onder deze grens is de schatting niet te onderscheiden van modelruis. |
-| `EDGE_THRESHOLD_LIGHT` | **6.0 procentpunt** | Zwakkere data eist een grotere marge. |
+| `EDGE_THRESHOLD_FULL` | **8.0 procentpunt** | Verhoogd van 3.0 op 31 aug 2026, op verzoek van de gebruiker, en dit keer op **uitkomsten** gemeten in plaats van beredeneerd. Zie "Waarom de drempel op 8 staat" hieronder. |
+| `EDGE_THRESHOLD_LIGHT` | **16.0 procentpunt** | Zwakkere data eist een grotere marge: exact tweemaal `EDGE_THRESHOLD_FULL`. Die verhouding is geen keuze maar een afhankelijkheid — `model.DATA_WEIGHT` leidt het LIGHT-gewicht van 0.5 in `selection_score` er rechtstreeks uit af (§1a). Verander de een niet zonder de ander. |
 | `MAX_LIGHT_IN_SHORTLIST` | **2** | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. |
 | `MIN_ODDS` / `MAX_ODDS` | **1.30** / **6.00** | Buiten deze band is de kansschatting te onnauwkeurig om edge zinvol te noemen. |
 | `SETTLE_AFTER_HOURS` | **12** | Openstaande picks ouder dan dit worden afgewikkeld. |
+
+### Waarom de drempel op 8 staat (31 aug 2026)
+
+Van 8 t/m 31 aug stond `EDGE_THRESHOLD_FULL` op 3.0, met als motivering "onder deze grens is de
+schatting niet te onderscheiden van modelruis". Dat was een redenering, geen meting. Inmiddels
+liggen er 179 beslist afgewikkelde picks, en die zeggen iets anders:
+
+| geclaimde edge | picks | hit rate | ROI |
+|---|---|---|---|
+| 3–5 pp | 33 | 42.4% | **−7.6%** |
+| 5–8 pp | 59 | 37.3% | **−14.3%** |
+| 8–12 pp | 47 | 48.9% | +4.5% |
+| 12–20 pp | 36 | 52.8% | +7.4% |
+
+Cumulatief, alleen `FULL` (n=156): bij drempel 3 is de ROI −5.4%, bij 5 −4.8%, bij **6 −8.4%**,
+bij 7 −4.6%, en pas bij **8.0 draait het teken om** (+0.6%), daarna +3.5% (9) en +10.6% (10).
+
+Twee dingen die daaruit volgen en die je niet moet vergeten als je hieraan komt te sleutelen:
+
+1. **Een tussenwaarde is het slechtste van twee werelden.** Bij de bespreking op 31 aug was 6 het
+   eerste voorstel, als voorzichtige stap. De meting wees dat af: bij 6 verlies je een derde van je
+   bets én blijf je op −8.4% staan. De keuze is er dus een tussen 3 (veel bets, structureel verlies)
+   en 8 (ongeveer de helft minder bets, rond break-even) — niet een schuifregelaar waar elk punt
+   ertussen een beetje helpt.
+2. **Dit is in-sample gekozen en dat is een echt bezwaar.** De grens is bepaald op dezelfde 179
+   waarnemingen waarop hij hierboven wordt verantwoord; precies de fout waar §6d voor waarschuwt.
+   Wat het meer maakt dan één anekdote: het teken is consistent over vier aaneengesloten banden,
+   en het gaat om alle picks samen en niet om één poort of één markt. Wat het minder maakt: bij
+   drempel 12 zakt de ROI weer naar +1.4% (n=29), en die niet-monotone staart is ruis. Behandel 8
+   dus als "de eerste waarde waarbij het teken omslaat", niet als een optimum — en herzie hem op
+   uitkomsten, niet op een nieuwe redenering.
+
+**`EDGE_THRESHOLD_LIGHT` is niet gefit.** Er zijn maar 23 afgewikkelde LIGHT-picks; boven drempel 12
+zijn het er nog 11, 8, 4 en 3, en dan meet je niets meer. De 16.0 volgt daarom uitsluitend uit de
+2:1-verhouding waar `model.DATA_WEIGHT` van afhangt. Gevolg: LIGHT-bets worden zeldzaam. Dat is
+aanvaard omdat LIGHT per definitie de categorie met de dunste onderbouwing is, maar het is een
+gevolg van een afhankelijkheid en niet van een meting — noteer het als zodanig als de LIGHT-reeks
+ooit groot genoeg wordt om er wél iets over te zeggen.
 
 ---
 
@@ -206,10 +244,35 @@ de invoer is een echt probleem, maar regresseren is er niet het antwoord op. Zie
 
 **Wat hiermee níet is opgelost.** De scheefstand is kleiner, niet weg (+4.09 pp op longshots), en
 het aandeel picks op de zwakkere kant bleef op de duels van 23 aug vrijwel gelijk (83% → 86%; in
-absolute aantallen 10 → 6). Wat er nog staat, is werk voor de kalibratiereeks van §6e: zodra de
-longshotbak ~150 waarnemingen heeft, hoort de gemeten afwijking van `my_prob` te worden afgetrokken
-vóórdat `edge_pp` wordt bepaald. Dat is nú niet gedaan — met 50 waarnemingen zou dat dezelfde fout
-zijn als waarmee de oude poort 5 werd ingevoerd: één anekdote tot regel verheffen.
+absolute aantallen 10 → 6).
+
+> **Ingetrokken op 31 aug 2026.** Hier stond tot die datum: *"zodra de longshotbak ~150
+> waarnemingen heeft, hoort de gemeten afwijking van `my_prob` te worden afgetrokken vóórdat
+> `edge_pp` wordt bepaald."* Die instructie is fout en moet **niet** worden uitgevoerd. Op 31 aug
+> stond de longshotbak op 243 waarnemingen en is hij nagerekend; er kwamen twee bezwaren uit, en
+> allebei zijn ze fataal:
+>
+> 1. **Hij is circulair.** De afwijking in §6e is gemeten tegen de **de-vigde marktkans**, niet
+>    tegen uitkomsten. Trek je hem van `my_prob` af, dan hangt je kansschatting per definitie af
+>    van de koers waartegen je hem afzet — precies wat §2 verbiedt. Dat §6e "meten tegen de markt
+>    om te zien of de correctie werkt mag wel — dat is controleren, niet fitten" toestaat, maakt
+>    het omgekeerde niet waar.
+> 2. **Hij werkt de verkeerde kant op.** De correctie verhóógt de edge bij alles wat de markt
+>    boven de 50% zet, want daar staat het model juist ónder de markt (−3.99 pp, n=125). Op de
+>    tien duels van Run A op 31 aug zat géén van de acht bets in de longshotbak — ze lagen
+>    allemaal tussen 47% en 61% marktkans — en de correctie zou elke edge hebben opgeblazen
+>    (Sønderjyske +1.5 van +20.3 naar +24.3 pp) en er een negende bet bij hebben gemaakt. Een
+>    regel die is bedoeld om te temperen en in de praktijk versoepelt, is geen voorzichtige regel.
+>
+> Wat de kalibratiereeks van §6e wél is en blijft: een **diagnose**, geen correctiefactor. Ze
+> beantwoordt "staat het model scheef ten opzichte van de markt, en waar" — nuttig om te weten
+> welke rekenstap de scheefstand veroorzaakt (§1d: de splitsmethode, niet `shrink`). Ze is geen
+> getal om van je eigen kans af te trekken.
+>
+> Wat er in plaats daarvan is gebeurd, is de drempelverhoging in §0: gemeten op **uitkomsten**
+> (179 afgewikkelde picks) in plaats van op de markt, en daarmee vrij van bezwaar 1. Dat is het
+> antwoord op dezelfde vraag — "mijn geclaimde edge is te ruim, wat doe ik eraan" — via de enige
+> maatstaf die geen bookmaker in zich heeft.
 
 ### 1a. Waar de prijzen vandaan komen — creditbudget (vastgesteld 15 aug 2026)
 
@@ -413,7 +476,7 @@ ongevoelig voor, want daar wordt een gelijkspel gewonnen of teruggegeven. Zolang
 kiest deze regel dus ook de minst blootgestelde uitdrukking van dezelfde mening.
 
 **Het gewicht 0.5 voor LIGHT is afgeleid, niet gekozen:** het is `EDGE_THRESHOLD_FULL /
-EDGE_THRESHOLD_LIGHT` = 3.0 / 6.0. Zwakke data moet al twee keer zoveel edge opleveren om mee te
+EDGE_THRESHOLD_LIGHT` = 8.0 / 16.0 (tot 31 aug 2026: 3.0 / 6.0). Zwakke data moet al twee keer zoveel edge opleveren om mee te
 mogen doen; diezelfde verhouding bij het rangschikken houdt de twee met elkaar in de pas.
 
 Noteer in het runrapport bij elke gepubliceerde bet **welke selectie tweede werd en met welke
@@ -1113,12 +1176,21 @@ dus vrijwel niets — zonder dat veld is het aandeel van `shrink` niet te scheid
 splitsmethode. Neem de uitvoer van `stats` op in het runrapport, naast `ledger.py stats` en
 `shadow.py stats`.
 
-**Lees dit net zo voorzichtig als 6d.** Onder ~150 waarnemingen in de longshotbak (ruwweg vijf volle
-rundagen) is een paar procentpunt ruis. Twee dingen die pas daarna aan de orde zijn, en géén van
-beide vandaag: de splitsmethode multiplicatief en op het competitiegemiddelde genormaliseerd maken
-zodat §1 twee schatters van dezelfde grootheid middelt, of `shrink` laten aflopen naarmate het
-seizoen vordert — die staat nu hard op 0.8 zonder afloopmechanisme, terwijl de docstring hem met
-"vroeg seizoen" verantwoordt.
+**Lees dit net zo voorzichtig als 6d, en lees het als diagnose.** Onder ~150 waarnemingen in de
+longshotbak (ruwweg vijf volle rundagen) is een paar procentpunt ruis.
+
+**Dit blok is géén correctiefactor.** Zie de ingetrokken instructie in §1d: de afwijking die hier
+gemeten wordt is er een ten opzichte van de **markt**, en die van `my_prob` aftrekken maakt je
+kansschatting een afgeleide van de odds (§2). Waar dit blok wél voor is: uitzoeken wélke rekenstap
+de scheefstand veroorzaakt. Dat heeft het ook opgeleverd — de xG-methode is vlak, de splitsmethode
+niet (§1d) — en dat is een bevinding waar je iets aan kunt repareren zonder de markt binnen te
+halen. Wil je weten of je geclaimde edge te ruim is, meet dan tegen **uitkomsten**: dat is wat de
+drempelverhoging van 31 aug in §0 doet.
+
+Twee dingen die nog openstaan: de splitsmethode is sinds 23 aug multiplicatief en op het
+competitiegemiddelde genormaliseerd (§1d) maar nog steeds de scheefste van de twee, en `shrink`
+staat hard op 0.8 zonder afloopmechanisme terwijl de docstring hem met "vroeg seizoen"
+verantwoordt.
 
 Let ten slotte op wat poort 6 hier **niet** doet: het `(shrink, rho)`-grid van `robustness_check`
 varieert alleen `analyze_match` — precies de methode die vlak blijkt. "Deze bet overleeft het hele

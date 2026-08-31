@@ -264,7 +264,8 @@ DATA_WEIGHT = {"FULL": 1.0, "LIGHT": 0.5}
 """Het gewicht van `data_tier` in `selection_score`.
 
 0.5 voor LIGHT is niet gekozen maar afgeleid: `EDGE_THRESHOLD_FULL / EDGE_THRESHOLD_LIGHT` =
-3.0 / 6.0. De regels eisen van zwakke data al twee keer zoveel edge om überhaupt mee te doen;
+8.0 / 16.0 (tot 31 aug 2026: 3.0 / 6.0; de verhouding 2:1 is bij die verhoging bewust
+intact gelaten, juist omdat dit gewicht eraan hangt). De regels eisen van zwakke data al twee keer zoveel edge om überhaupt mee te doen;
 dezelfde verhouding gebruiken bij het rangschikken houdt die twee met elkaar in de pas. `NONE`
 staat er niet in — die wedstrijden leveren per §2 geen bet op.
 """

@@ -10,7 +10,12 @@ from ra_names import resolve, best_pair
 
 DAY = date(2026, 8, 31)
 NL = timezone(timedelta(hours=2))
-THRESH = {"FULL": 3.0, "LIGHT": 6.0}
+THRESH = {"FULL": 8.0, "LIGHT": 16.0}   # verhoogd 31 aug 2026, zie _shared-rules.md §0
+# Vanaf welke edge een afgewezen kandidaat nog een `near_miss` krijgt (en dus in shadow.jsonl
+# belandt). Dit is met opzet de OUDE drempel: zonder deze ondergrens verdwijnt precies de groep
+# die door de verhoging van vandaag wegvalt uit het schaduwlogboek, en is over een maand niet te
+# meten of die verhoging geld bespaarde of alleen bets kostte.
+NEAR = {"FULL": 3.0, "LIGHT": 6.0}
 MIN_ODDS, MAX_ODDS = 1.30, 6.00
 
 cands = json.load(open("tmp-run/ra_ctx.json"))
@@ -314,17 +319,20 @@ for c in cands:
         row["runner_up"] = ({"selection": f"{rest[0]['market']} — {rest[0]['selection']}",
                              "score": rest[0]["score"]} if rest else None)
     else:
-        near = [r for r in evaluated if r["edge_pp"] >= thresh and MIN_ODDS <= r["odds"] <= MAX_ODDS]
+        near = [r for r in evaluated if r["edge_pp"] >= NEAR[tier] and MIN_ODDS <= r["odds"] <= MAX_ODDS]
         if near:
             b = max(near, key=lambda r: r["edge_pp"])
+            gate = b["failed_gate"] or ("edge" if b["edge_pp"] < thresh else None)
             row["near_miss"] = {"market": f"{b['market']} — {b['selection']}", "odds": b["odds"],
+                                "edge_pp": b["edge_pp"],
                                 "edge_xg": b["edge_xg"], "edge_split": b["edge_split"],
                                 "edge_robust_min": b["edge_robust_min"],
-                                "failed_gate": b["failed_gate"]}
-            row["reason"] = {"edge": "edge onder drempel", "odds": "odds buiten band",
+                                "failed_gate": gate}
+            row["reason"] = {"edge": f"edge onder drempel ({b['edge_pp']:+.2f} pp, nodig {thresh:.1f})",
+                             "odds": "odds buiten band",
                              "tweede_methode": "data conflicterend",
                              "robuustheid": "edge niet robuust over het (shrink, rho)-grid",
-                             "context": f"context spreekt de bet tegen — {b['context_reason']}"}[b["failed_gate"]]
+                             "context": f"context spreekt de bet tegen — {b['context_reason']}"}[gate]
         elif evaluated:
             row["reason"] = "edge onder drempel"
         else:
@@ -344,7 +352,7 @@ for c in cands:
 json.dump({"vroeg_seizoen": {"factor": FACTOR, "gepoold": POOLED, "speeldagen": TOTAL_MD,
                              "competities": obs_comps},
            "afkapping": TRUNC, "matches": results},
-          open("tmp-run/ra_results.json", "w"), ensure_ascii=False, indent=1)
+          open("tmp-run/ra_results_v2.json", "w"), ensure_ascii=False, indent=1)
 
 for r in results:
     tag = "BET " if r["bet"] else "    "

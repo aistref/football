@@ -8,7 +8,7 @@ DAY = "2026-08-31"
 NL = timezone(timedelta(hours=2))
 CAPTURED = "2026-08-31T04:20:00+02:00"
 
-res = json.load(open("tmp-run/ra_results.json"))
+res = json.load(open("tmp-run/ra_results_v2.json"))
 odds = json.load(open("tmp-run/ra_odds.json"))
 s3 = json.load(open("tmp-run/ra_stage3.json"))
 stats, fx = s3["stats"], s3["fixtures"]
@@ -89,23 +89,37 @@ for m in bets:
     m["_pick_id"] = picks[-1]["id"]; m["_risk"] = risk(m)
     m["_confidence"] = picks[-1]["confidence"]; m["_shortlisted"] = m["match_id"] in short
 
-with open("data/picks.jsonl", "a") as f:
-    for p in picks:
-        f.write(json.dumps(p, ensure_ascii=False) + "\n")
-print("picks toegevoegd:", len(picks))
+# De picks staan er al (eerste versie van 04:20); de twee die de nieuwe drempel niet halen zijn
+# apart op `void` gezet. Hier alleen controleren dat wat we nu berekenen overeenkomt.
+have = {json.loads(l)["id"] for l in open("data/picks.jsonl") if l.strip()}
+missing = [p["id"] for p in picks if p["id"] not in have]
+assert not missing, missing
+print("picks gecontroleerd:", len(picks), "— alle 6 stonden al in picks.jsonl")
 
 # ---------- run-state -------------------------------------------------------------------------
 from scripts.progress import load_or_start, mark, save
 state = load_or_start("a", date.fromisoformat(DAY))
 state["parameters"] = {
     "MAX_DEEP_ANALYSES": res["afkapping"]["cap"], "MAX_SHORTLIST": MAX_SHORT,
-    "EDGE_THRESHOLD_FULL": 3.0, "EDGE_THRESHOLD_LIGHT": 6.0, "MAX_LIGHT_IN_SHORTLIST": MAX_LIGHT,
+    "EDGE_THRESHOLD_FULL": 8.0, "EDGE_THRESHOLD_LIGHT": 16.0, "MAX_LIGHT_IN_SHORTLIST": MAX_LIGHT,
     "MIN_ODDS": 1.30, "MAX_ODDS": 6.00, "SETTLE_AFTER_HOURS": 12,
     "afgekapt": res["afkapping"]["afgekapt"],
     "toelichting": (
         "10 wedstrijden op de runlijst vandaag, in 6 van de 21 competities — maandag eind augustus, de "
         "overige 15 hadden niets op de kalender. Alle 10 haalden de datadekkingspoort en zijn "
-        f"doorgerekend; de cap van {res['afkapping']['cap']} is niet aangeraakt, dus er is niets afgekapt."),
+        f"doorgerekend; de cap van {res['afkapping']['cap']} is niet aangeraakt, dus er is niets afgekapt. "
+        "HERZIEN 31 aug ~04:50: EDGE_THRESHOLD_FULL van 3.0 naar 8.0 en LIGHT van 6.0 naar 16.0, op "
+        "verzoek van de gebruiker en gemeten op 179 afgewikkelde picks (zie §0). Daardoor 6 bets in "
+        "plaats van 8; Atalanta - Bologna (+7.33) en Besiktas - Corum FK (+7.37) zijn vóór de aftrap "
+        "op void gezet."),
+    "drempelverhoging": {
+        "van": {"FULL": 3.0, "LIGHT": 6.0}, "naar": {"FULL": 8.0, "LIGHT": 16.0},
+        "vervallen_picks": ["2026-08-31-serieaita-atalanta-bologna-doublechance-doublechancebolognaofgelij",
+                            "2026-08-31-superligtur-besiktas-corumfk-btts-beideploegenscorenja"],
+        "near_miss_ondergrens": {"FULL": 3.0, "LIGHT": 6.0},
+        "waarom_ondergrens": ("de oude drempel blijft de ondergrens voor near_miss, anders valt precies "
+                              "de groep die door deze verhoging wegvalt buiten shadow.jsonl en is niet "
+                              "te meten of de verhoging klopte")},
     "afkapping": res["afkapping"],
 }
 state["vroeg_seizoen"] = vs
