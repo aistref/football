@@ -55,7 +55,8 @@ GLOSSARY = [
      "gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em>"),
     ("Voordeel in procentpunten",
      "Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan "
-     "is dat +7,9. Onder de 3 wordt er niets gepubliceerd. <em>In de repo: “edge_pp”.</em>"),
+     "is dat +7,9. Onder de 8 wordt er niets gepubliceerd — 16 als de cijfers zwakker zijn. "
+     "<em>In de repo: “edge_pp”.</em>"),
     ("Kansenkwaliteit (xG)",
      "Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. "
      "Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is."),
@@ -382,8 +383,9 @@ def render_near_misses(state: dict, labels: dict) -> str:
   </div>
 
   <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
-  en alsnog zijn afgewezen. Een getal onder de <strong>3,0 procentpunt</strong> is de reden dat de
-  bet er niet is: dat is de grens waaronder het voordeel niet van rekenruis te onderscheiden is.
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
   Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
   dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
 
