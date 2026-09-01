@@ -197,6 +197,11 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     "Segunda División (ESP)": "https://www.betexplorer.com/football/spain/laliga2/",
     "2. Bundesliga (GER)": "https://www.betexplorer.com/football/germany/2-bundesliga/",
     "Austrian Bundesliga (AUT)": "https://www.betexplorer.com/football/austria/bundesliga/",
+    # Toegevoegd 1 sep 2026 (Run B), allebei nagetrokken met fetch_league_fixtures (24 rijen elk).
+    # Let op: 'england/league-1' en 'england/league-2' geven de stille faalmodus (HTTP 200, 0
+    # rijen); alleen de uitgeschreven vorm werkt.
+    "League One (ENG)": "https://www.betexplorer.com/football/england/league-one/",
+    "League Two (ENG)": "https://www.betexplorer.com/football/england/league-two/",
     # Toegevoegd 18 aug 2026 (Run A). Dekt ook de kwalificatierondes: op 18 aug stonden de drie
     # play-off heenwedstrijden van die dag en de vier van de dag erna alle zeven in de lijst, met
     # 1X2 over 10 boeken. 'europe/uefa-champions-league' en 'europe/champions-league-qualification'

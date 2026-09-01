@@ -64,6 +64,12 @@ class Tier2:
 TIER2: dict[str, Tier2] = {
     "Premier League (ENG)":       Tier2(48,  "Championship (ENG)",        ("E0", "E1")),
     "Championship (ENG)":         Tier2(108, "League One (ENG)",          ("E1", "E2")),
+    # Toegevoegd 1 sep 2026 (Run B). League One stond hier nog niet, terwijl E2/E3 wél gemeten in
+    # footballdata.MEASURED_GAPS staat (n=43, het grootste van de acht paren). Drie van de zeven
+    # League One-duels van die dag hadden een promovendus uit League Two aan boord (Bromley,
+    # Cambridge United, Notts County); zonder deze regel was dat drie keer NONE geweest op een
+    # ontbrekende aanroep, niet op een ontbrekende meting.
+    "League One (ENG)":           Tier2(109, "League Two (ENG)",          ("E2", "E3")),
     "La Liga (ESP)":              Tier2(140, "LaLiga2 (ESP)",             ("SP1", "SP2")),
     "Bundesliga (GER)":           Tier2(146, "2. Bundesliga (GER)",       ("D1", "D2")),
     "Serie A (ITA)":              Tier2(86,  "Serie B (ITA)",             ("I1", "I2")),
@@ -299,6 +305,13 @@ TIER1: dict[str, Tier1] = {
     "LaLiga2 (ESP)":      Tier1(87, "La Liga (ESP)",        ("SP1", "SP2")),
     "2. Bundesliga (GER)": Tier1(54, "Bundesliga (GER)",    ("D1", "D2")),
     "Ligue 2 (FRA)":      Tier1(53, "Ligue 1 (FRA)",        ("F1", "F2")),
+    # Toegevoegd 1 sep 2026 (Run B), spiegelbeeld van de TIER2-regel hierboven. Op de Run
+    # B-runlijst van die dag stonden zeven League One- en twaalf League Two-duels; zeven ploegen
+    # waren van boven ingestroomd (Leicester City, Oxford United en Sheffield Wednesday uit de
+    # Championship; Exeter City, Northampton Town, Port Vale en Rotherham United uit League One).
+    # Beide paren staan gemeten in footballdata.MEASURED_GAPS onder direction="down".
+    "League One (ENG)":   Tier1(48,  "Championship (ENG)",  ("E1", "E2")),
+    "League Two (ENG)":   Tier1(108, "League One (ENG)",    ("E2", "E3")),
 }
 
 
