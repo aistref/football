@@ -13,6 +13,12 @@ _DROP = {"fc", "afc", "cf", "sc", "ac", "as", "sv", "vfl", "vfb", "tsv", "bsc", 
 
 ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "hamkam": "hamarkameratene",
+    # 1 sep 2026: de Engelse daglijst kort af tot een deel dat na _DROP niets overhoudt dat
+    # met de tabelnaam overlapt. Zonder deze drie leest een ploeg die gewoon in de stand
+    # staat als "geen historie in deze divisie" en gaat hij ten onrechte de omrekening in.
+    "sheff utd": "sheffield united",
+    "wolves": "wolverhampton wanderers",
+    "west ham": "west ham united",
 }
 
 

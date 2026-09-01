@@ -1,9 +1,9 @@
-"""Run A, 31 aug 2026 — Stage 1/2/3: fixtures, competitiepoort, bronprobe + datadekking."""
-import json, sys
+"""Run A, 1 sep 2026 — Stage 1/2/3: fixtures, competitiepoort, bronprobe + datadekking."""
+import json
 from datetime import date
 from scripts import fotmob, understat
 
-DAY = date(2026, 8, 31)
+DAY = date(2026, 9, 1)
 
 # runlijstnaam -> (fotmob daglijstnaam, ccode, aliassen, primaryId, seizoen vorig, huidig,
 #                  betexplorer-url, sportkey, understat-code)
@@ -48,7 +48,6 @@ LEAGUES = {
  "Ekstraklasa (POL)":       ("Ekstraklasa", "POL", (), 196, "2025/2026", "2026/2027",
                             "https://www.betexplorer.com/football/poland/ekstraklasa/",
                             "soccer_poland_ekstraklasa", None),
- # toernooien — geen wedstrijd verwacht eind augustus, maar wel elke run nagekeken
  "UEFA Champions League":   ("Champions League", "INT", (), 42, None, None,
                             "https://www.betexplorer.com/football/europe/champions-league/",
                             "soccer_uefa_champs_league", None),
@@ -62,10 +61,14 @@ LEAGUES = {
  "FA Cup (ENG)":            ("FA Cup", "ENG", (), 132, None, None, None, None, None),
  "League Cup (ENG)":        ("EFL Cup", "ENG", ("League Cup", "Carabao Cup"), 133, None, None,
                             "https://www.betexplorer.com/football/england/efl-cup/", None, None),
- "Coppa Italia (ITA)":      ("Coppa Italia", "ITA", (), 141, None, None,
-                            "https://www.betexplorer.com/football/italy/coppa-italia/", None, None),
- "KNVB Beker (NED)":        ("KNVB Beker", "NED", (), 134, None, None, None, None, None),
- "DFB Pokal (GER)":         ("DFB Pokal", "GER", (), 209, None, None, None, None, None),
+ # Bekers: de ploegen komen uit meerdere divisies, dus 'primaryId' is de competitie waarvan de
+ # basis (niveau + splits) wordt gebruikt; ploegen van buiten die divisie worden omgerekend.
+ "Coppa Italia (ITA)":      ("Coppa Italia", "ITA", (), 55, "2025/2026", "2026/2027",
+                            "https://www.betexplorer.com/football/italy/coppa-italia/",
+                            "soccer_italy_coppa_italia", None),
+ "KNVB Beker (NED)":        ("KNVB Beker", "NED", (), 57, "2025/2026", "2026/2027", None, None, None),
+ "DFB Pokal (GER)":         ("DFB Pokal", "GER", (), 54, "2025/2026", "2026/2027", None,
+                            "soccer_germany_dfb_pokal", None),
 }
 
 fx = fotmob.fetch_fixtures(DAY)
@@ -84,7 +87,6 @@ for name, (fm, cc, al, pid, s_prev, s_cur, bx, key, us) in LEAGUES.items():
                  "understat": us, "s_prev": s_prev, "s_cur": s_cur, "matches": ms}
     print(f"{name:30s} {len(ms)} wedstrijd(en)")
 
-# --- statistiekenprobe per actieve competitie ---
 stats = {}
 for name, v in out.items():
     if v["status"] != "?":
@@ -103,7 +105,6 @@ for name, v in out.items():
     print(f"  {name:28s} vorig: {len(prev['teams'])} ploegen, xG={has_xg}, avg_xg={prev.get('avg_xg_per_match')}"
           f" | huidig: {played} speeldagen, xG={cur_xg}, avg_xg={cur.get('avg_xg_per_match')}")
 
-# --- Understat als tweede, onafhankelijke xG-bron (§4, sinds 31 aug 2026) ---
 us_data = {}
 for name, v in out.items():
     if v["status"] != "?" or not v.get("understat"):

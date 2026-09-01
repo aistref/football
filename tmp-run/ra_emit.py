@@ -4,9 +4,9 @@ from datetime import date, datetime, timezone, timedelta
 sys.path.insert(0, "tmp-run")
 from scripts.ranking import max_shortlist
 
-DAY = "2026-08-31"
+DAY = "2026-09-01"
 NL = timezone(timedelta(hours=2))
-CAPTURED = "2026-08-31T04:20:00+02:00"
+CAPTURED = "2026-09-01T04:25:00+02:00"
 
 res = json.load(open("tmp-run/ra_results_v2.json"))
 odds = json.load(open("tmp-run/ra_odds.json"))
@@ -70,7 +70,9 @@ for m in bets:
              f"{p['edge_pp']:+.2f} pp. Zwakste stand van het (shrink, rho)-grid {p['edge_robust_min']:+.2f} pp. "
              f"selection_score {p['score']} uit {m['candidates_evaluated']} doorgerekende selecties. "
              + (f"Tweede werd {ru['selection']} met score {ru['score']}." if ru else
-                "Geen tweede selectie haalde alle zeven poorten."))
+                "Geen tweede selectie haalde alle zeven poorten; sterkste afgewezen alternatief: "
+                + (f"{rr['selection']} @ {rr['odds']} ({rr['edge_pp']:+.2f} pp, viel af op "
+                   f"{rr['failed_gate']})." if (rr := m.get("runner_up_rejected")) else "geen.")))
     if p["market"] == "Double Chance":
         notes += " Gekocht als de +0.5-handicaplijn uit de spreads-respons (§1a)."
     picks.append({
@@ -89,12 +91,12 @@ for m in bets:
     m["_pick_id"] = picks[-1]["id"]; m["_risk"] = risk(m)
     m["_confidence"] = picks[-1]["confidence"]; m["_shortlisted"] = m["match_id"] in short
 
-# De picks staan er al (eerste versie van 04:20); de twee die de nieuwe drempel niet halen zijn
-# apart op `void` gezet. Hier alleen controleren dat wat we nu berekenen overeenkomt.
 have = {json.loads(l)["id"] for l in open("data/picks.jsonl") if l.strip()}
-missing = [p["id"] for p in picks if p["id"] not in have]
-assert not missing, missing
-print("picks gecontroleerd:", len(picks), "— alle 6 stonden al in picks.jsonl")
+nieuw = [p for p in picks if p["id"] not in have]
+with open("data/picks.jsonl", "a") as fh:
+    for p in nieuw:
+        fh.write(json.dumps(p, ensure_ascii=False) + "\n")
+print(f"picks toegevoegd: {len(nieuw)} van {len(picks)} ({len(picks) - len(nieuw)} stonden er al)")
 
 # ---------- run-state -------------------------------------------------------------------------
 from scripts.progress import load_or_start, mark, save
@@ -105,29 +107,32 @@ state["parameters"] = {
     "MIN_ODDS": 1.30, "MAX_ODDS": 6.00, "SETTLE_AFTER_HOURS": 12,
     "afgekapt": res["afkapping"]["afgekapt"],
     "toelichting": (
-        "10 wedstrijden op de runlijst vandaag, in 6 van de 21 competities — maandag eind augustus, de "
-        "overige 15 hadden niets op de kalender. Alle 10 haalden de datadekkingspoort en zijn "
-        f"doorgerekend; de cap van {res['afkapping']['cap']} is niet aangeraakt, dus er is niets afgekapt. "
-        "HERZIEN 31 aug ~04:50: EDGE_THRESHOLD_FULL van 3.0 naar 8.0 en LIGHT van 6.0 naar 16.0, op "
-        "verzoek van de gebruiker en gemeten op 179 afgewikkelde picks (zie §0). Daardoor 6 bets in "
-        "plaats van 8; Atalanta - Bologna (+7.33) en Besiktas - Corum FK (+7.37) zijn vóór de aftrap "
-        "op void gezet."),
-    "drempelverhoging": {
-        "van": {"FULL": 3.0, "LIGHT": 6.0}, "naar": {"FULL": 8.0, "LIGHT": 16.0},
-        "vervallen_picks": ["2026-08-31-serieaita-atalanta-bologna-doublechance-doublechancebolognaofgelij",
-                            "2026-08-31-superligtur-besiktas-corumfk-btts-beideploegenscorenja"],
-        "near_miss_ondergrens": {"FULL": 3.0, "LIGHT": 6.0},
-        "waarom_ondergrens": ("de oude drempel blijft de ondergrens voor near_miss, anders valt precies "
-                              "de groep die door deze verhoging wegvalt buiten shadow.jsonl en is niet "
-                              "te meten of de verhoging klopte")},
+        "11 wedstrijden op de runlijst vandaag, in 3 van de 21 competities — dinsdag van de "
+        "interlandbreak, de overige 18 hadden niets op de kalender. Championship 8, Coppa Italia 2, "
+        "DFB Pokal 1. Tien haalden de datadekkingspoort en zijn doorgerekend; HEBC Hamburg staat als "
+        "amateurclub in geen enkele divisie waarvoor een omrekening gemeten is en blijft op NONE. "
+        f"De cap van {res['afkapping']['cap']} is niet aangeraakt, dus er is niets afgekapt."),
+    "omrekeningen": {
+        "aanleiding": (
+            "Zes van de vierentwintig Championship-ploegen stonden vorig seizoen niet in deze stand: "
+            "Lincoln City, Bolton Wanderers en Cardiff City kwamen uit League One, en West Ham United, "
+            "Wolverhampton Wanderers en Burnley uit de Premier League. Voor de eerste groep bestond "
+            "promotion.convert al; voor de tweede bestond er niets, terwijl de factoren voor E0/E1 "
+            "'down' al gemeten in footballdata.MEASURED_GAPS stonden."),
+        "nieuw": "promotion.convert_relegated + promotion.TIER1 (1 sep 2026)",
+        "toegepast_op": ["West Ham United (down, E0/E1)", "Wolverhampton Wanderers (down, E0/E1)",
+                         "Bolton Wanderers (up, E1/E2)", "Lincoln City (up, E1/E2)",
+                         "Monza (up, I1/I2)"],
+        "geweigerd": ["HEBC Hamburg — staat in geen enkele Duitse divisie die promotion kent"],
+    },
     "afkapping": res["afkapping"],
 }
 state["vroeg_seizoen"] = vs
 state["credits"] = {
     "plafond": odds["cap"], "gebruikt": odds["guard"]["spent"] if isinstance(odds["guard"], dict) else None,
     "split_budget": odds["split"],
-    "bron": ("suggest_cap(19930, 1) — 19.930 credits over bij aanvang (20K-plan), 1 dag tot de "
-             "maandwissel, 2 runs per dag"),
+    "bron": ("suggest_cap(20000, 30) — 20.000 credits over bij aanvang (20K-plan, verse maand), "
+             "30 dagen tot de maandwissel, 2 runs per dag"),
     "markten_gekocht": {"spreads": odds["bought"]["spreads"], "totals": odds["bought"]["totals"],
                         "btts": odds["bought"]["btts"]},
     "guard_report": odds["guard"],

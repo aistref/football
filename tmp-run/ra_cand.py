@@ -1,4 +1,10 @@
-"""Stage 3 vervolg: tier per wedstrijd, met promovendi-omrekening (§4) vóór een NONE."""
+"""Stage 3 vervolg: tier per wedstrijd, met promovendi- én degradanten-omrekening (§4).
+
+Nieuw op 1 sep 2026: de runlijst bestaat vandaag voor de helft uit bekerduels (Coppa Italia,
+DFB Pokal) waarin ploegen uit verschillende divisies tegen elkaar staan, en de Championship
+telt zes ploegen die vorig seizoen elders speelden — drie promovendi uit League One en drie
+degradanten uit de Premier League. `promotion.convert_relegated` doet die tweede groep.
+"""
 import json, sys
 sys.path.insert(0, "tmp-run")
 from scripts import fotmob, promotion

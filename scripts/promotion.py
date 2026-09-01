@@ -277,6 +277,118 @@ def convert(top_competition: str, team: str, season: str, top_league: LeagueCont
     return Converted(team=team, stats=stats, splits=splits, in_range=in_range, note=note)
 
 
+@dataclass(frozen=True)
+class Tier1:
+    """De divisie **boven** een competitie uit de runlijst — waar de degradanten vandaan komen.
+
+    Spiegelbeeld van `Tier2`. `fd_pair` is hetzelfde divisiepaar `(hoger, lager)` als daar; alleen
+    de richting waarin `footballdata.gap_for` hem opzoekt verschilt (`"down"` in plaats van
+    `"up"`).
+    """
+    fotmob_id: int
+    name: str
+    fd_pair: tuple[str, str] | None = None
+
+
+#: Competitie uit de runlijst -> de divisie erboven. Alleen ingevuld waar een run een degradant
+#: kan tegenkomen; de `fotmob_id`s zijn dezelfde die `tmp-run/*_stage3.py` voor die competities
+#: gebruikt en op naam geverifieerd op 1 sep 2026.
+TIER1: dict[str, Tier1] = {
+    "Championship (ENG)": Tier1(47, "Premier League (ENG)", ("E0", "E1")),
+    "Serie B (ITA)":      Tier1(55, "Serie A (ITA)",        ("I1", "I2")),
+    "LaLiga2 (ESP)":      Tier1(87, "La Liga (ESP)",        ("SP1", "SP2")),
+    "2. Bundesliga (GER)": Tier1(54, "Bundesliga (GER)",    ("D1", "D2")),
+    "Ligue 2 (FRA)":      Tier1(53, "Ligue 1 (FRA)",        ("F1", "F2")),
+}
+
+
+def convert_relegated(competition: str, team: str, season: str, league: LeagueContext,
+                      *, use_cache: bool = True) -> Converted:
+    """Reken een **degradant** om naar `competition`, op zijn cijfers in de divisie erbóven.
+
+    Bestaansreden (1 sep 2026). `convert()` hierboven lost de promovendus op, maar een competitie
+    krijgt elk seizoen van twee kanten nieuwe ploegen. Op 1 sep 2026 stonden er acht
+    Championship-duels op de Run A-runlijst en waren zes van de vierentwintig ploegen niet in de
+    stand van vorig seizoen te vinden: **Lincoln City, Bolton Wanderers en Cardiff City** kwamen
+    uit League One (die kon `convert()` al aan) en **West Ham United, Wolverhampton Wanderers en
+    Burnley** uit de Premier League (die kon niemand aan). Dat kostte precies één duel volledig —
+    West Ham – Wolves, twee degradanten tegen elkaar — plus de helft van de kansinput van elk
+    ander duel waarin er een speelde.
+
+    Er was daarvoor geen inhoudelijke reden, alleen een ontbrekende aanroep: de factoren staan al
+    **gemeten** in `footballdata.MEASURED_GAPS` onder `direction="down"` (E0/E1: x1.830 aanval,
+    x0.634 verdediging, n=33) en het bijbehorende invoerbereik in `CONVERSION_RANGE`. Dit is dus
+    dezelfde methode als `convert()`, met de brontabel een divisie hoger en de richting omgekeerd.
+
+    Alles wat voor een promovendus geldt, geldt hier onverkort:
+
+    - **nooit `FULL`** — `RESIDUAL_SPREAD` houdt ook na deze correctie ~0.16 relatieve sterkte
+      over, en dat is onzekerheid die de omrekening niet wegneemt;
+    - **`conversion_in_range` is een poort, geen aantekening** — buiten het gemeten bereik is er
+      geen meting, dus `NONE`. De degradantenkant van dat bereik is even eenzijdig als de
+      promovendikant: over alle acht paren kwam geen enkele degradant boven een relatieve aanval
+      van 1.089 uit.
+    """
+    t1 = TIER1.get(competition)
+    if t1 is None:
+        raise PromotionError(f"geen divisie erboven bekend voor {competition!r}")
+
+    higher = fotmob.fetch_league_stats(t1.fotmob_id, season, use_cache=use_cache)
+    table = higher["teams"]
+    row = find_team(table, team)
+    if row is None:
+        raise PromotionError(f"{team!r} staat niet in de stand van {t1.name} {season}")
+
+    ts = table[row]
+    if "home" not in ts or "away" not in ts:
+        raise PromotionError(f"{team!r} heeft geen thuis/uit-splits in {t1.name}")
+
+    high_home, high_away = _rates(table)
+    played = ts.get("played") or (ts["home"]["played"] + ts["away"]["played"])
+    if not played:
+        raise PromotionError(f"{team!r} heeft nul gespeelde duels in {t1.name}")
+
+    high_avg = (high_home + high_away) / 2
+    attack = (ts["gf"] / played) / high_avg
+    defence = (ts["ga"] / played) / high_avg
+
+    higher_slug, lower_slug = t1.fd_pair or (t1.name, competition)
+    gap = fd.gap_for(higher_slug, lower_slug, "down")
+    in_range, range_note = fd.conversion_in_range(higher_slug, lower_slug, "down", attack, defence)
+    new_attack, new_defence = fd.convert_strength(attack, defence, gap)
+
+    level = league.avg_xg_per_match
+    stats = TeamStats(xg=new_attack * level * played,
+                      xga=new_defence * level * played,
+                      matches_played=played)
+
+    low_home = league.home_goals_per_match
+    low_away = league.away_goals_per_match
+    hp, ap = ts["home"]["played"], ts["away"]["played"]
+
+    def scaled(goals: int, played_side: int, from_rate: float, to_rate: float, factor: float) -> int:
+        if not played_side or not from_rate:
+            return 0
+        rate = (goals / played_side) / from_rate * factor * to_rate
+        return max(0, round(rate * played_side))
+
+    splits = TeamSplits(
+        home_gf=scaled(ts["home"]["gf"], hp, high_home, low_home, gap.attack),
+        home_ga=scaled(ts["home"]["ga"], hp, high_away, low_away, gap.defence),
+        home_played=hp,
+        away_gf=scaled(ts["away"]["gf"], ap, high_away, low_away, gap.attack),
+        away_ga=scaled(ts["away"]["ga"], ap, high_home, low_home, gap.defence),
+        away_played=ap,
+    )
+
+    note = (f"{team}: {t1.name} {season} (Fotmob {t1.fotmob_id}) relatieve aanval {attack:.3f} / "
+            f"verdediging {defence:.3f} over {played} duels, omgerekend met "
+            f"gap_for({higher_slug},{lower_slug},down) x{gap.attack:.3f}/{gap.defence:.3f} "
+            f"[{gap.direction}] naar {new_attack:.3f}/{new_defence:.3f}; "
+            f"conversion_in_range: {range_note}")
+    return Converted(team=team, stats=stats, splits=splits, in_range=in_range, note=note)
+
+
 def _selftest() -> int:
     """Reproduceert de vier duels die op 30 aug 2026 op NONE bleven staan."""
     from scripts.model import scale_level

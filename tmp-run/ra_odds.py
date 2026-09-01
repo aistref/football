@@ -6,8 +6,8 @@ from scripts import betexplorer, oddsapi
 from scripts.oddsapi import CreditGuard, suggest_cap, split_budget, fetch_spreads, fetch_totals, \
     fetch_event_markets, rotate_for_day
 
-DAY = date(2026, 8, 31)
-REMAINING, DAYS_LEFT = 19930, 1          # uit api_check.py van vanochtend; morgen rolt de maand om
+DAY = date(2026, 9, 1)
+REMAINING, DAYS_LEFT = 20000, 30    # uit api_check.py van vanochtend; verse maand
 
 cands = json.load(open("tmp-run/ra_ctx.json"))
 comps = []

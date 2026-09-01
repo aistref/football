@@ -1,4 +1,4 @@
-"""Stage 5 — analyse Run A 31 aug 2026. Beide methodes, alle zes markten, zeven poorten."""
+"""Stage 5 — analyse Run A 1 sep 2026. Beide methodes, alle zes markten, zeven poorten."""
 import json, sys
 from datetime import date, datetime, timezone, timedelta
 sys.path.insert(0, "tmp-run")
@@ -8,7 +8,7 @@ from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_matc
                            selection_score, early_season_uplift, scale_level, splits_from_fotmob)
 from ra_names import resolve, best_pair
 
-DAY = date(2026, 8, 31)
+DAY = date(2026, 9, 1)
 NL = timezone(timedelta(hours=2))
 THRESH = {"FULL": 8.0, "LIGHT": 16.0}   # verhoogd 31 aug 2026, zie _shared-rules.md §0
 # Vanaf welke edge een afgewezen kandidaat nog een `near_miss` krijgt (en dus in shadow.jsonl
@@ -17,6 +17,17 @@ THRESH = {"FULL": 8.0, "LIGHT": 16.0}   # verhoogd 31 aug 2026, zie _shared-rule
 # meten of die verhoging geld bespaarde of alleen bets kostte.
 NEAR = {"FULL": 3.0, "LIGHT": 6.0}
 MIN_ODDS, MAX_ODDS = 1.30, 6.00
+
+# Een bekercompetitie heeft zelf geen stand en dus geen divisie erboven of eronder. De ploegen
+# komen wél uit een divisie: dit is de competitie waarvan de basis (niveau, splits) is genomen in
+# ra_stage3.py, en dus ook de competitie waarop `promotion.TIER1/TIER2` moet worden opgezocht.
+PROMO_COMP = {
+    "Coppa Italia (ITA)": "Serie A (ITA)",
+    "DFB Pokal (GER)":    "Bundesliga (GER)",
+    "KNVB Beker (NED)":   "Eredivisie (NED)",
+    "FA Cup (ENG)":       "Premier League (ENG)",
+    "League Cup (ENG)":   "Premier League (ENG)",
+}
 
 cands = json.load(open("tmp-run/ra_ctx.json"))
 s3 = json.load(open("tmp-run/ra_stage3.json"))
@@ -152,15 +163,45 @@ for c in cands:
 
     lg, teams, st = league_ctx(c["competition"], c["primaryId"], c["season"])
 
-    # --- teamsterktes: uit de stand, of omgerekend uit de divisie eronder (§4 promovendi) ---
+    # --- teamsterktes: uit de stand, of omgerekend uit de divisie eronder (promovendi) dan wel
+    #     erboven (degradanten). Beide richtingen zijn §4; de tweede kan sinds 1 sep 2026. ---
     promo_notes, tier_box = {}, [c["tier"]]
+
+    def _source_name(name, fotmob_id, season):
+        """De naam zoals de brontabel hem schrijft, of de originele als hij er niet in staat."""
+        try:
+            tbl = fotmob.fetch_league_stats(fotmob_id, season)["teams"]
+        except Exception:
+            return name
+        return resolve(name, tbl) or name
+
     def side_stats(name, table_key):
         if table_key:
             r = teams[table_key]
             return TeamStats(xg=r["xg"], xga=r["xga"], matches_played=r["mp"]), splits_from_fotmob(r), None
-        conv = promotion.convert(c["competition"], name, c["season"], lg)
-        tier_box[0] = "NONE" if not conv.in_range else "LIGHT"
-        return conv.stats, conv.splits, conv.note
+        errors = []
+        pcomp = PROMO_COMP.get(c["competition"], c["competition"])
+        t2 = promotion.TIER2.get(pcomp)
+        if t2:
+            try:
+                conv = promotion.convert(pcomp, _source_name(name, t2.fotmob_id, c["season"]),
+                                         c["season"], lg)
+                tier_box[0] = "NONE" if not conv.in_range else "LIGHT"
+                return conv.stats, conv.splits, conv.note
+            except promotion.PromotionError as e:
+                errors.append(f"promovendus: {e}")
+        t1 = promotion.TIER1.get(pcomp)
+        if t1:
+            try:
+                conv = promotion.convert_relegated(pcomp,
+                                                   _source_name(name, t1.fotmob_id, c["season"]),
+                                                   c["season"], lg)
+                tier_box[0] = "NONE" if not conv.in_range else "LIGHT"
+                return conv.stats, conv.splits, conv.note
+            except promotion.PromotionError as e:
+                errors.append(f"degradant: {e}")
+        raise promotion.PromotionError("; ".join(errors) or
+                                       f"geen divisie boven of onder {pcomp!r} bekend")
     try:
         hs, sp_h, nh = side_stats(c["home"], c["table_home"])
         as_, sp_a, na = side_stats(c["away"], c["table_away"])
@@ -318,15 +359,41 @@ for c in cands:
         row["bet"] = True; row["pick"] = best
         row["runner_up"] = ({"selection": f"{rest[0]['market']} — {rest[0]['selection']}",
                              "score": rest[0]["score"]} if rest else None)
+        # Haalde maar één selectie alle poorten, dan is "de tweede" niet leeg maar de sterkste
+        # die wél afviel — met de poort erbij. Zonder dat staat er in het runrapport 'geen
+        # tweede' terwijl er zes selecties waren doorgerekend (§1, laatste alinea).
+        if not rest:
+            others = sorted([r for r in evaluated if r is not best],
+                            key=lambda r: -r["edge_pp"])
+            if others:
+                o0 = others[0]
+                row["runner_up_rejected"] = {
+                    "selection": f"{o0['market']} — {o0['selection']}",
+                    "odds": o0["odds"], "edge_pp": o0["edge_pp"],
+                    "failed_gate": o0["failed_gate"] or "edge"}
     else:
         near = [r for r in evaluated if r["edge_pp"] >= NEAR[tier] and MIN_ODDS <= r["odds"] <= MAX_ODDS]
         if near:
             b = max(near, key=lambda r: r["edge_pp"])
             gate = b["failed_gate"] or ("edge" if b["edge_pp"] < thresh else None)
+            # §5 eist alle drie de getallen in de "Net niet"-tabel, niet alleen de poort die hem
+            # afwees. `robustness_check` draait hierboven alleen voor selecties die de edge-poort
+            # halen, dus voor een net-nietter is `edge_robust_min` daar per definitie leeg — en
+            # dan valt precies niet te zien of het één poort was of een breed tekort. Eén extra
+            # aanroep per wedstrijd, alleen voor de kandidaat die in het rapport komt.
+            rmin = b["edge_robust_min"]
+            if rmin is None:
+                fn = next((f for markt, oms, o, bron, side, f in sel
+                           if markt == b["market"] and oms == b["selection"]), None)
+                if fn is not None:
+                    try:
+                        rmin = round(robustness_check(hs, as_, lg, fn, b["odds"]).min_edge, 2)
+                    except Exception:
+                        rmin = None
             row["near_miss"] = {"market": f"{b['market']} — {b['selection']}", "odds": b["odds"],
                                 "edge_pp": b["edge_pp"],
                                 "edge_xg": b["edge_xg"], "edge_split": b["edge_split"],
-                                "edge_robust_min": b["edge_robust_min"],
+                                "edge_robust_min": rmin,
                                 "failed_gate": gate}
             row["reason"] = {"edge": f"edge onder drempel ({b['edge_pp']:+.2f} pp, nodig {thresh:.1f})",
                              "odds": "odds buiten band",
