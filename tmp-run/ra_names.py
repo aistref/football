@@ -19,6 +19,13 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "sheff utd": "sheffield united",
     "wolves": "wolverhampton wanderers",
     "west ham": "west ham united",
+    # 2 sep 2026: dezelfde val, twee nieuwe gevallen. "QPR" is een initiaalwoord en deelt geen
+    # enkel token met "Queens Park Rangers"; bij "West Brom" valt "albion" weg in _DROP, zodat
+    # "brom" en "bromwich" overblijven — verschillende tokens. Beide ploegen staan gewoon in de
+    # Championship-stand van 2025/2026 en gingen zonder deze twee regels ten onrechte de
+    # promovendi-omrekening in.
+    "qpr": "queens park rangers",
+    "west brom": "west bromwich albion",
 }
 
 
