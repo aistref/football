@@ -82,6 +82,20 @@ TIER2: dict[str, Tier2] = {
     "Belgian Pro League (BEL)":   Tier2(264, "First Division B (BEL)"),
     "Süper Lig (TUR)":            Tier2(165, "1. Lig (TUR)"),
     "Ekstraklasa (POL)":          Tier2(197, "I Liga (POL)"),
+    # Toegevoegd 2 sep 2026 (Run B). Beide id's zijn niet geraden maar uit de Fotmob-daglijsten
+    # van 27 aug t/m 7 sep 2026 gehaald en op naam én ccode gecontroleerd: CZE 253 "FNL" en
+    # SUI 163 "Challenge League". Aanleiding: die dag stond er in allebei de competities één duel
+    # met een promovendus (FC Zbrojovka Brno bij Czech, FC Vaduz bij Swiss), en zonder deze regels
+    # was dat twee keer NONE geweest op een ontbrekende aanroep in plaats van op een ontbrekende
+    # meting — precies wat §4 van _shared-rules.md verbiedt.
+    #
+    # LET OP: allebei zonder `fd_pair` én zonder eigen meting in MEASURED_TIER2_GAP, dus
+    # `gap_and_range` valt hier terug op POOLED_GAP. Meld dat in het runrapport; `GapResult.direction`
+    # zegt het zelf ("gepoold — ... niet apart gemeten"). Wie hier tijd in wil steken: `measure_gap`
+    # over 2016/2017-2024/2025 doet voor deze twee wat de meting van 31 aug voor NED/DEN/POR/BEL/
+    # TUR/POL deed.
+    "Czech First League (CZE)":   Tier2(253, "FNL (CZE)"),
+    "Swiss Super League (SUI)":   Tier2(163, "Challenge League (SUI)"),
 }
 
 

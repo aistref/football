@@ -1,0 +1,17 @@
+import json
+p="data/source-health.json"; h=json.load(open(p))
+h["last_run"]={"run":"B","date":"2026-09-02",
+  "note":"Run B 2 sep 2026 — 4 competities met wedstrijden, 12 duels, alle 12 doorgerekend, 3 bets."}
+h["updated"]="2026-09-02"
+ADD={
+ "fotmob":" 2 sep 2026, Run B: xG opnieuw nagetrokken voor de vier competities met wedstrijden. League One (108) has_xg=true voor 2025/2026 (46 duels per ploeg, 1.302 xG) én 2026/2027 (2-4 speeldagen, 1.436) — basis blijft vorig seizoen. Austrian Bundesliga (38) has_xg=true voor beide seizoenen (2025/2026: 12 ploegen, 1.385 xG; 2026/2027 op 4-5 speeldagen, 1.677). Swiss Super League (69) has_xg=true voor beide (2025/2026: 1.604; 2026/2027 op 4-6 speeldagen, 1.727). Czech First League (122) opnieuw bevestigd has_xg=FALSE voor 2025/2026 én 2026/2027 — ongewijzigd sinds 9 aug, dus daar blijft het LIGHT op doelpunten en thuis/uit-splits. NIEUW GEMETEN deze run: twee tweede divisies uit de daglijsten gehaald en op naam én ccode geverifieerd, CZE 253 'FNL' en SUI 163 'Challenge League', allebei has_xg=false maar mét stand en thuis/uit-splits (FNL 16 ploegen, Challenge League 10). Ze staan nu in promotion.TIER2, zodat een promovendus in die twee competities niet meer op een ontbrekende aanroep strandt. Let op: de zoek-endpoints /api/searchapi/ en /api/search/suggest en /api/allLeagues geven alle drie HTTP 404 — de daglijst van fetch_fixtures over een reeks datums is de werkende manier om een league_id te vinden.",
+ "the_odds_api":" 2 sep 2026, Run B: quota 19935 over bij 65 gebruikt deze maand (het plan is nog steeds 20.000 en niet de 500 waar §1a van uitgaat). suggest_cap(19935, 29) gaf een plafond van 343; er zijn 16 credits uitgegeven — 3x spreads, 3x totals en 10x btts, telkens 1 credit, dus btts kostte opnieuw 1 en niet de 2 die §1a noemt (tweede bevestiging na 1 sep). Sportkeys deze run: soccer_england_league1, soccer_austria_bundesliga, soccer_switzerland_superleague. GEEN sportkey voor de Czech First League — die competitie heeft dus alleen het gratis 1X2 van BetExplorer en geen enkele van de vier betaalde markten. Dat is geen storing maar dekking die er niet is; genoteerd in markets_checked met die reden.",
+ "betexplorer":" 2 sep 2026, Run B: 1X2 voor alle 12 duels van de dag, uit vier bestaande slugs (england/league-one 17 rijen, czech-republic/chance-liga 11, austria/bundesliga 8, switzerland/super-league 11). Geen nieuwe slug nodig. Wel een NAAMVAL: BetExplorer schrijft 'Austria Vienna' waar Fotmob 'Austria Wien' zegt, en 'Tirol' waar Fotmob 'WSG Tirol' zegt; een koppeling op de eerste vijf letters vond die wedstrijd niet en liet hem stil zonder 1X2 én zonder kalibratieblok. Opgelost met een handmatig gecontroleerde aliaslijst plus een woordvergelijking van minstens vier letters — géén losse deelstringmatch, want die koppelde in dezelfde run 'FC Vaduz' aan 'FC Zurich'.",
+ "api_football":" 2 sep 2026, Run B: API_FOOTBALL_KEY ontbreekt nog steeds in de omgeving van de geplande taak. Ongewijzigd sinds 10 aug 2026. Geen afgewezen sleutel, een ontbrekende — zie README.md 'Sleutels toevoegen'.",
+ "understat":" 2 sep 2026, Run B: niet gebruikt. Understat dekt alleen PL, La Liga, Bundesliga, Serie A en Ligue 1; geen van de vier competities met wedstrijden vandaag zit daarin.",
+}
+for k,extra in ADD.items():
+    h["sources"][k]["detail"]=h["sources"][k].get("detail","").rstrip()+extra
+    h["sources"][k]["last_checked"]="2026-09-02"
+json.dump(h, open(p,"w"), ensure_ascii=False, indent=1)
+print("bijgewerkt:", list(ADD))
