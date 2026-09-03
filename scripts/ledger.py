@@ -5,7 +5,7 @@ Zonder dit logboek is "gaat het goed of niet" niet te beantwoorden, alleen te vo
 
     python3 scripts/ledger.py validate
     python3 scripts/ledger.py add < pick.json
-    python3 scripts/ledger.py open [--hours 12]
+    python3 scripts/ledger.py open [--hours 2] [--no-check]
     python3 scripts/ledger.py settle <id> won|lost|void [--score 2-1]
     python3 scripts/ledger.py stats [--run A]
 
@@ -19,6 +19,11 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+try:                        # als pakket: `from scripts import ledger`
+    from . import settling
+except ImportError:         # als los script: `python3 scripts/ledger.py`
+    import settling         # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
 PICKS = ROOT / "data" / "picks.jsonl"
@@ -240,27 +245,41 @@ def cmd_settle(args: argparse.Namespace) -> int:
 
 
 def cmd_open(args: argparse.Namespace) -> int:
+    """Toon de picks die afgewikkeld mogen worden.
+
+    Sinds 3 sep 2026 beslist `status.finished` van de bron dat, niet de klok; zie de
+    docstring van `scripts/settling.py` voor waarom. `--no-check` slaat de bron over en
+    valt terug op `--hours`, voor als je offline werkt.
+    """
     now = datetime.now(timezone.utc)
-    rows = []
+    index = None if args.no_check else settling.DayIndex()
+    rows, wachten = [], []
     for pick in load_picks():
         if pick.get("result") != RESULTS_OPEN:
             continue
-        try:
-            age_h = (now - parse_dt(pick["kickoff"])).total_seconds() / 3600
-        except (KeyError, ValueError):
-            age_h = float("nan")
-        if age_h != age_h or age_h >= args.hours:  # NaN = onbekend: altijd tonen
-            rows.append((age_h, pick))
+        ok, reden = settling.settleable(pick, index, args.hours, now)
+        ko = settling.kickoff_of(pick)
+        age_h = (now - ko).total_seconds() / 3600 if ko else float("nan")
+        (rows if ok else wachten).append((age_h, pick, reden))
+
+    if index is not None and index.errors:
+        for day, err in index.errors.items():
+            print(f"  let op: uitslagen van {day} niet op te halen ({err}) — "
+                  f"terugval op de klok van {args.hours:g} uur\n", file=sys.stderr)
+
+    for age_h, pick, reden in sorted(wachten, key=lambda r: -(r[0] if r[0] == r[0] else 0)):
+        print(f"  wacht  {pick['id']}\n         {reden}")
 
     if not rows:
-        print(f"Geen openstaande picks ouder dan {args.hours} uur.")
+        print("Geen picks klaar om af te wikkelen.")
         return 0
 
     print(f"{len(rows)} pick(s) klaar om af te wikkelen:\n")
-    for age_h, pick in sorted(rows, key=lambda r: -(r[0] if r[0] == r[0] else 0)):
+    for age_h, pick, reden in sorted(rows, key=lambda r: -(r[0] if r[0] == r[0] else 0)):
         age = f"{age_h:5.1f}u" if age_h == age_h else "  ?  "
         print(f"  {age}  {pick['id']}")
         print(f"         {pick['home']} - {pick['away']} | {pick['market']}: {pick['selection']} @ {pick['odds']}")
+        print(f"         {reden}")
     return 0
 
 
@@ -356,8 +375,11 @@ def main() -> int:
     sub.add_parser("add", help="voeg pick(s) toe vanaf stdin (JSON-object of -lijst)")
 
     p_open = sub.add_parser("open", help="toon picks die afgewikkeld moeten worden")
-    p_open.add_argument("--hours", type=float, default=12,
-                        help="minimale leeftijd sinds aftrap (standaard 12)")
+    p_open.add_argument("--hours", type=float, default=settling.FALLBACK_HOURS,
+                        help="terugvalmarge in uren sinds de aftrap, alleen gebruikt als de "
+                             f"bron geen status geeft (standaard {settling.FALLBACK_HOURS:g})")
+    p_open.add_argument("--no-check", action="store_true",
+                        help="vraag de bron niet om de wedstrijdstatus; gebruik alleen --hours")
 
     p_settle = sub.add_parser("settle", help="leg de uitkomst van een pick vast")
     p_settle.add_argument("id")

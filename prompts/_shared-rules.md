@@ -16,7 +16,56 @@ aanpassen zonder de geplande taak aan te raken.
 | `EDGE_THRESHOLD_LIGHT` | **16.0 procentpunt** | Zwakkere data eist een grotere marge: exact tweemaal `EDGE_THRESHOLD_FULL`. Die verhouding is geen keuze maar een afhankelijkheid — `model.DATA_WEIGHT` leidt het LIGHT-gewicht van 0.5 in `selection_score` er rechtstreeks uit af (§1a). Verander de een niet zonder de ander. |
 | `MAX_LIGHT_IN_SHORTLIST` | **2** | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. |
 | `MIN_ODDS` / `MAX_ODDS` | **1.30** / **6.00** | Buiten deze band is de kansschatting te onnauwkeurig om edge zinvol te noemen. |
-| `SETTLE_AFTER_HOURS` | **12** | Openstaande picks ouder dan dit worden afgewikkeld. |
+| `SETTLE_AFTER_HOURS` | **vervallen** | Vervangen op 3 sep 2026 door de statusregel hieronder. Stond van de eerste commit tot die datum op 12 uur na de **aftrap**, zonder onderbouwing. |
+| `SETTLE_FALLBACK_HOURS` | **2.0** | Alleen de terugval als de bron geen status geeft. `scripts/settling.FALLBACK_HOURS`. |
+
+### Wanneer een pick afwikkelbaar is (herzien 3 sep 2026, op verzoek van de gebruiker)
+
+**Een wedstrijd is afwikkelbaar zodra de bron hem als afgelopen meldt**, niet zodra er een aantal uur
+sinds de aftrap verstreken is:
+
+```python
+from scripts.settling import DayIndex, settleable
+index = DayIndex()                      # één Fotmob-verzoek per kalenderdag
+ok, reden = settleable(pick, index)     # `finished` van de bron; klok alleen als terugval
+```
+
+`scripts/ledger.py open` en `scripts/shadow.py open` doen dit allebei, uit **dezelfde** module — zie
+hieronder waarom dat laatste geen detail is. Geeft de bron niets terug (geen netwerk, wedstrijd niet
+gevonden, veld ontbreekt), dan valt de regel terug op `SETTLE_FALLBACK_HOURS` = 2 uur na de aftrap.
+Twee uur is de speelduur inclusief rust en blessuretijd, en die terugval is met opzet krap: hij geldt
+alleen wanneer er géén status te krijgen was, en anders wacht een run opnieuw een hele dag.
+
+Wat de oude regel fout deed, en waarom een tussenwaarde als "6 uur na het fluitsignaal" het probleem
+niet oplost:
+
+1. **De 12 was nooit onderbouwd.** Hij stond in de eerste commit van de repo en deze tabel gaf alleen
+   een beschrijving, geen reden — anders dan `EDGE_THRESHOLD_FULL`, waar hierboven een halve pagina
+   staat waarop de 8 gemeten is. Er was dus geen antwoord op "waarom 12 en niet 8".
+2. **Hij mat vanaf de aftrap.** Een wedstrijd duurt met rust en blessuretijd ongeveer twee uur, dus de
+   feitelijke marge ná het laatste fluitsignaal was ~10 uur.
+3. **Hij viel systematisch verkeerd uit.** Run A draait rond 04:10 en avondwedstrijden trappen af
+   tussen 20:00 en 21:00 CEST; die staan dan op 7 à 8 uur, vielen dus **élke keer** net buiten de
+   grens, en werden pas door de vólgende run afgewikkeld — na ~24 uur in plaats van na 12. Gemeten
+   over de eerste 246 afgewikkelde picks: mediaan 9,7 uur, met een kwart in de staart van 12 tot
+   18 uur. Dat is precies die groep.
+4. **`shadow.py` had helemaal geen filter.** De docstring adverteerde `--hours 12`, maar `cmd_open`
+   filterde alleen op `result == pending` en die vlag bestond niet eens. Daardoor rekende de routine
+   de afgewezen kandidaten van een wedstrijd wél af en de gespeelde bet van diezelfde wedstrijd niet.
+   Op 2 sep 2026 leverde dat een runrapport op waarin stond wat de tegengehouden kandidaten deden en
+   niet wat de bets deden. Dat is de reden dat de regel nu in één module staat in plaats van twee keer
+   los: zolang beide scripts hun eigen versie hebben, lopen ze uiteen.
+
+Wat de marge moest voorkomen blijft gelden — een uitslag noteren van een duel dat is uitgesteld,
+gestaakt of waar nog verlenging loopt — maar `finished` is dáár het directe antwoord op, waar een klok
+er een schatting van was. Een klok van zes uur na het fluitsignaal zou punten 1 en 3 verzachten en
+punt 4 helemaal niet raken.
+
+**Dit verandert niet wélke stand je gebruikt.** `status.scoreStr` is de **eind**stand, inclusief
+verlenging en strafschoppen; §6d eist afrekenen op de stand na 90 minuten. `finished` zegt alleen
+wanneer je mág afwikkelen. Zoek bij een knock-outduel dus nog steeds de doelpuntminuten op — op
+3 sep 2026 was Sassuolo – Frosinone (Coppa Italia) na 90 minuten 1–1 en ging Sassuolo op strafschoppen
+door; de schaduwpick op "Frosinone of gelijk" is daarom **gewonnen**, niet verloren.
 
 ### Waarom de drempel op 8 staat (31 aug 2026)
 
@@ -613,9 +662,19 @@ state = load_or_start(RUN_ID, date.today())
 bestand moet juist wél overleven tussen sessies, dat is zijn hele functie.
 
 ### Stage 0 — Afwikkelen (vorige runs)
-Lees `data/picks.jsonl`. Zoek de uitslagen op van picks met `result = null` en een aftrap ouder
-dan `SETTLE_AFTER_HOURS`. Werk ze bij via `scripts/ledger.py settle`. Zonder deze stap is de
-kwaliteit van de routine niet meetbaar.
+
+```bash
+python3 scripts/ledger.py open     # wat mag er af? beslist op de status van de bron (§0)
+python3 scripts/shadow.py open     # dezelfde regel, dezelfde module
+```
+
+Beide geven per regel de reden erbij ("bron meldt afgelopen — 3 - 0" of "bron meldt nog niet
+afgelopen"). Werk ze bij via `scripts/ledger.py settle` en `scripts/shadow.py settle`. **Wikkel de
+echte picks en de schaduwpicks in dezelfde run af** — dat ze uiteenliepen is precies waar de
+statusregel van §0 voor is gemaakt.
+
+Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand **na 90 minuten** (§6d), ook al
+meldt de bron een latere eindstand. Zonder deze stap is de kwaliteit van de routine niet meetbaar.
 
 ### Stage 1 — Fixtures van vandaag
 Bepaal zelf de actuele datum. Haal fixtures op; probeer meerdere bronnen (zie

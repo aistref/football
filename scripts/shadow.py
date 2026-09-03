@@ -17,7 +17,7 @@ kost het filter geld en hoort de drempel omlaag. Beide antwoorden zijn bruikbaar
 is dat niet.
 
     python3 scripts/shadow.py collect --date 2026-08-11 --run a
-    python3 scripts/shadow.py open [--hours 12]
+    python3 scripts/shadow.py open [--hours 2] [--no-check]
     python3 scripts/shadow.py settle <id> won|lost|void [--score 2-1]
     python3 scripts/shadow.py stats [--gate tweede_methode]
 
@@ -31,6 +31,11 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+try:                        # als pakket: `from scripts import shadow`
+    from . import settling
+except ImportError:         # als los script: `python3 scripts/shadow.py`
+    import settling         # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
 SHADOW = ROOT / "data" / "shadow.jsonl"
@@ -149,15 +154,40 @@ def cmd_collect(args: argparse.Namespace) -> int:
 # -------------------------------------------------------------------- afwikkelen
 
 def cmd_open(args: argparse.Namespace) -> int:
-    rows = [r for r in load() if r.get("result") == OPEN]
+    """Toon de schaduwpicks die afgewikkeld mogen worden.
+
+    Tot 3 sep 2026 stond hier geen enkel filter: élke `pending` regel werd getoond,
+    terwijl de docstring `--hours 12` adverteerde die niet bestond. Daardoor rekende de
+    routine afgewezen kandidaten af terwijl de échte picks van dezelfde wedstrijden nog
+    twaalf uur moesten wachten — zie `scripts/settling.py`. Beide gebruiken nu dezelfde
+    regel, uit dezelfde module.
+    """
+    now = datetime.now(timezone.utc)
+    index = None if args.no_check else settling.DayIndex()
+    rows, wachten = [], []
+    for r in load():
+        if r.get("result") != OPEN:
+            continue
+        ok, reden = settling.settleable(r, index, args.hours, now)
+        (rows if ok else wachten).append((r, reden))
+
+    if index is not None and index.errors:
+        for day, err in index.errors.items():
+            print(f"  let op: uitslagen van {day} niet op te halen ({err}) — "
+                  f"terugval op de klok van {args.hours:g} uur\n", file=sys.stderr)
+
+    for r, reden in wachten:
+        print(f"  wacht  {r['id']}\n         {reden}")
+
     if not rows:
-        print("Geen openstaande schaduwpicks.")
+        print("Geen schaduwpicks klaar om af te wikkelen.")
         return 0
     print(f"{len(rows)} schaduwpick(s) klaar om af te wikkelen:\n")
-    for r in rows:
+    for r, reden in rows:
         print(f"  {r['id']}")
         print(f"     {r['date']} · {r['match']} | {r['market']} @ {r['odds']} "
               f"| viel af op {r['failed_gate']}")
+        print(f"     {reden}")
     return 0
 
 
@@ -259,7 +289,12 @@ def main() -> int:
     p_col.add_argument("--date", required=True, help="YYYY-MM-DD")
     p_col.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
 
-    sub.add_parser("open", help="toon schaduwpicks die nog afgewikkeld moeten worden")
+    p_open = sub.add_parser("open", help="toon schaduwpicks die nog afgewikkeld moeten worden")
+    p_open.add_argument("--hours", type=float, default=settling.FALLBACK_HOURS,
+                        help="terugvalmarge in uren sinds de aftrap, alleen gebruikt als de "
+                             f"bron geen status geeft (standaard {settling.FALLBACK_HOURS:g})")
+    p_open.add_argument("--no-check", action="store_true",
+                        help="vraag de bron niet om de wedstrijdstatus; gebruik alleen --hours")
 
     p_set = sub.add_parser("settle", help="leg de uitkomst van een schaduwpick vast")
     p_set.add_argument("id")
