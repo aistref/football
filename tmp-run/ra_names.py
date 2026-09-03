@@ -26,6 +26,11 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # promovendi-omrekening in.
     "qpr": "queens park rangers",
     "west brom": "west bromwich albion",
+    # 3 sep 2026: derde geval van dezelfde soort. De daglijst schrijft "Hearts", de
+    # Premiership-stand "Heart of Midlothian" — enkelvoud tegen meervoud, dus geen enkel
+    # gedeeld token. Hearts stond gewoon in de stand van 2025/2026 en ging zonder deze regel
+    # ten onrechte de promovendi-omrekening in (en daarmee van FULL naar LIGHT).
+    "hearts": "heart of midlothian",
 }
 
 
