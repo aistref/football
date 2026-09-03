@@ -23,7 +23,8 @@ for name, v in fx.items():
     for m in v["matches"]:
         rh, ra = resolve(m["home"], teams), resolve(m["away"], teams)
         missing = [t for t, r in ((m["home"], rh), (m["away"], ra)) if not r]
-        cands.append({"competition": name, "season": season, "primaryId": v["primaryId"],
+        cands.append({"competition": name, "season": season, "season_cur": v["s_cur"],
+                      "primaryId": v["primaryId"],
                       "betexplorer": v["betexplorer"], "sportkey": v["sportkey"],
                       "understat": v.get("understat"),
                       "tier": "FULL" if full and not missing else ("LIGHT" if not missing else "PROMO?"),

@@ -5,7 +5,8 @@ sys.path.insert(0, "tmp-run")
 from scripts import fotmob, model, calibration, oddsapi, promotion, understat
 from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_match_from_splits,
                            edge_pp, asian_prob, dnb_prob, totals_prob, robustness_check,
-                           selection_score, early_season_uplift, scale_level, splits_from_fotmob)
+                           selection_score, early_season_uplift, scale_level, splits_from_fotmob,
+                           blend_seasons, blend_weight)
 from ra_names import resolve, best_pair
 
 DAY = date(2026, 9, 3)
@@ -46,13 +47,22 @@ print(f"vroeg seizoen: factor {FACTOR:.4f} (gepoold {POOLED:.4f} over {TOTAL_MD}
 
 # ---------- competitiebasis ------------------------------------------------------------------
 league_cache = {}
-def league_ctx(comp, pid, season):
+def league_ctx(comp, pid, season, season_cur=None):
     if comp not in league_cache:
         st = fotmob.fetch_league_stats(pid, season)
         lg = LeagueContext(home_goals_per_match=st["home_goals_per_match"],
                            away_goals_per_match=st["away_goals_per_match"],
                            avg_xg_per_match=st["avg_xg_per_match"])
-        league_cache[comp] = (scale_level(lg, FACTOR), st["teams"], st)
+        # De stand van het LOPENDE seizoen, voor blend_seasons (§4). Dit is de reden dat de
+        # routine gedurende het seizoen beter wordt in plaats van op augustus te blijven staan.
+        cur_teams = {}
+        if season_cur:
+            try:
+                cur_teams = fotmob.fetch_league_stats(pid, season_cur)["teams"]
+            except Exception as e:
+                print(f"  {comp}: lopend seizoen niet op te halen ({type(e).__name__}) — "
+                      f"alleen vorig seizoen")
+        league_cache[comp] = (scale_level(lg, FACTOR), st["teams"], st, cur_teams)
     return league_cache[comp]
 
 # ---------- Understat, tweede xG-model (§4) ---------------------------------------------------
@@ -161,7 +171,8 @@ for c in cands:
            "richness": c["richness"], "richness_parts": c.get("richness_parts"),
            "markets": c.get("markets"), "bet": False, "all_candidates": [], "markets_checked": {}}
 
-    lg, teams, st = league_ctx(c["competition"], c["primaryId"], c["season"])
+    lg, teams, st, cur_teams = league_ctx(c["competition"], c["primaryId"], c["season"],
+                                          c.get("season_cur"))
 
     # --- teamsterktes: uit de stand, of omgerekend uit de divisie eronder (promovendi) dan wel
     #     erboven (degradanten). Beide richtingen zijn §4; de tweede kan sinds 1 sep 2026. ---
@@ -175,10 +186,33 @@ for c in cands:
             return name
         return resolve(name, tbl) or name
 
+    blend_notes = {}
+
     def side_stats(name, table_key):
         if table_key:
             r = teams[table_key]
-            return TeamStats(xg=r["xg"], xga=r["xga"], matches_played=r["mp"]), splits_from_fotmob(r), None
+            prior = TeamStats(xg=r["xg"], xga=r["xga"], matches_played=r["mp"])
+            # Lopend seizoen meewegen naar rato van gespeelde duels (§4, blend_seasons).
+            cur_key = resolve(name, cur_teams) if cur_teams else None
+            cur = None
+            if cur_key:
+                cr = cur_teams[cur_key]
+                if cr.get("mp") and "xg" in cr:
+                    cur = TeamStats(xg=cr["xg"], xga=cr["xga"], matches_played=cr["mp"])
+            merged = blend_seasons(prior, cur)
+            if cur is not None:
+                blend_notes[name] = {
+                    "duels_dit_seizoen": cur.matches_played,
+                    "gewicht_dit_seizoen": round(blend_weight(cur.matches_played), 3),
+                    "xg_per_duel": {"vorig": round(prior.xg_per_match, 3),
+                                     "dit": round(cur.xg_per_match, 3),
+                                     "gewogen": round(merged.xg_per_match, 3)},
+                    "xga_per_duel": {"vorig": round(prior.xga_per_match, 3),
+                                      "dit": round(cur.xga_per_match, 3),
+                                      "gewogen": round(merged.xga_per_match, 3)}}
+            # De splits blijven van vorig seizoen: die methode heeft thuis/uit-doelpunten
+            # nodig en Fotmob geeft die voor het lopende seizoen pas laat betrouwbaar.
+            return merged, splits_from_fotmob(r), None
         errors = []
         pcomp = PROMO_COMP.get(c["competition"], c["competition"])
         t2 = promotion.TIER2.get(pcomp)
@@ -213,6 +247,7 @@ for c in cands:
     if na: promo_notes["uit"] = na
     row["tier"] = tier
     if promo_notes: row["promovendi"] = promo_notes
+    if blend_notes: row["seizoensweging"] = blend_notes
     if tier == "NONE":
         row["reason"] = "omrekening buiten het gemeten bereik (conversion_in_range) — data_tier NONE"
         results.append(row); continue

@@ -872,6 +872,56 @@ verzin het niet. Gebruik xG van vorig seizoen en markeer expliciet transfers en
 selectiewisselingen als onzekerheid. Bij promovendi/nieuwkomers zonder vergelijkbare historie:
 `LIGHT` of `NONE`.
 
+### Het lopende seizoen weegt mee (toegevoegd 3 sep 2026, op verzoek van de gebruiker)
+
+Tot deze datum kwamen de teamsterktes **uitsluitend** uit het vorige seizoen. De routine wist in mei
+dus precies evenveel over een club als in augustus: het lopende seizoen kwam alleen binnen als
+competitiebreed doelpuntenniveau (`early_season_uplift`), en dat is een correctie die juist
+*uitdooft*. Er zat geen enkel mechanisme in dat met de tijd bijleerde over ploegen.
+
+Bouw de teamsterkte daarom altijd zo op:
+
+```python
+from scripts.model import blend_seasons, blend_weight
+prior = TeamStats(xg=r["xg"], xga=r["xga"], matches_played=r["mp"])       # vorig seizoen
+cur   = TeamStats(xg=cr["xg"], xga=cr["xga"], matches_played=cr["mp"])    # lopend seizoen
+stats = blend_seasons(prior, cur)        # gewicht_nu = n / (n + 16)
+```
+
+Op speeldag 1 verandert dit niets (gewicht 0), na 8 duels weegt het lopende seizoen voor eenderde
+mee, na 16 duels even zwaar als het hele vorige seizoen. **Hierdoor wordt de analyse vanzelf beter
+naarmate het seizoen vordert**, zonder dat er iets aan de knoppen hoeft.
+
+`k = 16` is **op uitslagen gemeten en uit-steekproef gecontroleerd**, niet gekozen — de volledige
+tabel en de methode staan in de docstring van `blend_seasons`. Kort:
+
+| | alleen vorig seizoen | blend k=16 | alleen dit seizoen |
+|---|---|---|---|
+| Brier (1263 duels, 2025/26) | 0.61761 | **0.61269** | 0.62396 |
+
+Drie dingen die je moet weten voordat je hieraan sleutelt:
+
+1. **Blenden, niet omschakelen.** Alleen het lopende seizoen gebruiken is *slechter* dan alleen het
+   vorige. De winst zit in het wegen.
+2. **De winst groeit mee met het seizoen** — bij 25+ gespeelde speeldagen is hij vier keer zo groot
+   als vroeg in het seizoen (+0.0116 in-steekproef, +0.0112 uit-steekproef). Dat is het hele punt.
+3. **Het is een bescheiden effect.** De blend is beter in 51% van de wedstrijden, niet in 60%
+   (in-steekproef t=+2.11, uit-steekproef t=+1.71). Verwacht er geen ommekeer van.
+
+Dit is géén regressie naar het competitiegemiddelde — dat is geprobeerd en werkte averechts (§1d).
+Twee steekproeven van dezelfde ploeg tegen elkaar wegen trekt een ploeg niet naar het midden maar
+naar zijn eigen recentere cijfers.
+
+**De splitsmethode blijft op vorig seizoen.** Die heeft thuis/uit-doelpunten nodig en die zijn voor
+het lopende seizoen pas laat betrouwbaar; met vier thuisduels is een thuis/uit-splitsing ruis.
+
+**`shrink` hoeft niet af te lopen** — ook gemeten: `shrink=0.8` verslaat `shrink=1.0` bij elke waarde
+van k. Daarmee is de openstaande vraag daarover in §6e beantwoord: laten staan.
+
+Leg per doorgerekend duel in `data/run-state/` onder `seizoensweging` vast hoeveel duels er dit
+seizoen meetellen, met welk gewicht, en de xG per duel vorig/dit/gewogen. Zonder dat is niet na te
+gaan of de weging deed wat ze hoort te doen.
+
 ### Promovendi: eerst omrekenen, dan pas `NONE` (toegevoegd 30 aug 2026)
 
 Een ploeg die niet in de tabel van vorig seizoen staat, is bijna nooit een ploeg zonder historie —
@@ -1246,10 +1296,17 @@ niet (§1d) — en dat is een bevinding waar je iets aan kunt repareren zonder d
 halen. Wil je weten of je geclaimde edge te ruim is, meet dan tegen **uitkomsten**: dat is wat de
 drempelverhoging van 31 aug in §0 doet.
 
-Twee dingen die nog openstaan: de splitsmethode is sinds 23 aug multiplicatief en op het
-competitiegemiddelde genormaliseerd (§1d) maar nog steeds de scheefste van de twee, en `shrink`
-staat hard op 0.8 zonder afloopmechanisme terwijl de docstring hem met "vroeg seizoen"
-verantwoordt.
+Wat hier nog openstaat: de splitsmethode is sinds 23 aug multiplicatief en op het
+competitiegemiddelde genormaliseerd (§1d) maar nog steeds de scheefste van de twee.
+
+**De `shrink`-vraag is op 3 sep 2026 beantwoord en staat niet meer open.** Hier stond tot die datum
+dat `shrink` "hard op 0.8 staat zonder afloopmechanisme terwijl de docstring hem met vroeg seizoen
+verantwoordt". Dat vermoeden — hij zou met het seizoen moeten aflopen — is nagemeten in de backtest
+bij `blend_seasons` (§4) en klopt niet: `shrink=0.8` verslaat `shrink=1.0` bij élke waarde van de
+credibiliteitsconstante, ook laat in het seizoen. Er hoeft dus geen afloopmechanisme te komen. Wat
+wél ontbrak was iets anders, en dat is nu opgelost: niet de mate van regressie moest met het seizoen
+mee bewegen, maar de **cijfers waarop hij wordt toegepast** — die kwamen tot 3 sep uitsluitend uit
+het vorige seizoen.
 
 Let ten slotte op wat poort 6 hier **niet** doet: het `(shrink, rho)`-grid van `robustness_check`
 varieert alleen `analyze_match` — precies de methode die vlak blijkt. "Deze bet overleeft het hele

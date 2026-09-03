@@ -20,6 +20,10 @@ DEFAULT_SHRINK = 0.80
 DEFAULT_RHO = -0.05
 MAX_GOALS = 12
 
+# Hoeveel duels van het lópende seizoen nodig zijn voordat dat seizoen even zwaar weegt als het
+# vorige. Gemeten op uitslagen, niet beredeneerd — zie `blend_seasons`.
+CREDIBILITY_K = 16.0
+
 # Parametercombinaties voor de robuustheidstest — zie _shared-rules.md en de Run A-diagnose van
 # 8 aug 2026: een edge die alleen bij één (shrink, rho)-paar boven de drempel komt is een
 # artefact van die keuze, geen edge.
@@ -122,6 +126,84 @@ def score_grid(lambda_home: float, lambda_away: float, rho: float = DEFAULT_RHO,
     ]
     total = sum(sum(row) for row in grid)
     return [[v / total for v in row] for row in grid]
+
+
+def blend_seasons(prior: TeamStats, current: TeamStats | None,
+                  k: float = CREDIBILITY_K) -> TeamStats:
+    """Weeg het lopende seizoen mee met het vorige, naar rato van wat er al gespeeld is.
+
+    Reden van bestaan (verzoek van de gebruiker, 3 sep 2026): tot die datum kwamen de
+    teamsterktes **uitsluitend** uit het vorige seizoen, en werden ze nooit ververst. De
+    routine wist in mei dus precies evenveel over een club als in augustus. Het lopende
+    seizoen kwam alleen binnen als competitiebreed doelpuntenniveau (`early_season_uplift`),
+    en dat is een correctie die juist uitdooft — kennis die verdwijnt, niet die groeit.
+
+        gewicht_nu = n / (n + k)
+        tarief     = gewicht_nu * tarief_dit_seizoen + (1 - gewicht_nu) * tarief_vorig_seizoen
+
+    Met k = 16 weegt het lopende seizoen na 16 duels even zwaar als het hele vorige, na 8 duels
+    voor eenderde, en op speeldag 1 helemaal niet. De routine wordt daarmee vanzelf beter
+    naarmate het seizoen vordert, zonder dat er iets aan de knoppen hoeft.
+
+    **k is op uitslagen gemeten, niet gekozen.** Backtest over vijf competities bij Understat
+    (EPL, La Liga, Bundesliga, Serie A, Ligue 1), elke wedstrijd gescoord met alleen wat er
+    vóór die wedstrijd bekend was — geen enkele wedstrijd ziet zijn eigen uitslag, en er komt
+    geen bookmakerprijs aan te pas (§2). Multiclass Brier op 1X2, lager is beter:
+
+    | k | 40 | 30 | 22 | **16** | 12 | 9 | 5 | 0 | alleen vorig |
+    |---|---|---|---|---|---|---|---|---|---|
+    | Brier | .61338 | .61301 | .61276 | **.61269** | .61283 | .61314 | .61424 | .62396 | .61761 |
+
+    Twee dingen die daaruit volgen en die je niet moet vergeten als je hieraan komt te sleutelen:
+
+    1. **Blenden, niet omschakelen.** k = 0 (alleen het lopende seizoen) is met .62396 *slechter*
+       dan alleen het vorige seizoen. De winst zit in het wegen; wie het lopende seizoen als
+       vervanging gebruikt, maakt de analyse aantoonbaar slechter. Het dal rond k = 12–22 is vlak,
+       dus 16 is "ongeveer waar het optimum ligt", geen scherp getal.
+    2. **De winst groeit mee met het seizoen, en dat is het hele punt.** Per speeldagbak, met de
+       uit-steekproefcontrole ernaast:
+
+       | speeldagen gespeeld | winst 2025/26 (in-steekproef) | winst 2024/25 (uit-steekproef) |
+       |---|---|---|
+       | 1–5   | +0.00276 | +0.00230 |
+       | 6–12  | +0.00109 | +0.00525 |
+       | 13–24 | +0.00328 | −0.00046 |
+       | 25+   | **+0.01155** | **+0.01117** |
+
+    **Uit-steekproef gecontroleerd**, juist omdat §0 bij `EDGE_THRESHOLD_FULL` terecht klaagt dat
+    die in-sample is gekozen. k = 16 is bepaald op 2025/2026 (n=1263, verschil +0.00491, t=+2.11)
+    en daarna ongewijzigd toegepast op 2024/2025 met prior 2023/2024 — een seizoen dat bij de
+    keuze geen rol speelde: n=1297, verschil +0.00424, t=+1.71. Het effect krimpt dus nauwelijks
+    (86% van de in-steekproefwaarde), wat betekent dat k niet op ruis is gefit. Het is wél een
+    bescheiden effect: de blend is beter in 51% van de wedstrijden, niet in 60%.
+
+    **Wat dit níet is.** Geen regressie naar het competitiegemiddelde — dat is geprobeerd en het
+    werkte averechts (§1d). Dit weegt twee steekproeven van dezelfde ploeg tegen elkaar, en dat
+    is een andere bewerking: het trekt een ploeg niet naar het midden maar naar zijn eigen
+    recentere cijfers.
+
+    Terzijde, ook gemeten: `shrink` hoeft níet af te lopen naarmate het seizoen vordert.
+    `shrink=0.8` verslaat `shrink=1.0` bij elke waarde van k (bij k=16: .61269 tegen .61488).
+    De openstaande vraag daarover in §6e is daarmee beantwoord: laten staan.
+
+    `current=None` of nul gespeelde duels geeft `prior` onveranderd terug — speeldag 1 en een
+    competitie zonder lopende-seizoensdata veranderen dus niets.
+    """
+    if current is None or current.matches_played <= 0 or prior.matches_played <= 0:
+        return prior
+    n = current.matches_played
+    w = n / (n + k)
+    xg = w * current.xg_per_match + (1 - w) * prior.xg_per_match
+    xga = w * current.xga_per_match + (1 - w) * prior.xga_per_match
+    # matches_played=1 maakt xg/xga meteen het tarief per duel; TeamStats bewaart totalen.
+    return TeamStats(xg=xg, xga=xga, matches_played=1)
+
+
+def blend_weight(matches_played: int, k: float = CREDIBILITY_K) -> float:
+    """Hoe zwaar het lopende seizoen meeweegt, voor in het runrapport."""
+    if matches_played <= 0:
+        return 0.0
+    return matches_played / (matches_played + k)
 
 
 def team_strength(stats: TeamStats, league: LeagueContext, shrink: float = DEFAULT_SHRINK) -> tuple[float, float]:
