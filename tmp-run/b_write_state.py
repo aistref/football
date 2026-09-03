@@ -43,6 +43,7 @@ for comp,blk in M.items():
              "gate7":{s:v["passed"] for s,v in r["gate7"].items()},
              "gate7_reden":{s:v.get("reason","") for s,v in r["gate7"].items()}}
         if r.get("calibration"): row["calibration"]=r["calibration"]
+        if r.get("seizoensweging"): row["seizoensweging"]=r["seizoensweging"]
         if r.get("bet"):
             w=r["winner"]; s=r.get("second")
             row["pick"]={"market":w["market"],"selection":w["selection"],"odds":w["odds"],
@@ -67,7 +68,12 @@ state={"run":"B","date":"2026-09-03","resumed_count":0,
  "parameters":{"MAX_DEEP_ANALYSES":30,"MAX_SHORTLIST":3,"EDGE_THRESHOLD_FULL":8.0,
    "EDGE_THRESHOLD_LIGHT":16.0,"MAX_LIGHT_IN_SHORTLIST":2,"MIN_ODDS":1.30,"MAX_ODDS":6.00,
    "SETTLE_AFTER_HOURS":12,"afgekapt":0,
-   "toelichting":("4 wedstrijden op de runlijst vandaag, in 3 van de 17 competities — donderdag van de "
+   "toelichting":("HERZIEN om 07:10 CEST: de teamsterktes wegen sinds vandaag het lopende seizoen mee "
+     "(§4, blend_seasons, k=16). Deze run is daarmee vóór de aftrap opnieuw doorgerekend. De pick "
+     "verandert niet — Basel – Sion Under 3.5 @ 1.71 blijft de sterkste selectie — alleen de "
+     "cijfers eronder (edge +12.43 -> +11.97). Allsvenskan is overgeslagen bij de weging: dat is "
+     "een kalenderjaarcompetitie, waar het basisseizoen al het lopende seizoen ís. "
+     "4 wedstrijden op de runlijst vandaag, in 3 van de 17 competities — donderdag van de "
      "interlandbreak, de overige 14 hadden niets op de kalender. Allsvenskan 1, Hungarian NB I 1, "
      "Swiss Super League 2. Alle vier haalden de datadekkingspoort en zijn doorgerekend. De cap van 30 "
      "is niet aangeraakt, dus er is niets afgekapt; laagste datarijkdom die het haalde 5.5 (Mjällby – "

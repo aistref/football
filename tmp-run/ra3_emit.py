@@ -113,6 +113,11 @@ state["parameters"] = {
         "Coppa Italia 2. Negen haalden de datadekkingspoort en zijn doorgerekend; Palermo – "
         "Mantova blijft op NONE omdat Mantova's aanvalskracht buiten het gemeten omrekenbereik "
         "van Serie B naar Serie A valt. "
+        "HERZIEN om 07:10 CEST: de teamsterktes wegen sinds vandaag het lopende seizoen mee "
+        "(§4, blend_seasons), en deze run is daarmee opnieuw doorgerekend vóór de aftrap. "
+        "Dat veranderde de uitkomst: Real Sociedad – Celta Vigo verschoof van Double Chance "
+        "naar Over 2.5, en Toulouse – Lille kwalificeerde alsnog. De oorspronkelijke pick van "
+        "04:30 staat als 'void' in picks.jsonl met de reden erbij. "
         f"De cap van {res['afkapping']['cap']} is niet aangeraakt, dus er is niets afgekapt."),
     "omrekeningen": {
         "aanleiding": (

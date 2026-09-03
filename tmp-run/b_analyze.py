@@ -3,7 +3,7 @@ sys.path.insert(0,'.')
 from scripts import fotmob, model, calibration
 from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_match_from_splits,
     splits_from_fotmob, robustness_check, edge_pp, asian_prob, dnb_prob, totals_prob,
-    selection_score, scale_level)
+    selection_score, scale_level, blend_seasons, blend_weight)
 from scripts.promotion import find_team
 from scripts.oddsapi import best_by_line
 
@@ -18,8 +18,17 @@ for comp,blk in M.items():
     st=fotmob.fetch_league_stats(blk["league_id"], L[comp]["base_season"])
     avg = st["avg_xg_per_match"] if st["has_xg"] else (st["home_goals_per_match"]+st["away_goals_per_match"])/2
     base=LeagueContext(st["home_goals_per_match"], st["away_goals_per_match"], avg)
+    # Stand van het LOPENDE seizoen voor blend_seasons (§4). Bij een kalenderjaarcompetitie
+    # (Allsvenskan) is base_season == cur_season: het basisseizoen IS al het lopende, dus
+    # blenden zou een seizoen met zichzelf wegen. Daar slaan we het over.
+    cur_teams = {}
+    if L[comp]["cur_season"] != L[comp]["base_season"]:
+        try:
+            cur_teams = fotmob.fetch_league_stats(blk["league_id"], L[comp]["cur_season"])["teams"]
+        except Exception as e:
+            print(f"  {comp}: lopend seizoen niet op te halen ({type(e).__name__}) — alleen basis")
     LG[comp]={"stats":st,"league":scale_level(base,UP) if L[comp]["uplift"] else base,
-              "base":base,"has_xg":st["has_xg"]}
+              "base":base,"has_xg":st["has_xg"],"cur_teams":cur_teams}
     print(f"{comp}: basis {L[comp]['base_season']} has_xg={st['has_xg']} uplift={L[comp]['uplift']}")
 
 ALIAS={"Györi ETO":"Györi ETO","Djurgården":"Djurgardens IF"}
@@ -31,7 +40,25 @@ def team_inputs(comp, name):
     if has_xg and "xg" in t: ts=TeamStats(t["xg"], t["xga"], t["mp"])
     else: ts=TeamStats(float(t["gf"]), float(t["ga"]), t["played"])
     note=f"{row_name} uit {comp} {L[comp]['base_season']}" + ("" if has_xg else " (doelpunten, geen xG bij Fotmob)")
-    return ts, splits_from_fotmob(t), ("FULL" if has_xg else "LIGHT"), note
+    # Lopend seizoen meewegen naar rato van gespeelde duels (§4, blend_seasons).
+    weging=None
+    cur_teams=LG[comp].get("cur_teams") or {}
+    cur_name=find_team(cur_teams, name) or find_team(cur_teams, ALIAS.get(name,name)) if cur_teams else None
+    if cur_name:
+        cr=cur_teams[cur_name]
+        if cr.get("mp") and has_xg and "xg" in cr:
+            cur=TeamStats(cr["xg"], cr["xga"], cr["mp"])
+            merged=blend_seasons(ts, cur)
+            weging={"duels_dit_seizoen":cur.matches_played,
+                    "gewicht_dit_seizoen":round(blend_weight(cur.matches_played),3),
+                    "xg_per_duel":{"vorig":round(ts.xg_per_match,3),"dit":round(cur.xg_per_match,3),
+                                    "gewogen":round(merged.xg_per_match,3)},
+                    "xga_per_duel":{"vorig":round(ts.xga_per_match,3),"dit":round(cur.xga_per_match,3),
+                                     "gewogen":round(merged.xga_per_match,3)}}
+            note += (f"; lopend seizoen {cur.matches_played} duels meegewogen voor "
+                     f"{weging['gewicht_dit_seizoen']:.0%}")
+            ts=merged
+    return ts, splits_from_fotmob(t), ("FULL" if has_xg else "LIGHT"), note, weging
 
 def norm(s):
     s=unicodedata.normalize("NFKD",(s or "").lower()).encode("ascii","ignore").decode()
@@ -75,13 +102,15 @@ for comp,blk in M.items():
         rec={"comp":comp,"match":key,"kickoff_utc":m["utc"],"match_id":m["id"],
              "markets_checked":{}, "candidates":[], "bet":False}
         try:
-            hs,hsp,ht,hnote = team_inputs(comp,m["home"])
-            as_,asp,at,anote = team_inputs(comp,m["away"])
+            hs,hsp,ht,hnote,hw = team_inputs(comp,m["home"])
+            as_,asp,at,anote,aw = team_inputs(comp,m["away"])
         except Exception as e:
             rec["tier"]="NONE"; rec["reason"]=f"{type(e).__name__}: {e}"
             results[key]=rec; print(f"NONE {key}: {rec['reason']}"); continue
         tier = "LIGHT" if "LIGHT" in (ht,at) else "FULL"
         rec["tier"]=tier; rec["inputs"]={"home":hnote,"away":anote}
+        if hw or aw:
+            rec["seizoensweging"]={k:v for k,v in ((m["home"],hw),(m["away"],aw)) if v}
         rec["team_stats"]={"home":{"xg":hs.xg,"xga":hs.xga,"mp":hs.matches_played},
                            "away":{"xg":as_.xg,"xga":as_.xga,"mp":as_.matches_played}}
         p_xg=analyze_match(hs,as_,league); p_xg_ns=analyze_match(hs,as_,league,shrink=1.0)
