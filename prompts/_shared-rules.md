@@ -137,7 +137,9 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
    marktkans, dan wijzen ze tegengesteld en gaat de bet eruit met reden "data conflicterend";
 6. **de edge draait niet om bij een andere parameterkeuze:**
    `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid;
-7. **de context spreekt de bet niet tegen** (§1c): `context.check(ctx, side).passed`.
+7. **de context spreekt de bet niet tegen** (§1c): `context.check(ctx, side).passed`;
+8. **de selectie staat niet op de kant die de markt zwakker vindt** (§1e):
+   `sides.check(side, odds_1x2).passed`.
 
 ### Poort 7 — contextfactoren (toegevoegd 23 aug 2026, op aanwijzing van de gebruiker)
 
@@ -197,6 +199,59 @@ per uitvaller meegeeft, en hij onderscheidt in elk geval een eerste spits van ee
 poort opengaat — pas als er enkele weken aan regels liggen, zijn deze twee drempels tegen uitkomsten
 te leggen en te vervangen door een gemeten bijstelling. Tot die tijd geldt dezelfde discipline als
 bij §6d: liever een bet te veel tegengehouden dan een verzonnen kansbijstelling.
+
+### Poort 8 — niet op de underdog-kant (toegevoegd 4 sep 2026, op verzoek van de gebruiker)
+
+```python
+from scripts import sides
+gate = sides.check(side, odds_1x2)      # side: "home" | "away" | None; odds_1x2: [1, X, 2]
+```
+
+**Dit is een rem, geen fijnregeling, en hij is met opzet grof.** Aanleiding is de spiegelanalyse in
+`runs/2026-09-04-run-a.md`: van alle 207 afgewikkelde picks hebben er 118 een kant, en daarvan stond
+**89 — driekwart — op de underdog**. Drie metingen, alle drie op **uitkomsten** en niet tegen de
+markt, en dus vrij van het circulariteitsbezwaar waarop de correctie van 31 aug is ingetrokken:
+
+| | n | trefkans | rendement |
+|---|---|---|---|
+| underdog-kant, zoals gespeeld | 89 | 36.0% | **−15.76u (−17.7%)** |
+| dezelfde bet op de favorietenkant | 89 | 53.9% | +6.28u (geschatte koersen) |
+| alle overige picks samen | 118 | — | **+1.46u (+1.2%)** |
+
+1. **Alle verlies van de routine zit in die ene kant.** Het logboek staat op −14.31u; de
+   underdog-bets op −15.76u en al het andere op +1.46u.
+2. **De kansschatting daar is aantoonbaar te hoog.** Over die 89 verwachtte het model 47.1
+   winnaars, de markt 38.0, werkelijk 33.0 — **z = −3.14** voor het model tegen −1.11 voor de
+   markt. Dat is dezelfde bevinding als de −4.42 pp op favorieten in §6e, maar gemeten op
+   uitslagen.
+3. **Een hogere drempel lost het niet op — dat is nagerekend en verworpen.** Het eerste voorstel
+   was een asymmetrische edge-eis. De cijfers wijzen het af: op de underdog-kant zakt de ROI
+   naarmate de drempel stijgt (−26.3% vanaf 8 pp, −46.4% vanaf 12, −64.4% vanaf 20 bij n=5),
+   terwijl hij bij alle andere picks juist stijgt (+15.6% vanaf 8 pp, +26.4% vanaf 10). Een
+   grotere geclaimde edge is daar geen sterker signaal dat de bet goed is maar dat het model
+   ernaast zit. Een signaal dat averechts werkt naarmate het sterker wordt, is niet zwak maar
+   kapot — en daarop hoor je niet te spelen.
+
+De poort werkt als poort 7: hij houdt alleen tegen, stelt `my_prob` niet bij, staat open bij
+`side = None` (Over/Under, BTTS, gelijkspel), en staat ook open als er geen 1X2-prijzen zijn — dan
+is er geen marktoordeel over wie de mindere ploeg is. Binnen `PICKEM_TOLERANCE` (3 pp verschil in
+de-vigde marktkans) noemt de markt geen van beide ploegen de mindere en gaat de poort open.
+
+**Wat dit kost, en waarom het toch is gedaan.** Het schakelt driekwart van alle bets-met-een-kant
+uit; verwacht magere dagen met vaak nul of één bet, meestal uit een doelpuntenmarkt. En de +1.2%
+van de overgebleven groep staat op t = +0.13, dus dat die groep wínst oplevert is **niet**
+aangetoond — het beste wat ervan te zeggen is dat ze niet verliest. De afweging is de asymmetrie:
+tegenhouden en ongelijk hebben kost bets waarvan de gemeten opbrengst −17.7% is, niet tegenhouden
+en gelijk hebben kost geld.
+
+**Dit is een tijdelijke maatregel met een einddatum.** Elke tegengehouden kandidaat gaat als
+`failed_gate = "underdog"` naar `data/shadow.jsonl` en wordt daar net zo afgerekend als een echte
+pick, precies zoals §6d dat voor de andere zeven poorten doet. **Herzien uiterlijk 25 september
+2026.** Hij gaat eruit zodra één van beide waar is: het schaduwlogboek laat zien dat hij
+structureel winnaars tegenhoudt (positieve ROI over ≥ 30 afgewikkelde kandidaten), óf de
+kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenfout zelf — welke
+stap maakt de mindere ploeg te sterk; §6e wijst richting `shrink`, maar `shrink = 0.8` is op
+3 sep juist op Brier-score gemeten en goed bevonden, en die spanning moet eerst worden opgelost.
 
 ### Waarom poort 5 en 6 zo staan (herzien 11 aug 2026)
 
@@ -260,7 +315,7 @@ nooit prijzen over verschillende lijnen heen, want een andere lijn is een andere
 
 Een handicap of totaal met push is geen gewone kans — bij een push komt de inzet terug — dus
 `asian_prob` geeft de kans terug die bij díe koers dezelfde verwachtingswaarde oplevert, zodat
-`edge_pp` en alle zes poorten er ongewijzigd op werken. Gebruik voor markten met push dus altijd
+`edge_pp` en alle acht poorten er ongewijzigd op werken. Gebruik voor markten met push dus altijd
 `asian_prob` / `dnb_prob` / `totals_prob` en nooit de kale winkans, anders staan de markten niet op
 dezelfde schaal en is de rangschikking hieronder betekenisloos.
 
@@ -501,7 +556,7 @@ from scripts.model import selection_score
 selection_score(edge_pp, my_prob, data_tier)      # = edge_pp × my_prob × (FULL 1.0 | LIGHT 0.5)
 ```
 
-Van alle selecties die **alle zes de poorten** halen, publiceer je die met de hoogste score. Dit is
+Van alle selecties die **alle acht de poorten** halen, publiceer je die met de hoogste score. Dit is
 dezelfde formule als bij de topselectie in §5 — één weegregel voor beide, zodat de bet die je kiest
 en de plek die hij in de shortlist krijgt niet uit elkaar kunnen lopen.
 

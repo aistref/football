@@ -104,7 +104,7 @@ state = load_or_start("a", date.fromisoformat(DAY))
 state["parameters"] = {
     "MAX_DEEP_ANALYSES": res["afkapping"]["cap"], "MAX_SHORTLIST": MAX_SHORT,
     "EDGE_THRESHOLD_FULL": 8.0, "EDGE_THRESHOLD_LIGHT": 16.0, "MAX_LIGHT_IN_SHORTLIST": MAX_LIGHT,
-    "MIN_ODDS": 1.30, "MAX_ODDS": 6.00, "SETTLE_FALLBACK_HOURS": 2.0,
+    "MIN_ODDS": 1.30, "MAX_ODDS": 6.00, "POORT_8_UNDERDOG": "aan sinds 4 sep 2026", "SETTLE_FALLBACK_HOURS": 2.0,
     "afgekapt": res["afkapping"]["afgekapt"],
     "toelichting": (
         "12 wedstrijden op de runlijst vandaag, in 11 van de 21 competities — vrijdagavond, de "
@@ -113,7 +113,14 @@ state["parameters"] = {
         "Super Lig 1, Danish Superliga 1, Ekstraklasa 1; de Championship, de Scottish "
         "Premiership en alle acht toernooien hadden niets op de kalender. Alle 12 haalden de "
         "datadekkingspoort en zijn doorgerekend; geen enkele wedstrijd kwam op NONE uit. "
-        f"De cap van {res['afkapping']['cap']} (vrijdag) is niet aangeraakt, dus er is niets afgekapt."),
+        f"De cap van {res['afkapping']['cap']} (vrijdag) is niet aangeraakt, dus er is niets afgekapt. "
+        "HERZIEN om 15:30 CEST, ruim voor de eerste aftrap van 19:00: op verzoek van de gebruiker "
+        "is poort 8 ingevoerd (§1e) — geen bets meer op de kant die de markt zwakker vindt, "
+        "zolang de kalibratie daar scheef staat. Deze run is daarmee opnieuw doorgerekend. "
+        "Gevolg: Basaksehir +1.5 vervalt (poort 8, geen andere selectie haalde de poorten) en "
+        "Real Betis +1.5 vervalt en wordt vervangen door Under 3.5 op dezelfde wedstrijd. "
+        "Viborg - Lyngby Over 3.5 blijft ongewijzigd. De twee ingetrokken picks staan als 'void' "
+        "in picks.jsonl met de reden erbij, en als schaduwkandidaat met failed_gate 'underdog'."),
     "omrekeningen": {
         "aanleiding": (
             "Drie ploegen in drie duels stonden vorig seizoen niet in de stand van de competitie "
@@ -160,7 +167,7 @@ for comp, ms in by_comp.items():
              "datarijkdom": {"score": m["richness"], "deelscores": m.get("richness_parts")},
              "context": m.get("context"), "candidates_evaluated": m.get("candidates_evaluated", 0),
              "all_candidates": m.get("all_candidates", [])}
-        for k in ("promovendi", "understat", "verplaatst"):
+        for k in ("promovendi", "understat", "verplaatst", "poort8_geblokkeerd"):
             if m.get(k): e[k] = m[k]
         if m.get("reason"): e["reden"] = m["reason"]
         if m.get("near_miss"): e["near_miss"] = m["near_miss"]

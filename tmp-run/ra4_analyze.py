@@ -2,7 +2,7 @@
 import json, sys
 from datetime import date, datetime, timezone, timedelta
 sys.path.insert(0, "tmp-run")
-from scripts import fotmob, model, calibration, oddsapi, promotion, understat
+from scripts import fotmob, model, calibration, oddsapi, promotion, understat, sides
 from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_match_from_splits,
                            edge_pp, asian_prob, dnb_prob, totals_prob, robustness_check,
                            selection_score, early_season_uplift, scale_level, splits_from_fotmob,
@@ -373,7 +373,11 @@ for c in cands:
             gates["robuustheid"] = None
         g7 = gate7.get(side if side else "None") or {"passed": True, "reason": "geen kant om te benadelen"}
         gates["context"] = bool(g7["passed"])
-        fail = next((k for k in ("odds", "edge", "tweede_methode", "robuustheid", "context")
+        # Poort 8 (§1e, 4 sep 2026): niet op de kant die de markt zwakker vindt.
+        g8 = sides.check(side, row.get("odds_1x2"))
+        gates["underdog"] = g8.passed
+        fail = next((k for k in ("odds", "edge", "tweede_methode", "robuustheid", "context",
+                                 "underdog")
                      if gates[k] is False), None)
         evaluated.append({"market": markt, "selection": oms, "odds": o, "odds_source": bron,
                           "side": side, "my_prob": round(my, 4), "implied": round(1 / o, 4),
@@ -382,8 +386,24 @@ for c in cands:
                           "edge_split": round(e_sp, 2),
                           "edge_robust_min": (round(rb.min_edge, 2) if rb else None),
                           "failed_gate": fail, "context_reason": g7.get("reason", ""),
+                          "underdog_reason": g8.reason,
                           "score": round(selection_score(e_pp, my, tier), 3) if fail is None else None})
     row["candidates_evaluated"] = len(evaluated)
+    # Selecties die alléén op poort 8 sneuvelden: alle eerdere poorten stonden open. Die gaan naar
+    # het schaduwlogboek, ook als deze wedstrijd daarna alsnog een andere bet oplevert (§1e).
+    _p8 = [r for r in evaluated if r["failed_gate"] == "underdog"]
+    # Alleen de selectie die zónder poort 8 gepubliceerd zóu zijn — de hoogste selection_score.
+    # Alle andere geblokkeerde selecties zijn dezelfde mening in een andere markt (§1a); ze
+    # allemaal opnemen zou de gemeten opbrengst van deze poort vier keer meetellen.
+    row["poort8_geblokkeerd"] = []
+    if _p8:
+        b8 = max(_p8, key=lambda r: selection_score(r["edge_pp"], r["my_prob"], tier))
+        row["poort8_geblokkeerd"] = [
+            {"market": f"{b8['market']} — {b8['selection']}", "odds": b8["odds"],
+             "edge_pp": b8["edge_pp"], "edge_xg": b8["edge_xg"], "edge_split": b8["edge_split"],
+             "edge_robust_min": b8["edge_robust_min"], "failed_gate": "underdog",
+             "score": round(selection_score(b8["edge_pp"], b8["my_prob"], tier), 3),
+             "ook_geblokkeerd": len(_p8) - 1, "reden": b8["underdog_reason"]}]
     tally = {}
     for r in evaluated:
         t = tally.setdefault(r["market"], {"n": 0, "bets": 0})
@@ -412,7 +432,11 @@ for c in cands:
                     "odds": o0["odds"], "edge_pp": o0["edge_pp"],
                     "failed_gate": o0["failed_gate"] or "edge"}
     else:
-        near = [r for r in evaluated if r["edge_pp"] >= NEAR[tier] and MIN_ODDS <= r["odds"] <= MAX_ODDS]
+        # Kandidaten die op poort 8 sneuvelden staan al in `poort8_geblokkeerd` en horen hier dus
+        # niet nóg een keer: anders krijgt dezelfde mening twee schaduwregels en telt de opbrengst
+        # van die poort dubbel mee bij de herziening van 25 september.
+        near = [r for r in evaluated if r["edge_pp"] >= NEAR[tier]
+                and MIN_ODDS <= r["odds"] <= MAX_ODDS and r["failed_gate"] != "underdog"]
         if near:
             b = max(near, key=lambda r: r["edge_pp"])
             gate = b["failed_gate"] or ("edge" if b["edge_pp"] < thresh else None)
@@ -439,7 +463,8 @@ for c in cands:
                              "odds": "odds buiten band",
                              "tweede_methode": "data conflicterend",
                              "robuustheid": "edge niet robuust over het (shrink, rho)-grid",
-                             "context": f"context spreekt de bet tegen — {b['context_reason']}"}[gate]
+                             "context": f"context spreekt de bet tegen — {b['context_reason']}",
+                             "underdog": f"poort 8 — {b['underdog_reason']}"}[gate]
         elif evaluated:
             row["reason"] = "edge onder drempel"
         else:

@@ -89,54 +89,63 @@ def cmd_collect(args: argparse.Namespace) -> int:
         for match in block.get("matches", []):
             if not isinstance(match, dict):
                 continue
-            nm = match.get("near_miss")
-            if not isinstance(nm, dict):
-                continue
+            # Eén match kan meer dan één schaduwkandidaat opleveren. `near_miss` is de sterkste
+            # afgewezen kandidaat van een wedstrijd zonder bet; `poort8_geblokkeerd` (sinds
+            # 4 sep 2026) zijn de selecties die alléén op poort 8 sneuvelden — die horen er ook in
+            # als de wedstrijd daarna alsnog een andere bet opleverde, want anders is op 25
+            # september niet te meten wat die poort heeft gekost. Zie §1e.
+            kandidaten = []
+            if isinstance(match.get("near_miss"), dict):
+                kandidaten.append(("", match["near_miss"]))
+            for i, blk in enumerate(match.get("poort8_geblokkeerd") or []):
+                if isinstance(blk, dict):
+                    kandidaten.append((f"-p8-{i}", blk))
 
-            odds = nm.get("odds")
-            if not isinstance(odds, (int, float)) or odds <= 1:
-                continue
-            e_xg, e_split = nm.get("edge_xg"), nm.get("edge_split")
-            edges = [v for v in (e_xg, e_split) if isinstance(v, (int, float))]
-            if not edges:
-                continue
+            for suffix, nm in kandidaten:
+                odds = nm.get("odds")
+                if not isinstance(odds, (int, float)) or odds <= 1:
+                    continue
+                e_xg, e_split = nm.get("edge_xg"), nm.get("edge_split")
+                edges = [v for v in (e_xg, e_split) if isinstance(v, (int, float))]
+                if not edges:
+                    continue
 
-            implied = 1 / odds
-            # my_prob volgens de herziene §1: het gemiddelde van beide methodes. Bestaat er maar
-            # één methode (de competitie van één van beide ploegen heeft geen xG bij Fotmob), dan
-            # telt die ene — de kandidaat wordt wél vastgelegd, maar met `methods: 1` gemarkeerd
-            # zodat `stats` hem buiten de hoofdcijfers houdt. Tot 20 aug 2026 werd zo'n kandidaat
-            # weggegooid; op 19 aug kostte dat 2 van de 5 rijen en op 20 aug 11 van de 20,
-            # waaronder telkens de scherpste getallen van de dag. Weggooien is geen neutrale
-            # keuze: het maakt de meting van poort `data` juist blind voor de wedstrijden waar
-            # die poort het vaakst toeslaat.
-            my_prob = implied + (sum(edges) / len(edges)) / 100
-            slug = "".join(c if c.isalnum() else "-" for c in match.get("match", "")).strip("-").lower()
-            pid = f"shadow-{state['date']}-{state['run'].lower()}-{slug}"[:120]
-            if pid in seen:
-                continue
+                implied = 1 / odds
+                # my_prob volgens de herziene §1: het gemiddelde van beide methodes. Bestaat er maar
+                # één methode (de competitie van één van beide ploegen heeft geen xG bij Fotmob), dan
+                # telt die ene — de kandidaat wordt wél vastgelegd, maar met `methods: 1` gemarkeerd
+                # zodat `stats` hem buiten de hoofdcijfers houdt. Tot 20 aug 2026 werd zo'n kandidaat
+                # weggegooid; op 19 aug kostte dat 2 van de 5 rijen en op 20 aug 11 van de 20,
+                # waaronder telkens de scherpste getallen van de dag. Weggooien is geen neutrale
+                # keuze: het maakt de meting van poort `data` juist blind voor de wedstrijden waar
+                # die poort het vaakst toeslaat.
+                my_prob = implied + (sum(edges) / len(edges)) / 100
+                slug = "".join(c if c.isalnum() else "-" for c in match.get("match", "")).strip("-").lower()
+                pid = f"shadow-{state['date']}-{state['run'].lower()}-{slug}{suffix}"[:120]
+                if pid in seen:
+                    continue
 
-            new.append({
-                "id": pid,
-                "date": state["date"],
-                "run": state["run"],
-                "competition": comp,
-                "match": match.get("match"),
-                "data_tier": match.get("tier"),
-                "market": nm.get("market"),
-                "odds": odds,
-                "implied_prob": round(implied, 4),
-                "my_prob": round(my_prob, 4),
-                "edge_pp": round((my_prob - implied) * 100, 2),
-                "edge_xg": e_xg,
-                "edge_split": e_split,
-                "methods": len(edges),
-                "edge_robust_min": nm.get("edge_robust_min"),
-                "failed_gate": nm.get("failed_gate"),
-                "result": OPEN,
-                "settled_at": None,
-            })
-            seen.add(pid)
+                new.append({
+                    "id": pid,
+                    "date": state["date"],
+                    "run": state["run"],
+                    "competition": comp,
+                    "match": match.get("match"),
+                    "data_tier": match.get("tier"),
+                    "market": nm.get("market"),
+                    "odds": odds,
+                    "implied_prob": round(implied, 4),
+                    "my_prob": round(my_prob, 4),
+                    "edge_pp": round((my_prob - implied) * 100, 2),
+                    "edge_xg": e_xg,
+                    "edge_split": e_split,
+                    "methods": len(edges),
+                    "edge_robust_min": nm.get("edge_robust_min"),
+                    "failed_gate": nm.get("failed_gate"),
+                    "result": OPEN,
+                    "settled_at": None,
+                })
+                seen.add(pid)
 
     if not new:
         print(f"Geen nieuwe kandidaten in {path.name}.")
