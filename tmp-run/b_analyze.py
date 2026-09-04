@@ -1,11 +1,13 @@
 import json, sys, os, unicodedata, re
-sys.path.insert(0,'.')
+sys.path.insert(0,'.'); sys.path.insert(0,'tmp-run')
 from scripts import fotmob, model, calibration
 from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_match_from_splits,
     splits_from_fotmob, robustness_check, edge_pp, asian_prob, dnb_prob, totals_prob,
     selection_score, scale_level, blend_seasons, blend_weight)
 from scripts.promotion import find_team
+from scripts import promotion
 from scripts.oddsapi import best_by_line
+from b_merge import merge_teams
 
 EDGE={"FULL":8.0,"LIGHT":16.0}; MIN_ODDS,MAX_ODDS=1.30,6.00
 M=json.load(open("tmp-run/b_matches.json")); L=json.load(open("tmp-run/b_leagues.json"))
@@ -13,48 +15,69 @@ CTX=json.load(open("tmp-run/b_ctx.json")); OD1=json.load(open("tmp-run/b_bx.json
 API=json.load(open("tmp-run/b_oddsapi.json")); BTTS=json.load(open("tmp-run/b_btts.json"))
 UP=L["_uplift"]["factor"]
 
+def stats_merged(league_id, season):
+    st=fotmob.fetch_league_stats(league_id, season)
+    st=dict(st); st["teams"], st["_merged"] = merge_teams(st["teams"])
+    return st
+
 LG={}
 for comp,blk in M.items():
-    st=fotmob.fetch_league_stats(blk["league_id"], L[comp]["base_season"])
-    avg = st["avg_xg_per_match"] if st["has_xg"] else (st["home_goals_per_match"]+st["away_goals_per_match"])/2
-    base=LeagueContext(st["home_goals_per_match"], st["away_goals_per_match"], avg)
-    # Stand van het LOPENDE seizoen voor blend_seasons (§4). Bij een kalenderjaarcompetitie
-    # (Allsvenskan) is base_season == cur_season: het basisseizoen IS al het lopende, dus
-    # blenden zou een seizoen met zichzelf wegen. Daar slaan we het over.
+    cfg=L[comp]
+    st = stats_merged(blk["league_id"], cfg["base_season"])              # teamsterkte + splits
+    lvl = st if cfg["level_season"]==cfg["base_season"] else stats_merged(blk["league_id"], cfg["level_season"])
+    avg = lvl["avg_xg_per_match"] if lvl["avg_xg_per_match"] else (lvl["home_goals_per_match"]+lvl["away_goals_per_match"])/2
+    base=LeagueContext(lvl["home_goals_per_match"], lvl["away_goals_per_match"], avg)
     cur_teams = {}
-    if L[comp]["cur_season"] != L[comp]["base_season"]:
-        try:
-            cur_teams = fotmob.fetch_league_stats(blk["league_id"], L[comp]["cur_season"])["teams"]
-        except Exception as e:
-            print(f"  {comp}: lopend seizoen niet op te halen ({type(e).__name__}) — alleen basis")
-    LG[comp]={"stats":st,"league":scale_level(base,UP) if L[comp]["uplift"] else base,
-              "base":base,"has_xg":st["has_xg"],"cur_teams":cur_teams}
-    print(f"{comp}: basis {L[comp]['base_season']} has_xg={st['has_xg']} uplift={L[comp]['uplift']}")
+    if cfg["cur_season"] != cfg["base_season"]:
+        try: cur_teams = stats_merged(blk["league_id"], cfg["cur_season"])["teams"]
+        except Exception as e: print(f"  {comp}: lopend seizoen niet op te halen ({type(e).__name__})")
+    LG[comp]={"stats":st,"league":scale_level(base,UP) if cfg["uplift"] else base,
+              "base":base,"has_xg":st["avg_xg_per_match"] is not None,"cur_teams":cur_teams,
+              "merged":st.get("_merged") or []}
+    print(f"{comp}: sterkte {cfg['base_season']} has_xg={LG[comp]['has_xg']} · niveau {cfg['level_season']} "
+          f"({base.home_goals_per_match:.3f}/{base.away_goals_per_match:.3f}) uplift={cfg['uplift']} merged={len(LG[comp]['merged'])}")
 
-ALIAS={"Györi ETO":"Györi ETO","Djurgården":"Djurgardens IF"}
+ALIAS={}
 def team_inputs(comp, name):
     st=LG[comp]["stats"]; teams=st["teams"]; has_xg=LG[comp]["has_xg"]
     row_name = find_team(teams, name) or find_team(teams, ALIAS.get(name,name))
-    if not row_name: raise KeyError(f"{name} niet in de tabel van {comp} {L[comp]['base_season']}")
+    if not row_name:
+        # §4: eerst omrekenen (promovendus uit de divisie eronder, degradant uit die erboven),
+        # pas daarna NONE. Een omgerekende ploeg is nooit FULL.
+        errs=[]
+        for fn, kind in ((promotion.convert, "promovendus"), (promotion.convert_relegated, "degradant")):
+            try:
+                c = fn(comp, name, L[comp]["base_season"], LG[comp]["league"])
+            except Exception as e:
+                errs.append(f"{kind}: {type(e).__name__}: {e}"); continue
+            if c.tier == "NONE":
+                raise KeyError(f"{name}: omrekening buiten het gemeten bereik — {c.note}")
+            return c.stats, c.splits, c.tier, f"{name} omgerekend als {kind} — {c.note}", None
+        raise KeyError(f"{name} niet in de tabel van {comp} {L[comp]['base_season']}; " + " | ".join(errs))
     t=teams[row_name]
-    if has_xg and "xg" in t: ts=TeamStats(t["xg"], t["xga"], t["mp"])
+    if has_xg and t.get("xg") is not None: ts=TeamStats(t["xg"], t["xga"], t["mp"])
     else: ts=TeamStats(float(t["gf"]), float(t["ga"]), t["played"])
     note=f"{row_name} uit {comp} {L[comp]['base_season']}" + ("" if has_xg else " (doelpunten, geen xG bij Fotmob)")
-    # Lopend seizoen meewegen naar rato van gespeelde duels (§4, blend_seasons).
     weging=None
     cur_teams=LG[comp].get("cur_teams") or {}
-    cur_name=find_team(cur_teams, name) or find_team(cur_teams, ALIAS.get(name,name)) if cur_teams else None
+    cur_name=(find_team(cur_teams, name) or find_team(cur_teams, ALIAS.get(name,name))) if cur_teams else None
     if cur_name:
         cr=cur_teams[cur_name]
-        if cr.get("mp") and has_xg and "xg" in cr:
+        if has_xg and cr.get("mp") and cr.get("xg") is not None:
             cur=TeamStats(cr["xg"], cr["xga"], cr["mp"])
+        elif (not has_xg) and cr.get("played") and cr.get("gf") is not None:
+            cur=TeamStats(float(cr["gf"]), float(cr["ga"]), cr["played"])
+        else:
+            cur=None
+        if cur:
             merged=blend_seasons(ts, cur)
             weging={"duels_dit_seizoen":cur.matches_played,
                     "gewicht_dit_seizoen":round(blend_weight(cur.matches_played),3),
-                    "xg_per_duel":{"vorig":round(ts.xg_per_match,3),"dit":round(cur.xg_per_match,3),
-                                    "gewogen":round(merged.xg_per_match,3)},
-                    "xga_per_duel":{"vorig":round(ts.xga_per_match,3),"dit":round(cur.xga_per_match,3),
-                                     "gewogen":round(merged.xga_per_match,3)}}
+                    "eenheid":"xG" if has_xg else "doelpunten",
+                    "per_duel_voor":{"vorig":round(ts.xg_per_match,3),"dit":round(cur.xg_per_match,3),
+                                     "gewogen":round(merged.xg_per_match,3)},
+                    "tegen_per_duel":{"vorig":round(ts.xga_per_match,3),"dit":round(cur.xga_per_match,3),
+                                      "gewogen":round(merged.xga_per_match,3)}}
             note += (f"; lopend seizoen {cur.matches_played} duels meegewogen voor "
                      f"{weging['gewicht_dit_seizoen']:.0%}")
             ts=merged
@@ -65,7 +88,7 @@ def norm(s):
     return "".join(ch for ch in s if ch.isalnum())
 def norm_words(s):
     s=unicodedata.normalize("NFKD",(s or "").lower()).encode("ascii","ignore").decode()
-    return [w for w in re.split(r"[^a-z0-9]+",s) if w and w not in ("fc","afc","sc","bsc","if","aif","ik","eto")]
+    return [w for w in re.split(r"[^a-z0-9]+",s) if w and w not in ("fc","afc","sc","bsc","if","aif","ik","eto","cf","ud","sd","cd","ac","nk","hk")]
 def _same(a,b):
     A,B=norm(a),norm(b)
     if A==B or A in B or B in A: return True
@@ -84,7 +107,11 @@ def api_event(comp, home, away, kind, kickoff=None):
         if _same(e["home_team"],home) and _same(e["away_team"],away): return e
     return None
 
-BEX_ALIAS={"Mjällby":"Mjallby","Djurgården":"Djurgarden","Györi ETO":"Gyor","Ferencváros":"Ferencvaros"}
+BEX_ALIAS={"Hannover 96":"Hannover","VVV-Venlo":"Venlo","TOP Oss":"Oss","RKC Waalwijk":"Waalwijk",
+           "Almere City FC":"Almere City","Bodø/Glimt":"Bodo/Glimt","NK Varaždin":"Varazdin",
+           "NK Istra 1961":"Istra 1961","Leganés":"Leganes","Vasas Budapest":"Vasas",
+           "Nyíregyháza Spartacus FC":"Nyiregyhaza","FCV Farul Constanța":"Farul Constanta",
+           "Helmond Sport":"Helmond","Skënderbeu":"Skenderbeu"}
 def x2_row(comp, home, away):
     rows=OD1.get(comp) or []
     if isinstance(rows,dict): return None
@@ -106,6 +133,7 @@ for comp,blk in M.items():
             as_,asp,at,anote,aw = team_inputs(comp,m["away"])
         except Exception as e:
             rec["tier"]="NONE"; rec["reason"]=f"{type(e).__name__}: {e}"
+            rec["richness"]=CTX[key]["richness"]; rec["datarijkdom"]=CTX[key]["richness"]
             results[key]=rec; print(f"NONE {key}: {rec['reason']}"); continue
         tier = "LIGHT" if "LIGHT" in (ht,at) else "FULL"
         rec["tier"]=tier; rec["inputs"]={"home":hnote,"away":anote}
@@ -119,6 +147,10 @@ for comp,blk in M.items():
                         "split":[round(p_sp.lambda_home,3),round(p_sp.lambda_away,3)]}
         g7=CTX[key]["gate7"]; rec["richness"]=CTX[key]["richness"]; rec["datarijkdom"]=CTX[key]["richness"]
         rec["gate7"]=g7
+        ctxblk=CTX[key].get("ctx") or {}
+        rec["context"]={"lineup_type":ctxblk.get("lineup_type"),
+                        "venue":ctxblk.get("venue"),
+                        "home":ctxblk.get("home_summary"),"away":ctxblk.get("away_summary")}
         cands=[]
         def add(market,label,side,odds,src,pf_xg,pf_sp,line=None,select=None):
             if not odds: return
@@ -195,7 +227,7 @@ for comp,blk in M.items():
                     select=(lambda y:(lambda r: r.btts if y else 1-r.btts))(yes)); n+=1
             rec["markets_checked"]["BTTS"]=f"The Odds API event-markt, {n} selecties (2 credits)"
         else:
-            rec["markets_checked"]["BTTS"]=NOKEY
+            rec["markets_checked"]["BTTS"]=BTTS.get("_reden", NOKEY)
         rec["candidates"]=cands
         rec["p"]={"xg":[round(p_xg.home,4),round(p_xg.draw,4),round(p_xg.away,4)],
                   "xg_noshrink":[round(p_xg_ns.home,4),round(p_xg_ns.draw,4),round(p_xg_ns.away,4)],

@@ -3,7 +3,7 @@ from datetime import date
 sys.path.insert(0,'.')
 from scripts import fotmob
 
-day = date(2026,9,3)
+day = date(2026,9,4)
 fx = fotmob.fetch_fixtures(day)
 leagues = fx.get("leagues", [])
 print("total leagues today:", len(leagues))
