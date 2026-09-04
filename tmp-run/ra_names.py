@@ -31,6 +31,12 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # gedeeld token. Hearts stond gewoon in de stand van 2025/2026 en ging zonder deze regel
     # ten onrechte de promovendi-omrekening in (en daarmee van FULL naar LIGHT).
     "hearts": "heart of midlothian",
+    # 4 sep 2026: vierde geval van dezelfde soort, en het duurste tot nu toe. De daglijst
+    # schrijft "PSG", de Ligue 1-stand "Paris Saint-Germain" — een initiaalwoord deelt geen
+    # enkel token met de voluitnaam. PSG stond gewoon in de stand van 2025/2026 en ging zonder
+    # deze regel ten onrechte de promovendi-omrekening in, die voor een ploeg uit de hoogste
+    # divisie niets kán opleveren (er is geen divisie boven Ligue 1) en dus op NONE uitkomt.
+    "psg": "paris saint germain",
 }
 
 

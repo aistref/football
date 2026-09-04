@@ -142,6 +142,15 @@ def max_shortlist(day: date) -> int:
     return 5 if day.weekday() >= 4 else 3
 
 
+def max_deep_analyses(day: date) -> int:
+    """30 op ma-do, 35 op vr-zo — `MAX_DEEP_ANALYSES` uit _shared-rules.md §0.
+
+    Dezelfde dagindeling als `max_shortlist`, en om dezelfde reden hier uitgeschreven in plaats
+    van uit `ranking` geimporteerd: dit script leest alleen uit picks.jsonl en run-state.
+    """
+    return 35 if day.weekday() >= 4 else 30
+
+
 def selection_score(pick: dict) -> float:
     """edge_pp x my_prob x (FULL 1.0 | LIGHT 0.5) — dezelfde formule als model.selection_score.
 
@@ -549,11 +558,15 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
         f'<div class="term"><dt>{esc(t)}</dt><dd>{d}</dd></div>' for t, d in GLOSSARY)
 
     truncated = prose.get("truncated", 0)
+    # De cap is dagafhankelijk (30 op ma-do, 35 op vr-zo, _shared-rules.md §0). Tot 4 sep 2026
+    # stond hier hard "30", waardoor het dagrapport op een vrijdag met 35 toegestane analyses
+    # een ander getal noemde dan de run zelf had gebruikt.
+    cap = max_deep_analyses(day)
     trunc_line = (f'<p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten '
-                  f'wegens tijdgebrek</strong>: er mogen er 30 per run diep worden bekeken en het '
+                  f'wegens tijdgebrek</strong>: er mogen er {cap} per run diep worden bekeken en het '
                   f'waren er {matches}.</p>') if not truncated else (
         f'<p class="prose measure" style="margin-top:20px"><strong>{truncated} wedstrijden zijn '
-        f'afgekapt</strong> omdat er per run maximaal 30 diep bekeken kunnen worden.</p>')
+        f'afgekapt</strong> omdat er per run maximaal {cap} diep bekeken kunnen worden.</p>')
 
     return f'''<title>Run {run_id.upper()} — {nl_date(day)}</title>
 <style>{CSS}</style>
