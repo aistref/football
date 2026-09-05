@@ -14,10 +14,45 @@ Ingevoerd 4 september 2026, op verzoek van de gebruiker, na de spiegelanalyse in
   picks juist stijgt (+15.6% vanaf 8 pp, +26.4% vanaf 10 pp). Op de underdog-kant is een grotere
   geclaimde edge geen sterker signaal dat de bet goed is, maar dat het model ernaast zit.
 
-Deze poort is dus geen fijnregeling maar een **rem**: zolang de kansschatting op die kant
-aantoonbaar scheef staat, wordt daar niet gespeeld. Hij staat in `scripts/` en niet in de
-run-scripts, om dezelfde reden als `scripts/settling.py`: zodra Run A en Run B er elk hun eigen
-versie van hebben, lopen ze uiteen.
+Deze poort staat in `scripts/` en niet in de run-scripts, om dezelfde reden als
+`scripts/settling.py`: zodra Run A en Run B er elk hun eigen versie van hebben, lopen ze uiteen.
+
+## Verlicht op 5 september 2026, op verzoek van de gebruiker
+
+De poort blokkeerde tot die datum **elke** selectie op de underdog-kant. Dat is nagerekend en het
+bleek te grof, om twee redenen die allebei op uitslagen zijn gemeten:
+
+1. **Het geldverlies op die kant is niet significant.** −17.7% over 89 gevallen klinkt hard, maar
+   staat op t = −1.39. De gemeten kalibratiefout (z = −3.14) is wél hard; het *rendement* is dat
+   niet. De halve markt dichtzetten op een resultaat dat ruis kan zijn, is niet proportioneel.
+2. **De vergelijkingsgroep deugde niet.** De "+1.2% van alle overige picks" waarmee de underdogs
+   werden afgezet, bestaat voor driekwart uit doelpuntenmarkten. De écht gespeelde favorietenkant
+   telt maar 21 gevallen en verliest óók — 10.9%. De +6.28u voor de favorietenkant in de
+   oorspronkelijke onderbouwing is een **spiegelberekening met geschatte koersen**, geen waarneming.
+
+Wat wél standhoudt, is dat de schade niet gelijkmatig over de underdogs verdeeld ligt. Uitgesplitst
+naar de marktkans van de gespeelde selectie zelf:
+
+| marktkans van de selectie | n | trefkans | rendement |
+|---|---|---|---|
+| < 25% (zware outsider) | 11 | 18.2% | −10.2% |
+| **25–35%** | **18** | **16.7%** | **−44.4%** |
+| 35–45% | 9 | 33.3% | −7.8% |
+| 45–55% (bijna gelijk) | 38 | 44.7% | −12.1% |
+| ≥ 55% | 13 | 53.8% | −10.5% |
+
+Daarom blokkeert de poort vanaf nu alleen nog de underdog-kant **onder `UNDERDOG_FLOOR`**. Dat
+houdt 29 van de 89 gevallen tegen — precies de groep die −31.4% deed — en laat de zestig
+overgebleven underdogs door, die op −11.1% staan en daarmee niet meer uit de toon vallen bij de
+favorietenkant (−10.9%).
+
+**Twee dingen die je hierbij moet weten en die niet moeten wegvallen.** De niet-monotonie in de
+tabel hierboven (de bak onder 25% doet het *beter* dan die van 25–35%) is bij deze aantallen ruis;
+de grens is dus "ongeveer waar het misgaat", geen scherp getal. En de belangrijkste reden dat deze
+poort lichter kán, staat elders: sinds 5 sep loopt `my_prob` door `scripts/recalibrate.py`, dat de
+scheefstand van bijna tien procentpunt er op uitslagen af haalt. Die correctie pakt de oorzaak aan
+waar deze poort een symptoom van afdekte. Wie de herijking ooit uitzet, moet deze poort weer
+zwaarder maken.
 
 Drie eigenschappen, met opzet gelijk aan poort 7 (§1c):
 
@@ -40,6 +75,11 @@ from dataclasses import dataclass
 # gaat de poort open. 3 procentpunt is niet gemeten maar gekozen: het is ruwweg de spreiding tussen
 # bookmakers op dezelfde wedstrijd, dus kleiner dan dat is geen marktoordeel maar ruis.
 PICKEM_TOLERANCE = 0.03
+
+# Onder deze marktkans wordt er niet op de underdog-kant gespeeld. Boven deze grens gaat de poort
+# open: daar is het gemeten rendement van de underdog-kant (−11.1%) niet te onderscheiden van dat
+# van de favorietenkant (−10.9%), en dan is er geen grond om één van beide af te sluiten.
+UNDERDOG_FLOOR = 0.35
 
 
 @dataclass(frozen=True)
@@ -90,7 +130,11 @@ def check(side: str | None, odds_1x2) -> SideCheck:
         return SideCheck(True, f"pick'em — de markt scheidt de ploegen niet ({mine:.1%} om "
                                f"{theirs:.1%})", probs)
     if under == side:
-        return SideCheck(False, f"underdog-kant — de markt geeft deze ploeg {mine:.1%} tegen "
-                                f"{theirs:.1%} voor de tegenstander; poort 8 (§1) is dicht zolang "
-                                f"de kalibratie daar scheef staat", probs)
+        if mine < UNDERDOG_FLOOR:
+            return SideCheck(False, f"underdog-kant onder de ondergrens — de markt geeft deze "
+                                    f"ploeg {mine:.1%} tegen {theirs:.1%} voor de tegenstander, "
+                                    f"onder de {UNDERDOG_FLOOR:.0%} waar poort 8 (§1) dichtgaat",
+                             probs)
+        return SideCheck(True, f"underdog-kant, maar boven de ondergrens ({mine:.1%} om "
+                               f"{theirs:.1%}; poort 8 sluit onder {UNDERDOG_FLOOR:.0%})", probs)
     return SideCheck(True, f"favorietenkant ({mine:.1%} om {theirs:.1%})", probs)

@@ -18,6 +18,10 @@ aanpassen zonder de geplande taak aan te raken.
 | `MIN_ODDS` / `MAX_ODDS` | **1.30** / **6.00** | Buiten deze band is de kansschatting te onnauwkeurig om edge zinvol te noemen. |
 | `SETTLE_AFTER_HOURS` | **vervallen** | Vervangen op 3 sep 2026 door de statusregel hieronder. Stond van de eerste commit tot die datum op 12 uur na de **aftrap**, zonder onderbouwing. |
 | `SETTLE_FALLBACK_HOURS` | **2.0** | Alleen de terugval als de bron geen status geeft. `scripts/settling.FALLBACK_HOURS`. |
+| `XG_WEIGHT` | **0.80** | Hoe zwaar de xG-methode weegt in `my_prob` tegenover de splitsmethode. Was tot 5 sep 2026 impliciet 0.50 (ongewogen gemiddelde), en dat was nooit ergens op gebaseerd. Op **uitslagen** gemeten over 392 afgerekende gevallen; zie §1f. De curve is vlak tussen 0.7 en 1.0 — niet op fijnregelen. `scripts/model.XG_WEIGHT`. |
+| `CREDIBILITY_K` | **8** | Na hoeveel duels het lopende seizoen even zwaar weegt als het hele vorige. Op 5 sep 2026 op verzoek van de gebruiker van 16 naar 8 gezet: sneller meebewegen, tegen 13% van de gemeten blendwinst. Zie §4. `scripts/model.CREDIBILITY_K`. |
+| `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
+| `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
 
 ### Wanneer een pick afwikkelbaar is (herzien 3 sep 2026, op verzoek van de gebruiker)
 
@@ -116,19 +120,29 @@ Per geanalyseerde wedstrijd geldt precies één van twee uitkomsten:
 - **BET** — er is één markt/selectie die alle poorten hieronder passeert.
 - **GEEN BET** — met een reden in één regel. Dit is een volwaardige, correcte uitkomst.
 
-**Draai altijd beide methodes** en middel ze tot één schatting:
+**Draai altijd beide methodes**, weeg ze, en herijk het resultaat op uitslagen:
 
 ```python
+from scripts.model import combine_probs
+from scripts.recalibrate import load_fit, apply
+
+fit     = load_fit()                      # één keer per run, leest picks.jsonl + shadow.jsonl
 p_xg    = analyze_match(...)              # op xG, genormaliseerd op de competitie
 p_split = analyze_match_from_splits(..., league=league)   # LET OP: league meegeven, zie §1d
-my_prob = (p_xg + p_split) / 2            # dit is de kans die in de pick komt
+my_raw  = combine_probs(p_xg, p_split)    # 0.80 op xG, 0.20 op de splits — zie §1f
+my_prob = apply(my_raw, fit)              # herijking op uitslagen — zie §1g
 edge_pp = (my_prob - 1 / odds) * 100
 ```
+
+**Beide stappen zijn nieuw op 5 sep 2026 en allebei op uitkomsten gemeten.** Tot die datum was
+`my_prob` het ongewogen gemiddelde van de twee methodes, ongecorrigeerd. Noteer in de pick zowel
+`my_raw` als `my_prob`, zodat achteraf te zien is wat de herijking heeft gedaan.
 
 Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
 
 1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`
-   — gemeten op de **gemiddelde** `my_prob` hierboven, niet op één van de twee afzonderlijk;
+   — gemeten op de **gewogen en herijkte** `my_prob` hierboven, niet op één van de twee methodes
+   afzonderlijk en niet op `my_raw`;
 2. `MIN_ODDS ≤ odds ≤ MAX_ODDS`;
 3. de anti-circulariteitsregel (§2) is voldaan;
 4. `data_tier ≠ NONE`;
@@ -138,7 +152,7 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
 6. **de edge draait niet om bij een andere parameterkeuze:**
    `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid;
 7. **de context spreekt de bet niet tegen** (§1c): `context.check(ctx, side).passed`;
-8. **de selectie staat niet op de kant die de markt zwakker vindt** (§1e):
+8. **de selectie staat niet op een underdog-kant die de markt onder `UNDERDOG_FLOOR` zet** (§1e):
    `sides.check(side, odds_1x2).passed`.
 
 ### Poort 7 — contextfactoren (toegevoegd 23 aug 2026, op aanwijzing van de gebruiker)
@@ -237,12 +251,48 @@ De poort werkt als poort 7: hij houdt alleen tegen, stelt `my_prob` niet bij, st
 is er geen marktoordeel over wie de mindere ploeg is. Binnen `PICKEM_TOLERANCE` (3 pp verschil in
 de-vigde marktkans) noemt de markt geen van beide ploegen de mindere en gaat de poort open.
 
-**Wat dit kost, en waarom het toch is gedaan.** Het schakelt driekwart van alle bets-met-een-kant
-uit; verwacht magere dagen met vaak nul of één bet, meestal uit een doelpuntenmarkt. En de +1.2%
-van de overgebleven groep staat op t = +0.13, dus dat die groep wínst oplevert is **niet**
-aangetoond — het beste wat ervan te zeggen is dat ze niet verliest. De afweging is de asymmetrie:
-tegenhouden en ongelijk hebben kost bets waarvan de gemeten opbrengst −17.7% is, niet tegenhouden
-en gelijk hebben kost geld.
+### Verlicht op 5 september 2026, op verzoek van de gebruiker
+
+**De poort blokkeerde tot die datum élke selectie op de underdog-kant. Dat is te grof gebleken.**
+Twee bezwaren, allebei op uitslagen gemeten:
+
+1. **Het geldverlies op die kant is niet significant.** De −17.7% over 89 gevallen staat op
+   **t = −1.39**. De kalibratiefout (z = −3.14) is hard; het rendement is dat niet. De halve markt
+   afsluiten op een resultaat dat ruis kan zijn, is niet in verhouding.
+2. **De vergelijkingsgroep in de tabel hierboven deugt niet.** "Alle overige picks, +1.2%" bestaat
+   voor driekwart uit doelpuntenmarkten. De écht gespeelde **favorietenkant** telt maar 21 gevallen
+   en verliest óók: −10.9%. En de +6.28u voor de favorietenkant is een **spiegelberekening met
+   geschatte koersen**, geen waarneming. Er is dus nooit aangetoond dat de andere kant beter is —
+   alleen dat markten zónder kant het minder slecht doen.
+
+Wat wél standhoudt is dat de schade ongelijk over de underdogs ligt. Naar de marktkans van de
+gespeelde selectie zelf:
+
+| marktkans van de selectie | n | trefkans | rendement |
+|---|---|---|---|
+| < 25% (zware outsider) | 11 | 18.2% | −10.2% |
+| **25–35%** | **18** | **16.7%** | **−44.4%** |
+| 35–45% | 9 | 33.3% | −7.8% |
+| 45–55% (bijna gelijk) | 38 | 44.7% | −12.1% |
+| ≥ 55% | 13 | 53.8% | −10.5% |
+
+**De poort sluit daarom vanaf nu alleen onder `sides.UNDERDOG_FLOOR` = 0.35.** Dat houdt 29 van de
+89 gevallen tegen (samen −31.4%) en laat de zestig overige door, die op −11.1% staan — niet te
+onderscheiden van de favorietenkant. De niet-monotonie in die tabel (de bak onder 25% doet het
+béter dan 25–35%) is bij deze aantallen ruis, dus 0.35 is "ongeveer waar het misgaat", geen scherp
+getal.
+
+**Wat dit kost, en waarom het zo is afgewogen.** De zware versie schakelde driekwart van alle
+bets-met-een-kant uit; op 5 sep leverde dat 311 doorgerekende selecties op de uitkomstmarkten en
+nul bets op. De lichte versie houdt ongeveer een derde van de underdog-kant tegen. Dat is minder
+bescherming, maar het is ook minder bescherming tegen iets waarvan niet vaststaat dát het beschermd
+moest worden.
+
+**De belangrijkste reden dat het lichter kán, staat in §1g.** `my_prob` loopt sinds 5 sep door
+`recalibrate.py`, dat de scheefstand van bijna tien procentpunt er op uitslagen af haalt. Die
+correctie pakt de oorzaak aan waar deze poort een symptoom van afdekte, en er komen daardoor
+sowieso veel minder underdog-selecties door de edge-poort. **Zet de herijking ooit uit, dan moet
+deze poort weer zwaarder.**
 
 **Dit is een tijdelijke maatregel met een einddatum.** Elke tegengehouden kandidaat gaat als
 `failed_gate = "underdog"` naar `data/shadow.jsonl` en wordt daar net zo afgerekend als een echte
@@ -252,6 +302,108 @@ structureel winnaars tegenhoudt (positieve ROI over ≥ 30 afgewikkelde kandidat
 kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenfout zelf — welke
 stap maakt de mindere ploeg te sterk; §6e wijst richting `shrink`, maar `shrink = 0.8` is op
 3 sep juist op Brier-score gemeten en goed bevonden, en die spanning moet eerst worden opgelost.
+
+### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
+
+```python
+from scripts.model import combine_probs
+my_raw = combine_probs(p_xg, p_split)      # = 0.80 * p_xg + 0.20 * p_split
+```
+
+Tot 5 sep was dit het **ongewogen** gemiddelde, en dat was nooit ergens op gebaseerd — het stond zo
+in de eerste versie van deze regels en is daarna nooit tegen uitkomsten gelegd. §1d en §6e wezen de
+splitsmethode al aan als de scheefste van de twee, maar dat was gemeten tegen de **markt** en mag
+daarom hooguit een diagnose heten (§2).
+
+Nu op **uitslagen** gemeten, over 392 afgerekende gevallen (155 gespeelde picks plus 237
+tegengehouden kandidaten). Brier tegen de werkelijke uitkomst, lager is beter:
+
+| gewicht xG | 0.0 | 0.3 | 0.5 (oud) | 0.7 | **0.8** | 0.9 | 1.0 |
+|---|---|---|---|---|---|---|---|
+| Brier | .24415 | .23934 | .23737 | .23638 | **.23625** | .23637 | .23674 |
+
+Drie dingen die erbij horen:
+
+1. **De curve is vlak tussen 0.7 en 1.0.** Ga hier niet op fijnregelen; 0.80 is ongeveer waar het
+   optimum ligt, geen scherp getal.
+2. **De splitsmethode voegt als kansbron vrijwel niets toe** — alleen xG is met .23674 nauwelijks
+   slechter dan de beste mix. Ze blijft wél staan als **veto**: poort 5 eist dat beide methodes de
+   markt dezelfde kant op verslaan, en die poort bespaart aantoonbaar geld (§6d). Meerekenen voor
+   een vijfde, meebeslissen over ja/nee — dat is de rol.
+3. **Dit maakt het model beter, niet goed.** Zie §1g.
+
+### 1g. De herijking op uitslagen (toegevoegd 5 sep 2026)
+
+```python
+from scripts.recalibrate import load_fit, apply
+fit     = load_fit()             # één keer per run
+my_prob = apply(my_raw, fit)
+```
+
+**Waarom dit er is.** Over 552 afgerekende gevallen zegt het model gemiddeld 51.0% en gebeurt het
+41.1% van de tijd — bijna tien procentpunt te optimistisch, en altijd dezelfde kant op. De
+gemiddelde geclaimde edge is +9.7 pp. Het "voordeel" dat de routine meet is dus grotendeels haar
+eigen fout, en wie selecteert op de grootste edge, selecteert op de grootste modelfout. Dat is ook
+de verklaring voor de anomalie in §1e: een hógere drempel maakte de underdog-kant slechter in
+plaats van beter.
+
+**Waarom dit mag en de correctie van 31 aug niet mocht.** Die ingetrokken instructie mat de
+afwijking tegen de **de-vigde marktkans**; dan hangt je kans af van de koers waartegen je hem
+afzet en meet `edge_pp` niets meer (§2). Deze correctie meet tegen de **werkelijke uitslag**, en
+een uitslag weet niet wat de prijs was. Dat is het hele onderscheid, en het is precies de route die
+§1d zelf aanwijst: *"herzie hem op uitkomsten, niet op een redenering."*
+
+**Uit-steekproef gecontroleerd.** Gefit op de eerste helft van de periode (196 gevallen t/m 28 aug)
+en getest op de tweede helft, die bij het fitten geen rol speelde:
+
+| | ruw | herijkt |
+|---|---|---|
+| ongewogen gemiddelde (oud) | .25624 | .24771 |
+| 0.8/0.2-weging (nu) | .25343 | **.24741** |
+| **de markt** | | **.23950** |
+
+**Lees die onderste regel.** Ook herijkt en met de betere weging schat de bookmaker scherper dan
+het model — en dat is nog een gunstige vergelijking, want in zijn getal zit zijn eigen marge, die
+zijn score juist slechter maakt. Zolang die regel zo staat is elk gemeten voordeel eerder modelfout
+dan marktfout, en is **"vandaag niets" op de meeste dagen het juiste antwoord, geen defect**. De
+herijking maakt de routine eerlijker over wat ze weet; ze maakt haar niet winstgevend.
+
+#### Wat de herijking blootlegt, en waarom je de drempel NIET moet verlagen
+
+De drempel van 8.0 pp in §0 is op **ongecorrigeerde** kansen gemeten. Na de herijking gaat er
+ongeveer tien procentpunt van elke schatting af, en dan komt er vrijwel niets meer boven de 8 uit.
+Op de wedstrijden van 5 sep 2026: **zes bets onder de oude regels, nul onder de nieuwe.**
+
+De verleiding is dan om de drempel mee te verlagen. **Doe dat niet.** Het is nagerekend op alle 552
+afgerekende gevallen, met de herijkte edge, en er is géén drempel die geld oplevert:
+
+| drempel op de herijkte edge | bets | trefkans | ROI |
+|---|---|---|---|
+| ≥ 0 pp | 156 | 38.5% | −13.0% |
+| ≥ 2 pp | 115 | 39.1% | −6.1% |
+| ≥ 3 pp | 100 | 38.0% | −5.9% |
+| ≥ 4 pp | 85 | 37.6% | −6.5% |
+| ≥ 6 pp | 63 | 36.5% | −8.9% |
+| **≥ 8 pp** | **45** | **31.1%** | **−14.7%** |
+
+Lees vooral de onderste regel: bij de hóógste geclaimde edge is het rendement het **slechtst**. Dat
+is dezelfde anomalie als in §1e, nu over het hele logboek en na correctie — een signaal dat
+averechts werkt naarmate het sterker wordt, is niet zwak maar kapot. Er is dus geen drempel te
+kiezen waarop deze routine winst maakt; er is alleen een keuze tussen weinig verlies en veel
+verlies.
+
+**Nul bets is daarmee niet het probleem maar het antwoord.** §1 zegt het al: bets forceren om het
+format te vullen is verboden. Dit is de kwantitatieve versie daarvan. Zolang de bookmaker scherper
+schat dan het model (§1g hierboven), is elk gepubliceerd voordeel eerder modelfout dan marktfout,
+en is stil blijven de enige eerlijke uitkomst. Wat dit wél mag veranderen is de **ambitie**: de
+routine is hiermee een meetinstrument dat netjes bijhoudt hoe goed ze is, en dat is iets anders dan
+een systeem dat geld verdient. Wie dat wil omdraaien heeft betere invoer nodig, geen scherpere
+filters — zie "Openstaand" in `runs/2026-09-05-run-a.md`.
+
+Praktisch: onder `recalibrate.MIN_OBSERVATIONS` (150 afgerekende gevallen) wordt er niet herijkt en
+gaat `my_prob` ongewijzigd door. De fit loopt mee met het logboek en wordt elke run opnieuw
+bepaald — het is een bewegend getal, geen constante. Neem `recalibrate.py show` op in het
+runrapport onder "Stand van het logboek".
 
 ### Waarom poort 5 en 6 zo staan (herzien 11 aug 2026)
 
@@ -728,8 +880,9 @@ afgelopen"). Werk ze bij via `scripts/ledger.py settle` en `scripts/shadow.py se
 echte picks en de schaduwpicks in dezelfde run af** — dat ze uiteenliepen is precies waar de
 statusregel van §0 voor is gemaakt.
 
-Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand **na 90 minuten** (§6d), ook al
-meldt de bron een latere eindstand. Zonder deze stap is de kwaliteit van de routine niet meetbaar.
+Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand **na 90 minuten inclusief
+blessuretijd** (§6d), ook al meldt de bron een latere eindstand. Blessuretijd telt dus gewoon mee —
+een doelpunt in de 90+4' is een doelpunt; wat niet meetelt is verlenging en strafschoppen. Zonder deze stap is de kwaliteit van de routine niet meetbaar.
 
 ### Stage 1 — Fixtures van vandaag
 Bepaal zelf de actuele datum. Haal fixtures op; probeer meerdere bronnen (zie
@@ -940,19 +1093,30 @@ Bouw de teamsterkte daarom altijd zo op:
 from scripts.model import blend_seasons, blend_weight
 prior = TeamStats(xg=r["xg"], xga=r["xga"], matches_played=r["mp"])       # vorig seizoen
 cur   = TeamStats(xg=cr["xg"], xga=cr["xga"], matches_played=cr["mp"])    # lopend seizoen
-stats = blend_seasons(prior, cur)        # gewicht_nu = n / (n + 16)
+stats = blend_seasons(prior, cur)        # gewicht_nu = n / (n + 8)
 ```
 
-Op speeldag 1 verandert dit niets (gewicht 0), na 8 duels weegt het lopende seizoen voor eenderde
-mee, na 16 duels even zwaar als het hele vorige seizoen. **Hierdoor wordt de analyse vanzelf beter
+Op speeldag 1 verandert dit niets (gewicht 0), na 4 duels weegt het lopende seizoen voor eenderde
+mee, na 8 duels even zwaar als het hele vorige seizoen. **Hierdoor wordt de analyse vanzelf beter
 naarmate het seizoen vordert**, zonder dat er iets aan de knoppen hoeft.
 
-`k = 16` is **op uitslagen gemeten en uit-steekproef gecontroleerd**, niet gekozen — de volledige
-tabel en de methode staan in de docstring van `blend_seasons`. Kort:
+**`k` stond van 3 t/m 5 sep 2026 op 16 en is toen op verzoek van de gebruiker op 8 gezet.** Dat is
+een stap wég van het gemeten optimum en dat hoort er eerlijk bij te staan. Exact nagemeten op
+dezelfde backtest (1263 duels, 2025/26):
 
-| | alleen vorig seizoen | blend k=16 | alleen dit seizoen |
-|---|---|---|---|
-| Brier (1263 duels, 2025/26) | 0.61761 | **0.61269** | 0.62396 |
+| | alleen vorig seizoen | k=16 (optimum) | **k=8 (nu)** | alleen dit seizoen |
+|---|---|---|---|---|
+| Brier | 0.61761 | **0.61269** | 0.61331 | 0.62396 |
+
+k=8 houdt daarmee **87%** van de winst die blenden überhaupt oplevert. De prijs is reëel maar
+klein, en er staat iets tegenover dat deze backtest niet kán meten: hij draait op één testseizoen
+in vijf grote competities met stabiele selecties. Bij een ploeg die in de zomer half is omgebouwd —
+en daar zitten de promovendi en de kleinere competities vol mee — is "reageer sneller op wat je dit
+seizoen ziet" een argument dat niet in deze cijfers zit. Wie k terugzet naar 16 heeft de meting aan
+zijn kant; wie hem op 8 laat kiest voor sneller bijleren tegen 13% van de blendwinst. Beide zijn
+verdedigbaar, geen van beide is gratis.
+
+De volledige tabel en de uit-steekproefcontrole staan in de docstring van `blend_seasons`.
 
 Drie dingen die je moet weten voordat je hieraan sleutelt:
 
@@ -1264,7 +1428,9 @@ python3 scripts/shadow.py settle <id> won|lost|void --score 2-1
 ```
 
 **Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand na 90 minuten** (reguliere tijd
-plus blessuretijd), nooit op de eindstand na verlenging of strafschoppen. Bij bekerduels en
+**plus blessuretijd**), nooit op de eindstand na verlenging of strafschoppen. Om elk misverstand weg
+te nemen: een doelpunt in de 90+4' telt gewoon mee — blessuretijd is onderdeel van de reguliere
+speeltijd. Alleen verlenging (91–120') en strafschoppen tellen niet mee. Bij bekerduels en
 Europese voorrondes zijn dat verschillende getallen, en `status.scoreStr` van Fotmob geeft de
 **eind**stand — dus inclusief verlenging. Zoek bij een knock-outduel de doelpuntminuten op en tel
 zelf tot 90'. Dit is geen theoretisch punt: op 12 aug 2026 wikkelde Run B Bodø/Glimt – Union
@@ -1285,8 +1451,10 @@ naar de richting over weken, niet naar het getal van vandaag, en pas geen enkele
 basis van één dag. Dat laatste zou dezelfde fout zijn als waarmee de oude poort 5 werd ingevoerd:
 één anekdote tot regel verheffen.
 
-Draai daarna `python3 scripts/ledger.py stats` en neem hit rate, ROI en Brier score op in het
-runrapport. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
+Draai daarna `python3 scripts/ledger.py stats` **en `python3 scripts/recalibrate.py show`** en
+neem hit rate, ROI, Brier score en de stand van de herijking (§1g) op in het runrapport. Die laatste
+is elke run een ander getal — hij loopt mee met het logboek — en zonder hem is niet na te gaan met
+welke correctie een pick van die dag is gepubliceerd. Dit is de enige manier waarop "gaat het goed of niet" een antwoord met een getal krijgt.
 
 ### 6e. Het kalibratielogboek — zit het model systematisch scheef?
 

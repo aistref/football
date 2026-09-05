@@ -21,8 +21,10 @@ DEFAULT_RHO = -0.05
 MAX_GOALS = 12
 
 # Hoeveel duels van het lópende seizoen nodig zijn voordat dat seizoen even zwaar weegt als het
-# vorige. Gemeten op uitslagen, niet beredeneerd — zie `blend_seasons`.
-CREDIBILITY_K = 16.0
+# vorige. Op uitslagen gemeten (zie `blend_seasons`); op 5 sep 2026 op verzoek van de gebruiker
+# van 16 naar 8 gezet — sneller meebewegen met het lopende seizoen, tegen een gemeten prijs die
+# in de docstring staat.
+CREDIBILITY_K = 8.0
 
 # Parametercombinaties voor de robuustheidstest — zie _shared-rules.md en de Run A-diagnose van
 # 8 aug 2026: een edge die alleen bij één (shrink, rho)-paar boven de drempel komt is een
@@ -141,18 +143,36 @@ def blend_seasons(prior: TeamStats, current: TeamStats | None,
         gewicht_nu = n / (n + k)
         tarief     = gewicht_nu * tarief_dit_seizoen + (1 - gewicht_nu) * tarief_vorig_seizoen
 
-    Met k = 16 weegt het lopende seizoen na 16 duels even zwaar als het hele vorige, na 8 duels
+    Met k = 8 weegt het lopende seizoen na 8 duels even zwaar als het hele vorige, na 4 duels
     voor eenderde, en op speeldag 1 helemaal niet. De routine wordt daarmee vanzelf beter
     naarmate het seizoen vordert, zonder dat er iets aan de knoppen hoeft.
+
+    **k stond van 3 t/m 5 sep 2026 op 16 en is op verzoek van de gebruiker naar 8 gezet.** Dat is
+    een stap wég van het gemeten optimum, en dat hoort er eerlijk bij te staan. Exact nagemeten op
+    dezelfde backtest, dezelfde 1263 wedstrijden:
+
+    | | alleen vorig seizoen | k = 16 (optimum) | **k = 8 (nu)** |
+    |---|---|---|---|
+    | Brier | .61761 | **.61269** | .61331 |
+    | log loss | 1.03057 | 1.02334 | 1.02422 |
+
+    k = 8 houdt daarmee **87%** van de winst die blenden überhaupt oplevert (.00430 van .00492).
+    De prijs is dus reëel maar klein, en er staat iets tegenover dat de backtest niet kan meten:
+    die draait op één testseizoen in vijf grote competities met stabiele selecties. Bij een ploeg
+    die in de zomer half is omgebouwd — en daar zitten de promovendi en de kleinere competities
+    vol mee — is "reageer sneller op wat je dit seizoen ziet" een verdediging die niet in deze
+    cijfers zit. Wie k terugzet naar 16 heeft de meting aan zijn kant; wie hem op 8 laat, kiest
+    voor sneller bijleren tegen 13% van de blendwinst. Beide zijn verdedigbaar, geen van beide is
+    gratis.
 
     **k is op uitslagen gemeten, niet gekozen.** Backtest over vijf competities bij Understat
     (EPL, La Liga, Bundesliga, Serie A, Ligue 1), elke wedstrijd gescoord met alleen wat er
     vóór die wedstrijd bekend was — geen enkele wedstrijd ziet zijn eigen uitslag, en er komt
     geen bookmakerprijs aan te pas (§2). Multiclass Brier op 1X2, lager is beter:
 
-    | k | 40 | 30 | 22 | **16** | 12 | 9 | 5 | 0 | alleen vorig |
-    |---|---|---|---|---|---|---|---|---|---|
-    | Brier | .61338 | .61301 | .61276 | **.61269** | .61283 | .61314 | .61424 | .62396 | .61761 |
+    | k | 40 | 30 | 22 | **16** | 12 | 9 | **8** | 5 | 0 | alleen vorig |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | Brier | .61338 | .61301 | .61276 | **.61269** | .61283 | .61314 | **.61331** | .61424 | .62396 | .61761 |
 
     Twee dingen die daaruit volgen en die je niet moet vergeten als je hieraan komt te sleutelen:
 
@@ -245,6 +265,42 @@ def analyze_match(home: TeamStats, away: TeamStats, league: LeagueContext,
     over_p = sum(grid[i][j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if i + j > 2)
     btts_p = sum(grid[i][j] for i in range(1, MAX_GOALS + 1) for j in range(1, MAX_GOALS + 1))
     return MatchProbabilities(lambda_home, lambda_away, home_p, draw_p, away_p, over_p, btts_p, grid)
+
+
+# Hoe zwaar de xG-methode weegt in `my_prob` ten opzichte van de splitsmethode. Op uitslagen
+# gemeten, zie `combine_probs`.
+XG_WEIGHT = 0.80
+
+
+def combine_probs(p_xg: float, p_split: float, weight: float = XG_WEIGHT) -> float:
+    """Combineer de twee methodes van §1 tot één kans: `weight` op xG, de rest op de splits.
+
+    **Tot 5 sep 2026 was dit het ongewogen gemiddelde**, en dat was nooit ergens op gebaseerd —
+    het stond zo in de eerste versie van de opdracht en is daarna nooit tegen uitkomsten gelegd.
+    §1d en §6e wezen de splitsmethode al aan als de scheefste van de twee, maar dat was gemeten
+    tegen de **markt** en mag daarom hooguit een diagnose heten (§2).
+
+    Nu wél op uitslagen gemeten, over 392 afgerekende gevallen — 155 gespeelde picks plus 237
+    kandidaten die een poort tegenhield, samen precies de groep waar de routine iets van vond.
+    Brier tegen de werkelijke uitkomst, lager is beter:
+
+    | gewicht xG | 0.0 | 0.3 | 0.5 (oud) | 0.7 | **0.8** | 0.9 | 1.0 |
+    |---|---|---|---|---|---|---|---|
+    | Brier | .24415 | .23934 | .23737 | .23638 | **.23625** | .23637 | .23674 |
+
+    Drie dingen die hierbij horen:
+
+    1. **De curve is vlak tussen 0.7 en 1.0.** 0.80 is "ongeveer waar het optimum ligt", geen
+       scherp getal; alles van 0.7 tot 0.9 is praktisch gelijkwaardig. Ga hier niet op fijnregelen.
+    2. **De splitsmethode voegt als kansbron vrijwel niets toe** — alleen xG (1.0) is met .23674
+       nauwelijks slechter dan de beste mix. Ze blijft wél staan als **veto**: poort 5 eist dat
+       beide methodes de markt dezelfde kant op verslaan, en die poort houdt aantoonbaar slechte
+       bets tegen (§6d). Meerekenen voor een vijfde, meebeslissen over ja/nee: dat is de rol.
+    3. **Dit maakt het model beter, niet goed.** Ook bij het beste gewicht schat de markt nog
+       altijd scherper (.22374). Zie `recalibrate.py` voor wat daar nog wél aan te doen is en waar
+       de grens ligt.
+    """
+    return weight * p_xg + (1 - weight) * p_split
 
 
 def edge_pp(my_prob: float, odds: float) -> float:
