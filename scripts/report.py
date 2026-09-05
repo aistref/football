@@ -82,6 +82,27 @@ def esc(value) -> str:
     return html.escape(str(value), quote=True)
 
 
+_INLINE_TAGS = ("b", "strong", "i", "em")
+
+
+def inline(value) -> str:
+    """Escape, maar laat een handvol nadruk-tags staan.
+
+    De prosevelden worden door de run zelf geschreven en `verdict`, `coverage_notes`,
+    `todo.detail` en `finding.paragraphs` gaan al ongeëscaped de pagina op — daar wérkt `<b>`
+    dus. `bets.*.why` en de risicozin liepen tot 5 sep 2026 wél door `esc()`, met als gevolg dat
+    een `<b>` daar letterlijk als tekst op de pagina kwam te staan. Dat gebeurde voor het eerst
+    zichtbaar op 4 sep (één keer) en op 5 sep bij zes van de zes bets.
+
+    Volledig ongeëscaped doorlaten zou het verschil met de andere velden wegnemen maar ook alle
+    controle; deze functie escapet daarom eerst alles en zet daarna alleen de nadruk-tags terug.
+    """
+    out = esc(value)
+    for tag in _INLINE_TAGS:
+        out = out.replace(f"&lt;{tag}&gt;", f"<{tag}>").replace(f"&lt;/{tag}&gt;", f"</{tag}>")
+    return out
+
+
 def nl_date(day: date) -> str:
     return f"{DAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]} {day.year}"
 
@@ -226,8 +247,8 @@ def render_bets(picks: list[dict], prose: dict, labels: dict) -> str:
     </div>
     <div class="why">
       <h4>Waarom</h4>
-      <p class="prose">{esc(why)}</p>
-      <span class="risk"><span class="dot {level}"></span>{esc(sentence)}</span>
+      <p class="prose">{inline(why)}</p>
+      <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
   </div>''')
     return "\n".join(blocks)

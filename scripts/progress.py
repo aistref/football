@@ -134,6 +134,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
     gaten: list[str] = []
     gedekt = 0
+    overgeslagen = {"NONE": 0, "afgekapt": 0}
     for comp, block in state["competitions"].items():
         if not isinstance(block, dict) or block.get("status") != "GEANALYSEERD":
             continue
@@ -142,7 +143,15 @@ def _cmd_verify(args: argparse.Namespace) -> int:
                 continue
             naam = match.get("match", "?")
             if match.get("tier") == "NONE":
+                overgeslagen["NONE"] += 1
                 continue  # geen kansbron, dus geen markt om te bekijken
+            if match.get("afgekapt"):
+                # Buiten MAX_DEEP_ANALYSES gevallen (§3, Stage 4). Zo'n duel is niet
+                # doorgerekend, dus er valt geen markt te bekijken — net als bij tier NONE.
+                # Dit is geen stille uitzondering: de afkapping staat met naam en aantal in het
+                # runrapport en in `parameters.afkapping`, en het aantal staat hieronder.
+                overgeslagen["afgekapt"] += 1
+                continue
             checked = match.get("markets_checked")
             if not checked:
                 gaten.append(f"{comp} · {naam}: geen markets_checked vastgelegd")
@@ -153,11 +162,14 @@ def _cmd_verify(args: argparse.Namespace) -> int:
             else:
                 gedekt += 1
 
+    staart = (f" Overgeslagen: {overgeslagen['NONE']} zonder kansbron (tier NONE), "
+              f"{overgeslagen['afgekapt']} afgekapt door MAX_DEEP_ANALYSES."
+              if any(overgeslagen.values()) else "")
     if not gaten:
-        print(f"Alle {gedekt} geanalyseerde wedstrijd(en) hebben alle zes markten gehad.")
+        print(f"Alle {gedekt} geanalyseerde wedstrijd(en) hebben alle zes markten gehad.{staart}")
         return 0
     print(f"{len(gaten)} wedstrijd(en) met onvolledige marktdekking "
-          f"({gedekt} wel volledig):\n")
+          f"({gedekt} wel volledig).{staart}\n")
     for regel in gaten:
         print(f"  {regel}")
     print("\nZie _shared-rules.md §1: 'Ga alle markten langs'. Een markt waarvoor geen odds te")
