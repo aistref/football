@@ -210,10 +210,60 @@ bet mét contextdata:
 
 Marktwaarde is een grove maat voor hoe belangrijk een speler is, maar het is de enige die Fotmob
 per uitvaller meegeeft, en hij onderscheidt in elk geval een eerste spits van een derde keeper.
-**Leg de volledige context van élke doorgerekende wedstrijd vast in `data/run-state/`**, ook als de
-poort opengaat — pas als er enkele weken aan regels liggen, zijn deze twee drempels tegen uitkomsten
-te leggen en te vervangen door een gemeten bijstelling. Tot die tijd geldt dezelfde discipline als
-bij §6d: liever een bet te veel tegengehouden dan een verzonnen kansbijstelling.
+**Leg de volledige context van élke wedstrijd waarvoor je haar hebt opgehaald vast in
+`data/run-state/`** — dus ook als de poort opengaat, én ook als het duel door `MAX_DEEP_ANALYSES` is
+afgekapt. Dat laatste is nieuw op 5 sep 2026 en het is de kern van de meting hieronder: Stage 4 eist
+toch al dat de context vóór de afkapping wordt opgehaald, dus die duels kosten niets extra en ze
+verdrievoudigen de steekproef.
+
+Draai daarna, elke run:
+
+```bash
+python3 scripts/ctxlog.py collect --run <a|b> --date YYYY-MM-DD
+python3 scripts/ctxlog.py settle
+python3 scripts/ctxlog.py stats        # in het runrapport
+```
+
+#### De bijstelling is geprobeerd te meten en er is niets gevonden (5 sep 2026)
+
+Op verzoek van de gebruiker is nagegaan of poort 7 van een **rem** een **bijstelling** kon worden —
+of ontbrekende spelers voorspellen waar het model naast zit. Gemeten op 147 wedstrijden met een
+contextblok, een marktkans én een uitslag, tegen **uitkomsten** en niet tegen de markt:
+
+| | r | t | helling |
+|---|---|---|---|
+| fout van het model tegen het beschikbaarheidsverschil | −0.007 | −0.08 | −2.2 pp per eenheid |
+| fout van de markt tegen hetzelfde verschil | −0.028 | −0.34 | −9.1 pp per eenheid |
+
+**Niets.** Het teken wijst de verwachte kant op maar het effect is over het hele waargenomen bereik
+1.5 procentpunt, en dat blijft zo in elke variant: zonder uitschieters, alleen wedstrijden waarin
+iemand ontbreekt, en ook op doelpunten in plaats van op de uitslag.
+
+**Lees dat niet als "blessures doen er niet toe".** Met 147 wedstrijden was alleen een effect van
+~54 pp per eenheid aantoonbaar geweest, en zo groot is het zeker niet. Wat er nodig is:
+
+| effect (pp per eenheid) | wedstrijden nodig |
+|---|---|
+| 30 | ~475 |
+| 20 | ~1.070 |
+| 15 | ~1.900 |
+| 10 | ~4.270 |
+
+Bij tien bruikbare wedstrijden per dag duurt dat zeven maanden; door élke wedstrijd met context te
+loggen in plaats van alleen de doorgerekende worden het er ruim honderd per dag, en is de vraag over
+drie tot vier weken beantwoordbaar. Dat is precies wat `scripts/ctxlog.py` doet.
+
+**Tot die meting er is blijft poort 7 een rem en geen bijstelling.** Een getal verzinnen omdat het
+plausibel klinkt is exact wat §2 en §4 verbieden, en het zou hier bovendien ruis toevoegen aan een
+model dat al te optimistisch is (§1g). Dezelfde discipline als bij §6d: liever een bet te veel
+tegengehouden dan een verzonnen kansbijstelling.
+
+**Eén valkuil bij het narekenen, want die is bij de eerste poging misgegaan.** Het aandeel
+ontbrekende selectiewaarde is `out / (basis + out)` en **niet** `out / basis`: `squad_value` is de
+waarde van de vermoedelijke basiself en de uitvallers zitten daar niet in. Met de verkeerde noemer
+kwam Lommel – Club Brugge op 247% uit — onmogelijk — en liep de regressie bovendien op twee
+verschillende definities door elkaar, want de oudere tekstvorm van het contextblok gebruikte wél de
+goede. `ctxlog.out_share` doet het nu op één plek, voor beide vormen.
 
 ### Poort 8 — niet op de underdog-kant (toegevoegd 4 sep 2026, op verzoek van de gebruiker)
 
@@ -1443,6 +1493,10 @@ Elke run, ook een run met nul bets:
 5c. **Kalibratielogboek** → een `calibration`-blok per doorgerekende wedstrijd in
    `data/run-state/`, en daarna `python3 scripts/calibration.py collect --run <a|b> --date <datum>`.
    Zie 6e; neem `calibration.py stats` op in het runrapport.
+5d. **Contextlogboek** → `python3 scripts/ctxlog.py collect --run <a|b> --date <datum>`, gevolgd
+   door `ctxlog.py settle`. Dit vraagt om een contextblok bij **elke** wedstrijd waarvoor de context
+   is opgehaald, dus ook bij de duels die `MAX_DEEP_ANALYSES` heeft afgekapt. Zie §1c; neem
+   `ctxlog.py stats` op in het runrapport.
 5b. **Marktdekking aantonen** → noteer bij elke geanalyseerde wedstrijd in `data/run-state/` een
    `markets_checked` met de markten die je werkelijk hebt doorgerekend, en draai daarna:
 
