@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -35,6 +36,52 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
 
 class FotmobError(RuntimeError):
     pass
+
+
+def _fold(name: str) -> str:
+    """Naam zonder accenten en interpunctie, voor het samenvoegen van dubbele tabelrijen."""
+    s = unicodedata.normalize("NFKD", name)
+    s = "".join(c for c in s if not unicodedata.combining(c))
+    return "".join(c for c in s.lower() if c.isalnum())
+
+
+def _merge_accent_duplicates(teams: dict[str, dict]) -> dict[str, dict]:
+    """Voeg tabelrijen samen die dezelfde ploeg zijn maar anders geaccentueerd geschreven.
+
+    Fotmob levert de twee helften van deze functie uit **twee** endpoints, en die schrijven
+    clubnamen niet hetzelfde: de xG-lijsten gebruiken `ParticipantName` zonder accenten
+    ("Atletico Madrid", "Famalicao", "Vitoria de Guimaraes") en de stand gebruikt `name` mét
+    ("Atlético Madrid", "Famalicão", "Vitória de Guimarães"). Zonder deze stap belandt één club
+    in twee sleutels: de ene met `xg`/`xga`/`mp` en zonder stand, de andere met de stand en
+    zonder xG.
+
+    Dat is geen cosmetisch verschil. `resolve()` in de run koppelt op de naam uit de Fotmob-
+    daglijst, en die schrijft mét accenten — dus de run pakt precies de helft zonder xG. Gemeten
+    op 5 sep 2026 raakte dat zes ploegen in drie competities uit de Run A-runlijst (Atlético
+    Madrid en Deportivo Alavés, Famalicão en Vitória de Guimarães, Standard Liège en RAAL La
+    Louvière) en het kostte de analyse van Athletic Club – Atlético Madrid, Estrela da Amadora –
+    Famalicão en Standard Liège – Royal Antwerp: `TeamStats(xg=r["xg"], ...)` klapte eruit op een
+    `KeyError`. Vóór de seizoensweging van 3 sep gebeurde hetzelfde stilzwijgend één regel later.
+
+    De naam uit de **stand** wint als sleutel, want dat is de schrijfwijze die de daglijst ook
+    gebruikt; alleen ploegen zonder stand houden hun xG-schrijfwijze.
+    """
+    groups: dict[str, list[tuple[str, dict]]] = {}
+    for name, row in teams.items():
+        groups.setdefault(_fold(name), []).append((name, row))
+    merged: dict[str, dict] = {}
+    for rows in groups.values():
+        if len(rows) == 1:
+            merged[rows[0][0]] = rows[0][1]
+            continue
+        canonical = next((n for n, r in rows if "played" in r), rows[0][0])
+        combined: dict = {}
+        for name, row in rows:          # de stand als laatste: die bepaalt bij overlap
+            if name != canonical:
+                combined.update(row)
+        combined.update(dict(rows[[n for n, _ in rows].index(canonical)][1]))
+        merged[canonical] = combined
+    return merged
 
 
 def _get_json(url: str) -> dict:
@@ -106,6 +153,9 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
     if use_cache and cache_file.exists():
         cached = json.loads(cache_file.read_text())
         if cached.get("_fetched_on") == date.today().isoformat():
+            # Ook op de cache: een bestand dat eerder vandaag is weggeschreven kan nog de
+            # ongesplitste vorm bevatten. De samenvoeging is idempotent, dus dit kost niets.
+            cached["teams"] = _merge_accent_duplicates(cached["teams"])
             return cached
 
     encoded_season = urllib.parse.quote(season, safe="")
@@ -141,6 +191,7 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
         gf, ga = (int(x) for x in row["scoresStr"].split("-"))
         teams.setdefault(row["name"], {}).update(gf=gf, ga=ga, played=row["played"], pts=row["pts"])
 
+    teams = _merge_accent_duplicates(teams)
     with_xg = {n: t for n, t in teams.items() if "xg" in t}
     result = {
         "teams": teams,

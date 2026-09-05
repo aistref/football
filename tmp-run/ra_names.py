@@ -37,6 +37,16 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # deze regel ten onrechte de promovendi-omrekening in, die voor een ploeg uit de hoogste
     # divisie niets kán opleveren (er is geen divisie boven Ligue 1) en dus op NONE uitkomt.
     "psg": "paris saint germain",
+    # 5 sep 2026: drie gevallen op één dag, alle drie dezelfde soort. De daglijst kort de
+    # clubnaam zo af dat er na _DROP geen enkel token overblijft dat de tabelnaam ook heeft:
+    # "Man City" houdt {man} over tegen {manchester}, "Nottm Forest" {nottm, forest} tegen
+    # {nottingham, forest} (deelverzameling in geen van beide richtingen), en "M'gladbach"
+    # {m, gladbach} tegen {borussia, monchengladbach}. Alle drie stonden gewoon in de stand
+    # van 2025/2026 en gingen zonder deze regels ten onrechte de promovendi-omrekening in —
+    # die voor een ploeg uit de hoogste divisie niets kán opleveren en dus op NONE uitkomt.
+    "man city": "manchester city",
+    "nottm forest": "nottingham forest",
+    "m gladbach": "borussia monchengladbach",
 }
 
 
