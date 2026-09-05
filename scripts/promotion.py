@@ -96,6 +96,21 @@ TIER2: dict[str, Tier2] = {
     # TUR/POL deed.
     "Czech First League (CZE)":   Tier2(253, "FNL (CZE)"),
     "Swiss Super League (SUI)":   Tier2(163, "Challenge League (SUI)"),
+    # Toegevoegd 5 sep 2026 (Run B), op dezelfde grond als de twee regels hierboven. Beide id's
+    # komen uit de Fotmob-daglijst van 5 sep 2026 en zijn op naam én ccode gecontroleerd (NOR 203
+    # "1. Divisjon", SWE 168 "Superettan"), en daarna nog eens op de stand zelf: 16 ploegen per
+    # competitie, met Lillestrøm in de Noorse en Västerås SK in de Zweedse — precies de twee
+    # promovendi die die dag op `NONE` uitkwamen omdat er geen tweede divisie bekend was.
+    #
+    # LET OP, hetzelfde voorbehoud als bij CZE en SUI: geen `fd_pair` en geen eigen meting in
+    # MEASURED_TIER2_GAP, dus `gap_and_range` valt hier terug op POOLED_GAP. Dat is de factor die
+    # op 30 aug de grootste schijnedge van de run opleverde (ADO Den Haag +23.6 pp), dus meld hem
+    # in het runrapport — `GapResult.direction` zegt zelf dat hij gepoold is. Wie hier tijd in wil
+    # steken: `measure_gap` over 2016/2017-2024/2025 doet voor NOR en SWE wat de meting van
+    # 31 aug voor NED/DEN/POR/BEL/TUR/POL deed. Kalenderjaarcompetities, dus seizoen "2025" en
+    # niet "2025/2026".
+    "Eliteserien (NOR)":          Tier2(203, "1. Divisjon (NOR)"),
+    "Allsvenskan (SWE)":          Tier2(168, "Superettan (SWE)"),
 }
 
 
@@ -219,6 +234,33 @@ def find_team(table: dict, name: str) -> str | None:
     return hits[0] if len(hits) == 1 else None
 
 
+#: Dezelfde competitie onder een andere naam. `TIER2` en `TIER1` zijn gevuld met de namen zoals
+#: `prompts/run-a.md` ze schrijft; `prompts/run-b.md` schrijft er drie anders, en een dict-lookup
+#: die op de spelling afgaat vindt die dan niet.
+#:
+#: Aanleiding (5 sep 2026, Run B). Op die zaterdag stonden er 11 League One-, 12 League Two- en
+#: 5 Segunda-duels op de runlijst. Zestien van de vijfendertig doorgerekende duels kwamen op
+#: `NONE` uit omdat een ploeg niet in de stand van vorig seizoen stond — en voor de helft daarvan
+#: was de omrekening gewoon aanwezig: Sheffield Wednesday (Championship -> League One), Cambridge,
+#: Notts County en MK Dons (League Two -> League One), Port Vale, Rotherham, Exeter en Northampton
+#: (League One -> League Two) en Girona (La Liga -> LaLiga2). Alle vier de divisieparen staan
+#: **gemeten** in `footballdata.MEASURED_GAPS`. Het was dus geen ontbrekende meting maar een
+#: ontbrekende sleutel — precies de fout die de docstring van `convert_relegated` op 1 sep
+#: beschreef, één laag hoger.
+#:
+#: Vertaal daarom altijd via `_resolve` en niet met een rauwe `TIER2.get(naam)`.
+COMPETITION_ALIASES: dict[str, str] = {
+    "English League One (ENG)": "League One (ENG)",
+    "English League Two (ENG)": "League Two (ENG)",
+    "Segunda División (ESP)":   "LaLiga2 (ESP)",
+}
+
+
+def _resolve(competition: str) -> str:
+    """De naam waaronder `TIER2`/`TIER1` deze competitie kennen."""
+    return COMPETITION_ALIASES.get(competition, competition)
+
+
 def convert(top_competition: str, team: str, season: str, top_league: LeagueContext,
             *, use_cache: bool = True) -> Converted:
     """Reken een promovendus om naar `top_competition`, op de cijfers van `season` in de divisie eronder.
@@ -231,7 +273,7 @@ def convert(top_competition: str, team: str, season: str, top_league: LeagueCont
     die stand staat. Dat is met opzet luidruchtig: stil terugvallen op een gok is precies hoe een
     promovendus als `FULL` zou kunnen doorglippen.
     """
-    t2 = TIER2.get(top_competition)
+    t2 = TIER2.get(_resolve(top_competition))
     if t2 is None:
         raise PromotionError(f"geen tweede divisie bekend voor {top_competition!r}")
 
@@ -356,7 +398,7 @@ def convert_relegated(competition: str, team: str, season: str, league: LeagueCo
       promovendikant: over alle acht paren kwam geen enkele degradant boven een relatieve aanval
       van 1.089 uit.
     """
-    t1 = TIER1.get(competition)
+    t1 = TIER1.get(_resolve(competition))
     if t1 is None:
         raise PromotionError(f"geen divisie erboven bekend voor {competition!r}")
 

@@ -1,0 +1,529 @@
+<title>Run B — zaterdag 5 september 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run B</h1>
+    <span class="date">zaterdag 5 september 2026 · gedraaid om 05:10</span>
+  </div>
+
+  <p class="verdict">Van de zeventien competities die ik in deze ronde bijhoud speelden er vandaag <b>vijftien</b>, samen negenenvijftig wedstrijden — veruit de drukste zaterdag tot nu toe. Meer dan ik op één ochtend aankan, dus ik heb er vijfendertig doorgerekend en vierentwintig laten liggen; welke en waarom staat hieronder. Er komen <b>vijf weddenschappen</b> uit. Vier ervan gaan over het aantal doelpunten en niet over wie er wint, en dat is deze keer geen toeval van de inkoop: voor het eerst kon ik bij álle competities alle zes de soorten weddenschappen opvragen, dus dit is wat de analyse ervan vindt en niet wat ik me kon veroorloven. De sterkste staat op Rosenborg – HamKam. Verder heb ik vanochtend een fout in mijn eigen administratie gevonden die acht wedstrijden onnodig het raam uit gooide — zie onderaan.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">5</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">59</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">15</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">24</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">94/212</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 5 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Noorse Eliteserien · aftrap 16:00</span>
+        <span class="bet-match">Rosenborg – HamKam</span>
+        <span class="bet-pick">Under 3.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.74</span>
+        <span class="book">bij Matchbook</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">57,5%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">74,8%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+17,3</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als er in Rosenborg – HamKam <b>drie of minder</b> doelpunten vallen. Bij vier of meer bent u uw inzet kwijt. De bookmakers geven daar 57 procent kans op, ik kom op 75 procent. Aftrap 16:00, bij Matchbook tegen 1,74.</p>
+      <span class="risk"><span class="dot med"></span>Dit is de enige weddenschap van vandaag waar mijn twee rekenmethodes het echt met elkaar eens zijn — de ene ziet 12 procentpunt voordeel, de andere 22 — en de enige die stevig blijft staan als ik aan de instellingen van mijn model draai: in het slechtste geval blijft er nog ruim 11 procentpunt over. Rosenborg is thuis favoriet, maar krijgt dit seizoen meer tegen dan vorig jaar en HamKam scoort weinig; ik verwacht 2,8 doelpunten tegen een grens van 3,5. Wat u moet weten: de opstelling van HamKam was bij het uitlezen nog een voorspelling en geen bevestiging. Op deze wedstrijd lag ook een aantrekkelijke handicap op HamKam, maar die heb ik zelf tegengehouden — sinds vorige week wed ik niet meer op de ploeg die de bookmakers de mindere vinden.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Zweedse Allsvenskan · aftrap 15:00</span>
+        <span class="bet-match">GAIS – Häcken</span>
+        <span class="bet-pick">Under 3</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.88</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">53,2%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">64,3%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+11,2</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als er in GAIS – Häcken <b>twee of minder</b> doelpunten vallen. Bij drie of meer bent u uw inzet kwijt. De bookmakers geven daar 53 procent kans op, ik kom op 64 procent. Aftrap 15:00, bij Pinnacle tegen 1,88.</p>
+      <span class="risk"><span class="dot high"></span>Van de vijf is dit de wankelste, en dat komt niet door de wedstrijd maar door hoe ik aan het getal kom. Ik reken twee keer: de ene methode ziet hier vrijwel geen voordeel (een halve procentpunt), de andere ziet 22. Het gemiddelde van 11 leunt dus bijna volledig op die tweede — precies de methode waarvan ik uit metingen weet dat ze overdrijft. Draai ik aan de instellingen van mijn model, dan blijft er in het slechtste geval nog een halve procentpunt over: het overleeft de test, maar met de kleinste marge van vandaag. Beide ploegen missen veel spelers (GAIS zes, ruim een derde van de waarde van de selectie; Häcken vier), en dat is een reden om níet op een van beide ploegen te wedden — het zegt niets over hoeveel er gescoord wordt.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Duitse 2. Bundesliga · aftrap 13:00</span>
+        <span class="bet-match">Holstein Kiel – 1. FC Nürnberg</span>
+        <span class="bet-pick">Under 3.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.60</span>
+        <span class="book">bij Tipico</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">62,5%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">71,6%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+9,1</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als er in Holstein Kiel – 1. FC Nürnberg <b>drie of minder</b> doelpunten vallen. Bij vier of meer bent u uw inzet kwijt. De bookmakers geven daar 63 procent kans op, ik kom op 72 procent. Aftrap 13:00, bij Tipico tegen 1,60.</p>
+      <span class="risk"><span class="dot med"></span>Allebei mijn methodes wijzen dezelfde kant op (3 en 15 procentpunt) en het voordeel overleeft alle instellingen van mijn model, zij het krap. De laagste koers van vandaag: u legt 1,60 in voor elke euro. Twee dingen die tegen deze weddenschap pleiten en die u moet weten. Beide ploegen hebben pas drie wedstrijden gespeeld, dus ik reken vooral met vorig seizoen. En de Duitse tweede divisie scoort dit jaar juist méér dan vorig jaar (1,73 tegen 1,53 verwachte doelpunten per ploeg); die stijging zit al in mijn berekening verwerkt en werkt tegen een weddenschap op weinig doelpunten in — het voordeel blijft er alsnog overheen, maar met minder ruimte dan het getal suggereert.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Griekse Super League · aftrap 20:00</span>
+        <span class="bet-match">AEK Athens – Aris Thessaloniki</span>
+        <span class="bet-pick">Under 2.75</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.85</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">54,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">64,0%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+9,9</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als er in AEK Athene – Aris Thessaloniki <b>twee of minder</b> doelpunten vallen; vallen er precies drie, dan krijgt u de helft van uw inzet terug. Bij vier of meer bent u alles kwijt. De bookmakers geven 54 procent kans, ik kom op 64 procent. Aftrap 20:00, bij Pinnacle tegen 1,85.</p>
+      <span class="risk"><span class="dot high"></span>Dezelfde zwakte als bij GAIS – Häcken: de ene methode ziet bijna geen voordeel (2 procentpunt), de andere 18, en het gemiddelde leunt dus op de methode die overdrijft. AEK is zwaar favoriet en gaf vorig seizoen weinig weg, Aris scoorde weinig — op zichzelf een logisch beeld voor weinig doelpunten. Maar beide ploegen hebben pas twee wedstrijden gespeeld dit jaar, dus dit rust bijna helemaal op vorig seizoen. AEK speelde bovendien drie dagen geleden nog; dat is voor mij een reden om niet op AEK zelf te wedden, en bij een weddenschap over doelpunten weet ik simpelweg niet welke kant het op werkt. Deze grens geeft bij precies drie doelpunten de helft terug, wat de klap iets verzacht.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Engelse League Two · aftrap 16:00</span>
+        <span class="bet-match">Tranmere – Oldham</span>
+        <span class="bet-pick">Oldham Athletic -0.25</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.00</span>
+        <span class="book">bij Pinnacle</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">50,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">60,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+10,2</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">U wint als <b>Oldham wint</b> bij Tranmere – Oldham. Wordt het gelijk, dan krijgt u de helft van uw inzet terug; wint Tranmere, dan bent u alles kwijt. De bookmakers geven 50 procent kans, ik kom op 60 procent. Aftrap 16:00, bij Pinnacle tegen 2,00.</p>
+      <span class="risk"><span class="dot med"></span>De enige weddenschap van vandaag die over de winnaar gaat, en de enige waarop ik überhaupt nog een kant mag kiezen: sinds vorige week wed ik alleen nog op de ploeg die de bookmakers de betere vinden, en dat is Oldham hier (2,28 tegen 2,99 voor Tranmere). Oldham is over beide seizoenen de betere ploeg — meer verwachte doelpunten voor, minder tegen. Ik speel dit als handicap en niet als gewone winstweddenschap omdat u bij een gelijkspel de helft terugkrijgt in plaats van alles te verliezen; dat scheelt precies bij de uitkomst waar mijn model het zwakst in is. Beide ploegen speelden vier dagen geleden nog, wat voor allebei geldt en dus niemand benadeelt. Mijn twee methodes verschillen hier flink (4 tegen 16 procentpunt), dus ook deze rust deels op de methode die overdrijft.</span>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>De beste 5 als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op vrijdag t/m zondag houd ik maximaal
+  <strong>5</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Rosenborg – HamKam</span>
+            <span class="sl-pick">Under 3.5 · Noorse Eliteserien · aftrap 16:00</span>
+          </td>
+          <td class="num">1.74</td>
+          <td class="num">74,8%</td>
+          <td class="num">+17.3</td>
+          <td class="num">12.95</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">GAIS – Häcken</span>
+            <span class="sl-pick">Under 3 · Zweedse Allsvenskan · aftrap 15:00</span>
+          </td>
+          <td class="num">1.88</td>
+          <td class="num">64,3%</td>
+          <td class="num">+11.2</td>
+          <td class="num">7.17</td>
+          <td><span class="chip high">hoog</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Holstein Kiel – 1. FC Nürnberg</span>
+            <span class="sl-pick">Under 3.5 · Duitse 2. Bundesliga · aftrap 13:00</span>
+          </td>
+          <td class="num">1.60</td>
+          <td class="num">71,6%</td>
+          <td class="num">+9.1</td>
+          <td class="num">6.50</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">4</td>
+          <td>
+            <span class="sl-match">AEK Athens – Aris Thessaloniki</span>
+            <span class="sl-pick">Under 2.75 · Griekse Super League · aftrap 20:00</span>
+          </td>
+          <td class="num">1.85</td>
+          <td class="num">64,0%</td>
+          <td class="num">+9.9</td>
+          <td class="num">6.35</td>
+          <td><span class="chip high">hoog</span></td>
+        </tr><tr>
+          <td class="num rank">5</td>
+          <td>
+            <span class="sl-match">Tranmere – Oldham</span>
+            <span class="sl-pick">Oldham Athletic -0.25 · Engelse League Two · aftrap 16:00</span>
+          </td>
+          <td class="num">2.00</td>
+          <td class="num">60,2%</td>
+          <td class="num">+10.2</td>
+          <td class="num">6.11</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+</section>
+
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Markt</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Kaiserslautern – Darmstadt<br><span class="note">Duitse 2. Bundesliga</span></td><td>Asian Handicap — 1. FC Kaiserslautern -0.25<br><span class="note">koers 1.99</span></td><td class="num below">+1,6 pp</td><td class="num">+11,5 pp</td><td class="num below">+1,3 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Degerfors – Halmstads BK<br><span class="note">Zweedse Allsvenskan</span></td><td>Double Chance — Double Chance — Halmstads BK of gelijk (AH +0.5 @ 2.06)<br><span class="note">koers 2.06</span></td><td class="num below">+0,9 pp</td><td class="num">+33,4 pp</td><td class="num below">+0,2 pp</td><td><span class="chip gap">underdog</span></td></tr>
+<tr><td class="comp">Västerås SK – Sirius<br><span class="note">Zweedse Allsvenskan</span></td><td>Double Chance — Double Chance — Västerås SK of gelijk (AH +0.5 @ 1.97)<br><span class="note">koers 1.97</span></td><td class="num">+5,0 pp</td><td class="num">+21,3 pp</td><td class="num below">+1,1 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Brann – Lillestrøm<br><span class="note">Noorse Eliteserien</span></td><td>Asian Handicap — Lillestrom +0.75<br><span class="note">koers 1.89</span></td><td class="num">+15,8 pp</td><td class="num">+21,6 pp</td><td class="num">+14,2 pp</td><td><span class="chip gap">context</span></td></tr>
+<tr><td class="comp">Peterborough – Sheff Wed<br><span class="note">Engelse League One</span></td><td>Asian Handicap — Peterborough United +0.25<br><span class="note">koers 2.04</span></td><td class="num">+16,4 pp</td><td class="num">+18,0 pp</td><td class="num">+16,1 pp</td><td><span class="chip gap">underdog</span></td></tr>
+<tr><td class="comp">Wigan – Stockport County<br><span class="note">Engelse League One</span></td><td>Over/Under — Under 2.5<br><span class="note">koers 2.14</span></td><td class="num below">-4,7 pp</td><td class="num">+21,4 pp</td><td class="num below">-6,2 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Barnsley – Stevenage<br><span class="note">Engelse League One</span></td><td>Asian Handicap — Stevenage +0.25<br><span class="note">koers 2.08</span></td><td class="num">+4,2 pp</td><td class="num below">+0,8 pp</td><td class="num">+3,8 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Bradford – Mansfield<br><span class="note">Engelse League One</span></td><td>Over/Under — Under 2.5<br><span class="note">koers 1.97</span></td><td class="num below">-0,7 pp</td><td class="num">+25,5 pp</td><td class="num below">-0,9 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Doncaster – Plymouth<br><span class="note">Engelse League One</span></td><td>1X2 — 2 (Plymouth wint)<br><span class="note">koers 2.67</span></td><td class="num below">-11,2 pp</td><td class="num">+26,8 pp</td><td class="num below">-12,0 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Huddersfield – Notts County<br><span class="note">Engelse League One</span></td><td>Over/Under — Over 2.5<br><span class="note">koers 1.83</span></td><td class="num">+6,2 pp</td><td class="num">+11,6 pp</td><td class="num">+5,0 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Luton – Leyton Orient<br><span class="note">Engelse League One</span></td><td>Asian Handicap — Luton -0.75<br><span class="note">koers 1.89</span></td><td class="num below">+0,9 pp</td><td class="num below">-0,3 pp</td><td class="num below">-0,9 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Reading – Blackpool<br><span class="note">Engelse League One</span></td><td>Asian Handicap — Reading -1<br><span class="note">koers 2.95</span></td><td class="num">+4,7 pp</td><td class="num below">+2,5 pp</td><td class="num">+3,7 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Wycombe – MK Dons<br><span class="note">Engelse League One</span></td><td>Over/Under — Over 2.75<br><span class="note">koers 2.02</span></td><td class="num">+3,7 pp</td><td class="num">+17,0 pp</td><td class="num below">+2,9 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Fleetwood – Shrewsbury<br><span class="note">Engelse League Two</span></td><td>Over/Under — Over 2.5<br><span class="note">koers 2.12</span></td><td class="num below">-3,8 pp</td><td class="num">+14,0 pp</td><td class="num below">-5,7 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Accrington – Crawley<br><span class="note">Engelse League Two</span></td><td>Over/Under — Under 2.75<br><span class="note">koers 1.91</span></td><td class="num below">-3,0 pp</td><td class="num">+11,5 pp</td><td class="num below">-4,5 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Bristol Rovers – Rotherham<br><span class="note">Engelse League Two</span></td><td>Asian Handicap — Rotherham United +0.75<br><span class="note">koers 1.88</span></td><td class="num">+4,8 pp</td><td class="num">+9,2 pp</td><td class="num">+3,0 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Cheltenham – Grimsby<br><span class="note">Engelse League Two</span></td><td>Asian Handicap — Grimsby Town -0.25<br><span class="note">koers 1.80</span></td><td class="num">+4,8 pp</td><td class="num">+3,4 pp</td><td class="num below">+2,3 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Chesterfield – Barnet<br><span class="note">Engelse League Two</span></td><td>Asian Handicap — Barnet +0.25<br><span class="note">koers 1.98</span></td><td class="num">+4,7 pp</td><td class="num">+5,3 pp</td><td class="num">+4,4 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Northampton – Newport<br><span class="note">Engelse League Two</span></td><td>Asian Handicap — Newport County +0.75<br><span class="note">koers 1.89</span></td><td class="num">+7,8 pp</td><td class="num">+3,7 pp</td><td class="num">+7,0 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Swindon – Colchester<br><span class="note">Engelse League Two</span></td><td>Over/Under — Under 2.5<br><span class="note">koers 2.08</span></td><td class="num below">-0,1 pp</td><td class="num">+3,5 pp</td><td class="num below">-0,5 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">FC Vaduz – Lausanne<br><span class="note">Zwitserse Super League</span></td><td>Over/Under — Under 3.25<br><span class="note">koers 1.85</span></td><td class="num">+5,4 pp</td><td class="num below">+0,7 pp</td><td class="num">+4,3 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Grasshopper – FC Zürich<br><span class="note">Zwitserse Super League</span></td><td>Draw No Bet — DNB — Grasshopper Zürich<br><span class="note">koers 2.00</span></td><td class="num">+5,9 pp</td><td class="num below">+2,3 pp</td><td class="num">+5,6 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat jij nog moet doen</h2>
+  </div>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Vier divisies meten die ik nog niet ken</span>
+        <span class="d">De Duitse 3. Liga, de Spaanse Primera Federación en de Engelse National League ontbreken volledig, en daardoor kwamen vandaag vier wedstrijden zonder oordeel te zitten (Wolfsburg – Cottbus, Real Sociedad B – Tenerife, Ceuta – Celta Fortuna, Crewe – York City). Alle drie staan gewoon in mijn bron; wat ontbreekt is de meting van hoeveel een club erop vooruit- of achteruitgaat bij promotie. Dat is hetzelfde werk als op 31 augustus voor Nederland, Denemarken, Portugal, België, Turkije en Polen is gedaan.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">De twee tweede divisies die ik vandaag toevoegde draaien op een algemene vuistregel</span>
+        <span class="d">De Noorse 1. Divisjon en de Zweedse Superettan zijn vanochtend toegevoegd, maar zonder eigen meting — ze gebruiken voorlopig het gemiddelde over alle landen die ik wél heb gemeten. Eind augustus leverde precies zo&#x27;n algemene vuistregel het grootste schijnvoordeel van een hele ronde op, dus dit is een tijdelijke oplossing en geen afgeronde. Beide wedstrijden die het vandaag betrof (Brann – Lillestrøm en Västerås – Sirius) leverden trouwens geen weddenschap op.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Ik kan meer soorten weddenschappen opvragen dan ik dacht</span>
+        <span class="d">Mijn regels gaan ervan uit dat de weddenschap &#x27;scoren beide ploegen?&#x27; twee betaalde aanvragen per wedstrijd kost. Vandaag was het er voor de vierde keer op rij één. Dat is de reden dat die soort maandenlang als te duur gold en vrijwel nooit meedeed. Vandaag deden voor het eerst alle zes de soorten bij alle competities mee, voor 27 van de 380 beschikbare aanvragen — nog geen tiende van wat ik mocht uitgeven.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">4</span>
+      <span class="body">
+        <span class="t">Vierentwintig wedstrijden niet bekeken</span>
+        <span class="d">Negenenvijftig wedstrijden is meer dan de vijfendertig die ik op één ochtend aankan. Veertien daarvan vielen af omdat hun competitie geen verwachte-doelpuntencijfers heeft (Tsjechië, Kroatië, Hongarije, Roemenië, de Keuken Kampioen Divisie en Albanië); die staan structureel achteraan zodra het druk is, en op een drukke zaterdag betekent dat: nooit. De andere tien vielen af op hoeveel actuele informatie er over die wedstrijd op tafel lag, en de grens liep dwars door een gelijkspel heen — 5,0 haalde het nog, 5,0 viel af.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Acht wedstrijden vielen om op een spelfout in mijn eigen administratie</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Mijn berekening begint bij hoe sterk een club vorig seizoen was. Staat een club niet in die tabel — omdat hij net gepromoveerd of gedegradeerd is — dan reken ik zijn cijfers om vanuit de divisie waar hij wél in stond. Daar heb ik voor een reeks landen echte metingen voor liggen, waaronder alle Engelse divisieparen.</p>
+    <p class="prose">Vanochtend kwamen zestien van de vijfendertig doorgerekende wedstrijden toch op 'geen oordeel' uit, telkens met de melding dat er geen divisie onder of boven bekend was. Dat klopte niet: de metingen lágen er. Het probleem was dat mijn tabel de Engelse competities kent als 'League One' en 'League Two', terwijl deze ronde ze 'English League One' en 'English League Two' noemt — en een opzoeking op de verkeerde spelling geeft niets terug. Hetzelfde gold voor de Spaanse tweede divisie. Drie clubs liepen bovendien vast op hun eigen naam: 'Sheff Wed', 'MK Dons' en 'HamKam' staan in de tabellen voluit. HamKam was niet eens gepromoveerd — die staat gewoon in de Noorse competitie van vorig jaar, als Hamarkameratene.</p>
+    <p class="prose">Na het repareren van de spelling en het toevoegen van de Noorse en Zweedse tweede divisie zakte het aantal van zestien naar acht. Dat is geen cosmetische winst: twee van die acht herstelde wedstrijden leverden de twee sterkste kandidaten van de hele dag op, en Rosenborg – HamKam is nu de beste weddenschap van vandaag — die zou anders helemaal niet zijn bekeken.</p>
+    <p class="prose">De acht die overblijven hebben wél een echte reden. Vier keer ontbreekt de divisie erboven of eronder werkelijk: de Duitse derde divisie, de Spaanse Primera Federación en de Engelse National League heb ik nooit gemeten. De andere vier vallen net buiten het bereik waarbinnen mijn meting geldig is — drie ervan op een haar. Dat bereik oprekken zou betekenen dat ik de meting aan de wedstrijd aanpas in plaats van andersom, en dat doe ik niet: buiten het gemeten gebied is elk getal een gok, en een gok die door al mijn andere controles heen glipt is gevaarlijker dan geen getal.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 17 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Duitse 2. Bundesliga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">vier wedstrijden · <strong>één weddenschap</strong> (Holstein Kiel – 1. FC Nürnberg) · Wolfsburg – Energie Cottbus kon ik niet doorrekenen: Cottbus komt uit de Duitse derde divisie en die ken ik nog niet · Dynamo Dresden – Bochum viel buiten de vijfendertig</td></tr>
+        <tr><td class="comp">Zweedse Allsvenskan</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">drie wedstrijden, alle drie doorgerekend · <strong>één weddenschap</strong> (GAIS – Häcken) · Västerås SK is dit seizoen gepromoveerd en kon ik pas doorrekenen nadat ik vanochtend de Zweedse tweede divisie had toegevoegd</td></tr>
+        <tr><td class="comp">Noorse Eliteserien</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">twee wedstrijden, allebei doorgerekend · <strong>één weddenschap</strong> (Rosenborg – HamKam, de sterkste van vandaag) · bij Brann – Lillestrøm lag op papier het grootste voordeel van de hele run, maar Brann mist te veel spelers om daarop te wedden</td></tr>
+        <tr><td class="comp">Engelse League One</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">elf wedstrijden, negen doorgerekend, geen weddenschap · hier viel het meeste af op de drempel: elf kandidaten hadden wel een voordeel, maar niet groot genoeg</td></tr>
+        <tr><td class="comp">Engelse League Two</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">twaalf wedstrijden, acht doorgerekend · <strong>één weddenschap</strong> (Tranmere – Oldham, de enige van vandaag die over de winnaar gaat) · drie clubs kon ik niet plaatsen, en York City is de lastigste: die komt uit de National League en daar heb ik geen cijfers voor</td></tr>
+        <tr><td class="comp">Griekse Super League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">twee wedstrijden · <strong>één weddenschap</strong> (AEK Athene – Aris) · Volos – Olympiacos viel buiten de vijfendertig</td></tr>
+        <tr><td class="comp">Spaanse Segunda División</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">vijf wedstrijden, drie beoordeeld maar geen enkele doorgerekend · in alle drie speelde een club die vorig seizoen in een divisie zat waarvoor ik geen betrouwbare omrekening heb (Tenerife, Celta Fortuna) of net buiten mijn meetbereik viel (Girona)</td></tr>
+        <tr><td class="comp">Zwitserse Super League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">drie wedstrijden, twee doorgerekend, geen weddenschap</td></tr>
+        <tr><td class="comp">Kroatische HNL</td><td><span class="chip gap">afgekapt</span></td><td class="note">twee wedstrijden, om dezelfde reden niet aan de beurt gekomen</td></tr>
+        <tr><td class="comp">Tsjechische competitie</td><td><span class="chip gap">afgekapt</span></td><td class="note">vier wedstrijden, geen ervan doorgerekend · voor deze competitie heeft mijn bron geen verwachte-doelpuntencijfers, en daarmee kwam ze op een drukke dag als deze niet aan de beurt</td></tr>
+        <tr><td class="comp">Hongaarse NB I</td><td><span class="chip gap">afgekapt</span></td><td class="note">twee wedstrijden, om dezelfde reden niet aan de beurt gekomen</td></tr>
+        <tr><td class="comp">Albanese Kategoria Superiore</td><td><span class="chip gap">afgekapt</span></td><td class="note">twee wedstrijden, om dezelfde reden niet aan de beurt gekomen</td></tr>
+        <tr><td class="comp">Keuken Kampioen Divisie</td><td><span class="chip gap">afgekapt</span></td><td class="note">één wedstrijd, om dezelfde reden niet aan de beurt gekomen</td></tr>
+        <tr><td class="comp">Roemeense SuperLiga</td><td><span class="chip gap">afgekapt</span></td><td class="note">drie wedstrijden, om dezelfde reden niet aan de beurt gekomen</td></tr>
+        <tr><td class="comp">Italiaanse Serie B</td><td><span class="chip gap">afgekapt</span></td><td class="note">drie wedstrijden, alle drie buiten de vijfendertig gevallen — niet omdat er iets ontbrak, maar omdat er vandaag betere kandidaten waren</td></tr>
+        <tr><td class="comp">Oostenrijkse Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender; alleen de Oostenrijkse beker speelde, en die volg ik niet</td></tr>
+        <tr><td class="comp">Kosovaarse Superleague</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">geen enkele Kosovaarse wedstrijd in mijn bron, onveranderd sinds 13 augustus</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px"><strong>24 wedstrijden zijn afgekapt</strong> omdat er per run maximaal 35 diep bekeken kunnen worden.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.235 tegen mijn 0.252 — lager is beter). Bij 212 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Onder de 8 wordt er niets gepubliceerd — 16 als de cijfers zwakker zijn. <em>In de repo: “edge_pp”.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run B · zaterdag 5 september 2026 · 5 bets uit 59 wedstrijden · prijzen om 05:15 bij The Odds API, beste prijs per markt met de bookmakersnaam erbij · uitslagmarkt van BetExplorer (marktgemiddelde over meerdere boeken, bookmaker niet herleidbaar) · cijfers, opstellingen en transfers van Fotmob · 27 betaalde aanvragen verbruikt, 19.756 over deze maand</p>
+</footer>
+
+</div>
