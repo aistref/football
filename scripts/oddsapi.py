@@ -66,6 +66,60 @@ SPORT_KEYS: dict[str, str] = {
 # Markten die alleen via de per-wedstrijd-endpoint gaan (bevestigd met HTTP 422 op de bulk-call).
 EVENT_ONLY_MARKETS = {"btts", "double_chance", "draw_no_bet"}
 
+# Boeken die geen bookmaker zijn maar een beurs: je speelt daar tegen een andere klant en betaalt
+# commissie over je nettowinst. De genoteerde prijs is dus niet de prijs die je krijgt.
+EXCHANGES = {"betfair", "matchbook", "smarkets", "betdaq"}
+
+EXCHANGE_COMMISSION = 0.02
+"""Commissie over de nettowinst bij een beurs. 2% is de gangbare standaard bij Betfair en
+Matchbook; het exacte tarief hangt van je account af, dus dit is met opzet aan de voorzichtige
+kant en niet exact."""
+
+
+def is_exchange(bookmaker: str) -> bool:
+    return any(name in (bookmaker or "").lower() for name in EXCHANGES)
+
+
+def net_price(price: float, bookmaker: str, commission: float = EXCHANGE_COMMISSION) -> float:
+    """De koers die je werkelijk krijgt, na commissie bij een beurs.
+
+    Bij een gewone bookmaker verandert er niets. Bij een beurs gaat de commissie van de
+    **nettowinst** af, dus 3.00 bij 2% commissie is effectief 1 + 2.00 * 0.98 = 2.96.
+
+    Dit is geen detail. Gemeten op 5 sep 2026 stond de beste 1X2-prijs in **61%** van de gevallen
+    bij een beurs; wie de kale prijs gebruikt overschat zijn edge dan structureel.
+    """
+    if not is_exchange(bookmaker):
+        return price
+    return 1 + (price - 1) * (1 - commission)
+
+
+def best_h2h(event: dict) -> dict[str, tuple[float, str]]:
+    """Beste 1X2-prijs per uitkomst uit een bulk-respons: {"home"|"draw"|"away": (koers, boek)}.
+
+    De uitkomstnamen in een `h2h`-markt zijn exact `event["home_team"]`, `event["away_team"]` en
+    "Draw" — allemaal uit dezelfde respons, dus hier is geen naamkoppeling nodig en hoort er ook
+    geen fuzzy vergelijking te staan. Geeft een onvolledige dict terug als een uitkomst ontbreekt;
+    de aanroeper hoort op `len(...) == 3` te controleren.
+
+    De koers is de **kale** prijs met de boeknaam erbij; haal `net_price` erover voor de prijs die
+    je werkelijk krijgt.
+    """
+    home, away = event.get("home_team"), event.get("away_team")
+    out: dict[str, tuple[float, str]] = {}
+    for (name, _point), (price, book) in best_by_line(event, "h2h").items():
+        if name == home:
+            slot = "home"
+        elif name == away:
+            slot = "away"
+        elif str(name).lower() == "draw":
+            slot = "draw"
+        else:
+            continue
+        if slot not in out or price > out[slot][0]:
+            out[slot] = (price, book)
+    return out
+
 
 class OddsApiError(RuntimeError):
     pass

@@ -247,10 +247,15 @@ persoonlijke omgeving op een Pro/Max-account ben jij dat alleen. Gebruik hier al
 gratis-tier-sleutel die niets anders opent, en zet hem **nooit** in de repo (zie `.gitignore`).
 Plak een sleutel ook niet in een chatgesprek.
 
-**Quota.** Bij The Odds API is de prijs per verzoek `aantal markten × aantal regio's`. Met 500
-credits per maand en twee runs per dag betekent dat: één regio (`eu`), maximaal twee markten, en
-alleen competities die vandaag spelen. Acht competities per dag à 2 credits is ~480 per maand — dat
-past net. Laat een run stoppen zodra `x-requests-remaining` onder een reserve komt.
+**Quota.** Bij The Odds API is de prijs per verzoek `aantal markten × aantal regio's`. Deze alinea
+ging tot 5 sep 2026 uit van het gratis Starter-plan met 500 credits per maand, en dat klopt sinds
+**30 aug 2026** niet meer: het plan is 20.000 credits per maand. Wat dat verandert staat in
+`prompts/_shared-rules.md` §1a — de belangrijkste gevolgen zijn dat de uitslagmarkt nu op de
+**beste prijs** wordt ingekocht in plaats van op het gratis marktgemiddelde van BetExplorer
+(+1.84 procentpunt edge per selectie, gemeten), en dat één bulk-aanroep van 3 credits per
+competitie vijf van de zes markten levert. Ter ijking: Run A gebruikte op 5 sep 2026 **61 van de
+381** credits die het plafond voor die dag toestond. Laat een run nog steeds stoppen zodra
+`x-requests-remaining` onder een reserve komt — `oddsapi.CreditGuard` doet dat.
 
 ## Nog te doen
 

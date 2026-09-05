@@ -21,6 +21,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `XG_WEIGHT` | **0.80** | Hoe zwaar de xG-methode weegt in `my_prob` tegenover de splitsmethode. Was tot 5 sep 2026 impliciet 0.50 (ongewogen gemiddelde), en dat was nooit ergens op gebaseerd. Op **uitslagen** gemeten over 392 afgerekende gevallen; zie §1f. De curve is vlak tussen 0.7 en 1.0 — niet op fijnregelen. `scripts/model.XG_WEIGHT`. |
 | `CREDIBILITY_K` | **8** | Na hoeveel duels het lopende seizoen even zwaar weegt als het hele vorige. Op 5 sep 2026 op verzoek van de gebruiker van 16 naar 8 gezet: sneller meebewegen, tegen 13% van de gemeten blendwinst. Zie §4. `scripts/model.CREDIBILITY_K`. |
 | `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
+| `EXCHANGE_COMMISSION` | **2%** | Commissie over de nettowinst bij een beurs (Betfair, Matchbook). Op 5 sep 2026 stond de beste 1X2-prijs in 61% van de gevallen bij een beurs, dus dit is geen randgeval: reken elke koers door `oddsapi.net_price` voordat je er edge op meet. `scripts/oddsapi.EXCHANGE_COMMISSION`. |
 | `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
 
 ### Wanneer een pick afwikkelbaar is (herzien 3 sep 2026, op verzoek van de gebruiker)
@@ -539,12 +540,58 @@ prijzen levert per definitie nul bets. Daarom ligt vanaf nu vast wélke bron wel
 
 | Markt | Bron | Kosten |
 |---|---|---|
-| **1X2** | `betexplorer.fetch_league_fixtures(url)` | **gratis** |
-| **Asian Handicap** | `oddsapi.fetch_spreads(key)` | 1 credit per competitie |
+| **1X2 — beste prijs** | `oddsapi.fetch_bulk(key, ["h2h","spreads","totals"])` | 1 credit per competitie |
+| **1X2 — marktgemiddelde** | `betexplorer.fetch_league_fixtures(url)` | **gratis** |
+| **Asian Handicap** | de `spreads` uit diezelfde bulk-aanroep | 1 credit per competitie |
 | **Draw No Bet** | de **0.0**-lijn uit diezelfde `spreads` | **gratis, zit er al in** |
 | **Double Chance** | de **±0.5**-lijn uit diezelfde `spreads` | **gratis, zit er al in** |
-| Over/Under | `oddsapi.fetch_totals(key)` | 1 credit per competitie |
+| Over/Under | de `totals` uit diezelfde bulk-aanroep | 1 credit per competitie |
 | BTTS | `oddsapi.fetch_event_markets(...)` | 2 credits per wedstrijd |
+
+### 1X2 op de beste prijs, niet op het marktgemiddelde (gewijzigd 5 sep 2026)
+
+**Waarom dit is omgedraaid.** Tot 5 sep stond hier het omgekeerde, met dit argument: *"Ga niet
+alsnog een h2h-bulkcall doen om dat recht te trekken: dat kost precies de 8 credits per run die
+deze paragraaf bespaart."* Dat klopte — op het **500-creditplan**. Sinds 30 aug 2026 is het plan
+20.000 credits per maand, en op 5 sep gebruikte Run A er 61 van een plafond van 381. Het argument
+is dus niet fout maar verlopen, en het hield ondertussen de betrouwbaarste winst tegen die er te
+halen is.
+
+**Wat het oplevert, gemeten op 5 sep 2026** over 51 selecties in de Premier League en de
+Championship:
+
+| | |
+|---|---|
+| beste prijs t.o.v. het marktgemiddelde | **+7.78%** (mediaan +6.07%) |
+| idem, na 2% beurscommissie | +6.89% |
+| idem, zonder beurzen — alleen gewone bookmakers | +5.63% |
+| **wat dat in edge doet** | **+1.84 procentpunt per selectie** |
+
+Bijna twee procentpunt edge, gratis, op een drempel van 8.0 — dat is een kwart van de drempel
+zonder één regel aan het model te veranderen. Dit is geen beter model maar **beter uitbetaald
+krijgen voor hetzelfde model**, en dat is de enige verbetering in dit hele bestand waarvan de
+omvang vooraf vaststaat.
+
+**Reken altijd met `oddsapi.net_price`.** In 61% van de gevallen stond de beste prijs bij een
+**beurs** (Betfair, Matchbook), en daar gaat commissie van je nettowinst af. De kale prijs is dan
+niet de prijs die je krijgt: 3.00 bij 2% commissie is effectief 2.96. Wie dat overslaat overschat
+zijn edge structureel — het scheelt hierboven bijna een vol procentpunt (+7.78% ruw tegen +6.89%
+netto). Noteer bij de pick de kale prijs, de boeknaam **en** of het een beurs is.
+
+**BetExplorer blijft, voor twee dingen die niet over de prijs gaan.** Verwar die twee rollen niet
+en voeg ze niet samen:
+
+1. **Het kalibratieblok van §6e** meet het model tegen het **marktoordeel**, en dat is het
+   consensusgemiddelde over alle boeken — niet de gunstigste uitschieter. Blijf daar het
+   BetExplorer-gemiddelde de-viggen.
+2. **Poort 8** bepaalt wie de markt de mindere ploeg vindt. Dat is ook een oordeel en geen prijs;
+   ook daar het gemiddelde.
+
+Voor de **bet zelf** — `edge_pp`, `selection_score`, de gepubliceerde koers — geldt de beste prijs
+na commissie. Kort: gemiddelde om te *meten*, beste prijs om te *spelen*.
+
+**Voor competities zonder sportkey blijft BetExplorer de enige 1X2-bron.** Noteer dan bij de pick
+dat het een marktgemiddelde is en dat de bookmaker niet herleidbaar is, precies zoals voorheen.
 
 ### Eén credit levert drie markten, niet één (gemeten 29 aug 2026)
 
@@ -602,20 +649,28 @@ uitkomst de inkoop en niet de analyse. Met `split_budget(12, 11)` → `(9, 3)` w
 
 Geef de credits daarna uit in deze volgorde, en stop zodra `guard.can_afford(...)` False geeft:
 
-0. **`spreads` eerst, voor `n_spreads` competities** (1 credit per competitie). Dit staat hier
-   sinds **29 aug 2026**, op aanwijzing van de gebruiker, en het is de enige stap die per credit
-   drie markten oplevert: Asian Handicap, Draw No Bet (de 0.0-lijn) én Double Chance (de
-   ±0.5-lijn). Samen met het gratis 1X2 van BetExplorer heeft zo'n competitie **vier van de zes
-   markten** voor één credit.
+0. **De bulk-aanroep eerst, voor `n_spreads` competities** (3 credits per competitie: h2h +
+   spreads + totals). Dit was tot 5 sep 2026 alleen `spreads` à 1 credit; sindsdien gaan
+   `h2h` en `totals` in dezelfde aanroep mee, omdat het budget dat ruimschoots toelaat en de
+   beste 1X2-prijs +1.84 pp edge oplevert (zie hierboven). Eén aanroep levert nu **vijf van de
+   zes markten**: 1X2 op de beste prijs, Asian Handicap, Draw No Bet (de 0.0-lijn), Double Chance
+   (de ±0.5-lijn) en Over/Under.
 
    ```python
-   from scripts.oddsapi import fetch_spreads
+   from scripts.oddsapi import fetch_bulk
    for comp in comps_op_datakwaliteit[:n_spreads]:
-       if guard.can_afford(1):
-           guard.record(fetch_spreads(sport_key[comp]), comp)
+       if guard.can_afford(3):
+           guard.record(fetch_bulk(sport_key[comp], ["h2h", "spreads", "totals"]), comp)
    ```
-1. **`totals`** (1 credit per competitie) voor de `n_totals` competities die **vandaag aan de
-   beurt zijn** in de rotatie:
+
+   **Bij een krap plafond valt de bulk terug op het oude gedrag.** Kun je geen 3 credits per
+   competitie betalen, koop dan `spreads` en `totals` los zoals hieronder en laat `h2h` vallen —
+   BetExplorer levert dan het gratis marktgemiddelde. `split_budget` rekent nog met 1 credit per
+   competitie, dus deel het plafond in dat geval zelf door drie voordat je het erin stopt, en
+   noteer in het runrapport dat de beste prijs deze run niet is opgehaald.
+1. **`totals` los** (1 credit per competitie) voor de `n_totals` competities die **vandaag aan de
+   beurt zijn** in de rotatie — alleen nog nodig voor competities die in stap 0 buiten de
+   bulk-aanroep vielen; wie de bulk kreeg heeft zijn doelpuntenmarkt al binnen:
 
    ```python
    from scripts.oddsapi import rotate_for_day
@@ -676,21 +731,18 @@ noteer hem in `markets_checked` als `"BTTS": "niet opgevraagd — creditplafond 
 Zo blijft `progress.py verify` groen zonder dat de administratie liegt. Neem `guard.report()` op in
 het runrapport onder "Bronstatus deze run".
 
-**Wat dit kost aan kwaliteit, en waarom het toch klopt.** BetExplorer geeft het **marktgemiddelde**
-over de getoonde boeken, niet de beste prijs, en de bookmaker is niet herleidbaar. Een 1X2-edge is
-daardoor systematisch **lager** dan tegen de beste prijs — conservatief, dus geen risico op te veel
-bets, maar het maakt de vergelijking tussen markten scheef: een 1X2 op een gemiddelde prijs verliest
-het in `selection_score` van een handicap op een beste prijs, ook als de 1X2 in werkelijkheid beter
-was. Daarom:
+**De scheve vergelijking die dit oploste (historie, sinds 5 sep 2026 verholpen).** Zolang 1X2 van
+BetExplorer kwam en de handicaps van The Odds API, stond de uitkomstmarkt op een **marktgemiddelde**
+tegenover een **beste prijs**. Een 1X2 verloor daardoor de `selection_score` van een handicap ook
+als hij in werkelijkheid beter was, en het runrapport moest dat elke keer als "mogelijk artefact van
+de prijsbron" vermelden. Sinds de bulk-aanroep hierboven staan alle markten op dezelfde voet en is
+die waarschuwing niet meer nodig.
 
-- noteer bij een 1X2-pick altijd `odds_source` als marktgemiddelde met het aantal boeken erbij, en
-  vermeld dat de bookmaker niet herleidbaar is (dat deed de routine op 13 aug al zo);
-- **wint een 1X2 de `selection_score` binnen een wedstrijd, dan is die uitkomst betrouwbaar** — hij
-  won immers met de zwakkere prijs. Verliest hij nipt van een handicap, meld dat dan in het
-  runrapport als "mogelijk artefact van de prijsbron", en stel op grond daarvan geen regel bij.
-
-Ga niet alsnog een `h2h`-bulkcall doen om dat recht te trekken: dat kost precies de 8 credits per run
-die deze paragraaf bespaart.
+Wat er wél blijft: **voor een competitie zonder sportkey is BetExplorer nog steeds de enige
+1X2-bron.** Noteer daar `odds_source` als marktgemiddelde met het aantal boeken erbij, vermeld dat
+de bookmaker niet herleidbaar is, en houd er rekening mee dat de edge daar systematisch te laag
+uitvalt — conservatief, dus geen risico op te veel bets, maar niet vergelijkbaar met een duel waar
+de beste prijs wél bekend is. Meld in het runrapport welke competities in die categorie vielen.
 
 ### Welke markt je publiceert: `selection_score`, hoogste wint
 
@@ -1337,6 +1389,12 @@ onbruikbaar.
 Noteer het tijdstip van uitlezen — odds bewegen. Geef beste prijs + bookmaker als die te bepalen
 is; anders "target minimum odds ≥ …". Een geaggregeerde beste prijs zonder herleidbare
 bookmaker: noteer de aggregator als bron en zeg dat de bookmaker niet herleidbaar was.
+
+**Is de beste prijs van een beurs** (Betfair, Matchbook, Smarkets, Betdaq), zeg dat er dan bij en
+noem beide getallen: de genoteerde koers en de koers na commissie. `edge_pp` en `selection_score`
+rekenen met de koers ná commissie (`oddsapi.net_price`); de gebruiker ziet op de site de koers
+ervóór, en zonder die twee naast elkaar klopt het rapport niet met wat hij op zijn scherm heeft.
+Zo bijvoorbeeld: *"Betfair 3.55 (na 2% commissie 3.50)"*.
 
 ### Onderaan, letterlijk
 
