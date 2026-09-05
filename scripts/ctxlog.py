@@ -85,6 +85,15 @@ def rest_days(block) -> float | None:
     return float(hit.group(1).replace(",", ".")) if hit else None
 
 
+def _turnover(match: dict, side: str) -> float | None:
+    """Aandeel van de selectiewaarde dat sinds 1 juni is omgezet, als de run het heeft vastgelegd."""
+    block = (match.get("turnover") or {}).get(side)
+    if isinstance(block, dict):
+        share = block.get("share")
+        return round(float(share), 4) if isinstance(share, (int, float)) else None
+    return None
+
+
 def _rows_from_state(state: dict, day: str, run: str) -> list[dict]:
     rows = []
     for comp, block in (state.get("competitions") or {}).items():
@@ -112,6 +121,11 @@ def _rows_from_state(state: dict, day: str, run: str) -> list[dict]:
                 "gap": round(sh - sa, 4),
                 "rest_home": rh, "rest_away": ra,
                 "rest_gap": (round(rh - ra, 2) if rh is not None and ra is not None else None),
+                # Selectieverloop staat hier om dezelfde reden als de blessures: het wordt al elke
+                # run opgehaald (voor de rangschikking van Stage 4) en het is met de backtest NIET
+                # te meten, want daarvoor zouden historische selectiewaardes nodig zijn en die
+                # heeft Understat niet. Vooruit loggen is dus de enige weg naar een meting.
+                "turnover_home": _turnover(match, "home"), "turnover_away": _turnover(match, "away"),
                 "p_market_home": (cal.get("market") or [None])[0],
                 "p_model_home": (None if not cal.get("p_xg") or not cal.get("p_split")
                                  else round((cal["p_xg"][0] + cal["p_split"][0]) / 2, 4)),

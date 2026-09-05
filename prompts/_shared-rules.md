@@ -1236,6 +1236,37 @@ naar zijn eigen recentere cijfers.
 **De splitsmethode blijft op vorig seizoen.** Die heeft thuis/uit-doelpunten nodig en die zijn voor
 het lopende seizoen pas laat betrouwbaar; met vier thuisduels is een thuis/uit-splitsing ruis.
 
+#### Rollende xG is gemeten en afgewezen (5 sep 2026)
+
+§4 noemt "rolling xG-trend (laatste 5–8)" vanaf het begin als categorie-1-invoer, en
+`understat.rolling_xg` bestaat — maar `blend_seasons` gebruikt het **vlakke** gemiddelde over alles
+wat er dit seizoen gespeeld is. Op verzoek van de gebruiker is nagegaan of een recenter gewogen
+schatting beter is. Zelfde backtest als hierboven, over twee seizoenen (het tweede is
+uit-steekproef), gepaard per wedstrijd. Positief = beter dan wat de routine nu doet:
+
+| methode | 2025/26 (n=1263) | t | 2024/25 (n=1297) | t |
+|---|---|---|---|---|
+| laatste 5 duels | −0.01100 | **−2.94** | −0.00735 | −1.75 |
+| laatste 8 duels | −0.00813 | **−2.98** | −0.00322 | −0.99 |
+| laatste 12 duels | +0.00007 | +0.04 | −0.00178 | −0.79 |
+| exponentieel h=4 | −0.00321 | −1.48 | −0.00047 | −0.19 |
+| exponentieel h=8 | −0.00046 | −0.37 | +0.00099 | +0.72 |
+| exponentieel h=12 | +0.00004 | +0.05 | +0.00100 | +1.06 |
+
+**Een kort venster is niet neutraal maar aantoonbaar schadelijk** — de laatste 5 en de laatste 8
+zijn in het eerste seizoen significant slechter (t rond −3), en de schade zit vooral laat in het
+seizoen (in de bak van 25+ speeldagen −0.029 respectievelijk −0.026). Dat is precies te begrijpen:
+een venster gooit data weg, en wat het aan recentheid wint weegt niet op tegen wat het aan
+waarnemingen verliest. Dezelfde les als bij `blend_seasons` ("blenden, niet omschakelen") en bij
+§1d ("regresseer de splits niet"): meer waarnemingen verslaan hier elke keer weer de slimmere
+bewerking.
+
+De enige variant die in beide seizoenen niet schaadt is een zeer milde exponentiële weging
+(h=12), en die staat op t = +0.05 en +1.06 — een orde van grootte kleiner dan de winst van het
+seizoensblenden zelf (+0.0049) en ver onder de lat die voor `k` is gehanteerd (t = +2.11 / +1.71).
+**Daarom niet ingevoerd.** Wie hier ooit opnieuw naar kijkt: h=12 is de enige kandidaat die het
+proberen waard is, en dan met meer seizoenen, niet met een fijnere afstelling van h.
+
 **`shrink` hoeft niet af te lopen** — ook gemeten: `shrink=0.8` verslaat `shrink=1.0` bij elke waarde
 van k. Daarmee is de openstaande vraag daarover in §6e beantwoord: laten staan.
 
