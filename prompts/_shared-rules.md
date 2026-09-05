@@ -10,7 +10,7 @@ aanpassen zonder de geplande taak aan te raken.
 
 | Parameter | Waarde | Waarom |
 |---|---|---|
-| `MAX_DEEP_ANALYSES` | **30** (ma–do) / **35** (vr–zo) | Harde cap. Zonder cap loopt een run met 40+ wedstrijden altijd zijn tijdslimiet in en levert een halve lijst. Verhoogd van 12 naar 30 op 8 aug 2026 nadat `scripts/fotmob.py`, `scripts/model.py`, `scripts/betexplorer.py` en `scripts/oddsapi.py` de ophaal- en rekenlogica herbruikbaar maakten. **Weekendwaarde 35 toegevoegd 29 aug 2026, op verzoek van de gebruiker**: die zaterdag stonden er 49 duels op de Run A-runlijst en 59 op die van Run B, dus er paste ongeveer 60%. Gebruik `ranking.max_deep_analyses(date.today())`; dezelfde dagindeling als `MAX_SHORTLIST`. |
+| `MAX_DEEP_ANALYSES` | **40** (ma–do) / **55** (vr–zo) | Harde cap, en het is een **tijds**grens en geen creditgrens — dat onderscheid is op 5 sep 2026 expliciet gemaakt omdat het makkelijk andersom gelezen wordt. Spreads, totals en h2h rekenen per **competitie** af, dus twintig duels extra binnen al opgehaalde competities kost daarvoor 0 credits (alleen BTTS rekent per duel, 1 credit). Wat de grens wél is: **de rapporten moeten om 06:30 klaar staan**, want de gebruiker zet tussen 07:00 en 08:00 in. Verhoogd van 30/35 op 5 sep 2026 nadat bleek dat de afkapping proportioneel kost: de betkans is vlak over de hele rangorde (29.1% op plek 1–10 tegen 30.0% op plek 31–35), dus een afgekapt duel is niet slechter maar gewoon weg. Op 5 sep kostte dat 44 duels over beide runs. Gebruik `ranking.max_deep_analyses(date.today())`. Elke run legt sinds die datum zijn looptijd vast in `data/run-state/` onder `duur`; past 55 niet vóór 06:30, dan is dat met cijfers te zien in plaats van te raden. |
 | `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
 | `EDGE_THRESHOLD_FULL` | **8.0 procentpunt** | Verhoogd van 3.0 op 31 aug 2026, op verzoek van de gebruiker, en dit keer op **uitkomsten** gemeten in plaats van beredeneerd. Zie "Waarom de drempel op 8 staat" hieronder. |
 | `EDGE_THRESHOLD_LIGHT` | **16.0 procentpunt** | Zwakkere data eist een grotere marge: exact tweemaal `EDGE_THRESHOLD_FULL`. Die verhouding is geen keuze maar een afhankelijkheid — `model.DATA_WEIGHT` leidt het LIGHT-gewicht van 0.5 in `selection_score` er rechtstreeks uit af (§1a). Verander de een niet zonder de ander. |
@@ -1077,6 +1077,19 @@ meten, en het kost geen credits — alles komt gratis van Fotmob:
 **Ontbrekende metingen krijgen het middenpunt, nooit nul.** Een meting die er niet is, is geen
 bewijs van een probleem — dezelfde regel als bij poort 7 (§1c). Een wedstrijd waarvan de context
 niet op te halen was, zakt daardoor niet stilletjes naar de achterkant van de lijst.
+
+**De sortering scheidt niet — gemeten 5 sep 2026.** Over alle rundagen tot dan, met de
+doorgerekende duels op deze score gerangschikt, is de betkans **vlak**: 29.1% op plek 1–10, 31.4%
+op 11–20, 31.4% op 21–30 en 30.0% op 31–35. Het duel dat als 33e binnenkomt levert dus net zo vaak
+een bet op als het duel dat als 3e binnenkomt. Twee gevolgen, en het tweede is het belangrijkste:
+
+1. **Afkappen kost naar rato.** Er gaat geen slechtere groep weg maar een willekeurige. Daarom is
+   `MAX_DEEP_ANALYSES` op 5 sep verhoogd naar 40/55 — zie §0.
+2. **Deze score doet nog niet wat hij belooft.** Hij is ingevoerd om te bepalen wíe er afvalt, en
+   hij blijkt daar niets over te zeggen. Dat is geen reden om hem weg te gooien — er moet iets
+   afvallen als de cap knelt, en rangschikken op gemeten informatie blijft beter te verantwoorden
+   dan op aftraptijd alleen. Maar wie hem ooit verfijnt: begin met de vraag of hij überhaupt iets
+   voorspelt, niet met de gewichten.
 
 **De gewichten zijn niet gefit, en dat staat er met opzet bij.** Er is geen enkele meting die zegt
 hoeveel een bevestigde opstelling waard is ten opzichte van een lage transferomzet. Wat de score

@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -48,6 +48,8 @@ def new_state(run_id: str, day: date) -> dict:
         "resumed_count": 0,
         "competitions": {},  # naam -> {"status": ..., "matches": [...]}
         "completed": False,
+        "duur": {"gestart": datetime.now(timezone.utc).isoformat(), "afgerond": None,
+                 "minuten": None},
     }
 
 
@@ -88,7 +90,26 @@ def mark(state: dict, competition: str, result: dict) -> None:
 
 
 def mark_completed(state: dict) -> None:
+    """Sluit de run af en leg vast hoe lang hij erover deed.
+
+    De looptijd staat hier sinds 5 sep 2026, en niet als sierlijkheid. `MAX_DEEP_ANALYSES` is een
+    **tijds**grens: de gebruiker zet 's ochtends tussen 07:00 en 08:00 in, dus de rapporten moeten
+    om 06:30 klaar zijn. Op diezelfde dag is de cap van 30/35 naar 40/55 gegaan omdat afgekapte
+    duels aantoonbaar net zo vaak een bet opleveren als de rest. Of die verhoging binnen het
+    tijdvenster past, is met dit veld te zien in plaats van te raden — en dat is precies de
+    discipline die de rest van dit bestand ook oplegt.
+    """
     state["completed"] = True
+    duur = state.setdefault("duur", {})
+    nu = datetime.now(timezone.utc)
+    duur["afgerond"] = nu.isoformat()
+    start = duur.get("gestart")
+    if start:
+        try:
+            duur["minuten"] = round(
+                (nu - datetime.fromisoformat(start)).total_seconds() / 60, 1)
+        except ValueError:
+            duur["minuten"] = None
 
 
 def is_completed(state: dict | None) -> bool:

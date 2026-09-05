@@ -42,8 +42,37 @@ from datetime import date
 #: `MAX_DEEP_ANALYSES` uit _shared-rules.md §0 — 30 op ma-do, 35 op vr-zo.
 #: Verhoogd voor het weekend op 29 aug 2026 op verzoek van de gebruiker: op een zaterdag met
 #: elf lopende competities stonden er 49 duels op de runlijst en paste 61% ervan.
-DEEP_WEEKDAY = 30
-DEEP_WEEKEND = 35
+DEEP_WEEKDAY = 40
+DEEP_WEEKEND = 55
+"""Verhoogd van 30/35 op 5 sep 2026, op verzoek van de gebruiker. Twee metingen eronder.
+
+**1. De afkapping kost proportioneel.** Over alle rundagen tot nu toe, met de doorgerekende duels
+op datarijkdom gerangschikt zoals hieronder:
+
+| plek in de rangorde | duels | bets | betkans |
+|---|---|---|---|
+| 1-10 | 127 | 37 | 29.1% |
+| 11-20 | 51 | 16 | 31.4% |
+| 21-30 | 35 | 11 | 31.4% |
+| 31-35 | 10 | 3 | 30.0% |
+
+Vlak. Het duel dat als 33e binnenkomt levert net zo vaak een bet op als het duel dat als 3e
+binnenkomt - de sortering hieronder **scheidt dus niet**, en elke afgekapte wedstrijd kost kansen
+naar rato. Op 5 sep 2026 werden er over beide runs samen 44 duels afgekapt.
+
+**2. Het kost bijna niets.** De cap is een **tijds**grens, geen creditgrens - dat onderscheid is op
+5 sep expliciet gemaakt omdat het makkelijk andersom gelezen wordt. Spreads, totals en h2h rekenen
+per **competitie** af, niet per wedstrijd: twintig duels extra binnen competities die toch al zijn
+opgehaald kost daarvoor 0 credits, plus 1 credit per duel voor BTTS. Het rekenwerk per extra duel
+is alleen `analyze_match` en `robustness_check`; het dure deel - het xG-dossier per competitie
+ophalen - is dan al gedaan. Zie §3/Stage 4: "een dag met 30 wedstrijden in 3 al-bekende competities
+is goedkoop".
+
+**Wat de grens dan wel is: de sessie moet op tijd klaar zijn.** De gebruiker zet 's ochtends tussen
+07:00 en 08:00 in, dus de rapporten moeten om **06:30** staan. Daarom is dit een verhoging en geen
+afschaffing, en daarom legt elke run sinds vandaag zijn eigen looptijd vast in `data/run-state/`
+onder `duur`. Blijkt 55 niet te passen voor 06:30, dan is dat met cijfers te zien in plaats van te
+raden - en dan gaat de cap omlaag of gaan de runtijden naar voren."""
 
 TIER_RANK = {"FULL": 0, "LIGHT": 1, "NONE": 2}
 
