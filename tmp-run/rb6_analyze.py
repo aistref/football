@@ -445,6 +445,18 @@ for c in cands:
     row["markets_checked"]["context"] = "Fotmob blessures/schorsingen + vorm + rust + stadioncontrole"
 
     # --- poorten ---
+    # Sinds 6 sep 2026 worden de poorten TWEE KEER gewogen: één keer met de herijkte `my_prob`
+    # (§1g) en één keer met de ruwe `my_raw`. Alleen de eerste bepaalt of er een bet uit komt —
+    # §1 is daar niet in veranderd. De tweede is er om de correctie zelf te kunnen meten: elke
+    # selectie die zonder de herijking een bet zou zijn geweest gaat als schaduwpick naar
+    # data/shadow.jsonl met `failed_gate = "herijking"` en wordt daar afgerekend (§6d).
+    #
+    # Let op waaróm dit een echte wijziging is en niet alleen een extra veld: `robustness_check`
+    # draaide tot vandaag alleen als de HERIJKTE edge de drempel haalde. Voor een kandidaat die
+    # ruw wel en herijkt niet door de edge-poort komt, was poort 6 dus nooit bepaald, en dan is
+    # "zou dit zonder de correctie een bet zijn geweest" niet te beantwoorden — alleen te raden.
+    # De aanroep hangt nu aan "haalt hij de drempel op minstens één van de twee schalen".
+    ORDER = ("odds", "edge", "tweede_methode", "robuustheid", "context", "underdog")
     thresh = THRESH[tier]
     evaluated = []
     for markt, oms, o, bron, side, f in sel:
@@ -456,33 +468,52 @@ for c in cands:
             continue
         my_raw = combine_probs(px, ps)          # §1f — 0.80 op xG, 0.20 op de splits
         my = recalibrate.apply(my_raw, FIT)     # §1g — herijking op uitslagen
-        e_pp, e_xg, e_sp = edge_pp(my, o), edge_pp(px, o), edge_pp(ps, o)
-        gates = {"odds": MIN_ODDS <= o <= MAX_ODDS, "edge": e_pp >= thresh,
-                 "tweede_methode": (px > 1 / o) and (ps > 1 / o)}
-        rb = None
-        if all(gates.values()):
-            rb = robustness_check(hs, as_, lg, f, o)
-            gates["robuustheid"] = rb.min_edge > 0
-        else:
-            gates["robuustheid"] = None
+        e_pp, e_raw = edge_pp(my, o), edge_pp(my_raw, o)
+        e_xg, e_sp = edge_pp(px, o), edge_pp(ps, o)
+
         g7 = gate7.get(side if side else "None") or {"passed": True, "reason": "geen kant om te benadelen"}
-        gates["context"] = bool(g7["passed"])
         # Poort 8 (§1e, 4 sep 2026): niet op de kant die de markt zwakker vindt.
         g8 = sides.check(side, row.get("odds_1x2"))
-        gates["underdog"] = g8.passed
-        fail = next((k for k in ("odds", "edge", "tweede_methode", "robuustheid", "context",
-                                 "underdog")
-                     if gates[k] is False), None)
+        base = {"odds": MIN_ODDS <= o <= MAX_ODDS,
+                "tweede_methode": (px > 1 / o) and (ps > 1 / o),
+                "context": bool(g7["passed"]), "underdog": g8.passed}
+
+        # `robustness_check` varieert alleen `analyze_match` en weet van de herijking niets af,
+        # dus één aanroep bedient beide schalen — de uitkomst is dezelfde.
+        rb = None
+        if all(base.values()) and (e_pp >= thresh or e_raw >= thresh):
+            rb = robustness_check(hs, as_, lg, f, o)
+
+        def _fail(edge_value, _base=base, _rb=rb):
+            g = dict(_base)
+            g["edge"] = edge_value >= thresh
+            g["robuustheid"] = (_rb.min_edge > 0) if _rb is not None else None
+            return next((k for k in ORDER if g.get(k) is False), None)
+
+        fail, fail_raw = _fail(e_pp), _fail(e_raw)
+        # Een selectie die alleen op de herijking sneuvelt krijgt dat label in plaats van het
+        # vagere `edge`: "genoeg edge, maar niet nadat mijn eigen optimisme eraf ging" is een
+        # andere bevinding dan "sowieso te weinig edge", en §6d moet die twee kunnen scheiden.
+        if fail == "edge" and fail_raw is None:
+            fail = "herijking"
         evaluated.append({"market": markt, "selection": oms, "odds": o, "odds_source": bron,
                           "side": side, "my_prob": round(my, 4), "my_raw": round(my_raw, 4),
                           "implied": round(1 / o, 4),
                           "p_xg": round(px, 4), "p_split": round(ps, 4),
-                          "edge_pp": round(e_pp, 2), "edge_xg": round(e_xg, 2),
-                          "edge_split": round(e_sp, 2),
+                          "edge_pp": round(e_pp, 2), "edge_raw": round(e_raw, 2),
+                          "edge_xg": round(e_xg, 2), "edge_split": round(e_sp, 2),
                           "edge_robust_min": (round(rb.min_edge, 2) if rb else None),
-                          "failed_gate": fail, "context_reason": g7.get("reason", ""),
+                          "failed_gate": fail, "failed_gate_ruw": fail_raw,
+                          "bet_ruw": fail_raw is None,
+                          # "haalt beide modellen" — de voorwaarde waaronder gepubliceerd wordt.
+                          # De herijking verlaagt een kans in dit bereik altijd, dus dit is
+                          # dezelfde eis als `fail is None`; hij staat er als controle, niet als
+                          # versoepeling, zodat een toekomstige fit die dat niet doet opvalt.
+                          "bet_beide": fail is None and fail_raw is None,
+                          "context_reason": g7.get("reason", ""),
                           "underdog_reason": g8.reason,
-                          "score": round(selection_score(e_pp, my, tier), 3) if fail is None else None})
+                          "score": round(selection_score(e_pp, my, tier), 3) if fail is None else None,
+                          "score_ruw": round(selection_score(e_raw, my_raw, tier), 3)})
     row["candidates_evaluated"] = len(evaluated)
     # Selecties die alléén op poort 8 sneuvelden: alle eerdere poorten stonden open. Die gaan naar
     # het schaduwlogboek, ook als deze wedstrijd daarna alsnog een andere bet oplevert (§1e).
@@ -505,9 +536,9 @@ for c in cands:
         t = tally.setdefault(r["market"], {"n": 0, "bets": 0})
         t["n"] += 1
     row["per_market"] = tally
-    row["all_candidates"] = sorted(evaluated, key=lambda r: -r["edge_pp"])[:14]
+    row["all_candidates"] = sorted(evaluated, key=lambda r: -r["edge_pp"])
 
-    passed = [r for r in evaluated if r["failed_gate"] is None]
+    passed = [r for r in evaluated if r["bet_beide"]]
     if passed:
         best = max(passed, key=lambda r: r["score"])
         rest = sorted([r for r in evaluated if r is not best and r["failed_gate"] is None],
@@ -560,6 +591,9 @@ for c in cands:
                                 "edge_robust_min": rmin,
                                 "failed_gate": gate}
             row["reason"] = {"edge": f"edge onder drempel ({b['edge_pp']:+.2f} pp, nodig {thresh:.1f})",
+                             "herijking": (f"alleen de herijking hield hem tegen: ruw "
+                                           f"{b.get('edge_raw', 0):+.2f} pp, herijkt "
+                                           f"{b['edge_pp']:+.2f} pp, nodig {thresh:.1f}"),
                              "odds": "odds buiten band",
                              "tweede_methode": "data conflicterend",
                              "robuustheid": "edge niet robuust over het (shrink, rho)-grid",
@@ -569,6 +603,35 @@ for c in cands:
             row["reason"] = "edge onder drempel"
         else:
             row["reason"] = "geen prijzen gevonden voor deze wedstrijd"
+
+    # --- wat zonder de herijking een bet was geweest (§5, 6 sep 2026) ---
+    # Elke selectie die alle acht poorten haalt op de RUWE kans maar niet op de herijkte, is
+    # precies het verschil dat §1g maakt. Die gaat als schaduwpick mee en wordt afgerekend, zodat
+    # over enkele weken onder "viel af op: herijking" een ROI staat. Zonder die reeks blijft de
+    # correctie een aanname die zichzelf niet kan weerleggen.
+    #
+    # Eén regel per wedstrijd, net als bij poort 8 (§1e): dezelfde mening in vier markten is één
+    # bevinding. En niet als de near_miss hierboven al dezelfde selectie beschrijft — die draagt
+    # dan zelf het label `herijking` en een tweede rij zou de opbrengst dubbel tellen.
+    _raw_only = [r for r in evaluated if r["bet_ruw"] and r["failed_gate"] is not None]
+    row["zonder_herijking"] = []
+    if _raw_only:
+        b = max(_raw_only, key=lambda r: r["score_ruw"])
+        # LET OP welke kans hier in gaat. De schaduwrij toetst de hypothese "het ongecorrigeerde
+        # model had gelijk", en dan hoort de RUWE kans erin — niet de herijkte. De herijkte kans
+        # is juist het model dat zegt "niet spelen"; die erin zetten zou de correctie tegen
+        # zichzelf laten getuigen en de kalibratieregel van §6d betekenisloos maken. `my_prob` en
+        # `edge_pp` zijn hier dus bewust de ruwe getallen; de herijkte staan ernaast.
+        row["zonder_herijking"] = [{
+            "market": f"{b['market']} — {b['selection']}", "odds": b["odds"],
+            "my_prob": b["my_raw"], "edge_pp": b["edge_raw"],
+            "my_prob_herijkt": b["my_prob"], "edge_pp_herijkt": b["edge_pp"],
+            "edge_xg": b["edge_xg"], "edge_split": b["edge_split"],
+            "edge_robust_min": b["edge_robust_min"],
+            "failed_gate": "herijking", "score_ruw": b["score_ruw"],
+            "ook_geblokkeerd": len(_raw_only) - 1,
+            "reden": (f"ruw {b['edge_raw']:+.2f} pp (drempel {thresh:.1f}), herijkt "
+                      f"{b['edge_pp']:+.2f} pp — alleen §1g hield hem tegen")}]
 
     # --- kalibratie (§6e) ---
     if m1:
