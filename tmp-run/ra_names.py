@@ -47,6 +47,19 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "man city": "manchester city",
     "nottm forest": "nottingham forest",
     "m gladbach": "borussia monchengladbach",
+    # 6 sep 2026: zelfde soort als "man city" van gisteren, en het kostte opnieuw een volledig
+    # gedekt duel. "Man United" houdt na _DROP ({united} valt weg) alleen {man} over tegen
+    # {manchester} in de tabel. Everton – Man United ging daardoor ten onrechte de
+    # promovendi-omrekening in en kwam uit op NONE, terwijl Manchester United gewoon in de
+    # Premier League-stand van 2025/2026 staat.
+    "man united": "manchester united",
+    # 6 sep 2026, andere oorzaak dan de rest van deze lijst: dit is geen afkorting maar een
+    # ANDERE TAAL. Fotmob schrijft de Deense naam "FC København", The Odds API en BetExplorer
+    # de Engelse "FC Copenhagen" — na _DROP blijft {kobenhavn} tegen {copenhagen} over, en dat
+    # deelt geen enkel token. Anders dan de gevallen hierboven raakt dit niet de tier maar de
+    # PRIJZEN: OB – FC København stond op FULL en kreeg toch nul selecties doorgerekend, omdat
+    # `find_event` de wedstrijd bij geen enkele bron kon terugvinden.
+    "fc kobenhavn": "fc copenhagen",
 }
 
 

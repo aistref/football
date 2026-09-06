@@ -111,6 +111,16 @@ def cmd_collect(args: argparse.Namespace) -> int:
                     continue
 
                 implied = 1 / odds
+                # Heeft de run zijn eigen `my_prob` meegeschreven, dan is dát het getal waarmee
+                # de poorten hebben gerekend en hoort het schaduwlogboek er niets anders van te
+                # maken. Toegevoegd 6 sep 2026, en het is geen schoonheidsfoutje: sinds 5 sep
+                # weegt §1f de twee methodes 80/20 in plaats van 50/50 en haalt §1g er met
+                # `recalibrate.apply` nog ongeveer tien procentpunt af. De reconstructie
+                # hieronder kende geen van beide en gaf op 6 sep voor Valencia – Barcelona
+                # +18.83 pp terwijl de run met +9.48 pp had gewerkt. Dan meet §6d de poorten
+                # tegen een edge die nooit is geclaimd, en zijn de schaduwrijen niet meer
+                # vergelijkbaar met de picks van dezelfde dag.
+                my_recorded = nm.get("my_prob")
                 # my_prob volgens de herziene §1: het gemiddelde van beide methodes. Bestaat er maar
                 # één methode (de competitie van één van beide ploegen heeft geen xG bij Fotmob), dan
                 # telt die ene — de kandidaat wordt wél vastgelegd, maar met `methods: 1` gemarkeerd
@@ -119,7 +129,13 @@ def cmd_collect(args: argparse.Namespace) -> int:
                 # waaronder telkens de scherpste getallen van de dag. Weggooien is geen neutrale
                 # keuze: het maakt de meting van poort `data` juist blind voor de wedstrijden waar
                 # die poort het vaakst toeslaat.
-                my_prob = implied + (sum(edges) / len(edges)) / 100
+                # Oudere run-states (t/m 5 sep 2026) hebben dat veld niet; daar blijft de
+                # reconstructie staan, zodat de bestaande reeks niet met terugwerkende kracht
+                # verandert.
+                if isinstance(my_recorded, (int, float)) and 0 < my_recorded < 1:
+                    my_prob = float(my_recorded)
+                else:
+                    my_prob = implied + (sum(edges) / len(edges)) / 100
                 slug = "".join(c if c.isalnum() else "-" for c in match.get("match", "")).strip("-").lower()
                 pid = f"shadow-{state['date']}-{state['run'].lower()}-{slug}{suffix}"[:120]
                 if pid in seen:
