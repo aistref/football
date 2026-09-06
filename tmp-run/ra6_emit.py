@@ -191,7 +191,8 @@ for comp, ms in by_comp.items():
              "context": m.get("context"), "candidates_evaluated": m.get("candidates_evaluated", 0),
              "all_candidates": m.get("all_candidates", [])}
         for k in ("promovendi", "understat", "verplaatst", "poort8_geblokkeerd", "afgekapt",
-                  "seizoensweging", "odds_1x2", "odds_1x2_best", "beste_prijs_winst_pct"):
+                  "seizoensweging", "odds_1x2", "odds_1x2_best", "beste_prijs_winst_pct",
+                  "zonder_herijking"):
             if m.get(k): e[k] = m[k]
         if m.get("reason"): e["reden"] = m["reason"]
         if m.get("near_miss"): e["near_miss"] = m["near_miss"]

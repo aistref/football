@@ -95,11 +95,26 @@ def cmd_collect(args: argparse.Namespace) -> int:
             # als de wedstrijd daarna alsnog een andere bet opleverde, want anders is op 25
             # september niet te meten wat die poort heeft gekost. Zie §1e.
             kandidaten = []
-            if isinstance(match.get("near_miss"), dict):
-                kandidaten.append(("", match["near_miss"]))
+            nm0 = match.get("near_miss")
+            # Een near_miss die op `herijking` sneuvelde wordt hier overgeslagen: het blok
+            # `zonder_herijking` hieronder beschrijft diezelfde wedstrijd al, en wél op de ruwe
+            # schaal waarop die hypothese hoort te worden getoetst. Zonder deze uitzondering
+            # krijgt één wedstrijd twee rijen in dezelfde categorie en telt haar opbrengst dubbel
+            # mee — precies de fout die §1e bij poort 8 al benoemt.
+            if isinstance(nm0, dict) and nm0.get("failed_gate") != "herijking":
+                kandidaten.append(("", nm0))
             for i, blk in enumerate(match.get("poort8_geblokkeerd") or []):
                 if isinstance(blk, dict):
                     kandidaten.append((f"-p8-{i}", blk))
+            # `zonder_herijking` (sinds 6 sep 2026, op verzoek van de gebruiker): selecties die
+            # alle acht poorten halen op de RUWE kans maar niet op de herijkte van §1g. Dat is
+            # exact het verschil dat de correctie maakt, en zonder deze rijen is dat verschil
+            # niet te meten — de correctie zou een aanname blijven die zichzelf niet kan
+            # weerleggen. Ze krijgen `failed_gate = "herijking"` en verschijnen dus als eigen
+            # regel in `stats`, naast `edge`, `context` en `underdog`.
+            for i, blk in enumerate(match.get("zonder_herijking") or []):
+                if isinstance(blk, dict):
+                    kandidaten.append((f"-nocal-{i}", blk))
 
             for suffix, nm in kandidaten:
                 odds = nm.get("odds")

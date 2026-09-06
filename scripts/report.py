@@ -275,6 +275,86 @@ def normalise_competitions(state: dict) -> dict:
     return out
 
 
+def render_toplists(state: dict, labels: dict, day: date) -> str:
+    """De dagelijkse top-N, twee keer: met en zonder de herijking van §1g.
+
+    Toegevoegd 6 sep 2026 op verzoek van de gebruiker. De linkerlijst is de gewone rangorde
+    waarop bets worden bepaald; de rechter laat zien wat de routine zónder de correctie zou
+    hebben gezien. Die tweede is met opzet géén tweede bettenlijst: elke regel die alleen door
+    de herijking is tegengehouden gaat als schaduwpick het logboek in en wordt afgerekend, zodat
+    over enkele weken met cijfers vaststaat wie er gelijk had.
+    """
+    try:
+        from . import toplist
+    except ImportError:
+        import toplist                                    # type: ignore[no-redef]
+    try:
+        res = toplist.build(state)
+    except Exception:
+        return ""
+    if not res["herijkt"] and not res["ruw"]:
+        return ""
+
+    def tabel(rows: list[dict], ruw: bool) -> str:
+        if not rows:
+            return '<p class="prose">Geen enkele doorgerekende selectie.</p>'
+        out = []
+        for i, r in enumerate(rows, 1):
+            if r["is_bet"]:
+                chip = '<span class="chip ok">gespeeld</span>'
+            elif ruw and r["zou_bet_zijn_ruw"]:
+                chip = '<span class="chip gap">nu tegengehouden</span>'
+            else:
+                chip = '<span class="chip">geen bet</span>'
+            out.append(f'''<tr>
+          <td class="num rank">{i}</td>
+          <td>
+            <span class="sl-match">{esc(r["match"])}</span>
+            <span class="sl-pick">{esc(r["market"])} — {esc(r["selection"])} · {esc(short_competition(r["competition"], labels))} · aftrap {esc(r["kickoff_nl"] or "")}</span>
+          </td>
+          <td class="num">{r["odds"]:.2f}</td>
+          <td class="num">{r["prob"]*100:.1f}%</td>
+          <td class="num">{r["edge_pp"]:+.1f}</td>
+          <td>{chip}<br><span class="sl-pick">{esc(r["status"])}</span></td>
+        </tr>''')
+        return f'''<div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody>{"".join(out)}</tbody>
+    </table>
+  </div>'''
+
+    n = res["n"]
+    dagsoort = "vrijdag t/m zondag" if day.weekday() >= 4 else "maandag t/m donderdag"
+    n_raw = sum(r["zou_bet_zijn_ruw"] and not r["is_bet"] for r in res["ruw"])
+    return f'''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top {n}</span>
+    <h2>Mijn {n} beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op {dagsoort} laat ik er {n} zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  {tabel(res["herijkt"], False)}
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  {tabel(res["ruw"], True)}
+  <p class="prose measure" style="margin-top:14px">{
+    f"Hiervan zou{'' if n_raw == 1 else 'en'} er <strong>{n_raw}</strong> zonder de correctie "
+    f"een weddenschap zijn geweest." if n_raw else
+    "Geen van deze zou ook zonder de correctie een weddenschap zijn geweest."} Over de hele run
+  gaat het om <strong>{res["alleen_herijking"]}</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>'''
+
 def render_shortlist(picks: list[dict], prose: dict, labels: dict, day: date) -> str:
     """De topselectie als tabel: welke bets zou je spelen als je er maar een paar speelt."""
     if not picks:
@@ -619,6 +699,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
   {render_bets(ranked_picks, prose.get("bets", {}), labels)}
 </section>
 {render_shortlist(picks, prose.get("bets", {}), labels, day)}
+{render_toplists(state, labels, day)}
 {f'<div class="wrap-callout"><div class="callout"><p class="prose">{prose["next_best"]}</p></div></div>' if prose.get("next_best") else ""}
 {render_near_misses(state, labels)}
 {render_todo(prose.get("todo", []))}

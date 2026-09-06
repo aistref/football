@@ -1415,6 +1415,72 @@ waar de markt 18 procentpunt afweek van het model. Vervang het een niet door het
 
 Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
 
+### 5a. De dagelijkse top-N, twee keer gerekend (toegevoegd 6 sep 2026, op verzoek van de gebruiker)
+
+De topselectie hierboven bevat alleen **gepubliceerde bets**, en die zijn er sinds de herijking
+van §1g vaak nul. Daarmee verdween ook het zicht op wat er dan wél bovenaan stond. Elke run levert
+daarom **twee ranglijsten** van elk `MAX_SHORTLIST` regels — 3 op ma–do, 5 op vr–zo, dezelfde
+parameter, geen nieuwe:
+
+```bash
+python3 scripts/toplist.py --run <a|b> --date YYYY-MM-DD
+```
+
+| Lijst | Rangschikt op | Waarvoor |
+|---|---|---|
+| **herijkt** | `selection_score(edge_pp, my_prob, tier)` — ná `recalibrate.apply` | dit is de lijst waaruit bets komen |
+| **ruw** | `selection_score(edge_raw, my_raw, tier)` — vóór de herijking | wat de routine tot 5 sep zou hebben gezien |
+
+Beide lijsten geven **één regel per wedstrijd** (§1, 0-of-1-bet: dezelfde mening in vier markten
+is één bevinding), en noemen per regel de koers, de kans, de edge en de poort waarop de selectie
+sneuvelde. Ze staan in het markdown-runrapport én op de HTML-pagina van §6c; `scripts/report.py`
+rendert ze uit `data/run-state/`, dus **niet overtypen**.
+
+**Publiceren verandert hier niet door.** Een bet moet alle acht poorten halen op de **herijkte**
+`my_prob`, precies zoals §1 al zei. Omdat de herijking een kans **binnen de speelbare koersband** (1.30–6.00, dus een kans tussen 16.7% en 76.9%) altijd verlaagt, haalt een selectie
+die de herijkte drempel haalt hem ook ruw — "hij haalt beide modellen" is dus dezelfde eis, hardop
+gezegd, en geen versoepeling.
+
+Dat is nagerekend en niet aangenomen: met de fit van 6 sep (`a=0.909, b=-0.445`) verhoogt
+`recalibrate.apply` een kans alleen onder ongeveer **0.7%**, en dat komt overeen met een koers van
+ruim 140 — ver buiten `MAX_ODDS`. Poort 2 sluit dat gebied dus al af. Toch controleert de analyse
+het per selectie met een `bet_beide`-vlag in plaats van erop te vertrouwen: de fit loopt mee met
+het logboek en is elke run een ander getal (§1g), en een toekomstige fit die binnen de band wél
+verhoogt zou anders stilzwijgend een bet doorlaten die maar één van de twee modellen haalt.
+
+**De ruwe lijst is een meting en geen tip.** Lees haar met §1g ernaast: daar is op 552 afgerekende
+gevallen gemeten dat er géén drempel op de herijkte edge bestaat die geld oplevert, en dat het
+rendement het **slechtst** is bij de hoogste geclaimde edge. De ongecorrigeerde edge is precies de
+grootheid waarvan dat is gemeten. De lijst laat dus zien wat de routine zónder correctie zou
+hebben gespeeld — niet wat ze aanraadt.
+
+**En daarom wordt die lijst afgerekend.** Elke selectie die alle acht poorten haalt op de ruwe kans
+maar niet op de herijkte, gaat als schaduwpick naar `data/shadow.jsonl` met
+`failed_gate = "herijking"` en wordt daar net zo afgewikkeld als elke andere kandidaat (§6d). Drie
+dingen die daarbij vastliggen:
+
+1. **Op de ruwe schaal geboekt.** De rij toetst de hypothese *"het ongecorrigeerde model had
+   gelijk"*, dus `my_prob` en `edge_pp` zijn daar de **ruwe** getallen. De herijkte kans erin
+   zetten zou de correctie tegen zichzelf laten getuigen: dat is juist het model dat zegt "niet
+   spelen", en dan meet de kalibratieregel van §6d niets meer. De herijkte waarden staan ernaast
+   in `my_prob_herijkt` en `edge_pp_herijkt`.
+2. **Eén rij per wedstrijd.** Een `near_miss` die zelf op `herijking` sneuvelde wordt overgeslagen,
+   want het blok `zonder_herijking` beschrijft die wedstrijd al. Zonder die uitzondering krijgt
+   één wedstrijd twee rijen in dezelfde categorie en telt haar opbrengst dubbel — dezelfde fout
+   die §1e bij poort 8 benoemt.
+3. **`robustness_check` draait nu op beide schalen.** Tot 6 sep werd poort 6 alleen bepaald als de
+   herijkte edge de drempel haalde. Voor een kandidaat die ruw wél en herijkt niet door de
+   edge-poort komt was poort 6 dus nooit geëvalueerd, en dan is "zou dit zonder de correctie een
+   bet zijn geweest" niet te beantwoorden maar alleen te raden. Eén aanroep bedient beide schalen:
+   het `(shrink, rho)`-grid varieert alleen `analyze_match` en weet van de herijking niets af.
+
+Over enkele weken staat er onder `shadow.py stats` dus een regel **"viel af op: herijking"** met
+een eigen hit rate en ROI. Is die structureel negatief, dan bespaart de correctie geld en blijft ze
+staan. Is hij structureel positief, dan houdt ze winnende bets tegen en hoort ze herzien. Dat is
+dezelfde route waarlangs poort 5 en poort 8 worden beoordeeld, en dezelfde waarschuwing geldt:
+onder ~30 afgewikkelde gevallen is elk verschil ruis (§6d) — niet lezen vóór die tijd, en zeker
+niet op één dag een drempel aanpassen.
+
 ### Marktbalans — verplicht, elke run (toegevoegd 29 aug 2026)
 
 Zet onder de topselectie een tabel met **welke markten er te koop waren en wat eruit kwam**:
@@ -1541,6 +1607,10 @@ Elke run, ook een run met nul bets:
    door `ctxlog.py settle`. Dit vraagt om een contextblok bij **elke** wedstrijd waarvoor de context
    is opgehaald, dus ook bij de duels die `MAX_DEEP_ANALYSES` heeft afgekapt. Zie §1c; neem
    `ctxlog.py stats` op in het runrapport.
+5e. **De dagelijkse top-N, twee keer** → `python3 scripts/toplist.py --run <a|b> --date <datum>`.
+   Zie §5a. Neem beide lijsten op in het runrapport; op de HTML-pagina zet `report.py` ze er zelf
+   in. Draai dit **na** `shadow.py collect`, zodat de regels die alleen op de herijking sneuvelden
+   al in het logboek staan.
 5b. **Marktdekking aantonen** → noteer bij elke geanalyseerde wedstrijd in `data/run-state/` een
    `markets_checked` met de markten die je werkelijk hebt doorgerekend, en draai daarna:
 
