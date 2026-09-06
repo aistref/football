@@ -29,6 +29,7 @@ Kosten: één Fotmob-verzoek per wedstrijd, geen credits. Alleen de standaardbib
 from __future__ import annotations
 
 import json
+import unicodedata
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
@@ -176,7 +177,21 @@ def _parse_form(entries: list, kickoff: datetime | None) -> tuple[str, int, int,
 
 
 def _norm_ground(s: str) -> str:
-    return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+    """Stadionnaam op vergelijkbare vorm: kleine letters, alleen alfanumeriek, zónder accenten.
+
+    Die laatste stap is toegevoegd op 6 sep 2026 (Run B) en repareert een vals alarm. Fotmob
+    schrijft dezelfde naam op twee plekken verschillend: de wedstrijdpagina geeft "ZTE Arena" en
+    "Groupama Arena", de teampagina "ZTE Aréna" en "Groupama Aréna". `str.isalnum()` is True voor
+    een geaccentueerde letter, dus die bleef staan en de twee vormen waren niet gelijk — waarna
+    `check_venue` twee Hongaarse thuiswedstrijden als VERPLAATST markeerde terwijl beide ploegen
+    gewoon in hun eigen stadion speelden. Dat raakt niet alleen de administratie: §1c eist dat een
+    verplaatsing in het runrapport wordt genoemd, en een controle die bij elke taal met accenten
+    afgaat, leert de lezer haar te negeren. Talen met accenten in stadionnamen zijn geen randgeval
+    op de Run B-lijst (HUN, CZE, ROU, ALB, HRV).
+    """
+    s = unicodedata.normalize("NFKD", s or "")
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    return "".join(ch for ch in s.lower() if ch.isalnum())
 
 
 def team_ground(team_id: int) -> tuple[str, str]:
