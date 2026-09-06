@@ -60,6 +60,13 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # PRIJZEN: OB – FC København stond op FULL en kreeg toch nul selecties doorgerekend, omdat
     # `find_event` de wedstrijd bij geen enkele bron kon terugvinden.
     "fc kobenhavn": "fc copenhagen",
+    # 6 sep 2026 (Run B), dezelfde soort als "fc kobenhavn": het raakt de PRIJZEN en niet de tier.
+    # Fotmob schrijft "NK Lokomotiva" (en zo staat de ploeg ook in de HNL-stand, dus daar valt
+    # niets te koppelen), maar BetExplorer kort af tot "Lok. Zagreb". Na _DROP blijft {nk,
+    # lokomotiva} tegen {lok, zagreb} over — geen gedeeld token — en de naamgelijkenis over het
+    # hele paar komt op 0.48, onder de vloer van 0.62. Slaven – NK Lokomotiva kreeg daardoor nul
+    # selecties doorgerekend terwijl de Croatian HNL wél een 1X2-rij bij BetExplorer had.
+    "nk lokomotiva": "lok zagreb",
 }
 
 
@@ -67,7 +74,10 @@ def norm(s: str) -> str:
     s = unicodedata.normalize("NFKD", s)
     s = "".join(c for c in s if not unicodedata.combining(c))
     s = s.replace("ø", "o").replace("Ø", "o").replace("ł", "l").replace("đ", "d").replace("ß", "ss")
-    return re.sub(r"[^a-z0-9 ]", " ", s.lower()).strip()
+    # Dubbele spaties platslaan: een punt of koppelteken wordt hierboven een spatie, zodat
+    # "Lok. Zagreb" anders op "lok  zagreb" uitkomt en niet meer gelijk is aan de vorm waarin
+    # een alias hierboven geschreven staat. Zonder dit is `norm` niet idempotent.
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9 ]", " ", s.lower())).strip()
 
 
 def tokens(s: str) -> frozenset:
