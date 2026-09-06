@@ -528,7 +528,13 @@ def render_finding(finding) -> str:
         return "\n".join(render_finding(f) for f in items)
     if not finding:
         return ""
-    paragraphs = "\n    ".join(f'<p class="prose">{p}</p>' for p in finding.get("paragraphs", []))
+    # `paragraphs` is de conventie (80 van de 82 gevallen), maar op 6 sep 2026 schreven Run A en
+    # Run B onafhankelijk van elkaar `body` — en dat verdween spoorloos van de pagina, net als
+    # `body` bij `todo` hieronder. Twee sessies die dezelfde dag dezelfde fout maken is geen
+    # toeval maar een schema dat makkelijk mis te lezen is; stilzwijgend tekst weggooien is
+    # daarbij de ergste reactie. Beide vormen worden nu geaccepteerd.
+    _paras = finding.get("paragraphs") or ([finding["body"]] if finding.get("body") else [])
+    paragraphs = "\n    ".join(f'<p class="prose">{p}</p>' for p in _paras)
     table = ""
     if finding.get("table"):
         head = "".join(f"<th>{esc(h)}</th>" for h in finding["table"]["head"])
@@ -571,7 +577,7 @@ def render_todo(items: list[dict]) -> str:
       <span class="tick{' done' if done else ''}">{mark}</span>
       <span class="body">
         <span class="t">{esc(item["title"])}</span>
-        <span class="d">{esc(item.get("detail", ""))}</span>
+        <span class="d">{esc(item.get("detail") or item.get("body") or "")}</span>
         {when}
       </span>
     </div>''')
