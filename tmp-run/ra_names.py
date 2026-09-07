@@ -67,6 +67,18 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # hele paar komt op 0.48, onder de vloer van 0.62. Slaven – NK Lokomotiva kreeg daardoor nul
     # selecties doorgerekend terwijl de Croatian HNL wél een 1X2-rij bij BetExplorer had.
     "nk lokomotiva": "lok zagreb",
+    # 7 sep 2026 (Run B), opnieuw de prijzen en niet de tier, en dit keer twee ploegen in
+    # dezelfde wedstrijd. De Fotmob-stand van de Romanian SuperLiga schrijft de namen voluit
+    # ("Universitatea Craiova", "Universitatea Cluj") en BetExplorer kort het eerste woord af
+    # tot "Univ." respectievelijk "U.". Na _DROP blijft {universitatea, craiova} tegen {univ,
+    # craiova} over: ze delen wél een token, maar geen van beide is een deelverzameling van de
+    # ander, en dat is wat `resolve` eist. `best_pair` liep er net langs — 0.727 op Craiova en
+    # 0.500 op Cluj is 0.614 over het paar, tegen een vloer van 0.62. Universitatea Craiova –
+    # Universitatea Cluj kwam daardoor op nul doorgerekende selecties uit terwijl de rij met
+    # vijf boeken gewoon bij BetExplorer stond; Romania heeft geen sportkey, dus dat was de
+    # enige prijsbron die er was.
+    "universitatea craiova": "univ craiova",
+    "universitatea cluj": "u cluj",
 }
 
 
