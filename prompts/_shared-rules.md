@@ -1337,6 +1337,71 @@ Twee dingen die hier blijven gelden:
 - **Een omgerekende ploeg is nooit `FULL`.** `RESIDUAL_SPREAD` houdt na correctie nog ~0.16
   relatieve sterkte over. De omrekening haalt de systematische fout eruit, niet de onzekerheid.
 
+### Kruis-grens: Europese duels zijn doorrekenbaar (toegevoegd 8 sep 2026, op verzoek van de gebruiker)
+
+**Dit vervangt de regel die van 18 aug t/m 8 sep 2026 gold: "kruis-grens → `data_tier = NONE`".**
+
+Die regel was juist zolang er geen meting was. Bij een duel tussen ploegen uit verschillende
+LANDEN staan de twee sterktes op onvergelijkbare schalen — elke ploeg is genormaliseerd op het
+gemiddelde van zijn eigen competitie — en het niveauverschil tussen die twee competities kende
+het model niet. Wat er dan uitkwam was dat ontbrekende niveauverschil, verkleed als edge: op
+19 aug 2026 zeventien procentpunt op één uitwinst bij Atlético – Málaga.
+
+Dat gat is nu gemeten. `scripts/interleague.py` bevat per competitie een aanval- en een
+verdedigingsfactor, gefit op **2111 kruis-grensduels** uit UCL, UEL en UECL over de seizoenen
+2021/2022 t/m 2025/2026. Gebruik hem zo:
+
+```python
+from scripts import interleague
+
+lg = interleague.reference_league()          # het Europese niveau: thuis 1.572 / uit 1.179
+ch = interleague.convert_team(home_id, home_name, "2025/2026")   # laatst AFGERONDE seizoen
+ca = interleague.convert_team(away_id, away_name, "2025/2026")
+if not (ch.in_range and ca.in_range):
+    tier = "NONE"                            # buiten het gemeten bereik → geen bet
+else:
+    tier = "LIGHT"                           # nooit FULL, zie hieronder
+    p_xg = analyze_match(ch.stats, ca.stats, lg)
+    p_sp = analyze_match_from_splits(ch.splits, ca.splits, league=lg)
+```
+
+`convert_team` gooit `InterLeagueError` zodra een poort dichtgaat — geen gemeten factor voor dat
+land, ploeg speelt niet in de hoogste divisie, of geen bruikbare stand. Vang die af en zet
+`data_tier = NONE`; stil terugvallen op factor 1.0 is precies de fout die deze module wegneemt.
+Leg `ch.note` en `ca.note` vast in `data/run-state/` onder `kruis_grens`, net als bij de
+promovendi-omrekening.
+
+**Vier dingen die vastliggen en die je niet moet versoepelen:**
+
+1. **Een omgerekende ploeg is nooit `FULL`.** Zelfde regel en zelfde reden als bij de promovendi:
+   de omrekening haalt de systematische fout eruit, niet de onzekerheid. `LIGHT` betekent
+   `EDGE_THRESHOLD_LIGHT` = 16.0 pp, en daar gaat de herijking van §1g nog overheen.
+2. **27 competities hebben een factor, de rest niet.** Onder `interleague.MIN_MATCHES` = 40
+   Europese duels is de factor vrijwel volledig door de regularisatie bepaald en dus een aanname
+   in plaats van een meting. Slowakije, Slovenië, Finland, Ierland, IJsland, Wales en de andere
+   kleine competities blijven daarom `NONE` — en dat is ook waar het model het minst weet.
+3. **`in_range` is een poort, geen aantekening.** Buiten het waargenomen bereik van de omgerekende
+   aanval (0.585–2.432) en verdediging (0.388–1.446) is er geen meting. Dezelfde Coventry-val als
+   bij `promotion.conversion_in_range`.
+4. **Dit maakt het model niet beter dan de bookmaker.** Op de zes Champions League-duels van
+   8 sep 2026 week het na omrekening gemiddeld 11.9 pp af van de de-vigde marktkans, en er kwam
+   **nul** bets uit: de hoogste herijkte edge was +10.1 pp tegen een drempel van 16.0. Zonder de
+   herijking zouden er zeven selecties zijn gekwalificeerd, alle zeven op AEK Athens – LASK — het
+   duel waar het model 20.4 pp van de markt af zat. Dat is exact het patroon waar §1g voor
+   waarschuwt: de grootste geclaimde edge is de grootste modelfout.
+
+De volledige meting, de uit-steekproefcontrole en de afgewezen varianten staan in de docstring van
+`scripts/interleague.py`. Wat je daaruit moet onthouden voordat je eraan sleutelt: zonder deze
+factoren haalde het model op kruis-grensduels een 1X2-Brier van 0.66249 tegen 0.66667 voor
+1/3-1/3-1/3 gokken — **niet te onderscheiden van blind gokken**, en dát is waarom de NONE-regel van
+18 augustus goed was. Met de factoren wordt dat 0.56869, uit-steekproef gemeten op 489 duels die
+bij het fitten geen rol speelden.
+
+**Hermeten na afloop van het Europese seizoen 2026/2027.** De drift is echt: tussen 2021-2023 en
+2024-2026 zakt Nederland van 1.25 naar 0.87 en stijgt Frankrijk van 1.35 naar 1.64. Recentere
+seizoenen zwaarder wegen is geprobeerd en werkt niet (halfwaardetijd 1 jaar is aantoonbaar
+slechter dan vlakke gewichten) — het antwoord is opnieuw meten met méér data, niet slimmer wegen.
+
 ---
 
 ## 5. Outputformat

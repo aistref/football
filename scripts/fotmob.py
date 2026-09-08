@@ -189,7 +189,13 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
                 away_played += row["played"]
     for row in table["all"]:
         gf, ga = (int(x) for x in row["scoresStr"].split("-"))
-        teams.setdefault(row["name"], {}).update(gf=gf, ga=ga, played=row["played"], pts=row["pts"])
+        # `_id` is het Fotmob-ploeg-id. Deze tabel is op NAAM gesleuteld, en dat is voor het
+        # dagelijkse werk prima omdat de daglijst ook namen geeft. Voor `interleague.py` is dat
+        # niet genoeg: daar komt een ploeg uit een buitenlandse competitie binnen ("Dortmund"
+        # tegen "Borussia Dortmund") en een naamkoppeling die daar misgaat levert stilzwijgend
+        # de verkeerde competitie op. Het id staat gewoon in de respons, dus bewaar het.
+        teams.setdefault(row["name"], {}).update(gf=gf, ga=ga, played=row["played"], pts=row["pts"],
+                                                 _id=row.get("id"))
 
     teams = _merge_accent_duplicates(teams)
     with_xg = {n: t for n, t in teams.items() if "xg" in t}

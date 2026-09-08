@@ -41,6 +41,8 @@ scripts/
   oddsapi.py            Over/Under en overige markten ophalen, credit-bewust
   xgscore.py            gepubliceerde 1X2-modelkansen van xgscore.io ophalen
   model.py              Poisson met Dixon-Coles-correctie + de robuustheidstest
+  interleague.py        krachtsverschil tussen NATIONALE competities, gemeten op 2111 Europese
+                        uitslagen — maakt kruis-grensduels (UCL/UEL/UECL) doorrekenbaar
   progress.py           voortgangsbestand: hervat een run na een Claude-limiet i.p.v. opnieuw te beginnen
   report.py             het leesbare dagrapport als HTML-pagina, voor wie de repo niet kent
 runs/
