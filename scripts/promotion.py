@@ -368,6 +368,23 @@ TIER1: dict[str, Tier1] = {
     # Beide paren staan gemeten in footballdata.MEASURED_GAPS onder direction="down".
     "League One (ENG)":   Tier1(48,  "Championship (ENG)",  ("E1", "E2")),
     "League Two (ENG)":   Tier1(108, "League One (ENG)",    ("E2", "E3")),
+    # Toegevoegd 11 sep 2026 (Run B), op dezelfde grond als de twee regels hierboven: een
+    # ontbrekende aanroep, geen ontbrekende meting. De Keuken Kampioen Divisie staat sinds de
+    # eerste versie als TIER2 van de Eredivisie in de tabel hierboven (Fotmob 111), maar de
+    # omgekeerde richting stond er niet, en die is voor deze competitie juist de drukste: elk
+    # seizoen zakken er twee Eredivisieclubs in. Op 11 sep 2026 kostte dat twee van de acht
+    # duels — Heracles (Fotmob 9791) en NAC Breda (9761), allebei gedegradeerd uit de
+    # Eredivisie 2025/2026 en allebei gewoon in die eindstand te vinden — en dat was `NONE` op
+    # een lege dict-lookup, niet op een gat in de data.
+    #
+    # LET OP, net als bij de Czech/Swiss TIER2-regels: er is geen `fd_pair` (football-data.co.uk
+    # dekt de Eerste Divisie niet) en `MEASURED_TIER2_GAP` meet alleen de richting omhóóg, dus
+    # `convert_relegated` valt hier terug op POOLED_GAP (x1.654 aanval / x0.647 verdediging,
+    # n=240). `GapResult.direction` zegt dat zelf ("gepoold — ... niet apart gemeten"); meld het
+    # in het runrapport. Wie hier tijd in wil steken: `measure_gap` over 2016/2017-2024/2025 in
+    # de richting "down" doet voor dit paar wat de meting van 31 aug voor de opwaartse richting
+    # deed.
+    "Keuken Kampioen Divisie (NED)": Tier1(57, "Eredivisie (NED)"),
 }
 
 
