@@ -79,6 +79,13 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # enige prijsbron die er was.
     "universitatea craiova": "univ craiova",
     "universitatea cluj": "u cluj",
+    # 13 sep 2026: initiaalwoord tegen plaatsnaam, net als "qpr" en "psg", maar nu aan de prijskant.
+    # Fotmob schrijft "AGF", BetExplorer "Aarhus" — geen gedeeld token en een naamgelijkenis van
+    # 0.22. Samen met de æ-fout in `norm` hierboven zakte het paar Nordsjælland – AGF onder de
+    # vloer van `best_pair`; met alleen de æ-fout hersteld zou het op 0.61 blijven staan, nog net
+    # eronder. The Odds API schrijft "AGF Aarhus" en kwam wél door — daar is {agf} een
+    # deelverzameling van {agf, aarhus}.
+    "agf": "aarhus",
 }
 
 
@@ -86,6 +93,13 @@ def norm(s: str) -> str:
     s = unicodedata.normalize("NFKD", s)
     s = "".join(c for c in s if not unicodedata.combining(c))
     s = s.replace("ø", "o").replace("Ø", "o").replace("ł", "l").replace("đ", "d").replace("ß", "ss")
+    # 13 sep 2026: æ en œ zijn LIGATUREN en geen letter-met-teken, dus NFKD laat ze staan en de
+    # regex hieronder gooide ze wég in plaats van ze uit te schrijven. "Nordsjælland" werd daardoor
+    # "nordsjlland" tegen "nordsjaelland" bij The Odds API en BetExplorer: geen gedeeld token, en
+    # de naamgelijkenis over het paar Nordsjælland – AGF kwam op 0.57 tegen een vloer van 0.62.
+    # Gevolg op 13 sep: één duel zonder 1X2-marktgemiddelde, dus zonder kalibratieblok (§6e) én
+    # met poort 8 open omdat er geen marktoordeel over de zwakkere ploeg was.
+    s = s.replace("æ", "ae").replace("Æ", "ae").replace("œ", "oe").replace("Œ", "oe")
     # Dubbele spaties platslaan: een punt of koppelteken wordt hierboven een spatie, zodat
     # "Lok. Zagreb" anders op "lok  zagreb" uitkomt en niet meer gelijk is aan de vorm waarin
     # een alias hierboven geschreven staat. Zonder dit is `norm` niet idempotent.
