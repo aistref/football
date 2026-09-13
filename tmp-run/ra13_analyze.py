@@ -49,6 +49,7 @@ cands = json.load(open("tmp-run/ra13_ctx.json"))
 s3 = json.load(open("tmp-run/ra13_stage3.json"))
 stats_meta, us_meta = s3["stats"], s3["understat"]
 odds = json.load(open("tmp-run/ra13_odds.json"))
+BTTS_GEKOCHT = set(odds["bought"]["btts"])   # welke duels de tweede ronde werkelijk kregen
 
 # ---------- vroeg-seizoenscorrectie (§3 Stage 5) -------------------------------------------
 obs, obs_comps = [], []
@@ -436,8 +437,17 @@ for c in cands:
                         f"The Odds API ({book})", None,
                         (lambda j: (lambda p: p.btts if j else 1 - p.btts))(ja)))
         row["markets_checked"]["BTTS"] = f"The Odds API event-markt btts — {len(bt)} selecties"
-    else:
+    elif c["match_id"] in BTTS_GEKOCHT:
         row["markets_checked"]["BTTS"] = "btts opgevraagd, maar geen boek noteerde deze markt"
+    else:
+        # §1a eist dat een markt die je niet hébt opgevraagd ook zo wordt genoteerd: "zo blijft
+        # progress.py verify groen zonder dat de administratie liegt". Tot vandaag stond hier
+        # onvoorwaardelijk "opgevraagd", en dat was waar zolang BTTS vooraf voor de hele
+        # bovenkant van de rangorde werd gekocht. Sinds de tweede ronde van vandaag (§1a stap 2,
+        # kandidaat-edge) geldt dat voor de meeste duels niet meer: op 13 sep zouden 23 van de 36
+        # duels beweren dat de markt is opgevraagd terwijl er geen credit aan is uitgegeven.
+        row["markets_checked"]["BTTS"] = ("niet opgevraagd — geen kandidaat-edge in dit duel, "
+                                          "dus geen tweede ronde (§1a stap 2)")
     row["markets_checked"]["context"] = "Fotmob blessures/schorsingen + vorm + rust + stadioncontrole"
 
     # --- poorten ---

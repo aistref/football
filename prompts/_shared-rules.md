@@ -757,6 +757,15 @@ Geef de credits daarna uit in deze volgorde, en stop zodra `guard.can_afford(...
    de routine t/m 11 sep, en dan is "toont al een kandidaat-edge" geen criterium maar een
    rangschikking.
 
+   **En noteer het eerlijk in `markets_checked`.** Een duel dat de tweede ronde niet kreeg hoort
+   `"BTTS": "niet opgevraagd — geen kandidaat-edge in dit duel"` te krijgen, níet "opgevraagd, maar
+   geen boek noteerde deze markt". Dat onderscheid bestond al voor het creditplafond (zie de regel
+   hierboven over "bekeken met een reden") en geldt hier net zo goed: op 13 sep stond er eerst bij
+   23 van de 36 duels dat de markt was opgevraagd terwijl er geen credit aan was uitgegeven.
+   `progress.py verify` bleef daar groen van — wat precies de reden is dat het opvalt noch
+   automatisch wordt gevangen. Zonder dit onderscheid is van buitenaf niet te zien of een ontbrekende
+   BTTS-regel betekent dat geen boek hem noteerde of dat de routine hem niet heeft gekocht.
+
 ### Waarom deze volgorde op 29 aug 2026 is omgedraaid
 
 Van 23 t/m 29 aug stond `totals` bovenaan en `spreads` in de rotatie. De aanleiding was goed — van
