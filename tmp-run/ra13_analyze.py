@@ -520,6 +520,22 @@ for c in cands:
     row["poort8_geblokkeerd"] = []
     if _p8:
         b8 = max(_p8, key=lambda r: selection_score(r["edge_pp"], r["my_prob"], tier))
+        # 13 sep 2026: deze rij had tot vandaag nooit een `edge_robust_min`, en dat is een gat in
+        # de rapportage en niet in de analyse. `robustness_check` draait hierboven alleen als
+        # *alle* basispoorten openstaan, en poort 8 zit daar in — dus juist voor een selectie die
+        # op poort 8 sneuvelt is poort 6 per definitie nooit bepaald. §5 eist in de "Net niet"-
+        # tabel alle drie de getallen, zodat zichtbaar is of het één poort was of een breed
+        # tekort; zonder deze ene extra aanroep is dat precies bij de poort-8-rijen niet te zien,
+        # en dat is de poort die op 25 september wordt herzien. Eén aanroep per wedstrijd.
+        if b8["edge_robust_min"] is None:
+            fn8 = next((f for markt, oms, o, bron, side, f in sel
+                        if markt == b8["market"] and oms == b8["selection"]), None)
+            if fn8 is not None:
+                try:
+                    b8["edge_robust_min"] = round(robustness_check(hs, as_, lg, fn8,
+                                                                   b8["odds"]).min_edge, 2)
+                except Exception:
+                    pass
         row["poort8_geblokkeerd"] = [
             {"market": f"{b8['market']} — {b8['selection']}", "odds": b8["odds"],
              "edge_pp": b8["edge_pp"], "my_prob": b8["my_prob"], "my_raw": b8["my_raw"],

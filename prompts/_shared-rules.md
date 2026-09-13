@@ -739,6 +739,24 @@ Geef de credits daarna uit in deze volgorde, en stop zodra `guard.can_afford(...
 2. `btts` per wedstrijd (2 credits) **alleen als er daarna nog credits over zijn** — in de praktijk
    dus zelden. Double Chance staat hier met opzet níet meer bij: die zit sinds 29 aug in stap 0.
 
+   **Wat "een kandidaat-edge" is, staat sinds 13 sep 2026 vast: de vereniging van beide schalen.**
+   Een wedstrijd krijgt BTTS zodra minstens één selectie binnen de koersband óf de herijkte
+   `NEAR`-drempel haalt (3.0 bij `FULL`, 6.0 bij `LIGHT` — de grens waarboven een kandidaat als
+   `near_miss` het schaduwlogboek ingaat), óf de volle drempel op de **ruwe** schaal (8.0 / 16.0 —
+   de grens die `zonder_herijking` vult). Van 6 t/m 12 sep 2026 is alleen de eerste lezing
+   gebruikt, en dat sloeg precies de duels over die §5a wil meten: op 12 sep kregen twaalf duels
+   met een ruwe edge boven hun drempel geen BTTS, terwijl het schaduwlogboek per wedstrijd de
+   sterkste ruw kwalificerende selectie boekt — was BTTS daar de sterkste geweest, dan stond er
+   een andere regel dan de beste. De vereniging is nooit krapper dan de oude lezing, dus de reeks
+   blijft vergelijkbaar, en ze kost 1 credit per duel: op 13 sep dertien duels op een plafond van
+   535.
+
+   **Gevolg voor de pipeline: de analyse draait twee keer.** Eerst de vijf markten uit de bulk,
+   dan de BTTS-inkoop op grond van `kandidaat_edge`, dan opnieuw met BTTS erbij. Dat kost rekentijd
+   en geen credits. Koop BTTS dus niet vooraf voor de bovenste `MAX_DEEP_ANALYSES` duels — dat deed
+   de routine t/m 11 sep, en dan is "toont al een kandidaat-edge" geen criterium maar een
+   rangschikking.
+
 ### Waarom deze volgorde op 29 aug 2026 is omgedraaid
 
 Van 23 t/m 29 aug stond `totals` bovenaan en `spreads` in de rotatie. De aanleiding was goed — van
