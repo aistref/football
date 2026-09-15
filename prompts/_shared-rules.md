@@ -354,6 +354,49 @@ kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenf
 stap maakt de mindere ploeg te sterk; §6e wijst richting `shrink`, maar `shrink = 0.8` is op
 3 sep juist op Brier-score gemeten en goed bevonden, en die spanning moet eerst worden opgelost.
 
+#### De poort wordt op twee schalen geboekt (toegevoegd 15 sep 2026)
+
+**De reeks hierboven groeide niet snel genoeg om die einddatum te halen, en dat lag aan de
+volgorde van de poorten.** `failed_gate` wordt bepaald op de **herijkte** kans, en `edge` staat in
+de poortvolgorde vóór `underdog`. Sinds §1g op 5 september ongeveer tien procentpunt van elke
+schatting afhaalt, haalt een underdog-kandidaat de edge-poort vrijwel nooit meer — dus komt hij
+nooit bij poort 8 aan en verschijnt hij niet in het schaduwlogboek. Op 15 september was dat
+letterlijk te zien: **tien selecties werden op de ruwe schaal door poort 8 tegengehouden, en er
+ging er nul als `underdog` het logboek in.** De reeks stond die dag op acht afgewikkelde gevallen
+— tegen de dertig die de regel hierboven zelf eist — en groeide met ongeveer één per twee dagen.
+Bij dat tempo arriveert 25 september met dertien.
+
+Daarom boekt de routine poort 8 vanaf nu op **twee** schalen, als twee aparte categorieën:
+
+| `failed_gate` | Wat erin gaat | Welke vraag het beantwoordt |
+|---|---|---|
+| `underdog` | poort 8 bindt op de **herijkte** kans: alle eerdere poorten open, drempel gehaald, alleen de underdog-regel ertussen | wat de poort ons **vandaag** kost, op de schaal waarop gepubliceerd wordt |
+| `underdog_ruw` | poort 8 bindt op de **ruwe** kans, geboekt met de ruwe `my_prob` en `edge_pp` (de herijkte staan ernaast in `my_prob_herijkt` / `edge_pp_herijkt`) | wat de poort de routine van vóór 5 sep zou hebben gekost |
+
+**Tel die twee nooit bij elkaar op.** Het zijn twee populaties en een gezamenlijke ROI middelt ze
+tot een getal dat geen van beide vragen beantwoordt. Een kandidaat die poort 8 tegenhield maar die
+de edge-poort tóch had geblokkeerd, heeft ons geen bet gekost — die hoort in de tweede rij, niet
+in de eerste. Dit is dezelfde constructie als `herijking` op 6 sep: een eigen regel in
+`shadow.py stats`, naast en niet in plaats van de bestaande.
+
+Wat daarmee vastligt, in dezelfde geest als §5a:
+
+1. **Eén rij per wedstrijd per categorie**, de selectie met de hoogste `selection_score` op de
+   schaal waarop die categorie boekt. De andere geblokkeerde selecties zijn dezelfde mening in een
+   andere markt (§1a) en staan alleen als aantal in `ook_geblokkeerd`.
+2. **Nooit dezelfde selectie twee keer.** Staat een kandidaat al in `poort8_geblokkeerd`, dan gaat
+   hij niet nóg eens in `poort8_ruw`; en een `near_miss` die dezelfde markt en koers beschrijft als
+   een `poort8_ruw`-rij wordt door `shadow.py collect` overgeslagen. Die `near_miss` blijft wél in
+   `data/run-state/` staan, want §5 heeft hem nodig voor de "Net niet"-tabel — het is het
+   *logboek* dat niet dubbel mag tellen, niet het rapport dat een regel mag missen.
+3. **`robustness_check` draait ook voor deze rijen.** Poort 6 wordt hierboven alleen bepaald als
+   alle basispoorten openstaan, en poort 8 zit daar in — dus juist voor een poort-8-rij is hij
+   anders nooit geëvalueerd, en dan eist §5 drie getallen waarvan er één per definitie leeg is.
+
+**Wat dit niet is.** Geen versoepeling: poort 8 houdt precies evenveel tegen als gisteren, er
+wordt alleen opgeschreven wat hij tegenhoudt. En geen antwoord op de vraag van 25 september — dat
+antwoord komt pas als deze reeks is afgewikkeld. Lees hem niet eerder dan bij ~30 gevallen (§6d).
+
 ### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
 
 ```python
@@ -1363,6 +1406,45 @@ Twee dingen die hier blijven gelden:
   alle andere poorten haalt.
 - **Een omgerekende ploeg is nooit `FULL`.** `RESIDUAL_SPREAD` houdt na correctie nog ~0.16
   relatieve sterkte over. De omrekening haalt de systematische fout eruit, niet de onzekerheid.
+
+### In een beker ligt de basis per WEDSTRIJD, niet per toernooi (toegevoegd 15 sep 2026)
+
+Een beker heeft zelf geen stand en dus geen competitiegemiddelde om ploegen op te normaliseren.
+Daarom hangt elk toernooi aan één vaste basisdivisie — `promotion.CUP_BASE`: de League Cup en de
+FA Cup aan de Premier League, de Coppa Italia aan de Serie A, de KNVB Beker aan de Eredivisie, de
+DFB Pokal aan de Bundesliga. Een ploeg die daar niet in staat wordt omgerekend uit de divisie
+eronder, en dat gaat **één** divisie diep, want verder is er geen meting.
+
+Tot 15 september viel een duel daarmee op `NONE` zodra een ploeg twee divisies lager speelde. Dat
+is juist zolang de twee ploegen op **verschillende** niveaus staan: dan is het krachtsverschil
+tussen die niveaus precies wat je moet kennen en niet hebt. **Maar spelen ze allebei in dezelfde
+divisie, dan is er niets te overbruggen.** Het duel is gewoon door te rekenen in de context van
+die divisie, net als een competitiewedstrijd daar — dat het in een beker wordt gespeeld verandert
+aan de rekensom niets. De omweg langs de basisdivisie liep dan naar een muur die er niet stond.
+
+```python
+sd = promotion.shared_lower_division(promotion.CUP_BASE.get(comp, comp), home, away, season)
+if sd is not None:          # beide ploegen in dezelfde divisie onder de basis
+    primaryId, basis_comp = sd.fotmob_id, sd.competition
+```
+
+De functie loopt de `TIER2`-keten af (standaard drie diep) en geeft de **eerste** divisie terug
+waarin **beide** namen voorkomen, of anders `None`. Nooit een gok, nooit een gepoolde factor.
+
+Twee dingen die daarbij vastliggen:
+
+1. **Dit lost een duel tussen verschillende divisies niet op, en dat is de bedoeling.** Op 15 sep
+   bleef Reading – Brentford (League One tegen Premier League) `NONE`, en terecht: daar is het
+   niveauverschil wél de vraag. Alleen Peterborough United – Barnsley, twee League One-ploegen,
+   werd gered. Op 8 september gold hetzelfde: Leyton Orient – Bradford wel, Bournemouth – Lincoln
+   niet.
+2. **De tier komt uit de gevonden divisie zelf, niet uit de beker.** Heeft die divisie xG bij
+   Fotmob, dan is het duel `FULL` — er is immers niets omgerekend, dus de regel "een omgerekende
+   ploeg is nooit `FULL`" is hier niet van toepassing. League One en League Two hebben xG; een
+   divisie zonder xG levert `LIGHT`.
+
+Leg `basis_per_wedstrijd` vast in `data/run-state/`, net als de promovendi-omrekening, en let op
+de cachesleutel: de gevonden divisie deelt zijn competitiegemiddelde **niet** met de beker.
 
 ### Kruis-grens: Europese duels zijn doorrekenbaar (toegevoegd 8 sep 2026, op verzoek van de gebruiker)
 

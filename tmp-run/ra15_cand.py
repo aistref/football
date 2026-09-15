@@ -49,12 +49,34 @@ for name, v in fx.items():
     for m in v["matches"]:
         rh, ra = resolve(m["home"], teams), resolve(m["away"], teams)
         missing = [t for t, r in ((m["home"], rh), (m["away"], ra)) if not r]
-        cands.append({"competition": name, "season": season, "season_cur": v["s_cur"],
-                      "primaryId": v["primaryId"], "crossborder": False,
-                      "betexplorer": v["betexplorer"], "sportkey": v["sportkey"],
-                      "understat": v.get("understat"),
-                      "tier": "FULL" if full and not missing else ("LIGHT" if not missing else "PROMO?"),
-                      "table_home": rh, "table_away": ra, "missing": missing, **m})
+        row = {"competition": name, "season": season, "season_cur": v["s_cur"],
+               "primaryId": v["primaryId"], "crossborder": False,
+               "betexplorer": v["betexplorer"], "sportkey": v["sportkey"],
+               "understat": v.get("understat"),
+               "tier": "FULL" if full and not missing else ("LIGHT" if not missing else "PROMO?"),
+               "table_home": rh, "table_away": ra, "missing": missing, **m}
+
+        # 15 sep 2026 — de basis per WEDSTRIJD in plaats van per beker (openstaand punt 1 van
+        # 15 sep). Staan beide ploegen niet in de basisdivisie maar wél allebei in dezelfde
+        # divisie eronder, dan is er niets om te overbruggen: het duel wordt gewoon in díe
+        # divisie doorgerekend, net als een competitiewedstrijd daar. De omweg langs de
+        # basisdivisie kostte op 8 sep Leyton Orient – Bradford en op 15 sep Peterborough
+        # United – Barnsley, allebei twee League One-ploegen in een League Cup-tie.
+        #
+        # LET OP wat dit NIET doet: een duel tussen ploegen uit verschillende divisies blijft
+        # gaan zoals het ging (Reading – Brentford is League One tegen Premier League, en dáár
+        # is het niveauverschil wél de vraag die we niet kunnen beantwoorden).
+        if len(missing) == 2:
+            base = promotion.CUP_BASE.get(name, name)
+            sd = promotion.shared_lower_division(base, m["home"], m["away"], season)
+            if sd is not None:
+                sub = fotmob.fetch_league_stats(sd.fotmob_id, season)
+                sub_full = any("xg" in t for t in sub["teams"].values())
+                row.update({"primaryId": sd.fotmob_id, "basis_comp": sd.competition,
+                            "basis_note": sd.note, "table_home": sd.home_key,
+                            "table_away": sd.away_key, "missing": [],
+                            "tier": "FULL" if sub_full else "LIGHT"})
+        cands.append(row)
 
 json.dump(cands, open("tmp-run/ra15_cands.json", "w"), ensure_ascii=False, indent=1)
 print("totaal", len(cands))

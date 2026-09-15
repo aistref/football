@@ -101,11 +101,30 @@ def cmd_collect(args: argparse.Namespace) -> int:
             # schaal waarop die hypothese hoort te worden getoetst. Zonder deze uitzondering
             # krijgt één wedstrijd twee rijen in dezelfde categorie en telt haar opbrengst dubbel
             # mee — precies de fout die §1e bij poort 8 al benoemt.
-            if isinstance(nm0, dict) and nm0.get("failed_gate") != "herijking":
+            # Idem sinds 15 sep 2026 voor een near_miss die `poort8_ruw` hieronder al beschrijft:
+            # `near_miss` voedt óók de "Net niet"-tabel van §5 en blijft daarvoor in het
+            # voortgangsbestand staan, maar hij hoort niet twee keer in het schaduwlogboek.
+            # Vergelijking op markt én koers, want dat is wat een selectie identificeert.
+            _p8r = [b for b in (match.get("poort8_ruw") or []) if isinstance(b, dict)]
+            _dubbel = (isinstance(nm0, dict)
+                       and any(b.get("market") == nm0.get("market")
+                               and b.get("odds") == nm0.get("odds") for b in _p8r))
+            if isinstance(nm0, dict) and nm0.get("failed_gate") != "herijking" and not _dubbel:
                 kandidaten.append(("", nm0))
             for i, blk in enumerate(match.get("poort8_geblokkeerd") or []):
                 if isinstance(blk, dict):
                     kandidaten.append((f"-p8-{i}", blk))
+            # `poort8_ruw` (sinds 15 sep 2026): selecties waar poort 8 bindt op de RUWE kans —
+            # alle andere poorten open, drempel gehaald, en alleen de underdog-regel ertussen.
+            # Eigen categorie (`failed_gate = "underdog_ruw"`), niet opgeteld bij `underdog`:
+            # die laatste meet wat de poort ons nú kost, deze wat hij het ongecorrigeerde model
+            # zou hebben gekost. Dat zijn twee populaties en één ROI over allebei zegt niets.
+            # Zonder deze rijen loopt §1e op 25 september af op 8 gevallen waar de regel er ≥ 30
+            # vraagt: sinds §1g sneuvelt een underdog-kandidaat al op de edge-poort en komt hij
+            # nooit meer bij poort 8 aan. Zie de toelichting in het analysescript van 15 sep.
+            for i, blk in enumerate(match.get("poort8_ruw") or []):
+                if isinstance(blk, dict):
+                    kandidaten.append((f"-p8ruw-{i}", blk))
             # `zonder_herijking` (sinds 6 sep 2026, op verzoek van de gebruiker): selecties die
             # alle acht poorten halen op de RUWE kans maar niet op de herijkte van §1g. Dat is
             # exact het verschil dat de correctie maakt, en zonder deze rijen is dat verschil

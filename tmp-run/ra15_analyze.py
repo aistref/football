@@ -229,8 +229,16 @@ for c in cands:
         crossborder = False
 
     if not crossborder:
-      lg, teams, st, cur_teams = league_ctx(c["competition"], c["primaryId"], c["season"],
+      # `basis_comp` (15 sep 2026): staan beide ploegen van een bekerduel in dezelfde divisie
+      # ónder de basisdivisie, dan zet `ra15_cand.py` die divisie hier neer en wordt het duel
+      # daarin doorgerekend — geen omrekening, dus ook geen cachesleutel van de beker. Zonder
+      # deze regel deelt de rescue-wedstrijd de League-Cup-cache met de Premier League-duels en
+      # rekent hij op het verkeerde competitiegemiddelde.
+      basis = c.get("basis_comp") or c["competition"]
+      lg, teams, st, cur_teams = league_ctx(basis, c["primaryId"], c["season"],
                                             c.get("season_cur"))
+      if c.get("basis_note"):
+          row["basis_per_wedstrijd"] = {"competitie": c["basis_comp"], "note": c["basis_note"]}
 
       # --- teamsterktes: uit de stand, of omgerekend uit de divisie eronder (promovendi) dan wel
       #     erboven (degradanten). Beide richtingen zijn §4; de tweede kan sinds 1 sep 2026. ---
@@ -272,7 +280,9 @@ for c in cands:
               # nodig en Fotmob geeft die voor het lopende seizoen pas laat betrouwbaar.
               return merged, splits_from_fotmob(r), None
           errors = []
-          pcomp = PROMO_COMP.get(c["competition"], c["competition"])
+          # Is de basis per wedstrijd gezet, dan is díe divisie het vertrekpunt voor de
+          # TIER1/TIER2-keten — niet de beker en niet zijn vaste basisdivisie.
+          pcomp = c.get("basis_comp") or PROMO_COMP.get(c["competition"], c["competition"])
           t2 = promotion.TIER2.get(pcomp)
           if t2:
               try:
@@ -535,6 +545,7 @@ for c in cands:
     # Alle andere geblokkeerde selecties zijn dezelfde mening in een andere markt (§1a); ze
     # allemaal opnemen zou de gemeten opbrengst van deze poort vier keer meetellen.
     row["poort8_geblokkeerd"] = []
+    row["poort8_ruw"] = []
     if _p8:
         b8 = max(_p8, key=lambda r: selection_score(r["edge_pp"], r["my_prob"], tier))
         # 13 sep 2026: deze rij had tot vandaag nooit een `edge_robust_min`, en dat is een gat in
@@ -560,6 +571,56 @@ for c in cands:
              "edge_robust_min": b8["edge_robust_min"], "failed_gate": "underdog",
              "score": round(selection_score(b8["edge_pp"], b8["my_prob"], tier), 3),
              "ook_geblokkeerd": len(_p8) - 1, "reden": b8["underdog_reason"]}]
+
+    # Poort 8 zoals hij op de RUWE schaal bindt (toegevoegd 15 sep 2026, openstaand punt 2).
+    #
+    # Het probleem dat dit oplost. `failed_gate` wordt hierboven op de **herijkte** kans bepaald,
+    # en `edge` staat in ORDER vóór `underdog`. Sinds §1g op 5 sep tien procentpunt van elke
+    # schatting afhaalt, haalt een underdog-kandidaat de edge-poort vrijwel nooit meer, dus komt
+    # hij nooit bij poort 8 aan en verschijnt hij niet in `poort8_geblokkeerd`. Op 15 sep was dat
+    # letterlijk te zien: tien selecties werden op de ruwe schaal door poort 8 tegengehouden, en
+    # er ging er nul het schaduwlogboek in. De reeks waarop §1e op 25 september moet worden
+    # herzien stond daardoor op 8 gevallen waar die regel er ≥ 30 vraagt — en groeide met ongeveer
+    # één per twee dagen.
+    #
+    # Waarom dit een EIGEN categorie is en niet bij `underdog` wordt opgeteld. De twee meten niet
+    # hetzelfde. `underdog` = "poort 8 was het enige tussen ons en een gepubliceerde bet, op de
+    # schaal waarop we publiceren" — dat is wat de poort ons vandáág kost. `underdog_ruw` = "zonder
+    # poort 8 had het ongecorrigeerde model hier gespeeld" — dat is wat hij de routine van vóór
+    # 5 sep zou hebben gekost. Die twee in één ROI gooien is twee populaties middelen, en dan zegt
+    # het getal niets meer. Dit is exact dezelfde constructie als `herijking` op 6 sep: een eigen
+    # regel in `stats`, naast en niet in plaats van de bestaande.
+    #
+    # Op de RUWE schaal geboekt, om dezelfde reden als §5a regel 1 voor `zonder_herijking`: de rij
+    # toetst de hypothese "het ongecorrigeerde model had gelijk", dus `my_prob` en `edge_pp` zijn
+    # hier de ruwe getallen, met de herijkte ernaast.
+    #
+    # Eén rij per wedstrijd (§5a regel 2), en nooit dezelfde selectie twee keer: een kandidaat die
+    # al in `poort8_geblokkeerd` staat, staat hier niet nog eens.
+    _p8_ruw = [r for r in evaluated
+               if r["failed_gate_ruw"] == "underdog"
+               and not any(q["market"] == r["market"] and q["selection"] == r["selection"]
+                           for q in _p8)]
+    if _p8_ruw:
+        b8r = max(_p8_ruw, key=lambda r: selection_score(r["edge_raw"], r["my_raw"], tier))
+        if b8r["edge_robust_min"] is None:
+            fn8r = next((f for markt, oms, o, bron, side, f in sel
+                         if markt == b8r["market"] and oms == b8r["selection"]), None)
+            if fn8r is not None:
+                try:
+                    b8r["edge_robust_min"] = round(robustness_check(hs, as_, lg, fn8r,
+                                                                    b8r["odds"]).min_edge, 2)
+                except Exception:
+                    pass
+        row["poort8_ruw"] = [
+            {"market": f"{b8r['market']} — {b8r['selection']}", "odds": b8r["odds"],
+             "my_prob": b8r["my_raw"], "edge_pp": b8r["edge_raw"],
+             "my_prob_herijkt": b8r["my_prob"], "edge_pp_herijkt": b8r["edge_pp"],
+             "edge_xg": b8r["edge_xg"], "edge_split": b8r["edge_split"],
+             "edge_robust_min": b8r["edge_robust_min"], "failed_gate": "underdog_ruw",
+             "score_ruw": b8r["score_ruw"], "ook_geblokkeerd": len(_p8_ruw) - 1,
+             "reden": (f"ruw {b8r['edge_raw']:+.2f} pp (drempel {thresh:.1f}), alle andere poorten "
+                       f"open — {b8r['underdog_reason']}")}]
     tally = {}
     for r in evaluated:
         t = tally.setdefault(r["market"], {"n": 0, "bets": 0})
@@ -606,9 +667,19 @@ for c in cands:
                     "odds": o0["odds"], "edge_pp": o0["edge_pp"],
                     "failed_gate": o0["failed_gate"] or "edge"}
     else:
-        # Kandidaten die op poort 8 sneuvelden staan al in `poort8_geblokkeerd` en horen hier dus
-        # niet nóg een keer: anders krijgt dezelfde mening twee schaduwregels en telt de opbrengst
-        # van die poort dubbel mee bij de herziening van 25 september.
+        # Kandidaten die op de herijkte schaal op poort 8 sneuvelden staan al in
+        # `poort8_geblokkeerd` en horen hier dus niet nóg een keer: anders krijgt dezelfde mening
+        # twee schaduwregels en telt de opbrengst van die poort dubbel mee bij de herziening van
+        # 25 september.
+        #
+        # Een kandidaat die alléén op de RUWE schaal op poort 8 sneuvelt blijft hier wél staan, en
+        # dat is een bewuste keuze van 15 sep 2026. `near_miss` voedt twee dingen: het
+        # schaduwlogboek én de "Net niet"-tabel van §5, en die tweede eist een regel voor élke
+        # afgewezen kandidaat met een echte edge. Zou deze groep hier wegvallen, dan was de tabel
+        # op 15 sep leeg geweest terwijl de sterkste kandidaat van de dag (Elche +1,75, +6,38 pp)
+        # er gewoon in hoort. De dubbeltelling wordt daarom opgelost waar ze ontstaat — in
+        # `shadow.py cmd_collect`, dat zo'n near_miss overslaat als `poort8_ruw` dezelfde selectie
+        # al beschrijft. Exact dezelfde constructie als bij `herijking` op 6 sep.
         near = [r for r in evaluated if r["edge_pp"] >= NEAR[tier]
                 and MIN_ODDS <= r["odds"] <= MAX_ODDS and r["failed_gate"] != "underdog"]
         if near:

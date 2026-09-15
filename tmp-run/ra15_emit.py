@@ -113,6 +113,7 @@ for comp, ms in by_comp.items():
              "context": m.get("context"), "candidates_evaluated": m.get("candidates_evaluated", 0),
              "all_candidates": m.get("all_candidates", [])}
         for k in ("promovendi", "kruis_grens", "understat", "verplaatst", "poort8_geblokkeerd",
+                  "poort8_ruw", "basis_per_wedstrijd",
                   "afgekapt", "seizoensweging", "odds_1x2", "odds_1x2_best",
                   "beste_prijs_winst_pct", "zonder_herijking", "kandidaat_edge"):
             if m.get(k): e[k] = m[k]

@@ -388,6 +388,88 @@ TIER1: dict[str, Tier1] = {
 }
 
 
+#: Bekercompetitie -> de divisie waarvan de basis (niveau, splits, `TIER1`/`TIER2`-keten) wordt
+#: genomen. Een beker heeft zelf geen stand, dus zonder deze tabel is er geen competitiegemiddelde
+#: om ploegen op te normaliseren. Stond tot 15 sep 2026 als `PROMO_COMP` in elk analysescript van
+#: elke run apart; hij hoort hier, naast `TIER1` en `TIER2` waar hij op wordt opgezocht.
+CUP_BASE: dict[str, str] = {
+    "Coppa Italia (ITA)": "Serie A (ITA)",
+    "DFB Pokal (GER)":    "Bundesliga (GER)",
+    "KNVB Beker (NED)":   "Eredivisie (NED)",
+    "FA Cup (ENG)":       "Premier League (ENG)",
+    "League Cup (ENG)":   "Premier League (ENG)",
+}
+
+
+@dataclass(frozen=True)
+class SharedDivision:
+    """De divisie waarin **beide** ploegen van een duel staan, lager dan de opgegeven basis."""
+    competition: str
+    fotmob_id: int
+    home_key: str
+    away_key: str
+    depth: int
+    note: str
+
+
+def shared_lower_division(top_competition: str, home: str, away: str, season: str,
+                          *, max_depth: int = 3, use_cache: bool = True) -> SharedDivision | None:
+    """De laagste-gemeenschappelijke divisie van twee ploegen die geen van beide in `top_competition` staan.
+
+    **Waarom dit bestaat (15 sep 2026).** Een bekertoernooi heeft zelf geen stand, dus de runs
+    hangen de sterktes op aan één vaste basisdivisie (`PROMO_COMP`: de League Cup aan de Premier
+    League, de Coppa Italia aan de Serie A, enzovoort). Een ploeg die dáár niet in staat wordt
+    omgerekend uit de divisie eronder — één divisie diep, want verder is er geen meting. Twee
+    divisies eronder valt de wedstrijd dus op `NONE`.
+
+    Dat is juist zolang de twee ploegen op **verschillende** niveaus spelen: dan is het
+    krachtsverschil tussen die niveaus precies wat je moet kennen en niet hebt. Maar spelen ze
+    allebei in dezelfde divisie, dan is er niets om te overbruggen. Het duel is gewoon door te
+    rekenen in de context van die divisie, net als een competitiewedstrijd daar — dat het in een
+    beker wordt gespeeld verandert aan de rekensom niets. De omweg langs de basisdivisie is dan
+    een omweg naar een muur die er niet staat.
+
+    Dat kostte op 8 sep 2026 Leyton Orient – Bradford en op 15 sep 2026 Peterborough United –
+    Barnsley, beide keren twee League One-ploegen in een League Cup-tie, beide keren `NONE` op een
+    omrekening die niet nodig was. Het is een **bronngat noch datagat**: Fotmob heeft xG voor
+    League One, en beide ploegen staan gewoon in die stand.
+
+    Wat deze functie **niet** doet, en met opzet: ze lost een duel tussen ploegen uit
+    verschillende divisies niet op. Reading – Brentford (League One tegen Premier League) blijft
+    `NONE`, want daar is het niveauverschil wél de vraag. Ze zoekt uitsluitend naar de eerste
+    divisie in de `TIER2`-keten waarin **beide** namen voorkomen, en geeft anders `None` terug —
+    nooit een gok, nooit een gepoolde factor.
+
+    `max_depth` begrenst hoe ver de keten wordt afgelopen (standaard 3: Premier League ->
+    Championship -> League One -> League Two). `season` is het laatst afgeronde seizoen, net als
+    bij `convert`.
+    """
+    comp = _resolve(top_competition)
+    seen = {comp}
+    for depth in range(1, max_depth + 1):
+        t2 = TIER2.get(comp)
+        if t2 is None:
+            return None
+        nxt = _resolve(t2.name)
+        if nxt in seen:            # kringetje in de keten — nooit voorgekomen, maar goedkoop af te vangen
+            return None
+        seen.add(nxt)
+        try:
+            table = fotmob.fetch_league_stats(t2.fotmob_id, season, use_cache=use_cache)["teams"]
+        except Exception:
+            return None
+        hk, ak = find_team(table, home), find_team(table, away)
+        if hk and ak:
+            return SharedDivision(
+                competition=t2.name, fotmob_id=t2.fotmob_id, home_key=hk, away_key=ak,
+                depth=depth,
+                note=(f"beide ploegen staan in {t2.name} {season} (Fotmob {t2.fotmob_id}), "
+                      f"{depth} divisie(s) onder {top_competition} — geen omrekening nodig, "
+                      f"het duel is in die divisie doorgerekend"))
+        comp = nxt
+    return None
+
+
 def convert_relegated(competition: str, team: str, season: str, league: LeagueContext,
                       *, use_cache: bool = True) -> Converted:
     """Reken een **degradant** om naar `competition`, op zijn cijfers in de divisie erbóven.
