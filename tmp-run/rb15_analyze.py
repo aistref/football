@@ -596,6 +596,34 @@ for c in cands:
              "edge_robust_min": b8["edge_robust_min"], "failed_gate": "underdog",
              "score": round(selection_score(b8["edge_pp"], b8["my_prob"], tier), 3),
              "ook_geblokkeerd": len(_p8) - 1, "reden": b8["underdog_reason"]}]
+
+    # Poort 8 zoals hij op de RUWE schaal bindt (toegevoegd 15 sep 2026, §1e). Zelfde wijziging
+    # als in het Run A-script van diezelfde dag, en om dezelfde reden: `failed_gate` wordt bepaald
+    # op de herijkte kans en `edge` staat in ORDER vóór `underdog`, dus sinds §1g haalt een
+    # underdog-kandidaat de edge-poort vrijwel nooit meer en komt hij nooit bij poort 8 aan. Op
+    # 15 sep hield poort 8 bij Run A tien selecties tegen en ging er nul het schaduwlogboek in,
+    # terwijl §1e hem op 25 september wil herzien op ≥ 30 afgewikkelde gevallen — er stonden er 8.
+    #
+    # Eigen categorie, niet optellen bij `underdog`: die meet wat de poort ons nú kost, deze wat
+    # hij het ongecorrigeerde model zou hebben gekost. Op de RUWE schaal geboekt (§5a regel 1),
+    # één rij per wedstrijd (§5a regel 2), en nooit een selectie die al in `poort8_geblokkeerd`
+    # staat. Zonder deze regel in ook het Run B-script groeit de reeks maar half zo snel.
+    row["poort8_ruw"] = []
+    _p8_ruw = [r for r in evaluated
+               if r["failed_gate_ruw"] == "underdog"
+               and not any(q["market"] == r["market"] and q["selection"] == r["selection"]
+                           for q in _p8)]
+    if _p8_ruw:
+        b8r = max(_p8_ruw, key=lambda r: selection_score(r["edge_raw"], r["my_raw"], tier))
+        row["poort8_ruw"] = [
+            {"market": f"{b8r['market']} — {b8r['selection']}", "odds": b8r["odds"],
+             "my_prob": b8r["my_raw"], "edge_pp": b8r["edge_raw"],
+             "my_prob_herijkt": b8r["my_prob"], "edge_pp_herijkt": b8r["edge_pp"],
+             "edge_xg": b8r["edge_xg"], "edge_split": b8r["edge_split"],
+             "edge_robust_min": b8r["edge_robust_min"], "failed_gate": "underdog_ruw",
+             "score_ruw": b8r["score_ruw"], "ook_geblokkeerd": len(_p8_ruw) - 1,
+             "reden": (f"ruw {b8r['edge_raw']:+.2f} pp (drempel {thresh:.1f}), alle andere poorten "
+                       f"open — {b8r['underdog_reason']}")}]
     tally = {}
     for r in evaluated:
         t = tally.setdefault(r["market"], {"n": 0, "bets": 0})
