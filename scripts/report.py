@@ -83,23 +83,34 @@ def esc(value) -> str:
 
 
 _INLINE_TAGS = ("b", "strong", "i", "em")
+_VOID_TAGS = ("br",)
 
 
 def inline(value) -> str:
     """Escape, maar laat een handvol nadruk-tags staan.
 
-    De prosevelden worden door de run zelf geschreven en `verdict`, `coverage_notes`,
-    `todo.detail` en `finding.paragraphs` gaan al ongeëscaped de pagina op — daar wérkt `<b>`
-    dus. `bets.*.why` en de risicozin liepen tot 5 sep 2026 wél door `esc()`, met als gevolg dat
-    een `<b>` daar letterlijk als tekst op de pagina kwam te staan. Dat gebeurde voor het eerst
-    zichtbaar op 4 sep (één keer) en op 5 sep bij zes van de zes bets.
+    De prosevelden worden door de run zelf geschreven en `verdict`, `coverage_notes` en
+    `finding.paragraphs` gaan al ongeëscaped de pagina op — daar wérkt `<b>` dus. `bets.*.why`
+    en de risicozin liepen tot 5 sep 2026 wél door `esc()`, met als gevolg dat een `<b>` daar
+    letterlijk als tekst op de pagina kwam te staan. Dat gebeurde voor het eerst zichtbaar op
+    4 sep (één keer) en op 5 sep bij zes van de zes bets.
 
     Volledig ongeëscaped doorlaten zou het verschil met de andere velden wegnemen maar ook alle
     controle; deze functie escapet daarom eerst alles en zet daarna alleen de nadruk-tags terug.
+
+    **`todo.detail` liep hier tot 16 sep 2026 niet doorheen** — die docstring beweerde het wél,
+    maar `render_todo` gebruikte `esc()`. Exact dezelfde fout als bij `bets.*.why` op 5 sep, in
+    het veld dat de gebruiker moet aanzetten tot een besluit: de opsomming van keuzes in de
+    openstaande actie van 16 sep kwam als een blok met letterlijke `<b>` en `<br>` op de pagina.
+    Daarom hoort `br` sinds vandaag ook bij de toegestane tags: een actie met drie opties heeft
+    een regelafbreking nodig, en alinea's zoals bij `finding.paragraphs` bestaan hier niet.
     """
     out = esc(value)
     for tag in _INLINE_TAGS:
         out = out.replace(f"&lt;{tag}&gt;", f"<{tag}>").replace(f"&lt;/{tag}&gt;", f"</{tag}>")
+    for tag in _VOID_TAGS:
+        for written in (f"&lt;{tag}&gt;", f"&lt;{tag}/&gt;", f"&lt;{tag} /&gt;"):
+            out = out.replace(written, f"<{tag}>")
     return out
 
 
@@ -577,7 +588,7 @@ def render_todo(items: list[dict]) -> str:
       <span class="tick{' done' if done else ''}">{mark}</span>
       <span class="body">
         <span class="t">{esc(item["title"])}</span>
-        <span class="d">{esc(item.get("detail") or item.get("body") or "")}</span>
+        <span class="d">{inline(item.get("detail") or item.get("body") or "")}</span>
         {when}
       </span>
     </div>''')
