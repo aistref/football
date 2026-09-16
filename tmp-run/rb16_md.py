@@ -31,7 +31,7 @@ GEEN_WEDSTRIJD_REDEN = {
     "Kosovo Superleague (KOS)":
         "komt niet voor in de Fotmob-daglijst (ongewijzigd sinds 13 aug 2026)",
 }
-ARTIFACT = "ARTIFACT_LINK"
+ARTIFACT = "https://claude.ai/artifact/Fq7Qu8eAviZjMx2MvGXkw9"
 
 
 def blok(naam):
@@ -149,9 +149,11 @@ W("""## De bevinding van de dag: ook het ongecorrigeerde model zag vandaag niets
 
 Op de meeste nul-bet-dagen van de afgelopen twee weken lag het verschil bij de herijking van §1g:
 selecties die op de **ruwe** schaal ruim boven de drempel uitkwamen en er na de correctie van
-ongeveer tien procentpunt onder zakten. Gisteren waren dat er vier, op 14 september negentien.
+ongeveer tien procentpunt onder zakten. Run A boekte er vanochtend drie, gisterochtend vier en op
+12 september nog twaalf.
 
-**Vandaag geen enkele.** De hoogste ruwe edge van de run is +5,96 pp (1X2 — Thun wint @ 2,86
+**Vandaag geen enkele** — de derde Run B op rij overigens waarop dat blok leeg blijft (14 en
+15 september ook). De hoogste ruwe edge van de run is +5,96 pp (1X2 — Thun wint @ 2,86
 bruto bij Betfair, 2,82 na commissie), tegen een drempel van 8,0. Er gaat dus geen enkele rij met
 `failed_gate = "herijking"` naar het schaduwlogboek, en poort 8 heeft op geen van beide schalen
 iets tegengehouden dat de edge-poort niet al had gesloten. Dat is een zeldzame en op zichzelf
@@ -347,9 +349,10 @@ niet afgelopen", −20,8 uur na aftrap). Er viel dus niets af te wikkelen, wat d
 voor een run die om 05:09 draait op een dag waarvan de wedstrijden nog moeten beginnen.
 
 Deze run voegt **geen enkele** schaduwregel toe: geen `near_miss`, geen `zonder_herijking`, geen
-poort-8-rij op beide schalen. Dat is de eerste Run B sinds 6 september waarop het schaduwlogboek
-onveranderd blijft, en het volgt rechtstreeks uit de sectie "Bevinding": er was niets dat dicht
-genoeg bij een bet kwam om te boeken.
+poort-8-rij op beide schalen. Dat is de derde Run B op rij met een onveranderd schaduwlogboek
+(14 en 15 september ook nul; 13 september nog vier), en het volgt rechtstreeks uit de sectie
+"Bevinding": er was niets dat dicht genoeg bij een bet kwam om te boeken. Het is ook precies de
+reden dat de reeks van §1e zo traag groeit — zie punt 1 onder "Openstaand".
 """)
 
 # ---------------------------------------------------------------- logboek
