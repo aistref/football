@@ -175,12 +175,18 @@ def max_shortlist(day: date) -> int:
 
 
 def max_deep_analyses(day: date) -> int:
-    """30 op ma-do, 35 op vr-zo — `MAX_DEEP_ANALYSES` uit _shared-rules.md §0.
+    """40 op ma-do, 55 op vr-zo — `MAX_DEEP_ANALYSES` uit _shared-rules.md §0.
 
-    Dezelfde dagindeling als `max_shortlist`, en om dezelfde reden hier uitgeschreven in plaats
-    van uit `ranking` geimporteerd: dit script leest alleen uit picks.jsonl en run-state.
+    Dit getal wordt hier NIET meer uitgeschreven maar uit `ranking` gehaald, en dat is een
+    correctie van 18 sep 2026. De waarde is op 5 september van 30/35 naar 40/55 gegaan (§0), en
+    deze functie bleef op 30/35 staan — met als gevolg dat elk dagrapport sindsdien onderaan de
+    dekkingstabel een cap noemde die niet de cap was waarmee gerekend is. Dat is precies het
+    soort stille afwijking dat §6c wil voorkomen: twee rapporten van dezelfde run die
+    verschillende getallen tonen. Een tweede plek waar hetzelfde getal staat, loopt vroeg of
+    laat uiteen; daarom nu uit de bron.
     """
-    return 35 if day.weekday() >= 4 else 30
+    from ranking import max_deep_analyses as _cap
+    return _cap(day)
 
 
 def selection_score(pick: dict) -> float:
