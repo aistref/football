@@ -20,7 +20,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `SETTLE_FALLBACK_HOURS` | **2.0** | Alleen de terugval als de bron geen status geeft. `scripts/settling.FALLBACK_HOURS`. |
 | `XG_WEIGHT` | **0.80** | Hoe zwaar de xG-methode weegt in `my_prob` tegenover de splitsmethode. Was tot 5 sep 2026 impliciet 0.50 (ongewogen gemiddelde), en dat was nooit ergens op gebaseerd. Op **uitslagen** gemeten over 392 afgerekende gevallen; zie §1f. De curve is vlak tussen 0.7 en 1.0 — niet op fijnregelen. `scripts/model.XG_WEIGHT`. |
 | `CREDIBILITY_K` | **8** | Na hoeveel duels het lopende seizoen even zwaar weegt als het hele vorige. Op 5 sep 2026 op verzoek van de gebruiker van 16 naar 8 gezet: sneller meebewegen, tegen 13% van de gemeten blendwinst. Zie §4. `scripts/model.CREDIBILITY_K`. |
-| `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
+| `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. **Poort 8 vervalt op 25 sep 2026** — keuze van de gebruiker op 18 sep 2026, vastgelegd in `scripts/sides.LAPSES_ON`; deze ondergrens doet daarna niets meer behalve `would_block` zetten. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
 | `EXCHANGE_COMMISSION` | **2%** | Commissie over de nettowinst bij een beurs (Betfair, Matchbook). Op 5 sep 2026 stond de beste 1X2-prijs in 61% van de gevallen bij een beurs, dus dit is geen randgeval: reken elke koers door `oddsapi.net_price` voordat je er edge op meet. `scripts/oddsapi.EXCHANGE_COMMISSION`. |
 | `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
 
@@ -354,6 +354,37 @@ kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenf
 stap maakt de mindere ploeg te sterk; §6e wijst richting `shrink`, maar `shrink = 0.8` is op
 3 sep juist op Brier-score gemeten en goed bevonden, en die spanning moet eerst worden opgelost.
 
+#### De poort vervalt op 25 september 2026 zonder meting (besloten 18 september 2026)
+
+**De einddatum en de bewijslast hierboven zijn niet samen te halen, en dat is op 18 september aan
+de gebruiker voorgelegd.** De reeks stond die dag op **8** afgewikkelde `underdog`-rijen (+12,9%)
+en **9** `underdog_ruw`-rijen (−34,0%) en groeit met ongeveer één rij per dag; op 25 september
+zijn het er vijftien à twintig, waar de regel hierboven er dertig eist. De drie mogelijkheden
+waren: (A) wachten tot er dertig zijn, desnoods tot november; (B) op 25 september beslissen op de
+cijfers die er dan liggen; (C) de poort op 25 september laten vervallen zonder meting. De
+gebruiker heeft **C** gekozen. Dat is zijn keuze om te maken — het gaat over risicobereidheid, en
+die hoort bij hem en niet bij de data (§5, dezelfde redenering als bij `selection_score`).
+
+Vastgelegd in `scripts/sides.LAPSES_ON = 2026-09-25`. Tot die datum werkt de poort ongewijzigd;
+vanaf die datum laat `sides.check()` élke kant door.
+
+**Schrijf er niet omheen wat dit kost.** De groep die deze poort tegenhoudt is de enige waarvan op
+**uitkomsten** is gemeten dat de routine er structureel naast zit: over 89 gevallen verwachtte het
+model 47,1 winnaars, de markt 38,0, en het werden er 33,0 (z = −3,14), en de 29 gevallen onder de
+ondergrens deden −31,4%. Dat de reeks sinds 5 september nauwelijks groeit is géén aanwijzing dat
+dat over is — het komt doordat de herijking van §1g diezelfde kandidaten nu al bij de edge-poort
+afvangt, precies zoals de paragraaf hieronder beschrijft. **De herijking is daarmee vanaf 25
+september de enige bescherming die overblijft; wie haar uitzet, zet deze poort terug.**
+
+**Wat er blijft meten, en waarom dat beter is dan de reeks die we niet konden afmaken.**
+`sides.check()` geeft ook na het vervallen `would_block = True` op precies de gevallen die hij
+eerder zou hebben tegengehouden. Leg dat per selectie vast in `data/run-state/` onder
+`poort8_vervallen`, en wordt zo'n selectie een **gepubliceerde bet**, noteer dat dan in de pick
+(`"poort8_zou_hebben_geblokkeerd": true`). Dan groeit er vanaf 25 september een reeks van echte,
+afgerekende bets op de kant waar de vraag over gaat — een hardere meting dan een schaduwpick, en
+de enige manier waarop deze vraag alsnog een antwoord met een getal krijgt. Lees hem met dezelfde
+terughoudendheid als §6d: niet vóór ~30 gevallen, en niet op één dag.
+
 #### De poort wordt op twee schalen geboekt (toegevoegd 15 sep 2026)
 
 **De reeks hierboven groeide niet snel genoeg om die einddatum te halen, en dat lag aan de
@@ -396,6 +427,14 @@ Wat daarmee vastligt, in dezelfde geest als §5a:
 **Wat dit niet is.** Geen versoepeling: poort 8 houdt precies evenveel tegen als gisteren, er
 wordt alleen opgeschreven wat hij tegenhoudt. En geen antwoord op de vraag van 25 september — dat
 antwoord komt pas als deze reeks is afgewikkeld. Lees hem niet eerder dan bij ~30 gevallen (§6d).
+
+> **Achterhaald op 18 september 2026.** Deze constructie is ingevoerd om de reeks vóór
+> 25 september groot genoeg te krijgen, en dat is niet gelukt: op 18 september stond hij op 9
+> afgewikkelde `underdog_ruw`-rijen. De gebruiker heeft daarop besloten de poort te laten
+> vervallen zonder die meting af te wachten — zie "De poort vervalt op 25 september 2026 zonder
+> meting" hierboven. Blijf tot 25 september op beide schalen boeken zoals hier beschreven; daarna
+> is er geen poort meer om te boeken en neemt `poort8_vervallen` het over. De twee reeksen blijven
+> staan als historie en mogen nog steeds niet bij elkaar worden opgeteld.
 
 ### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
 

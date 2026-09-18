@@ -62,14 +62,39 @@ Drie eigenschappen, met opzet gelijk aan poort 7 (§1c):
 * **Ontbrekende meting laat hem open.** Zonder 1X2-prijzen is er geen marktoordeel over wie de
   mindere ploeg is, en een meting die er niet is, is geen bewijs van een probleem.
 
-Herzien uiterlijk **25 september 2026** op wat het schaduwlogboek zegt dat hij heeft gekost: elke
-tegengehouden kandidaat gaat als `failed_gate = "underdog"` naar `data/shadow.jsonl` en wordt daar
-net zo afgerekend als een echte pick. Houdt hij structureel winnaars tegen, dan gaat hij eruit;
-staat de kalibratie op die kant weer recht, dan gaat hij ook eruit.
+## Vervalt op 25 september 2026, op uitdrukkelijke keuze van de gebruiker (18 september 2026)
+
+De poort is ingevoerd met een herzieningsdatum van 25 september en met één voorwaarde erbij: *lees
+het schaduwlogboek pas bij ~30 afgewikkelde gevallen, daaronder is elk verschil ruis*. Die twee
+zijn niet samen te halen. Op 18 september stonden de twee reeksen op **8** afgewikkelde
+`underdog`-rijen (+12.9%) en **9** `underdog_ruw`-rijen (−34.0%), en ze groeien met ongeveer één
+rij per dag: op 25 september zijn het er vijftien à twintig, niet dertig.
+
+De gebruiker is die keuze op 18 september voorgelegd — wachten tot er dertig zijn (A), op
+25 september beslissen op de cijfers die er dan liggen (B), of de poort op 25 september laten
+vervallen zonder meting (C) — en heeft **C** gekozen. Vanaf `LAPSES_ON` laat `check()` dus élke
+kant door.
+
+**Wat dat kost, eerlijk opgeschreven, want het is geen neutrale keuze.** De groep die deze poort
+tegenhoudt — de underdog-kant onder 35% marktkans — is de enige groep waarvan op uitkomsten is
+gemeten dat de routine er structureel naast zit: over 89 gevallen verwachtte het model 47.1
+winnaars, de markt 38.0, en het werden er 33.0 (z = −3.14). De 29 gevallen onder de ondergrens
+deden −31.4%. Dat de reeks sinds 5 september nauwelijks groeit, bewijst niet dat het probleem weg
+is; het komt doordat de herijking van §1g diezelfde kandidaten nu al bij de edge-poort afvangt
+(§1e, "de poort wordt op twee schalen geboekt"). Die herijking is daarmee de enige bescherming die
+overblijft — **wie haar ooit uitzet, zet deze poort terug.**
+
+**Wat er blijft meten.** `check()` geeft na het vervallen `would_block=True` op precies de
+gevallen die hij eerder zou hebben tegengehouden. Leg dat per selectie vast in `data/run-state/`,
+en wordt zo'n selectie een gepubliceerde bet, noteer dan in de pick dat poort 8 hem vóór
+25 september had geblokkeerd. Dan is over enkele maanden alsnog op uitslagen te beantwoorden wat
+deze keuze heeft gekost of opgeleverd — met echte bets in plaats van schaduwpicks, wat een betere
+meting is dan de reeks die we niet hebben kunnen afmaken.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 # Onder dit verschil in de-vigde marktkans noemt de markt geen van beide ploegen de mindere, en
 # gaat de poort open. 3 procentpunt is niet gemeten maar gekozen: het is ruwweg de spreiding tussen
@@ -81,12 +106,29 @@ PICKEM_TOLERANCE = 0.03
 # van de favorietenkant (−10.9%), en dan is er geen grond om één van beide af te sluiten.
 UNDERDOG_FLOOR = 0.35
 
+# Vanaf deze datum houdt de poort niets meer tegen — keuze C van de gebruiker, 18 sep 2026; zie de
+# docstring hierboven. Tot die datum werkt hij ongewijzigd. Dit is met opzet een datum en geen
+# vlag: de afspraak was een einddatum, en een datum in de code is de enige vorm daarvan die niet
+# vergeten kan worden.
+LAPSES_ON = date(2026, 9, 25)
+
 
 @dataclass(frozen=True)
 class SideCheck:
     passed: bool
     reason: str
     market_probs: tuple[float, float, float] | None = None
+    would_block: bool = False
+    """Zou de poort deze selectie hebben tegengehouden als hij nog gold?
+
+    Gelijk aan `not passed` zolang de poort werkt, en ná `LAPSES_ON` het enige spoor dat ervan
+    overblijft. Leg hem vast, ook (juist) als `passed` True is.
+    """
+
+
+def has_lapsed(today: date | None = None) -> bool:
+    """Is de poort vervallen? (§1e, keuze C van 18 sep 2026)"""
+    return (today or date.today()) >= LAPSES_ON
 
 
 def devig(odds_1x2) -> tuple[float, float, float] | None:
@@ -112,11 +154,15 @@ def market_underdog(odds_1x2) -> str | None:
     return "away" if home > away else "home"
 
 
-def check(side: str | None, odds_1x2) -> SideCheck:
+def check(side: str | None, odds_1x2, today: date | None = None) -> SideCheck:
     """Mag er op deze kant gespeeld worden?
 
     `side` is "home", "away" of None (Over/Under, BTTS, gelijkspel). `odds_1x2` zijn de drie
-    1X2-koersen van de wedstrijd, in de volgorde 1 / X / 2.
+    1X2-koersen van de wedstrijd, in de volgorde 1 / X / 2. `today` is de **rundatum**: geef hem
+    mee zodat een herberekening van een oude dag hetzelfde antwoord geeft als die dag zelf.
+
+    Vanaf `LAPSES_ON` is `passed` altijd True en zegt alleen `would_block` nog wat de poort zou
+    hebben gedaan — zie de docstring van de module.
     """
     if side not in ("home", "away"):
         return SideCheck(True, "geen kant om te benadelen")
@@ -131,10 +177,15 @@ def check(side: str | None, odds_1x2) -> SideCheck:
                                f"{theirs:.1%})", probs)
     if under == side:
         if mine < UNDERDOG_FLOOR:
-            return SideCheck(False, f"underdog-kant onder de ondergrens — de markt geeft deze "
-                                    f"ploeg {mine:.1%} tegen {theirs:.1%} voor de tegenstander, "
-                                    f"onder de {UNDERDOG_FLOOR:.0%} waar poort 8 (§1) dichtgaat",
-                             probs)
+            blocked = (f"underdog-kant onder de ondergrens — de markt geeft deze ploeg "
+                       f"{mine:.1%} tegen {theirs:.1%} voor de tegenstander, onder de "
+                       f"{UNDERDOG_FLOOR:.0%} waar poort 8 (§1) dichtging")
+            if has_lapsed(today):
+                return SideCheck(True, f"{blocked}; poort 8 is per {LAPSES_ON} vervallen "
+                                       f"(keuze van de gebruiker, 18 sep 2026) en houdt hem niet "
+                                       f"meer tegen", probs, would_block=True)
+            return SideCheck(False, blocked.replace("dichtging", "dichtgaat"), probs,
+                             would_block=True)
         return SideCheck(True, f"underdog-kant, maar boven de ondergrens ({mine:.1%} om "
                                f"{theirs:.1%}; poort 8 sluit onder {UNDERDOG_FLOOR:.0%})", probs)
     return SideCheck(True, f"favorietenkant ({mine:.1%} om {theirs:.1%})", probs)
