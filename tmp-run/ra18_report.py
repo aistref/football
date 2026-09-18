@@ -25,11 +25,14 @@ ctx = cap(f"{S}/ctx.txt")
 
 MD = f"""# Run A — 2026-09-18
 
-**Gestart:** 04:09 CEST · **Afgerond:** 04:52 CEST · **Looptijd:** 43 minuten · **Bets gepubliceerd:** 0 · **Wedstrijden diep geanalyseerd:** 12 van 12 · **Afgekapt:** 0
+**Gestart:** 04:09 CEST · **Afgerond:** 04:23 CEST · **Looptijd:** 14,2 minuten · **Bets gepubliceerd:** 0 · **Wedstrijden diep geanalyseerd:** 12 van 12 · **Afgekapt:** 0
 
-De run is niet onderbroken (`resumed_count` = 0). Drieënveertig minuten voor twaalf duels in elf
-competities — ruim binnen 06:30, maar wel bijna drie keer zo lang als gisteren, en de reden is de
-inkoop: elf bulk-aanroepen en elf BetExplorer-slugs in plaats van drie.
+De run is niet onderbroken (`resumed_count` = 0). Veertien minuten voor twaalf duels in elf
+competities, tegen vijftien minuten voor twaalf duels in drie competities gisteren: de inkoop
+verdrievoudigde (elf bulk-aanroepen en elf BetExplorer-slugs in plaats van drie) zonder dat de
+looptijd meegroeide, omdat de zwaarste post het ophálen van een nieuwe competitie is en niet het
+aantal aanroepen. De cap van 55 past dus met ruime marge vóór 06:30, zoals §0 eist dat met cijfers
+zichtbaar is in plaats van geraden.
 
 Branch: de sessie startte op `claude/stoic-davinci-asab4o`, maar alle commits van deze run staan
 op **`main`** (§6a) — de scheduler-tekst geeft daar expliciet toestemming voor.
