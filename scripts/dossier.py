@@ -204,14 +204,78 @@ def build(match_id: int, data: dict | None = None) -> Dossier:
     return d
 
 
-def fetch_history(d: Dossier, limit: int = 5) -> list[dict]:
-    """Per-speler- en schotdata van eerdere onderlinge duels (alleen ná afloop gevuld).
+def team_stats(data: dict, period: str = "All") -> dict:
+    """De volledige teamstatistiek van een gespeeld duel: {blok: {statistiek: [thuis, uit]}}.
 
-    Dit is het materiaal voor een spelersvergelijking: `playerStats` geeft 40 spelers met hun
-    `optaId`, `shotmap` geeft x/y/minuut per schot, en `stats` de volledige wedstrijdstatistiek
-    per helft. Eén verzoek per historisch duel, à 0,15 s — bij `limit=10` over 57 wedstrijden is
-    dat anderhalve minuut, dus dit kan gewoon in de dagelijkse run mee. Draai het niet krapper dan
+    Ruim vijftig velden in acht blokken — balbezit, xG (open spel / standaard / zonder
+    strafschoppen), xGOT, schoten binnen en buiten de zestien, grote kansen, passes per veldhelft,
+    tackles, duels, afgelegde afstand en sprints, kaarten. `period` kan ook `FirstHalf` of
+    `SecondHalf` zijn. Leeg zolang de wedstrijd niet gespeeld is.
+    """
+    blocks = ((data.get("content") or {}).get("stats") or {}).get("Periods") or {}
+    out: dict[str, dict] = {}
+    for blok in (blocks.get(period) or {}).get("stats") or []:
+        titel = blok.get("title")
+        velden = {}
+        for item in blok.get("stats") or []:
+            naam, waarden = item.get("title"), item.get("stats")
+            # Elk blok herhaalt zijn eigen titel als eerste, lege regel — die slaan we over.
+            if naam and waarden and any(v is not None for v in waarden) and naam != titel:
+                velden[naam] = waarden
+        if velden:
+            out[titel] = velden
+    return out
+
+
+def player_lines(data: dict) -> list[dict]:
+    """Per speler: naam, `optaId`, ploeg, positie, minuten en rating, plus de ruwe statistiek.
+
+    Dit is de laag waarmee een onderlinge vergelijking te maken is — wie stond waar, wie won zijn
+    duels, wie liep het hardst. `stats` blijft in de vorm van de bron staan; die verschilt per
+    positie (een keeper krijgt reddingen en `goals prevented`, een vleugelspeler dribbels).
+    """
+    out = []
+    for _, p in ((data.get("content") or {}).get("playerStats") or {}).items():
+        top = {}
+        for blok in p.get("stats") or []:
+            items = blok.get("stats")
+            if isinstance(items, dict):
+                for naam, v in items.items():
+                    waarde = v.get("stat", {}).get("value") if isinstance(v, dict) else v
+                    if waarde is not None:
+                        top[naam] = waarde
+        out.append({"naam": p.get("name"), "opta_id": p.get("optaId"),
+                    "team_id": p.get("teamId"), "ploeg": p.get("teamName"),
+                    "positie_id": p.get("positionId"), "keeper": p.get("isGoalkeeper"),
+                    "rugnummer": p.get("shirtNumber"),
+                    "minuten": top.get("Minutes played"), "rating": top.get("FotMob rating"),
+                    "stats": top})
+    return out
+
+
+def shots(data: dict) -> list[dict]:
+    """Elk schot met schutter, minuut, x/y-coördinaat, xG, situatie en welk been."""
+    out = []
+    for s in ((data.get("content") or {}).get("shotmap") or {}).get("shots") or []:
+        out.append({"speler": s.get("playerName"), "speler_id": s.get("playerId"),
+                    "team_id": s.get("teamId"), "minuut": s.get("min"),
+                    "x": s.get("x"), "y": s.get("y"),
+                    "xg": s.get("expectedGoals"), "xgot": s.get("expectedGoalsOnTarget"),
+                    "op_doel": s.get("isOnTarget"), "geblokt": s.get("isBlocked"),
+                    "situatie": s.get("situation"), "soort": s.get("shotType"),
+                    "uitkomst": s.get("eventType")})
+    return out
+
+
+def fetch_history(d: Dossier, limit: int = 5, *, full: bool = True) -> list[dict]:
+    """De eerdere onderlinge duels mét hun volledige statistiek.
+
+    Eén verzoek per historisch duel, à 0,15 s — bij `limit=10` over 57 wedstrijden is dat
+    anderhalve minuut, dus dit kan gewoon in de dagelijkse run mee. Draai het niet krapper dan
     nodig uit zuinigheid; zuinig hoeft hier niet.
+
+    Met `full=False` komen alleen de aantallen terug, voor als je de omvang wilt zien zonder de
+    inhoud mee te slepen.
     """
     out = []
     for m in d.h2h_matches[:limit]:
@@ -223,13 +287,12 @@ def fetch_history(d: Dossier, limit: int = 5) -> list[dict]:
         except Exception as exc:
             out.append({**m, "fout": f"{type(exc).__name__}: {exc}"})
             continue
-        c = det.get("content") or {}
-        spelers = c.get("playerStats") or {}
-        out.append({**m,
-                    "spelers": len(spelers),
-                    "schoten": len((c.get("shotmap") or {}).get("shots") or []),
-                    "stats_secties": [s.get("title") for s in
-                                      (((c.get("stats") or {}).get("Periods") or {}).get("All") or {}).get("stats", [])]})
+        ts, ps, sh = team_stats(det), player_lines(det), shots(det)
+        rij = {**m, "aantal_spelers": len(ps), "aantal_schoten": len(sh),
+               "stats_blokken": list(ts)}
+        if full:
+            rij.update({"teamstatistiek": ts, "spelers": ps, "schoten": sh})
+        out.append(rij)
     return out
 
 
@@ -281,10 +344,26 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({**asdict(d), "historie": hist}, ensure_ascii=False, indent=1))
             return 0
         print(render(d))
-        print("\nhistorische duels met spelersdata:")
         for h in hist:
-            print(f"   {(h['date'] or '')[:10]} {h['home']} {h['score']} {h['away']}"
-                  f"  -> {h.get('spelers', 0)} spelers, {h.get('schoten', 0)} schoten")
+            print(f"\n=== {(h['date'] or '')[:10]}  {h['home']} {h['score']} {h['away']} "
+                  f"({h.get('competition')}) ===")
+            if h.get("fout"):
+                print("   ", h["fout"])
+                continue
+            top = (h.get("teamstatistiek") or {}).get("Top stats") or {}
+            for naam in ("Ball possession", "Expected goals (xG)", "Total shots",
+                         "Big chances", "Accurate passes"):
+                if naam in top:
+                    print(f"   {naam:26s} {str(top[naam][0]):>10s}  |  {top[naam][1]}")
+            beste = sorted((p for p in h.get("spelers") or [] if p.get("rating")),
+                           key=lambda p: -float(p["rating"]))[:3]
+            if beste:
+                print("   beste spelers: " + ", ".join(
+                    f"{p['naam']} ({p['ploeg']}, {p['rating']})" for p in beste))
+            doel = [s for s in h.get("schoten") or [] if s.get("uitkomst") == "Goal"]
+            for s in doel[:5]:
+                print(f"   {s['minuut']}'  {s['speler']}  xG {s['xg']:.2f}  "
+                      f"{s['situatie']} / {s['soort']}")
         return 0
     print(json.dumps(asdict(d), ensure_ascii=False, indent=1) if args.json else render(d))
     return 0

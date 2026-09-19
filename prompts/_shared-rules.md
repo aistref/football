@@ -1447,9 +1447,27 @@ al meegenomen in de beste prijs, inclusief `net_price` voor de commissie. `betfa
 `soccerway.com` (200) en `bbc.com/sport/football` (200, met wedstrijdverslagen) zijn te lezen.
 `whoscored.com` is 403 achter Cloudflare en blijft dicht (§3: niet omheen werken).
 
-**Klein 3 — een publieke Opta-bron bestaat niet.** `optasports.com` resolvet niet en
-`statsperform.com` is een bedrijfspagina zonder data. Opta komt bij het publiek terecht via
-licentienemers, en Fotmob is er daar één van. Dat is dus de route, en die is al open.
+**Klein 3 — Opta heeft geen publieke API, maar Opta-cijfers zijn wél gewoon publiek.** Hier stond
+eerst "een publieke Opta-bron bestaat niet", en dat was fout: het haalde *Opta verkoopt geen open
+API* door elkaar met *Opta-data is niet te krijgen*. `optasports.com` resolvet inderdaad niet en
+`statsperform.com` is een bedrijfspagina — maar de statistiek van elke gespeelde wedstrijd staat
+gewoon bij de licentienemers, en Fotmob is er daar één van. Per afgelopen duel levert één verzoek:
+
+- **Teamstatistiek, ruim vijftig velden in acht blokken:** balbezit, xG (apart voor open spel,
+  standaardsituaties en zonder strafschoppen), **xGOT**, schoten binnen/buiten de zestien,
+  geblokte schoten, grote kansen en gemiste grote kansen, passes per veldhelft, lange ballen,
+  voorzetten, tackles, onderscheppingen, blocks, clearances, keepersreddingen, grond- en
+  luchtduels, geslaagde dribbels, **afgelegde afstand, sprintafstand en aantal sprints**, kaarten
+  en overtredingen.
+- **Per speler (40 per duel):** rating, minuten, `optaId`, positie, en per positie de relevante
+  cijfers — voor een keeper reddingen, `xGOT faced` en `goals prevented`; plus topsnelheid,
+  afgelegde afstand en sprints.
+- **Per schot:** schutter, minuut, **x/y-coördinaat**, xG, wel of niet op doel, geblokt,
+  `situation` (RegularPlay, SetPiece, …) en `shotType` (welk been of het hoofd).
+
+Dat is het materiaal voor een spelersvergelijking — welke vleugel werd bespeeld, wie won zijn
+duels, waar kwamen de schoten vandaan. Op 20 sep 2026 is eerst geschreven dat zoiets met de
+beschikbare bronnen niet te bouwen was; dat klopte niet en is diezelfde dag rechtgezet.
 
 #### De harde grens: wat mag in `my_prob` en wat niet
 
