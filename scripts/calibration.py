@@ -40,13 +40,21 @@ delen is.
 
     "calibration": {
       "market": [0.45, 0.27, 0.28],        # de-vigd, [thuis, gelijk, uit]
-      "p_xg":   [0.41, 0.28, 0.31],        # analyze_match op de standaard-shrink
+      "p_xg":   [0.41, 0.28, 0.31],        # analyze_match op de standaard-shrink (sinds 19 sep: 1.00)
       "p_xg_noshrink": [0.43, 0.28, 0.29], # analyze_match met shrink=1.0
+      "p_xg_shrink08": [0.41, 0.28, 0.31], # analyze_match met shrink=0.8 (de oude standaard)
       "p_split": [0.38, 0.29, 0.33]        # analyze_match_from_splits
     }
 
 `p_xg_noshrink` is één extra `analyze_match`-aanroep per wedstrijd en kost dus vrijwel niets; hij
 is nodig om het aandeel van `shrink` van het aandeel van de splitsmethode te kunnen scheiden.
+
+SINDS 19 SEP 2026 staat `model.DEFAULT_SHRINK` op 1.00, dus `p_xg` en `p_xg_noshrink` zijn
+voortaan hetzelfde getal. Leg daarom vanaf die datum óók `p_xg_shrink08` vast — één extra
+aanroep met `shrink=model.LEGACY_SHRINK`. Zonder dat veld vergelijkt de regel "aandeel van
+shrink" hieronder 1.0 met zichzelf en staat er stilzwijgend +0.00 pp, precies het soort stille
+administratiefout dat §6b-5b moest wegnemen. De historische reeks van vóór die datum blijft
+ongewijzigd leesbaar: daar was `p_xg` de 0.8-arm.
 Ontbreekt een veld, dan slaat dit script die methode gewoon over — een run die alleen `market` en
 `p_xg` heeft, levert nog steeds een bruikbare regel.
 
@@ -72,9 +80,25 @@ LOG = ROOT / "data" / "calibration.jsonl"
 OUTCOMES = ("thuis", "gelijk", "uit")
 METHODS = (("p_xg", "xG-methode (standaard shrink)"),
            ("p_xg_noshrink", "xG-methode (shrink 1.0)"),
+           ("p_xg_shrink08", "xG-methode (shrink 0.8, oude standaard)"),
            ("p_split", "splitsmethode"),
            ("p_xg_understat", "xG-methode op Understat (2e xG-model)"),
            ("p_mean", "gemiddelde van beide (= my_prob)"))
+
+# De dag waarop `model.DEFAULT_SHRINK` van 0.80 naar 1.00 ging. Daarvóór is de 0.8-arm het veld
+# `p_xg` en de 1.0-arm `p_xg_noshrink`; daarna is `p_xg` de 1.0-arm en levert de run de oude
+# waarde apart aan als `p_xg_shrink08`. Zonder dit onderscheid vergelijkt de regel hieronder
+# vanaf de overstap 1.0 met zichzelf en staat er stilzwijgend +0.00 pp.
+SHRINK_SWITCH = "2026-09-19"
+
+
+def _shrink_arms(row: dict) -> tuple[float, float] | None:
+    """(kans bij shrink 0.8, kans bij shrink 1.0) voor één waarneming, of None."""
+    if row["date"] > SHRINK_SWITCH:
+        lo, hi = row.get("p_xg_shrink08"), row.get("p_xg")
+    else:
+        lo, hi = row.get("p_xg"), row.get("p_xg_noshrink")
+    return (lo, hi) if lo is not None and hi is not None else None
 
 # De grenzen waarop gebucket wordt. Longshot/favoriet is bewust ruim genomen: bij smallere
 # buckets is er per run te weinig in elke bak om iets te zien.
@@ -110,7 +134,8 @@ def _rows_from_state(state: dict, run: str, day: str) -> list[dict]:
             market = cal["market"]
             if len(market) != 3:
                 continue
-            probs = {k: cal[k] for k in ("p_xg", "p_xg_noshrink", "p_split", "p_xg_understat")
+            probs = {k: cal[k] for k in ("p_xg", "p_xg_noshrink", "p_xg_shrink08",
+                                         "p_split", "p_xg_understat")
                      if isinstance(cal.get(k), list) and len(cal[k]) == 3}
             if "p_xg" in probs and "p_split" in probs:
                 probs["p_mean"] = [(a + b) / 2 for a, b in zip(probs["p_xg"], probs["p_split"])]
@@ -194,15 +219,16 @@ def cmd_stats(args: argparse.Namespace) -> int:
 
     _table(rows, "ALLE WAARNEMINGEN")
 
-    xg = [r for r in rows if "p_xg" in r and "p_xg_noshrink" in r]
-    if xg:
-        lo = [r for r in xg if r["market"] < 0.25]
-        if lo:
-            met = statistics.mean((r["p_xg"] - r["market"]) * 100 for r in lo)
-            zonder = statistics.mean((r["p_xg_noshrink"] - r["market"]) * 100 for r in lo)
-            print(f"\n  Aandeel van `shrink` op longshots: {met - zonder:+.2f} pp van de "
-                  f"{met:+.2f} pp die de xG-methode daar afwijkt.")
-            print("  De rest is niet aan shrink toe te schrijven; vergelijk de regels hierboven.")
+    armen = [(r, _shrink_arms(r)) for r in rows if r["market"] < 0.25]
+    armen = [(r, a) for r, a in armen if a is not None]
+    if armen:
+        met = statistics.mean((a[0] - r["market"]) * 100 for r, a in armen)
+        zonder = statistics.mean((a[1] - r["market"]) * 100 for r, a in armen)
+        print(f"\n  Aandeel van `shrink=0.8` op longshots: {met - zonder:+.2f} pp van de "
+              f"{met:+.2f} pp die de xG-methode daar afwijkt ({len(armen)} waarnemingen).")
+        print("  De rest is niet aan shrink toe te schrijven; vergelijk de regels hierboven.")
+        print(f"  Sinds {SHRINK_SWITCH} staat de standaard op 1.00 (§0) en is 0.8 de "
+              f"vergelijkingsarm, niet andersom.")
 
     if len(dagen) > 1:
         print("\nPER DAG (gemiddelde van beide methodes, longshots <25%):")

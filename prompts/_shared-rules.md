@@ -23,6 +23,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. **Poort 8 vervalt op 25 sep 2026** — keuze van de gebruiker op 18 sep 2026, vastgelegd in `scripts/sides.LAPSES_ON`; deze ondergrens doet daarna niets meer behalve `would_block` zetten. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
 | `EXCHANGE_COMMISSION` | **2%** | Commissie over de nettowinst bij een beurs (Betfair, Matchbook). Op 5 sep 2026 stond de beste 1X2-prijs in 61% van de gevallen bij een beurs, dus dit is geen randgeval: reken elke koers door `oddsapi.net_price` voordat je er edge op meet. `scripts/oddsapi.EXCHANGE_COMMISSION`. |
 | `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
+| `SHRINK` | **1.00** | Hoeveel de xG-verhouding van een ploeg naar het competitiegemiddelde wordt getrokken; 1.00 is géén regressie. Op 19 sep 2026 van 0.80 hierheen, op **uitkomsten** gemeten over de 782 wedstrijden die de routine zelf heeft doorgerekend. Regressie maakt ploegen onderling gelijker, en dat geeft de zwakkere ploeg meer kans dan hij verdient — de rekenkundige oorzaak onder §1e. Zie §6e, "De `shrink`-vraag". `scripts/model.DEFAULT_SHRINK`. |
 
 ### Wanneer een pick afwikkelbaar is (herzien 3 sep 2026, op verzoek van de gebruiker)
 
@@ -351,8 +352,17 @@ pick, precies zoals §6d dat voor de andere zeven poorten doet. **Herzien uiterl
 2026.** Hij gaat eruit zodra één van beide waar is: het schaduwlogboek laat zien dat hij
 structureel winnaars tegenhoudt (positieve ROI over ≥ 30 afgewikkelde kandidaten), óf de
 kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenfout zelf — welke
-stap maakt de mindere ploeg te sterk; §6e wijst richting `shrink`, maar `shrink = 0.8` is op
-3 sep juist op Brier-score gemeten en goed bevonden, en die spanning moet eerst worden opgelost.
+stap maakt de mindere ploeg te sterk.
+
+> **Dat werk is op 19 september 2026 gedaan.** De gebruiker merkte op dat de schaduwlijst dag na
+> dag uit dezelfde soort bet bestaat en vroeg of de routine niet op een andere manier naar de
+> wedstrijden kon kijken. Dat is nagemeten, en de spanning die hier stond — `§6e wijst richting
+> shrink, maar shrink = 0.8 is op 3 sep op Brier-score goed bevonden` — is opgelost in het nadeel
+> van `shrink = 0.8`: zie §6e, "De `shrink`-vraag", en §0. De standaard staat sindsdien op 1.00.
+> **Dit is geen vervanging van poort 8 en het maakt de poort ook niet overbodig**; het haalt
+> ongeveer de helft van de scheefstand weg die de poort afdekte, en de poort vervalt op
+> 25 september zoals afgesproken. Wat er daarna overblijft is de herijking van §1g plus deze
+> kleinere scheefstand, en dat is een eerlijker uitgangspunt dan de poort alleen.
 
 #### De poort vervalt op 25 september 2026 zonder meting (besloten 18 september 2026)
 
@@ -1389,8 +1399,12 @@ seizoensblenden zelf (+0.0049) en ver onder de lat die voor `k` is gehanteerd (t
 **Daarom niet ingevoerd.** Wie hier ooit opnieuw naar kijkt: h=12 is de enige kandidaat die het
 proberen waard is, en dan met meer seizoenen, niet met een fijnere afstelling van h.
 
-**`shrink` hoeft niet af te lopen** — ook gemeten: `shrink=0.8` verslaat `shrink=1.0` bij elke waarde
-van k. Daarmee is de openstaande vraag daarover in §6e beantwoord: laten staan.
+**`shrink` hoeft niet af te lopen** — ook gemeten: in deze backtest verslaat `shrink=0.8`
+`shrink=1.0` bij elke waarde van k. Let op wat dat wél en niet zegt: het is een meting over álle
+duels in vijf grote competities in één seizoen, op gemiddelde Brier. Op de wedstrijden die de
+routine zélf doorrekent wijst het de andere kant op, en dáárom staat `shrink` sinds 19 sep 2026 op
+1.00 — zie §6e, "De `shrink`-vraag". Wat hier blijft staan is de conclusie over het *aflopen*: er
+hoeft geen mechanisme te komen dat hem met het seizoen laat bewegen.
 
 Leg per doorgerekend duel in `data/run-state/` onder `seizoensweging` vast hoeveel duels er dit
 seizoen meetellen, met welk gewicht, en de xG per duel vorig/dit/gewogen. Zonder dat is niet na te
@@ -1935,6 +1949,7 @@ Leg daarvoor per doorgerekende wedstrijd een `calibration`-blok in `data/run-sta
   "market":        [0.45, 0.27, 0.28],
   "p_xg":          [0.41, 0.28, 0.31],
   "p_xg_noshrink": [0.43, 0.28, 0.29],
+  "p_xg_shrink08": [0.41, 0.28, 0.31],
   "p_split":       [0.38, 0.29, 0.33],
   "p_xg_understat":[0.42, 0.28, 0.30]
 }
@@ -1944,7 +1959,14 @@ Leg daarvoor per doorgerekende wedstrijd een `calibration`-blok in `data/run-sta
 BetExplorer elke run gratis en voor vrijwel elke wedstrijd beschikbaar, en de drie uitkomsten
 sommeren tot 1. `p_xg_noshrink` is één extra `analyze_match(..., shrink=1.0)` per wedstrijd en kost
 dus vrijwel niets — zonder dat veld is het aandeel van `shrink` niet te scheiden van dat van de
-splitsmethode. Neem de uitvoer van `stats` op in het runrapport, naast `ledger.py stats` en
+splitsmethode.
+
+**Sinds 19 sep 2026 staat `DEFAULT_SHRINK` op 1.00, dus `p_xg` en `p_xg_noshrink` zijn voortaan
+hetzelfde getal.** Leg daarom vanaf die datum óók **`p_xg_shrink08`** vast: één extra aanroep met
+`shrink=model.LEGACY_SHRINK`. Zonder dat veld vergelijkt `calibration.py stats` de shrink-arm met
+zichzelf en drukt hij stilzwijgend +0.00 pp af — precies het soort stille administratiefout dat
+§6b-5b moest wegnemen. De reeks van vóór die datum blijft ongewijzigd leesbaar: daar wás `p_xg`
+de 0.8-arm, en `calibration.py` kiest de juiste arm op de datum. Neem de uitvoer van `stats` op in het runrapport, naast `ledger.py stats` en
 `shadow.py stats`.
 
 **Lees dit net zo voorzichtig als 6d, en lees het als diagnose.** Onder ~150 waarnemingen in de
@@ -1961,14 +1983,81 @@ drempelverhoging van 31 aug in §0 doet.
 Wat hier nog openstaat: de splitsmethode is sinds 23 aug multiplicatief en op het
 competitiegemiddelde genormaliseerd (§1d) maar nog steeds de scheefste van de twee.
 
-**De `shrink`-vraag is op 3 sep 2026 beantwoord en staat niet meer open.** Hier stond tot die datum
-dat `shrink` "hard op 0.8 staat zonder afloopmechanisme terwijl de docstring hem met vroeg seizoen
-verantwoordt". Dat vermoeden — hij zou met het seizoen moeten aflopen — is nagemeten in de backtest
-bij `blend_seasons` (§4) en klopt niet: `shrink=0.8` verslaat `shrink=1.0` bij élke waarde van de
-credibiliteitsconstante, ook laat in het seizoen. Er hoeft dus geen afloopmechanisme te komen. Wat
-wél ontbrak was iets anders, en dat is nu opgelost: niet de mate van regressie moest met het seizoen
-mee bewegen, maar de **cijfers waarop hij wordt toegepast** — die kwamen tot 3 sep uitsluitend uit
-het vorige seizoen.
+### De `shrink`-vraag: op 19 september 2026 omgedraaid, en nu op uitkomsten
+
+**`shrink` staat sinds 19 sep 2026 op 1.00 — géén regressie naar het competitiegemiddelde.**
+
+De aanleiding was een waarneming van de gebruiker, niet van de routine: *"het zijn weer allemaal
+underdog bets in de schaduwlijst, kun je niet op een andere manier naar de wedstrijden kijken?"*
+Vier andere verklaringen zijn eerst getoetst op de 453 afgewikkelde schaduwkandidaten, en alle
+vier gaven **niets** — geen enkele daarvan scheidt winnaars van verliezers:
+
+| Alternatieve manier van kijken | Uitkomst |
+|---|---|
+| straf de oneenigheid tussen de twee methodes af (`\|edge_xg − edge_split\|`) | vlak: −9,1% / −5,2% / −16,0% / −5,9% / −7,8% over vijf bakken |
+| rangschik op `min(edge_xg, edge_split)` in plaats van op het gemiddelde | niet-monotoon; de bak onder nul doet het het bést |
+| rangschik op `edge_robust_min` (de zwakste stand van het grid) | idem, niet-monotoon |
+| verlaag `MAX_ODDS` / zet een vloer onder de marktkans van de selectie | verdwijnt op de juiste populatie: n=23 boven 3.50, z=−1,07, teken draait om uit-steekproef |
+| kies een ander soort markt (1X2 / push-beschermd / doelpunten) | vlak: −11,1% / −12,1% / −9,0% |
+
+Die laatste twee zijn het vermelden waard omdat ze er eerst wél uitzagen. Over **álle** afgewikkelde
+kandidaten leek een koersgrens van 3.50 twintig procentpunt rendement te schelen — maar die groep
+bestaat grotendeels uit kandidaten die al door een ándere poort waren tegengehouden. Meet je alleen
+de groep die alle kwaliteitspoorten haalde (de gepubliceerde picks plus wat alleen op de herijking
+of de underdog-regel sneuvelde, n=286), dan blijft er niets van over. **Dat is de fout waar §6d voor
+waarschuwt, in zijn zuiverste vorm: een sterk ogend verband dat alleen bestaat doordat je de
+verkeerde populatie neemt.** Noteer hem, want hij is makkelijk opnieuw te maken.
+
+Wat er wél uitkwam, is de rekenstap die deze paragraaf al sinds 22 augustus aanwees. Het
+kalibratielogboek bewaart per doorgerekende wedstrijd zowel `p_xg` (standaard-shrink) als
+`p_xg_noshrink` (1.00); door daar de **werkelijke uitslag** naast te leggen — 782 wedstrijden over
+29 rundagen — is de vraag voor het eerst op uitkomsten te beantwoorden in plaats van tegen de markt:
+
+| marktbak | n | werkelijk | `shrink` 0.8 | `shrink` 1.0 |
+|---|---|---|---|---|
+| < 15% | 145 | 5,5% | 15,7% | **12,9%** |
+| 15–25% | 552 | 20,8% | 23,3% | **21,8%** |
+| 25–35% | 823 | 28,7% | 28,7% | 28,3% |
+| 35–50% | 478 | 40,0% | **41,5%** | 42,2% |
+| 50–65% | 248 | 58,9% | 52,9% | **55,9%** |
+| ≥ 65% | 100 | 86,0% | 64,9% | **69,8%** |
+
+Gewogen gemiddelde kalibratiefout **3,08 pp → 2,28 pp**. De scheefstand op longshots zakt van
++4,11 naar +2,34 pp en die op favorieten van −10,32 naar −6,81 pp. Dat is precies de compressie
+die de mindere ploeg te sterk maakt, en ze wordt ongeveer gehalveerd. De marktkans bepaalt hier
+alleen de **bak** — er wordt niets op de markt afgeregeld (§2).
+
+**Twee cijfers die er eerlijk bij horen.** De tekentoets is hard: `shrink=1.0` is beter in 436 van
+de 782 duels, **z = +3,22**, en het teken houdt stand in beide helften van de periode (z = +3,17 en
++1,49) en op beide datatiers. De gepaarde Brier-toets is dat níet: +0,00234 met **t = +1,44**.
+`shrink=1.0` wint dus váker, maar als 0.8 wint, wint hij grōter. Lees dit daarom als een
+**kalibratieverbetering** en niet als een sprong in nauwkeurigheid.
+
+**Waarom dit de backtest van 3 sep niet tegenspreekt.** Die mat `shrink=0.8` als beter over álle
+duels in vijf grote competities in één seizoen, op gemiddelde Brier (zie `blend_seasons`, §4). Deze
+routine rekent iets anders door: 21 competities, veel omgerekende promovendi en degradanten, vroeg
+seizoen, en ze kiest juist de staart waar ze het verst van de markt af zit. Een parameter kan
+gemiddeld beter zijn en in de staart slechter. Die backtest is dus **niet ingetrokken** — hij meet
+een andere populatie en een andere grootheid. En omdat `shrink` nooit op deze 782 wedstrijden is
+gefit, is dit voor die keuze een echte uit-steekproefmeting.
+
+Narekenen: `PYTHONPATH=. python3 tmp-run/shrink_outcome_test.py`.
+
+**Wat dit niet is.** Geen aanleiding om de drempel te verlagen (§1g heeft dat op 552 gevallen
+nagerekend en er is geen drempel die geld oplevert), en geen belofte van winst. Op de wedstrijden
+van 19 sep zelf leverde `shrink=1.0` **eveneens nul bets** op — de kop van de ranglijst kantelt
+wel: de vijf hoogste ruwe edges gingen van vijf keer de underdog naar drie keer de favoriet of een
+markt zonder kant. Wat je moet volgen: of de herijking van §1g met deze invoer mee beweegt. Haar
+fit komt uit een logboek dat onder `shrink=0.8` is opgebouwd, dus de eerste weken corrigeert ze
+een scheefstand die er deels al uit is. Dat is de **veilige** kant op — het levert minder bets op,
+niet meer — maar het is wel een reden om `recalibrate.py show` de komende runs te volgen.
+
+**De oude alinea, voor de volledigheid.** Hier stond tot 3 sep dat `shrink` "hard op 0.8 staat
+zonder afloopmechanisme terwijl de docstring hem met vroeg seizoen verantwoordt". Dat vermoeden —
+hij zou met het seizoen moeten aflopen — is in de backtest bij `blend_seasons` nagemeten en klopt
+niet. Er hoeft dus geen afloopmechanisme te komen; wat er moest gebeuren was iets anders en is op
+3 sep gedaan (de cijfers waarop hij werd toegepast kwamen tot die datum uitsluitend uit het vorige
+seizoen), en nu op 19 sep het niveau zelf.
 
 Let ten slotte op wat poort 6 hier **niet** doet: het `(shrink, rho)`-grid van `robustness_check`
 varieert alleen `analyze_match` — precies de methode die vlak blijkt. "Deze bet overleeft het hele

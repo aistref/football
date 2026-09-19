@@ -456,6 +456,113 @@ vóór 25 september — zie Openstaand 2.
 
 ---
 
+## Na afloop van de run — `shrink` van 0.80 naar 1.00 (19 sep 2026)
+
+*Deze sectie beschrijft een wijziging die ná de run van vandaag is doorgevoerd, op aanwijzing van
+de gebruiker. De run hierboven is gedraaid met `shrink = 0.80`; het runrapport, `picks.jsonl`, het
+dagrapport en `data/run-state/` zijn ongewijzigd gelaten en blijven het verslag van wat er
+werkelijk is gebeurd. De nieuwe waarde gaat in vanaf de volgende run.*
+
+De aanleiding was een waarneming, geen meting: **"het zijn weer allemaal underdog bets in de
+schaduwlijst — kun je niet op een andere manier naar de wedstrijden kijken?"** Nagerekend op de
+zestien schaduwrijen van vandaag klopt dat: zeven op de underdog-kant, drie op de favorietenkant,
+vier op een markt zonder kant, twee niet te classificeren (ook underdog).
+
+### Vier andere verklaringen, alle vier verworpen
+
+Getoetst op de 453 afgewikkelde schaduwkandidaten, tegen uitkomsten:
+
+| Alternatieve manier van kijken | Uitkomst |
+|---|---|
+| straf oneenigheid tussen de methodes af (`|edge_xg − edge_split|`) | vlak: −9,1% / −5,2% / −16,0% / −5,9% / −7,8% |
+| rangschik op `min(edge_xg, edge_split)` | niet-monotoon; de bak ónder nul doet het het best |
+| rangschik op `edge_robust_min` | idem, niet-monotoon |
+| kies een ander soort markt (1X2 / push-beschermd / doelpunten) | vlak: −11,1% / −12,1% / −9,0% |
+
+**En één die er eerst wél uitzag.** Over álle afgewikkelde kandidaten leek een koersgrens rond
+3.50 twintig procentpunt rendement te schelen (n=127, trefkans 13,4%, ROI −36,6%). Dat bleek een
+artefact: die groep bestaat grotendeels uit kandidaten die al door een **andere** poort waren
+tegengehouden. Op de juiste populatie — alles wat de kwaliteitspoorten haalde, dus de gepubliceerde
+picks plus wat alleen op de herijking of de underdog-regel sneuvelde (n=286) — blijft er niets van
+over: n=23 boven 3.50, z=−1,07, en het teken draait om uit-steekproef. `MAX_ODDS` blijft dus op
+6.00. Dit is §6d in zijn zuiverste vorm, en het is een fout die makkelijk opnieuw te maken is.
+
+### Wat er wél uitkwam
+
+De rekenstap die §6e sinds 22 augustus aanwijst. Het kalibratielogboek bewaart per doorgerekende
+wedstrijd zowel `p_xg` (standaard-shrink) als `p_xg_noshrink` (1.00); met de werkelijke uitslag
+ernaast — **782 wedstrijden over 29 rundagen** — is de vraag voor het eerst op uitkomsten te
+beantwoorden in plaats van tegen de markt:
+
+| marktbak | n | werkelijk | `shrink` 0.8 | `shrink` 1.0 |
+|---|---|---|---|---|
+| < 15% | 145 | 5,5% | 15,7% | **12,9%** |
+| 15–25% | 552 | 20,8% | 23,3% | **21,8%** |
+| 25–35% | 823 | 28,7% | 28,7% | 28,3% |
+| 35–50% | 478 | 40,0% | **41,5%** | 42,2% |
+| 50–65% | 248 | 58,9% | 52,9% | **55,9%** |
+| ≥ 65% | 100 | 86,0% | 64,9% | **69,8%** |
+
+Gewogen gemiddelde kalibratiefout **3,08 pp → 2,28 pp**. Longshotscheefstand +4,11 → +2,34 pp,
+favorietenscheefstand −10,32 → −6,81 pp: de compressie die de mindere ploeg te sterk maakt, wordt
+ongeveer gehalveerd. Concreet op een willekeurig sterkteverschil: `shrink = 0.80` gaf de underdog
+**+2,96 pp** meer kans dan `shrink = 1.00` en de favoriet 4,62 pp minder.
+
+**De twee toetsen zijn het oneens, en dat hoort erbij.** Tekentoets: `shrink=1.0` beter in 436 van
+782 duels, **z = +3,22**, teken houdt stand in beide helften (z = +3,17 en +1,49) en op beide
+datatiers. Gepaarde Brier: +0,00234, **t = +1,44**. `shrink=1.0` wint dus vaker, maar als 0.8 wint,
+wint hij groter — het normale beeld bij een schatter die in de staarten beter gekalibreerd is. Lees
+het als een kalibratieverbetering, niet als een sprong in nauwkeurigheid.
+
+**Dit spreekt de backtest van 3 september niet tegen.** Die mat `shrink=0.8` als beter over álle
+duels in vijf grote competities in één seizoen, op gemiddelde Brier. Deze routine rekent 21
+competities door, met veel omgerekende promovendi en degradanten, vroeg in het seizoen, en ze kiest
+juist de staart. Een parameter kan gemiddeld beter zijn en in de staart slechter. Omdat `shrink`
+nooit op deze 782 wedstrijden is gefit, is dit voor die keuze een echte uit-steekproefmeting.
+
+### Wat het vandaag zou hebben gedaan
+
+De hele run is opnieuw doorgerekend met `shrink = 1.00`, op dezelfde opgehaalde prijzen en cijfers
+(geen extra credits):
+
+| | `shrink` 0.8 | `shrink` 1.0 |
+|---|---|---|
+| bets | **0** | **0** |
+| positieve ruwe edges | 296 | 297 |
+| underdog-aandeel van de beste selectie per duel (herijkt) | 27 van 39 (69%) | 24 van 39 (62%) |
+| top 5 hoogste ruwe edges | 5× underdog | 3× favoriet of markt zonder kant |
+
+Het aandeel verschuift dus maar een paar punten, maar de **kop** van de ranglijst — waar de
+schaduwrijen en de bets vandaan komen — kantelt van Sevilla +2.5, Excelsior +2 en Venezia naar
+Galatasaray, Over 2.5 en Osasuna. Dat is het antwoord op de vraag: niet minder wedstrijden, maar
+een andere kant van dezelfde wedstrijden.
+
+### Wat er gewijzigd is, en wat je moet volgen
+
+- `scripts/model.DEFAULT_SHRINK` 0.80 → **1.00**; `LEGACY_SHRINK = 0.80` toegevoegd als
+  vergelijkingsarm.
+- `ROBUSTNESS_COMBOS`: de rho-arm verhuist mee naar de nieuwe standaard (van `(0.80, ±)` naar
+  `(1.00, ±)`), zodat poort 6 niet twee dingen tegelijk varieert. De shrink-arm blijft 0.70–1.00.
+- `scripts/calibration.py`: nieuw veld `p_xg_shrink08`, zodat de reeks "wat doet shrink" niet
+  afbreekt nu `p_xg` en `p_xg_noshrink` hetzelfde getal zijn. De historische reeks blijft
+  ongewijzigd (+1,76 pp).
+- `prompts/_shared-rules.md`: §0 krijgt een `SHRINK`-regel, §6e de volledige meting, §1e de
+  verwijzing, §4 de nuancering van de backtest.
+- Narekenen: `PYTHONPATH=. python3 tmp-run/shrink_outcome_test.py`.
+
+**Eén ding om de komende runs in de gaten te houden.** De herijking van §1g is gefit op een logboek
+dat onder `shrink = 0.80` is opgebouwd. De eerste weken corrigeert ze dus deels een scheefstand die
+er al uit is. Dat is de veilige kant op — het levert mínder bets op, niet meer — maar volg
+`recalibrate.py show` en verwacht dat `a` en `b` meebewegen naarmate het logboek zich ververst.
+
+**En wat dit níet is.** Geen aanleiding om de drempel te verlagen: §1g heeft op 552 gevallen
+nagerekend dat er geen drempel op de herijkte edge bestaat die geld oplevert, en daar verandert een
+beter gekalibreerde invoer niets aan. Ook geen vervanging van poort 8 — die vervalt op 25 september
+zoals afgesproken; deze wijziging haalt ongeveer de helft weg van de scheefstand die die poort
+afdekte, en de rest blijft bij de herijking liggen.
+
+---
+
 > Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.
 """
 

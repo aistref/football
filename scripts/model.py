@@ -16,7 +16,16 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-DEFAULT_SHRINK = 0.80
+# Hoeveel de xG-verhouding van een ploeg naar het competitiegemiddelde wordt getrokken.
+# Op 19 sep 2026 van 0.80 naar 1.00 (= geen regressie), op UITSLAGEN gemeten over de 782
+# wedstrijden die de routine zelf heeft doorgerekend. Zie `team_strength` voor de cijfers en
+# `tmp-run/shrink_outcome_test.py` om ze na te rekenen. De vorige waarde was gekozen op een
+# backtest over álle duels in vijf grote competities (`blend_seasons`); die meting blijft
+# staan voor díe populatie, maar ze gold niet voor wat deze routine werkelijk doorrekent.
+DEFAULT_SHRINK = 1.00
+# Wat de routine t/m 18 sep 2026 gebruikte. Alleen nog nodig als vergelijkingsarm in het
+# kalibratieblok (§6e), zodat de reeks "wat doet shrink" niet afbreekt bij de overstap.
+LEGACY_SHRINK = 0.80
 DEFAULT_RHO = -0.05
 MAX_GOALS = 12
 
@@ -29,9 +38,16 @@ CREDIBILITY_K = 8.0
 # Parametercombinaties voor de robuustheidstest — zie _shared-rules.md en de Run A-diagnose van
 # 8 aug 2026: een edge die alleen bij één (shrink, rho)-paar boven de drempel komt is een
 # artefact van die keuze, geen edge.
+# De rho-arm staat op de STANDAARD-shrink, anders varieert hij twee dingen tegelijk; hij is
+# daarom op 19 sep 2026 van 0.80 naar 1.00 meeverhuisd. De shrink-arm blijft met opzet van 0.70
+# tot 1.00 lopen: de standaard staat nu aan de bovenkant van dat bereik, dus poort 6 toetst of
+# een edge ook overleeft wanneer ploegen onderling gelijker worden gemaakt. Dat is de strengere
+# kant op — een edge op de zwakkere ploeg wordt bij lagere shrink juist groter en zakt dus niet
+# door de poort, maar een edge op de favoriet wel, en dat is precies de kant waar deze
+# parameterwijziging de routine naartoe beweegt.
 ROBUSTNESS_COMBOS: list[tuple[float, float]] = [
     (0.70, -0.05), (0.80, -0.05), (0.90, -0.05), (1.00, -0.05),
-    (0.80, 0.00), (0.80, -0.10),
+    (1.00, 0.00), (1.00, -0.10),
 ]
 
 
@@ -204,7 +220,14 @@ def blend_seasons(prior: TeamStats, current: TeamStats | None,
 
     Terzijde, ook gemeten: `shrink` hoeft níet af te lopen naarmate het seizoen vordert.
     `shrink=0.8` verslaat `shrink=1.0` bij elke waarde van k (bij k=16: .61269 tegen .61488).
-    De openstaande vraag daarover in §6e is daarmee beantwoord: laten staan.
+
+    LET OP — die laatste regel gold voor DEZE backtest en niet voor de routine. Hier stond tot
+    19 sep 2026 bij dat de openstaande vraag van §6e daarmee beantwoord was ("laten staan"). Dat
+    is die dag omgedraaid: op de 782 wedstrijden die de routine zelf doorrekent is `shrink=1.0`
+    beter gekalibreerd én wint hij de tekentoets (z=+3.22), en de standaard staat sindsdien op
+    1.00. Zie de docstring van `team_strength`. De backtest hierboven is niet ingetrokken — hij
+    meet een andere populatie (alle duels in vijf grote competities, één seizoen) en een andere
+    grootheid (gemiddelde Brier in plaats van kalibratie in de staarten).
 
     `current=None` of nul gespeelde duels geeft `prior` onveranderd terug — speeldag 1 en een
     competitie zonder lopende-seizoensdata veranderen dus niets.
@@ -233,13 +256,49 @@ def team_strength(stats: TeamStats, league: LeagueContext, shrink: float = DEFAU
     (elk team even sterk). Vroeg seizoen (§4 van _shared-rules.md) rechtvaardigt shrink < 1.0
     omdat rolling xG dan niet bestaat en transfers niet in de cijfers zitten.
 
-    LET OP — de richting van deze knop, gemeten 23 aug 2026. Regressie maakt ploegen onderling
-    gelijker, en gelijker betekent dat de underdog meer kans krijgt dan hij verdient. Op de 25
-    duels van die dag lag `analyze_match` bij `shrink=0.80` op +4.82 pp boven de markt op
-    longshots en −8.70 pp eronder bij favorieten; bij `shrink=1.00` was dat +3.07 en −5.43. Minder
-    regressie is daar dus béter gekalibreerd. Het niveau is niettemin niet verlaagd: twee dagen is
-    onder de leesdrempel van §6e, en `ROBUSTNESS_COMBOS` varieert deze parameter juist met opzet
-    van 0.70 tot 1.00 — een edge die alleen bij lage shrink bestaat, valt daar al op poort 6.
+    DE RICHTING VAN DEZE KNOP. Regressie maakt ploegen onderling gelijker, en gelijker betekent
+    dat de underdog meer kans krijgt dan hij verdient. Dat stond hier sinds 23 aug 2026 als
+    vermoeden, gemeten tegen de markt op 25 duels, met de aantekening dat twee dagen onder de
+    leesdrempel van §6e ligt en het niveau daarom niet werd verlaagd.
+
+    OP 19 SEP 2026 IS HET OP UITSLAGEN GEMETEN EN IS DE WAARDE OP 1.00 GEZET. Aanleiding: de
+    gebruiker merkte op dat de schaduwlijst dag na dag uit dezelfde soort bet bestaat. Vier
+    andere verklaringen zijn eerst getoetst en alle vier verworpen — oneenigheid tussen de twee
+    methodes, `min(edge_xg, edge_split)`, `edge_robust_min` en de koersband gaven geen van alle
+    een monotoon verband met de uitkomst. Deze wel.
+
+    De meting gebruikt het kalibratielogboek, dat per doorgerekende wedstrijd zowel `p_xg`
+    (standaard-shrink) als `p_xg_noshrink` (1.00) bewaart, en legt daar de werkelijke uitslag
+    naast. 782 wedstrijden, 29 rundagen:
+
+        marktbak     n   werkelijk   shrink 0.8   shrink 1.0
+        <15%       145        5.5%        15.7%        12.9%
+        15-25%     552       20.8%        23.3%        21.8%
+        25-35%     823       28.7%        28.7%        28.3%
+        35-50%     478       40.0%        41.5%        42.2%
+        50-65%     248       58.9%        52.9%        55.9%
+        >=65%      100       86.0%        64.9%        69.8%
+
+    Gewogen gemiddelde kalibratiefout 3.08 pp -> 2.28 pp. De scheefstand op longshots zakt van
+    +4.11 naar +2.34 pp en die op favorieten van -10.32 naar -6.81 pp: precies de compressie die
+    de underdog te sterk maakt, en ze wordt ongeveer gehalveerd. De marktkans bepaalt hier alleen
+    de BAK; er wordt niets op de markt afgeregeld (§2, §6e "controleren, niet fitten").
+
+    Twee cijfers die er eerlijk bij horen. De tekentoets is hard — `shrink=1.0` is beter in
+    436 van de 782 duels, z=+3.22, en het teken houdt stand in beide helften van de periode
+    (z=+3.17 en +1.49) en op beide datatiers. De gepaarde Brier-toets is dat niet: +0.00234 met
+    t=+1.44. `shrink=1.0` wint dus vaker, maar als 0.8 wint, wint hij groter. Dat is het
+    normale beeld bij een schatter die in de staarten beter is gekalibreerd, en het is de reden
+    om dit als een kalibratieverbetering te lezen en niet als een nauwkeurigheidssprong.
+
+    WAAROM DIT DE BACKTEST VAN 3 SEP NIET TEGENSPREEKT. Die mat `shrink=0.8` als beter over álle
+    duels in vijf grote competities in één seizoen (zie `blend_seasons`). Deze routine rekent iets
+    anders door: 21 competities, veel omgerekende promovendi en degradanten, vroeg seizoen, en ze
+    kiest juist de staart waar ze het verst van de markt af zit. Een parameter kan gemiddeld beter
+    zijn en in de staart slechter. Belangrijk: `shrink` is nooit op déze 782 wedstrijden gefit,
+    dus dit is voor die keuze een echte uit-steekproefmeting.
+
+    Narekenen: `PYTHONPATH=. python3 tmp-run/shrink_outcome_test.py`.
     """
     attack = 1 + shrink * (stats.xg_per_match / league.avg_xg_per_match - 1)
     defense = 1 + shrink * (stats.xga_per_match / league.avg_xg_per_match - 1)
