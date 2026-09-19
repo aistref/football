@@ -53,6 +53,16 @@ except ImportError:         # als los script: `python3 scripts/toplist.py`
 
 STATE_DIR = Path("data/run-state")
 
+# De oude edge-poort, sinds 20 sep 2026 een afkapping aan het eind in plaats van een poort vooraf
+# (§5b). Hij bepaalt nog wel de grens zodra er méér kandidaten boven staan dan er regels in de
+# lijst passen, en hij blijft als label per regel meelopen.
+THRESH = {"FULL": 8.0, "LIGHT": 16.0}
+MAX_LIGHT = 2          # MAX_LIGHT_IN_SHORTLIST uit §0
+# Ondergrens voor §5b: onder dit niveau is een kandidaat niet eens een schaduwpick waard
+# (de NEAR-drempel uit de analyse), en dus ook geen bet. Gelijk aan wat `ledger.py
+# validate` afdwingt.
+NEAR = {"FULL": 3.0, "LIGHT": 6.0}
+
 # Volgorde waarin een selectie op een poort sneuvelt; gelijk aan die in de analyse, met
 # `herijking` erbij als aparte uitkomst tussen `edge` en `tweede_methode`. Een selectie die
 # alleen door de correctie van §1g afvalt, krijgt dat label in plaats van het vagere `edge`:
@@ -129,8 +139,70 @@ def build(state: dict, n: int | None = None) -> dict:
                 best_r[key] = {**c, "_score": s, "_edge": e_r, "_prob": my_r,
                                "_gate": c.get("failed_gate_ruw", c.get("failed_gate"))}
 
+    def _pool(d: dict) -> list[dict]:
+        """§5b: de kandidaten waarvan alleen de drempel (of de herijking) hen tegenhield.
+
+        De zeven andere poorten blijven poorten — een selectie die op de koersband, de context,
+        de robuustheid, de tweede methode, het datatier of de underdog-regel sneuvelde, hoort hier
+        niet in. Wat overblijft is precies de groep die vóór 20 sep 2026 alleen op 8.0 strandde.
+        """
+        def _poorten_open(r):
+            """Alle poorten behalve `edge` open — afzonderlijk getoetst, niet via `failed_gate`.
+
+            `failed_gate` geeft alleen de eerste dichte poort in de volgorde, en `edge` staat
+            daar op plek twee. Een selectie met `failed_gate == "edge"` kan dus óók op context
+            of robuustheid gesneuveld zijn. Op 20 sep 2026 stond Athletic Club - Alavés daardoor
+            op het punt gepubliceerd te worden terwijl poort 7 dicht was (Alavés 4 dagen rust
+            tegen 7). De analyse legt sindsdien de volledige poortstand vast in `poorten`.
+            """
+            g = r.get("poorten")
+            if isinstance(g, dict):
+                return all(v is True for k, v in g.items() if k != "edge")
+            # Oudere run-states zonder poortkaart: dan is `failed_gate` het enige dat er is, en
+            # valt niet uit te sluiten dat er een latere poort dicht stond. Niet publiceren.
+            return False
+
+        return [r for r in d.values()
+                if r.get("failed_gate") in (None, "edge", "herijking")
+                and _poorten_open(r)
+                # ONDERGRENS. De eerste herdraai onder §5b zette bij Run B twee selecties met
+                # een NEGATIEVE edge in de lijst (Crewe -0.08, Pardubice -0.54) en bij beide runs
+                # een handvol onder de 3 pp. Dat is aanvullen, en §5 verbiedt dat met zoveel
+                # woorden: "zijn er minder gekwalificeerde bets dan MAX_SHORTLIST, lever er dan
+                # minder".
+                #
+                # De grens is niet nieuw verzonnen maar de bestaande NEAR-drempel: het niveau
+                # waaronder de routine een afgewezen kandidaat niet eens de moeite van het
+                # schaduwlogboek waard vindt. Wat te zwak is om te loggen, is te zwak om te
+                # spelen. `ledger.py validate` bewaakt dezelfde grens, dus rangorde en validatie
+                # spreken elkaar zo niet tegen.
+                and isinstance(r.get("_edge"), (int, float)) and r["_edge"] >= NEAR.get(r["tier"], 3.0)]
+
+    def _cut(rows: list[dict]) -> tuple[list[dict], bool]:
+        """Rangorde eerst, drempel alleen als er méér dan `n` boven staan (§5b stap 4-5)."""
+        def _cap_light(xs: list[dict]) -> list[dict]:
+            # MAX_LIGHT_IN_SHORTLIST uit §0: hoogstens twee regels op zwakke data, zodat de lijst
+            # niet volloopt met omgerekende ploegen.
+            uit, light = [], 0
+            for r in xs:
+                if r["tier"] != "FULL":
+                    if light >= MAX_LIGHT:
+                        continue
+                    light += 1
+                uit.append(r)
+                if len(uit) == n:
+                    break
+            return uit
+        boven = [r for r in rows if r["_edge"] >= THRESH.get(r["tier"], 8.0)]
+        if len(boven) > n:
+            return _cap_light(sorted(boven, key=lambda r: -r["_score"])), True
+        return _cap_light(sorted(rows, key=lambda r: -r["_score"])), False
+
     def top(d: dict, schaal: str) -> list[dict]:
-        rows = sorted(d.values(), key=lambda r: -r["_score"])[:n]
+        if schaal == "herijkt":
+            rows, _ = _cut(_pool(d))
+        else:
+            rows = sorted(d.values(), key=lambda r: -r["_score"])[:n]
         out = []
         for r in rows:
             # Gepubliceerd is en blijft: alle poorten open op de HERIJKTE kans (§1). Een regel in
@@ -138,15 +210,24 @@ def build(state: dict, n: int | None = None) -> dict:
             # ruwe schaal niets in de weg. Dat verschil hier hard maken is belangrijker dan het
             # lijkt: anders leest de ruwe lijst als een tweede bettenlijst in plaats van als de
             # meting die ze is.
-            gepubliceerd = bool(r.get("bet_beide")) and r.get("failed_gate") is None
+            # §5b (20 sep 2026): in de herijkte lijst IS de rangorde de publicatie. Alles wat de
+            # andere zeven poorten haalde en in de bovenste `n` staat, wordt gespeeld; de drempel
+            # is daar een label geworden. In de ruwe lijst verandert niets — die blijft de meting
+            # die ze sinds 6 sep is.
+            drempel = THRESH.get(r["tier"], 8.0)
+            haalt_lat = isinstance(r["_edge"], (int, float)) and r["_edge"] >= drempel
+            gepubliceerd = schaal == "herijkt"
             gate = r["_gate"]
-            if schaal == "ruw" and gate is None and not gepubliceerd:
-                stop = GATE_LABEL.get(r.get("failed_gate"), str(r.get("failed_gate")))
-                status = f"zou een bet zijn geweest — nu tegengehouden door: {stop}"
-            elif gepubliceerd:
-                status = "BET — gepubliceerd"
+            if schaal == "ruw":
+                if gate is None and not (bool(r.get("bet_beide")) and r.get("failed_gate") is None):
+                    stop = GATE_LABEL.get(r.get("failed_gate"), str(r.get("failed_gate")))
+                    status = f"zou een bet zijn geweest — nu tegengehouden door: {stop}"
+                else:
+                    status = GATE_LABEL.get(gate, str(gate))
+            elif haalt_lat:
+                status = f"BET — en haalt ook de lat van {drempel:.1f} pp"
             else:
-                status = GATE_LABEL.get(gate, str(gate))
+                status = f"BET op rangorde — onder de lat van {drempel:.1f} pp (§5b)"
             out.append({
                 "match": r["match"], "competition": r["competition"], "kickoff_nl": r["kickoff_nl"],
                 "tier": r["tier"], "market": r["market"], "selection": r["selection"],
