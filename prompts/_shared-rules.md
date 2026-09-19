@@ -142,9 +142,11 @@ edge_pp = (my_prob - 1 / odds) * 100
 
 Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
 
-1. `edge_pp ≥ EDGE_THRESHOLD_FULL` bij `data_tier = FULL`, of `≥ EDGE_THRESHOLD_LIGHT` bij `LIGHT`
-   — gemeten op de **gewogen en herijkte** `my_prob` hierboven, niet op één van de twee methodes
-   afzonderlijk en niet op `my_raw`;
+1. ~~`edge_pp ≥ EDGE_THRESHOLD_FULL`~~ — **deze poort is op 20 sep 2026 verplaatst naar §5b.** De
+   drempel snijdt sindsdien aan het eind van de dag, in de rangorde over alle wedstrijden, en niet
+   per selectie vooraf. Hij wordt nog steeds gemeten op de **gewogen en herijkte** `my_prob`, niet
+   op één van de twee methodes afzonderlijk en niet op `my_raw`; wat verandert is wanneer hij
+   bindt. De overige zeven voorwaarden hieronder blijven gewoon poorten;
 2. `MIN_ODDS ≤ odds ≤ MAX_ODDS`;
 3. de anti-circulariteitsregel (§2) is voldaan;
 4. `data_tier ≠ NONE`;
@@ -1715,6 +1717,52 @@ waarschuwt. Een bet kan bovenaan staan én High risico zijn — dat was op 14 au
 waar de markt 18 procentpunt afweek van het model. Vervang het een niet door het ander.
 
 Zijn er minder gekwalificeerde bets dan `MAX_SHORTLIST`? Lever er minder. **Vul niet aan.**
+
+### 5b. De drempel snijdt aan het eind, niet aan het begin (gewijzigd 20 sep 2026, op verzoek van de gebruiker)
+
+**`EDGE_THRESHOLD_FULL` is geen poort meer maar een afkapping.** De volgorde was: per wedstrijd
+alles doorrekenen, per selectie toetsen aan 8,0 procentpunt, en wat overbleef publiceren. Dat
+leverde veertien dagen achtereen niets op. De gebruiker stelde de omkering voor:
+
+> *"Kun je niet die drempel naar achteren trekken, eerst van alle wedstrijden die je onderzoekt
+> ophalen wat de beste kansen zijn, die op een rijtje zetten en pas als er 'te veel zijn' de lijn
+> bij 8,0 zetten?"*
+
+Vanaf nu dus:
+
+1. Reken elke wedstrijd door zoals altijd, over alle zes de markten.
+2. Neem **per wedstrijd de sterkste selectie** op `selection_score` (§1a) — de 0-of-1-bet-regel
+   verandert niet, dit is dezelfde keuze als voorheen.
+3. Zet die op één rij over de hele runlijst, aflopend op score.
+4. **Publiceer de bovenste `MAX_SHORTLIST`** (3 op ma–do, 5 op vr–zo).
+5. **Snijdt `EDGE_THRESHOLD_FULL` pas hier**: staan er méér dan `MAX_SHORTLIST` selecties bóven de
+   drempel, dan is de drempel de grens en niet de rangorde. Staan er minder — wat sinds 5 september
+   vrijwel altijd het geval is — dan bepaalt de rangorde de lijst en gaat de drempel mee als
+   **label** per regel, niet als veto.
+
+De zeven andere poorten (koersband, anti-circulariteit, datatier, tegenstrijdige methodes,
+robuustheid, context, underdog tot 25 sep) blijven **wél** poorten. Die houden tegen omdat de
+selectie zelf niet deugt; de drempel hield alleen tegen omdat het er te weinig waren.
+
+**Schrijf er per regel bij waar hij staat.** Elke gepubliceerde regel draagt zijn edge én of hij de
+oude lat haalt, zodat de lijst leesbaar blijft als "dit is het beste van vandaag" en niet wordt
+gelezen als "dit is een gevonden voordeel". Dat onderscheid is de hele reden dat deze wijziging
+mag: §1g heeft op 552 afgerekende gevallen gemeten dat er **geen** drempel op de herijkte edge
+bestaat die geld oplevert, en dat het rendement het slechtst is bij de hóógste geclaimde edge. Een
+lijst van vijf is dus geen selectie van winnaars maar een rangschikking van wat het model het
+sterkst vindt — en dat is precies wat de gebruiker wil zien.
+
+**Wat dit kost, eerlijk.** Het schaduwlogboek zegt dat de groep die net onder de drempel viel op
++0,3% staat over 207 afgewikkelde gevallen — niet beter dan de rest, maar ook niet slechter. Deze
+wijziging maakt de routine dus niet winstgevender; ze maakt haar weer leesbaar. Verwacht ongeveer
+`MAX_SHORTLIST` regels per run in plaats van nul, met een rendement in de orde van −10%.
+
+**En let op waarop je rangschikt.** Op 19 september bestond de top vijf onder de oude sortering uit
+vier selecties op de underdog-kant — precies de eentonigheid waar de gebruiker over viel. Na de
+`shrink`-correctie van die dag (§6e) wordt diezelfde lijst aangevoerd door Galatasaray dat wint bij
+Trabzonspor en Osasuna −1, allebei favorieten. De rangorde is dus gevoeliger voor de kalibratie van
+het model dan voor de plek van de drempel. Blijft de lijst dagen achtereen uit één hoek komen, dan
+is dat een signaal over het model en niet over deze regel.
 
 ### 5a. De dagelijkse top-N, twee keer gerekend (toegevoegd 6 sep 2026, op verzoek van de gebruiker)
 
