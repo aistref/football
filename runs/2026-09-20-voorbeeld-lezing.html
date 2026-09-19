@@ -1,0 +1,346 @@
+<title>Bournemouth – Liverpool</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f4f6f5; --card:#ffffff; --ink:#151a1b; --ink-2:#3d4749;
+    --muted:#6d7a7a; --rule:#dde3e1; --rule-soft:#e9edeb;
+    --model:#b5622b; --model-soft:#f0dccd;
+    --market:#1f6360; --market-soft:#cfe0de;
+    --warn:#96302f; --warn-bg:#f7e7e5;
+    --ok:#3f6b39;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#101415; --card:#181e1f; --ink:#e8edec; --ink-2:#b6c2c0;
+      --muted:#8b9997; --rule:#2a3335; --rule-soft:#222a2b;
+      --model:#e0913f; --model-soft:#3d2c1c;
+      --market:#5fb3ad; --market-soft:#17332f;
+      --warn:#e08b86; --warn-bg:#331e1d;
+      --ok:#8cc07f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#101415; --card:#181e1f; --ink:#e8edec; --ink-2:#b6c2c0;
+    --muted:#8b9997; --rule:#2a3335; --rule-soft:#222a2b;
+    --model:#e0913f; --model-soft:#3d2c1c;
+    --market:#5fb3ad; --market-soft:#17332f;
+    --warn:#e08b86; --warn-bg:#331e1d;
+    --ok:#8cc07f;
+  }
+
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding-inline:20px; padding-block:40px 64px;}
+  h1,h2,h3,.lbl,.fig,table{font-family:"Archivo",system-ui,sans-serif;}
+  .fig,.mono,td.num,th.num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 14px;}
+  h1{font-size:clamp(30px,6vw,42px); line-height:1.1; font-weight:700; margin:14px 0 6px;
+     letter-spacing:-.015em; text-wrap:balance;}
+  .sub{color:var(--ink-2); font-size:17px; margin:0 0 6px; text-wrap:balance;}
+
+  section{margin-top:44px;}
+  h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+     font-weight:600; margin:0 0 18px; padding-bottom:9px; border-bottom:1px solid var(--rule);
+     font-family:"IBM Plex Mono",monospace;}
+  h3{font-size:17px; font-weight:600; margin:26px 0 8px; letter-spacing:-.01em;}
+  p{margin:0 0 14px; max-width:66ch;}
+  .lede{font-size:18px;}
+
+  /* twee stemmen: model tegenover markt op één schaal */
+  .voices{display:flex; flex-direction:column; gap:18px;}
+  .voice{display:grid; grid-template-columns:1fr; gap:7px;}
+  .voice-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .voice-name{font-family:"Archivo",sans-serif; font-weight:600; font-size:15px;}
+  .voice-nums{font-family:"IBM Plex Mono",monospace; font-size:13px; font-variant-numeric:tabular-nums;
+    display:flex; gap:12px;}
+  .n-model{color:var(--model); font-weight:600;}
+  .n-market{color:var(--market); font-weight:600;}
+  .track{position:relative; height:26px; background:var(--rule-soft); border-radius:3px;
+    overflow:hidden;}
+  .span{position:absolute; top:0; bottom:0;}
+  .mark{position:absolute; top:0; bottom:0; width:3px;}
+  .mark.model{background:var(--model);}
+  .mark.market{background:var(--market);}
+  .scale{display:flex; justify-content:space-between; font-family:"IBM Plex Mono",monospace;
+    font-size:10px; color:var(--muted); margin-top:2px;}
+  .key{display:flex; gap:18px; flex-wrap:wrap; font-family:"IBM Plex Mono",monospace;
+    font-size:11px; color:var(--muted); margin-bottom:16px; letter-spacing:.04em;}
+  .key b{font-weight:500;}
+  .swatch{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px;
+    vertical-align:baseline;}
+
+  .flag{background:var(--warn-bg); border-left:3px solid var(--warn); border-radius:0 5px 5px 0;
+    padding:18px 20px; margin:26px 0;}
+  .flag .lbl{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--warn); font-weight:600; display:block; margin-bottom:7px;}
+  .flag p{margin-bottom:10px;} .flag p:last-child{margin-bottom:0;}
+
+  .tablewrap{overflow-x:auto; margin:8px 0 6px; border:1px solid var(--rule); border-radius:6px;
+    background:var(--card);}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:440px;}
+  th{text-align:left; font-weight:600; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+     color:var(--muted); padding:11px 12px; border-bottom:1px solid var(--rule);
+     font-family:"IBM Plex Mono",monospace; white-space:nowrap;}
+  td{padding:9px 12px; border-bottom:1px solid var(--rule-soft); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  td.w{color:var(--ok); font-weight:600;} td.l{color:var(--warn);}
+  caption{caption-side:bottom; text-align:left; font-size:12px; color:var(--muted);
+    padding:10px 12px; font-family:"Source Serif 4",serif;}
+
+  .facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden;}
+  .fact{background:var(--card); padding:13px 15px;}
+  .fact .lbl{display:block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+  .fact .fig{font-size:19px; font-weight:600; color:var(--ink); letter-spacing:-.01em;}
+  .fact .note{display:block; font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+
+  ul.notes{margin:0 0 14px; padding-left:20px; max-width:66ch;}
+  ul.notes li{margin-bottom:6px;}
+  .side{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:6px;}
+  @media (max-width:560px){ .side{grid-template-columns:1fr; gap:18px;} }
+  .side h3{margin-top:0;}
+  .away h3{color:var(--market);} .home h3{color:var(--model);}
+
+  .verdict{border:1px solid var(--rule); border-radius:6px; background:var(--card);
+    padding:22px 24px; margin-top:8px;}
+  .verdict p:last-child{margin-bottom:0;}
+  .tag{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+    letter-spacing:.1em; text-transform:uppercase; padding:3px 8px; border-radius:3px;
+    border:1px solid currentColor; font-weight:600;}
+  .tag.lezing{color:var(--market);} .tag.geenbet{color:var(--muted);}
+
+  footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule);
+    font-size:13px; color:var(--muted); max-width:66ch;}
+  footer .rule-quote{font-style:italic;}
+  a{color:var(--market);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">
+      <span>Premier League</span><span>zo 20 sep · 15:00 NL</span><span>Vitality Stadium</span>
+      <span>opstelling voorspeld</span>
+    </div>
+    <h1>Bournemouth – Liverpool</h1>
+    <p class="sub">Het model ziet twee gelijkwaardige ploegen. De markt, de onderlinge historie en
+      de selectiewaarde zeggen alle drie iets anders — en dit is precies de hoek waarin het model
+      aantoonbaar scheef staat.</p>
+  </header>
+
+  <section>
+    <h2>Model tegenover markt</h2>
+    <div class="key">
+      <span><i class="swatch" style="background:var(--model)"></i><b>model</b>, na herijking</span>
+      <span><i class="swatch" style="background:var(--market)"></i><b>markt</b>, marge weggedeeld</span>
+      <span>gekleurd vlak = het meningsverschil</span>
+    </div>
+
+    <div class="voices">
+      <div class="voice">
+        <div class="voice-top">
+          <span class="voice-name">Bournemouth wint</span>
+          <span class="voice-nums"><span class="n-model">model 31,9%</span><span class="n-market">markt 30,2%</span></span>
+        </div>
+        <div class="track">
+          <div class="span" style="left:30.2%; width:1.7%; background:var(--model-soft)"></div>
+          <div class="mark market" style="left:30.2%"></div>
+          <div class="mark model" style="left:31.9%"></div>
+        </div>
+      </div>
+      <div class="voice">
+        <div class="voice-top">
+          <span class="voice-name">Gelijkspel</span>
+          <span class="voice-nums"><span class="n-model">model 19,9%</span><span class="n-market">markt 25,2%</span></span>
+        </div>
+        <div class="track">
+          <div class="span" style="left:19.9%; width:5.3%; background:var(--market-soft)"></div>
+          <div class="mark model" style="left:19.9%"></div>
+          <div class="mark market" style="left:25.2%"></div>
+        </div>
+      </div>
+      <div class="voice">
+        <div class="voice-top">
+          <span class="voice-name">Liverpool wint</span>
+          <span class="voice-nums"><span class="n-model">model 26,6%</span><span class="n-market">markt 44,6%</span></span>
+        </div>
+        <div class="track">
+          <div class="span" style="left:26.6%; width:18.0%; background:var(--market-soft)"></div>
+          <div class="mark model" style="left:26.6%"></div>
+          <div class="mark market" style="left:44.6%"></div>
+        </div>
+      </div>
+      <div class="scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+
+    <p style="margin-top:22px">Achttien procentpunt verschil op de uitwinst. Dat is geen randgeval maar
+      het grootste meningsverschil dat ik vandaag in de Premier League heb. Vóór de herijking zei het
+      model zelfs <span class="mono">41,3%</span> voor Bournemouth tegen <span class="mono">30,2%</span>
+      bij de markt — de thuisploeg was dan de <em>favoriet</em> geweest.</p>
+
+    <div class="flag">
+      <span class="lbl">Waarschuwing — dit is de bekende zwakke plek</span>
+      <p>Het model rekent met doelverwachtingen van <span class="mono">1,61</span> voor Bournemouth en
+        <span class="mono">1,51</span> voor Liverpool: vrijwel gelijk. Dat komt doordat beide ploegen
+        op seizoens-xG dicht bij elkaar liggen (1,58 om 1,63 aanvallend). Wat er niet in zit: dat
+        Liverpool achttien van de laatste drieëntwintig onderlinge duels won, en dat de markt een
+        ploeg van een andere orde ziet.</p>
+      <p>Op 19 september is gemeten dat het model in duels met een duidelijke favoriet die favoriet
+        structureel te zwak inschat — over 155 zulke wedstrijden won de favoriet 73,5% van de keren
+        waar het model 65,5% voorspelde. <strong>Lees de cijfers hierboven dus niet als een koopsignaal
+        op Bournemouth.</strong> Ze zijn eerder een meting van mijn eigen fout dan van die van de markt.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>De wedstrijd</h2>
+
+    <div class="facts">
+      <div class="fact"><span class="lbl">Onderling</span><span class="fig">3 – 1 – 18</span>
+        <span class="note">23 duels; winst Bournemouth, gelijk, winst Liverpool</span></div>
+      <div class="fact"><span class="lbl">Vorm thuis</span><span class="fig">D D W D W</span>
+        <span class="note">ongeslagen in 5 · 2,8 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Vorm uit</span><span class="fig">D W W D W</span>
+        <span class="note">ongeslagen in 8 · 4,8 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Weer</span><span class="fig">20 °C</span>
+        <span class="note">wind 4 km/u NW, droog</span></div>
+    </div>
+
+    <h3>Wat de cijfers van dit seizoen zeggen</h3>
+    <p>Na weging van vorig en dit seizoen komt Bournemouth op <span class="mono">1,58</span> xG voor en
+      <span class="mono">1,44</span> tegen per duel; Liverpool op <span class="mono">1,63</span> en
+      <span class="mono">1,27</span>. Aanvallend ontlopen ze elkaar nauwelijks — het verschil zit
+      achterin, en het is klein. Beide ploegen staan op vier gespeelde duels, dus het lopende seizoen
+      weegt voor ongeveer een derde mee.</p>
+
+    <h3>Waarnemingen bij de bron</h3>
+    <ul class="notes">
+      <li><strong>Bournemouth</strong> scoorde elf keer in de laatste vijf duels en is ongeslagen in vijf.</li>
+      <li><strong>Evanilson</strong> staat derde in de competitie op grote kansen gecreëerd (3).</li>
+      <li><strong>Liverpool</strong> scoorde negen keer in vijf duels en is ongeslagen in acht.</li>
+      <li><strong>Szoboszlai</strong> creëerde de meeste grote kansen van Liverpool (3).</li>
+    </ul>
+
+    <div class="side">
+      <div class="home">
+        <h3>Bournemouth mist</h3>
+        <p style="font-size:14.5px">Julián Araujo, Veljko Milosavljević, Junior Kroupi en Amine Adli —
+          allen geblesseerd, samen <span class="mono">96 mln</span> aan marktwaarde. Araujo wordt half
+          oktober terug verwacht.</p>
+      </div>
+      <div class="away">
+        <h3>Liverpool mist</h3>
+        <p style="font-size:14.5px">Conor Bradley, Giovanni Leoni, Federico Chiesa en Hugo Ekitiké —
+          allen geblesseerd, samen <span class="mono">145 mln</span>. In absolute waarde meer, op een
+          veel diepere selectie.</p>
+      </div>
+    </div>
+    <p style="font-size:14.5px; color:var(--ink-2)">De rustcontrole slaat aan op de thuisploeg:
+      Bournemouth speelde 2,8 dagen geleden tegen 4,8 bij Liverpool. Dat sluit de poort voor een
+      selectie op Bournemouth — wat hier toevallig dezelfde kant op wijst als de waarschuwing hierboven.</p>
+  </section>
+
+  <section>
+    <h2>De vijf vorige ontmoetingen, met de cijfers erbij</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Datum</th><th>Uitslag</th><th class="num">Bezit</th><th class="num">xG</th>
+              <th class="num">Schoten</th><th class="num">Grote kansen</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>24 jan 2026</td><td><strong>Bournemouth 3–2 Liverpool</strong></td>
+              <td class="num">33 – 67</td><td class="num">2,35 – 0,93</td>
+              <td class="num">12 – 14</td><td class="num">6 – 1</td></tr>
+          <tr><td>15 aug 2025</td><td>Liverpool 4–2 Bournemouth</td>
+              <td class="num">61 – 39</td><td class="num">2,21 – 1,70</td>
+              <td class="num">19 – 10</td><td class="num">3 – 3</td></tr>
+          <tr><td>1 feb 2025</td><td>Bournemouth 0–2 Liverpool</td>
+              <td class="num">49 – 51</td><td class="num">1,58 – 2,52</td>
+              <td class="num">14 – 19</td><td class="num">3 – 4</td></tr>
+          <tr><td>21 sep 2024</td><td>Liverpool 3–0 Bournemouth</td>
+              <td class="num">59 – 41</td><td class="num">2,06 – 1,08</td>
+              <td class="num">19 – 19</td><td class="num">4 – 2</td></tr>
+          <tr><td>21 jan 2024</td><td>Bournemouth 0–4 Liverpool</td>
+              <td class="num">39 – 61</td><td class="num">1,37 – 1,57</td>
+              <td class="num">11 – 14</td><td class="num">2 – 2</td></tr>
+        </tbody>
+        <caption>Cijfers per duel van de thuisploeg eerst. Bron: Opta via Fotmob.</caption>
+      </table>
+    </div>
+    <p>Eén ding springt eruit en het pleit tégen de markt: in januari won Bournemouth met
+      <strong>33% balbezit</strong> en zes grote kansen tegen één. Dat was geen toevalstreffer maar een
+      counterploeg die precies deed wat ze wilde. Tegelijk: in de vier duels daarvóór kwam Bournemouth
+      tot nul goals in twee ervan, en het doelsaldo over vijf duels staat op 5–15.</p>
+  </section>
+
+  <section>
+    <h2>Alle markten, met de prijs erbij</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Markt</th><th class="num">Beste prijs</th><th>Boek</th>
+              <th class="num">Marktkans</th><th class="num">Model</th><th class="num">Verschil</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Bournemouth wint</td><td class="num">3,27</td><td>1xBet</td>
+              <td class="num">30,2%</td><td class="num">31,9%</td><td class="num">+1,7</td></tr>
+          <tr><td>Gelijkspel</td><td class="num">3,92</td><td>Coolbet</td>
+              <td class="num">25,2%</td><td class="num">19,9%</td><td class="num">−5,3</td></tr>
+          <tr><td>Liverpool wint</td><td class="num">2,22</td><td>Betfair <span class="mono">(2,24 bruto)</span></td>
+              <td class="num">44,6%</td><td class="num">26,6%</td><td class="num">−18,0</td></tr>
+          <tr><td>Bournemouth +0,5</td><td class="num">1,74</td><td>GTbets</td>
+              <td class="num">57,5%</td><td class="num">51,8%</td><td class="num">−5,7</td></tr>
+          <tr><td>Bournemouth +1</td><td class="num">1,40</td><td>Coolbet</td>
+              <td class="num">71,4%</td><td class="num">64,6%</td><td class="num">−6,8</td></tr>
+          <tr><td>Liverpool −1</td><td class="num">3,10</td><td>Coolbet</td>
+              <td class="num">32,3%</td><td class="num">17,2%</td><td class="num">−15,1</td></tr>
+          <tr><td>Over 2,5</td><td class="num">1,50</td><td>Betsson</td>
+              <td class="num">66,7%</td><td class="num">60,4%</td><td class="num">−6,3</td></tr>
+          <tr><td>Under 3,5</td><td class="num">1,72</td><td>1xBet</td>
+              <td class="num">58,1%</td><td class="num">62,8%</td><td class="num">+4,7</td></tr>
+        </tbody>
+        <caption>Marktkans is 1/koers, dus inclusief de marge van het boek. Verschil in procentpunten,
+          op de herijkte modelkans. Prijzen uitgelezen zaterdag 04:40 NL.</caption>
+      </table>
+    </div>
+    <p>Twee markten waar het model bóven de prijs uitkomt: de thuiswinst (+1,7 pp) en Under 3,5
+      (+4,7 pp). Geen van beide haalt de drempel van 8,0 en de eerste staat bovendien op de kant waar
+      het model aantoonbaar te optimistisch is.</p>
+  </section>
+
+  <section>
+    <h2>De lezing</h2>
+    <div class="verdict">
+      <p><span class="tag lezing">Lezing</span> &nbsp;<span class="tag geenbet">Geen bet</span></p>
+      <p class="lede">Liverpool hoort favoriet te zijn en mijn model ziet dat onvoldoende. Ik zou de
+        thuiswinst op 3,27 <em>niet</em> spelen, ook al zegt mijn eigen rekenwerk dat hij net boven de
+        prijs ligt — dat is precies het patroon waarvan gisteren is gemeten dat het mijn grootste
+        systematische fout is.</p>
+      <p>Wat ik wél interessant vind en wat de prijs mogelijk mist: Bournemouth is thuis tegen deze
+        tegenstander geen gewone underdog. In januari sloegen ze Liverpool met een derde van het balbezit
+        en zes grote kansen. Als je in deze wedstrijd iets zoekt, is het eerder de <strong>counter-hypothese
+        op een open duel</strong> — beide ploegen scoren staat op 63% bij het model — dan een gok op de
+        uitslag.</p>
+      <p>Wat dit rapport níet zegt: dat ik een voordeel op de bookmaker heb gevonden. Dat heb ik niet, en
+        op deze wedstrijd staat mijn model verder van de waarheid dan de markt.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p class="rule-quote">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de
+      verwachtingswaarde negatief.</p>
+    <p>Kansen uit <span class="mono">analyze_match</span> (xG-methode, 80%) en de splitsmethode (20%),
+      herijkt op 687 afgerekende uitkomsten (<span class="mono">a=0,833 · b=−0,464</span>).
+      Wedstrijdcijfers: Opta via Fotmob. Prijzen: The Odds API over 25 aanbieders, beurskoersen na
+      commissie. Dit is een proefopzet van het nieuwe dagrapport — één wedstrijd, volledig uitgewerkt.</p>
+  </footer>
+
+</div>
