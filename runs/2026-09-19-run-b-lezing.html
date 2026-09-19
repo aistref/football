@@ -1,0 +1,228 @@
+<title>Run B · 19 september</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#f4f6f5; --card:#ffffff; --ink:#151a1b; --ink-2:#3d4749;
+    --muted:#6d7a7a; --rule:#dde3e1; --rule-soft:#e9edeb;
+    --model:#b5622b; --model-soft:#f0dccd;
+    --market:#1f6360; --market-soft:#cfe0de;
+    --warn:#96302f; --warn-bg:#f7e7e5;
+    --ok:#3f6b39;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#101415; --card:#181e1f; --ink:#e8edec; --ink-2:#b6c2c0;
+      --muted:#8b9997; --rule:#2a3335; --rule-soft:#222a2b;
+      --model:#e0913f; --model-soft:#3d2c1c;
+      --market:#5fb3ad; --market-soft:#17332f;
+      --warn:#e08b86; --warn-bg:#331e1d;
+      --ok:#8cc07f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#101415; --card:#181e1f; --ink:#e8edec; --ink-2:#b6c2c0;
+    --muted:#8b9997; --rule:#2a3335; --rule-soft:#222a2b;
+    --model:#e0913f; --model-soft:#3d2c1c;
+    --market:#5fb3ad; --market-soft:#17332f;
+    --warn:#e08b86; --warn-bg:#331e1d;
+    --ok:#8cc07f;
+  }
+
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:"Source Serif 4",Georgia,serif; font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding-inline:20px; padding-block:40px 64px;}
+  h1,h2,h3,.lbl,.fig,table{font-family:"Archivo",system-ui,sans-serif;}
+  .fig,.mono,td.num,th.num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums;}
+
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 14px;}
+  h1{font-size:clamp(30px,6vw,42px); line-height:1.1; font-weight:700; margin:14px 0 6px;
+     letter-spacing:-.015em; text-wrap:balance;}
+  .sub{color:var(--ink-2); font-size:17px; margin:0 0 6px; text-wrap:balance;}
+
+  section{margin-top:44px;}
+  h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+     font-weight:600; margin:0 0 18px; padding-bottom:9px; border-bottom:1px solid var(--rule);
+     font-family:"IBM Plex Mono",monospace;}
+  h3{font-size:17px; font-weight:600; margin:26px 0 8px; letter-spacing:-.01em;}
+  p{margin:0 0 14px; max-width:66ch;}
+  .lede{font-size:18px;}
+
+  /* twee stemmen: model tegenover markt op één schaal */
+  .voices{display:flex; flex-direction:column; gap:18px;}
+  .voice{display:grid; grid-template-columns:1fr; gap:7px;}
+  .voice-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .voice-name{font-family:"Archivo",sans-serif; font-weight:600; font-size:15px;}
+  .voice-nums{font-family:"IBM Plex Mono",monospace; font-size:13px; font-variant-numeric:tabular-nums;
+    display:flex; gap:12px;}
+  .n-model{color:var(--model); font-weight:600;}
+  .n-market{color:var(--market); font-weight:600;}
+  .track{position:relative; height:26px; background:var(--rule-soft); border-radius:3px;
+    overflow:hidden;}
+  .span{position:absolute; top:0; bottom:0;}
+  .mark{position:absolute; top:0; bottom:0; width:3px;}
+  .mark.model{background:var(--model);}
+  .mark.market{background:var(--market);}
+  .scale{display:flex; justify-content:space-between; font-family:"IBM Plex Mono",monospace;
+    font-size:10px; color:var(--muted); margin-top:2px;}
+  .key{display:flex; gap:18px; flex-wrap:wrap; font-family:"IBM Plex Mono",monospace;
+    font-size:11px; color:var(--muted); margin-bottom:16px; letter-spacing:.04em;}
+  .key b{font-weight:500;}
+  .swatch{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px;
+    vertical-align:baseline;}
+
+  .flag{background:var(--warn-bg); border-left:3px solid var(--warn); border-radius:0 5px 5px 0;
+    padding:18px 20px; margin:26px 0;}
+  .flag .lbl{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--warn); font-weight:600; display:block; margin-bottom:7px;}
+  .flag p{margin-bottom:10px;} .flag p:last-child{margin-bottom:0;}
+
+  .tablewrap{overflow-x:auto; margin:8px 0 6px; border:1px solid var(--rule); border-radius:6px;
+    background:var(--card);}
+  table{border-collapse:collapse; width:100%; font-size:13.5px; min-width:440px;}
+  th{text-align:left; font-weight:600; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+     color:var(--muted); padding:11px 12px; border-bottom:1px solid var(--rule);
+     font-family:"IBM Plex Mono",monospace; white-space:nowrap;}
+  td{padding:9px 12px; border-bottom:1px solid var(--rule-soft); vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  td.w{color:var(--ok); font-weight:600;} td.l{color:var(--warn);}
+  td.pos{color:var(--model); font-weight:600;} td.dim{color:var(--muted);}
+  caption{caption-side:bottom; text-align:left; font-size:12px; color:var(--muted);
+    padding:10px 12px; font-family:"Source Serif 4",serif;}
+
+  .facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px;
+    background:var(--rule); border:1px solid var(--rule); border-radius:6px; overflow:hidden;}
+  .fact{background:var(--card); padding:13px 15px;}
+  .fact .lbl{display:block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+  .fact .fig{font-size:19px; font-weight:600; color:var(--ink); letter-spacing:-.01em;}
+  .fact .note{display:block; font-size:12.5px; color:var(--muted); margin-top:3px; line-height:1.45;}
+
+  ul.notes{margin:0 0 14px; padding-left:20px; max-width:66ch;}
+  ul.notes li{margin-bottom:6px;}
+  .side{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:6px;}
+  @media (max-width:560px){ .side{grid-template-columns:1fr; gap:18px;} }
+  .side h3{margin-top:0;}
+  .away h3{color:var(--market);} .home h3{color:var(--model);}
+
+  .verdict{border:1px solid var(--rule); border-radius:6px; background:var(--card);
+    padding:22px 24px; margin-top:8px;}
+  .verdict p:last-child{margin-bottom:0;}
+  .tag{display:inline-block; font-family:"IBM Plex Mono",monospace; font-size:10px;
+    letter-spacing:.1em; text-transform:uppercase; padding:3px 8px; border-radius:3px;
+    border:1px solid currentColor; font-weight:600;}
+  .tag.lezing{color:var(--market);} .tag.rang{color:var(--muted);}
+
+  footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule);
+    font-size:13px; color:var(--muted); max-width:66ch;}
+  footer .rule-quote{font-style:italic;}
+  a{color:var(--market);}
+</style>
+<div class="wrap">
+  <header>
+    <div class="eyebrow"><span>zaterdag 19 september 2026</span><span>opgesteld 11:05</span></div>
+    <h1>Run B · 19 september</h1>
+    <p class="sub">Vier wedstrijden uit 57 waar mijn cijfers iets zagen. Eén daarvan houd ik over, en het is de enige van de dag waar de absenties mijn kant op wijzen.</p>
+  </header>
+
+  <section>
+    <h2>Bromley – Huddersfield Town</h2>
+    <div class="" style="padding:0">
+      <p style="margin-bottom:6px"><span class="eyebrow">16:00 · English League One (ENG) · onderling 0–0–0</span></p>
+      <h3 style="margin-top:4px">De grootste 'edge' van de dag, op een ploeg die vijf duels niet won</h3>
+      <p><span class="tag rang">Niet spelen</span> &nbsp;<span class="mono">Bromley wint @ 6.10</span>
+         &nbsp;<span class="mono" style="color:var(--muted)">mijn voordeel +8.53 pp</span></p>
+      <p><b>Wat mijn cijfers zien.</b> Met +8,5 procentpunt is dit het hoogste getal dat vandaag uit mijn model komt.</p>
+      <p><b>Wat daartegenin gaat.</b> Bromley <b>won in vijf pogingen niet</b> en hield in vijf duels geen enkele keer de nul. Huddersfield is ongeslagen in vijf met negen goals. Beide ploegen hadden een week rust, dus daar ligt het niet aan.</p>
+      <p><b>Niet spelen.</b> Dat mijn grootste getal op mijn slechtste bet staat, is precies wat er al gemeten is: hoe groter het geclaimde voordeel, hoe slechter het rendement.</p>
+    </div>
+    <div class="facts" style="margin-top:14px">
+      <div class="fact"><span class="lbl">Vorm thuis</span><span class="fig">DLLLD</span>
+        <span class="note">7.0 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Vorm uit</span><span class="fig">WWDWD</span>
+        <span class="note">7.0 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Doelverwachting</span>
+        <span class="fig">1.29 – 1.68</span>
+        <span class="note">mijn model, per duel</span></div>
+    </div>
+    <ul class="notes" style="margin-top:12px"><li>Have scored 5 goals in their last 5 matches</li><li>Haven&#x27;t won a match in 5 attempts</li><li>Haven&#x27;t kept a clean sheet in 5 matches</li><li>Have scored 9 goals in their last 5 matches</li></ul>
+  </section>
+  <section>
+    <h2>Kristiansund – Rosenborg</h2>
+    <div class="flag" style="padding:18px 20px">
+      <p style="margin-bottom:6px"><span class="eyebrow">16:00 · Eliteserien (NOR) · onderling 4–9–13</span></p>
+      <h3 style="margin-top:4px">De enige van vandaag waar het voetbal mijn cijfers steunt</h3>
+      <p><span class="tag lezing">Speelbaar</span> &nbsp;<span class="mono">Kristiansund wint @ 5.61</span>
+         &nbsp;<span class="mono" style="color:var(--muted)">mijn voordeel +7.60 pp</span></p>
+      <p><b>Wat mijn cijfers zien.</b> Rosenborg is in bloedvorm — <b>24 goals in vijf duels</b>, vier van de laatste vijf gewonnen — en staat daarom terecht als favoriet. Maar ze reizen af met <b>vier uitvallers</b>: Jonas Svensson, Iver Fossum, Johan Bakke en spits Dino Islamović. Dat is een spits, een controleur en een vleugel tegelijk.</p>
+      <p><b>Wat daartegenin gaat.</b> De onderlinge balans is 4–9–13 in het voordeel van Rosenborg over 26 duels, en Kristiansund won er maar vier van. Wie op de thuisploeg zet, gaat tegen dertig jaar geschiedenis in.</p>
+      <p>Kristiansund staat zelf op twaalf goals in vijf, speelt thuis en heeft evenveel rust. Met vier absenties aan de overkant vind ik 17,8% voor de thuisploeg te laag. <b>Dit is de bet die ik zou spelen.</b></p>
+    </div>
+    <div class="facts" style="margin-top:14px">
+      <div class="fact"><span class="lbl">Vorm thuis</span><span class="fig">WDWLW</span>
+        <span class="note">2.9 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Vorm uit</span><span class="fig">WLWWW</span>
+        <span class="note">2.9 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Doelverwachting</span>
+        <span class="fig">1.63 – 2.01</span>
+        <span class="note">mijn model, per duel</span></div>
+    </div>
+    <ul class="notes" style="margin-top:12px"><li>Have scored 12 goals in their last 5 matches</li><li>Adrian Sæther is ranked 1 in saves per match in the competition (3.8)</li><li>Leander Alvheim has the most shots on target per match for Kristiansund (1.2)</li><li>Have scored 24 goals in their last 5 matches</li><li><b>afwezig uit:</b> Jonas Svensson, Iver Fossum, Johan Bakke, Dino Islamović</li></ul>
+  </section>
+  <section>
+    <h2>Salford City – Swindon Town</h2>
+    <div class="" style="padding:0">
+      <p style="margin-bottom:6px"><span class="eyebrow">16:00 · English League Two (ENG) · onderling 5–4–3</span></p>
+      <h3 style="margin-top:4px">Swindon verloor in zeven ontmoetingen geen enkele keer van Salford — andersom</h3>
+      <p><span class="tag rang">Niet spelen</span> &nbsp;<span class="mono">Swindon wint @ 6.10</span>
+         &nbsp;<span class="mono" style="color:var(--muted)">mijn voordeel +5.22 pp</span></p>
+      <p><b>Wat mijn cijfers zien.</b> Mijn model geeft Swindon meer kans dan de 16% die de koers impliceert.</p>
+      <p><b>Wat daartegenin gaat.</b> Fotmob is er helder over: <b>Salford verloor in de laatste zeven onderlinge duels niet</b> van Swindon (vier keer winst, drie gelijk). Salford had een week rust, Swindon vier dagen. En mijn eigen doelverwachting zet Salford hoger (1,69 tegen 1,19).</p>
+      <p><b>Niet spelen</b> — mijn eigen cijfers spreken deze keuze zelfs tegen.</p>
+    </div>
+    <div class="facts" style="margin-top:14px">
+      <div class="fact"><span class="lbl">Vorm thuis</span><span class="fig">LLWWD</span>
+        <span class="note">7.0 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Vorm uit</span><span class="fig">LWWLL</span>
+        <span class="note">3.8 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Doelverwachting</span>
+        <span class="fig">1.69 – 1.19</span>
+        <span class="note">mijn model, per duel</span></div>
+    </div>
+    <ul class="notes" style="margin-top:12px"><li>Have scored 6 goals in their last 5 matches</li><li>Salford City haven&#x27;t lost to Swindon Town in their last 7 meetings (4W, 3D).</li><li>Joe Powell has created the most big chances for Salford City (2)</li><li>Have scored 7 goals in their last 5 matches</li></ul>
+  </section>
+  <section>
+    <h2>Young Boys – Servette</h2>
+    <div class="" style="padding:0">
+      <p style="margin-bottom:6px"><span class="eyebrow">18:00 · Swiss Super League (SUI) · onderling 16–10–11</span></p>
+      <h3 style="margin-top:4px">De topscorer van de competitie staat aan de andere kant</h3>
+      <p><span class="tag rang">Niet spelen</span> &nbsp;<span class="mono">Servette wint @ 5.02</span>
+         &nbsp;<span class="mono" style="color:var(--muted)">mijn voordeel +3.19 pp</span></p>
+      <p><b>Wat mijn cijfers zien.</b> Servette op 5,02 is de laatste kandidaat die boven mijn ondergrens uitkomt.</p>
+      <p><b>Wat daartegenin gaat.</b> Young Boys scoorde <b>zestien keer in vijf duels</b> en heeft met Samuel Essende de topscorer van de Super League (8). Servette kwam tot zes goals, speelde drie dagen geleden tegen bijna zeven voor Young Boys, en mist keeper Jérémy Frick plus drie anderen.</p>
+      <p><b>Niet spelen.</b></p>
+    </div>
+    <div class="facts" style="margin-top:14px">
+      <div class="fact"><span class="lbl">Vorm thuis</span><span class="fig">WDWDD</span>
+        <span class="note">7.0 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Vorm uit</span><span class="fig">DLLWW</span>
+        <span class="note">3.0 dagen rust</span></div>
+      <div class="fact"><span class="lbl">Doelverwachting</span>
+        <span class="fig">2.19 – 1.77</span>
+        <span class="note">mijn model, per duel</span></div>
+    </div>
+    <ul class="notes" style="margin-top:12px"><li>Have scored 16 goals in their last 5 matches</li><li>Have been awarded the most penalties this season (2)</li><li>Samuel Essende is the competition&#x27;s top scorer (8)</li><li>Have scored 6 goals in their last 5 matches</li><li><b>afwezig thuis:</b> Gregory Wüthrich, Cédric Zesiger, Benjamin Kabeya, Ryan Andrews</li><li><b>afwezig uit:</b> Léo Besson, Timothé Cognat, Yoan Severin, Jérémy Frick</li></ul>
+  </section>
+  <footer>
+    <p class="rule-quote">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is
+      de verwachtingswaarde negatief.</p>
+    <p>Vorm, rust, blessures, onderlinge historie en de waarnemingen per wedstrijd komen van Opta
+      via Fotmob. Koersen van The Odds API over 25 aanbieders, beste prijs per selectie,
+      beurskoersen na commissie. Doelverwachting uit mijn eigen model, herijkt op 687 afgerekende
+      uitkomsten.</p>
+  </footer>
+</div>
