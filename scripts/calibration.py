@@ -247,6 +247,61 @@ def cmd_stats(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_settle(_args: argparse.Namespace) -> int:
+    """Vul de werkelijke uitkomst in bij elke waarneming — de ONGESELECTEERDE ijksteekproef.
+
+    Toegevoegd 20 sep 2026, en het repareert een fout die twee weken lang elke run stuurde.
+    `recalibrate.py` fitte zijn correctie op `picks.jsonl` + `shadow.jsonl`, met als motivering
+    dat dat "de volledige verzameling is waar de routine een mening over had". Dat is niet de
+    populatie waarop de correctie wordt tóégepast: die loopt over élke doorgerekende selectie —
+    773 in Run A op 19 sep — terwijl alleen de handvol die een logboek haalde in de fit zat. Dat
+    zijn juist de selecties waar het model het verst van de markt af zat, en daar is een model per
+    definitie het meest optimistisch: de winner's curse. Een correctie die op die staart wordt
+    gefit en daarna op álles wordt losgelaten, haalt overal ruim tien procentpunt af.
+
+    Gemeten op 2346 ongeselecteerde 1X2-uitkomsten: de fit op déze steekproef is a=1.03, b=0.02 —
+    vrijwel de identiteit. Het ruwe model is goed gekalibreerd; de oude correctie maakte het
+    méétbaar slechter (Brier 0.2057 tegen 0.1997 ruw, en uit-steekproef 0.2057 tegen 0.2002).
+    Het ergst aan de bovenkant: op uitkomsten die de markt boven 65% zet, gebeurde het 86.0% van
+    de tijd terwijl de herijkte schatting 53.8% zei — 32 procentpunt te laag. Daarom kon de
+    routine nooit een favoriet spelen.
+
+    Dit logboek is wél ongeselecteerd: elke doorgerekende wedstrijd levert drie 1X2-uitkomsten,
+    of de routine er nu iets in zag of niet. Eén Fotmob-verzoek per kalenderdag, geen credits.
+    """
+    try:
+        from . import settling
+    except ImportError:
+        import settling                                    # type: ignore[no-redef]
+    rows = load_log()
+    index = settling.DayIndex()
+    gevuld = open_ = 0
+    for r in rows:
+        if r.get("won") is not None or " – " not in (r.get("match") or ""):
+            continue
+        home, away = r["match"].split(" – ", 1)
+        hit = index.lookup(date.fromisoformat(r["date"]), home, away)
+        if not hit or not hit.get("finished") or not hit.get("score"):
+            open_ += 1
+            continue
+        try:
+            hg, ag = [int(x) for x in hit["score"].replace("−", "-").split("-")]
+        except Exception:
+            open_ += 1
+            continue
+        werd = "thuis" if hg > ag else ("uit" if ag > hg else "gelijk")
+        r["won"] = 1.0 if r["outcome"] == werd else 0.0
+        gevuld += 1
+    if gevuld:
+        with LOG.open("w", encoding="utf-8") as fh:
+            for r in rows:
+                fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+    klaar = sum(1 for r in rows if r.get("won") is not None)
+    print(f"{gevuld} waarneming(en) afgewikkeld; {klaar} van {len(rows)} compleet, "
+          f"{open_} nog open.")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -255,6 +310,8 @@ def main() -> int:
     col.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
     col.add_argument("--date", required=True, help="YYYY-MM-DD")
     col.set_defaults(func=cmd_collect)
+
+    sub.add_parser("settle", help="werkelijke uitkomst per waarneming invullen").set_defaults(func=cmd_settle)
 
     st = sub.add_parser("stats", help="toon de afwijking per marktkans-bak")
     st.add_argument("--since", help="alleen dagen vanaf deze datum (YYYY-MM-DD)")

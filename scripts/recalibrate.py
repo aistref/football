@@ -118,13 +118,69 @@ def sigmoid(z: float) -> float:
 
 
 def observations() -> list[tuple[float, float, str]]:
-    """(my_prob, uitkomst 0/1, datum) van elk afgerekend geval — picks én schaduwkandidaten.
+    """(modelkans, uitkomst 0/1, datum) van elke afgerekende waarneming.
 
-    Beide bestanden meedoen is geen slordigheid maar de bedoeling. `picks.jsonl` bevat alleen wat
-    er dóórheen kwam en is daarmee de zwaarst geselecteerde groep die er is; `shadow.jsonl` bevat
-    wat de poorten tegenhielden. Samen zijn ze de volledige verzameling waar de routine een mening
-    over had, en dat is precies de populatie waarop de correctie later wordt toegepast.
+    SINDS 20 SEP 2026 KOMT DIT UIT `data/calibration.jsonl`, NIET MEER UIT PICKS + SHADOW, en dat
+    is de belangrijkste correctie die deze module ooit heeft gehad.
+
+    Hier stond: *"picks.jsonl bevat alleen wat er dóórheen kwam en is daarmee de zwaarst
+    geselecteerde groep die er is; shadow.jsonl bevat wat de poorten tegenhielden. Samen zijn ze
+    de volledige verzameling waar de routine een mening over had, en dat is precies de populatie
+    waarop de correctie later wordt toegepast."*
+
+    Die laatste zin is onwaar, en er is twee weken lang op gestuurd. De correctie wordt toegepast
+    op **élke doorgerekende selectie** — 773 in Run A op 19 sep — terwijl alleen de handvol die
+    een logboek haalde in de fit zat. En dat is geen willekeurige handvol: het zijn juist de
+    selecties waar het model het verst van de markt af zat. Daar is elk model het meest
+    optimistisch, want je selecteert op je eigen grootste fout. Dat heet de winner's curse, en het
+    is een eigenschap van de **selectie**, niet van het model.
+
+    Gemeten op 2346 ongeselecteerde 1X2-uitkomsten (`calibration.jsonl settle`):
+
+        ruwe modelkans    n     werkelijk   oude herijking zei
+        25-35%          737        28.2%        22.8%   (-5.4 pp)
+        45-55%          266        51.9%        38.1%  (-13.8 pp)
+        70%+             56        85.7%        64.1%  (-21.7 pp)
+
+    Het ruwe model is dus goed gekalibreerd; de fit op déze steekproef is a=1.03, b=0.02 — bijna
+    de identiteit. De oude correctie maakte de voorspelling méétbaar slechter (Brier 0.2057 tegen
+    0.1997 ruw, uit-steekproef 0.2057 tegen 0.2002), en het ergst aan de bovenkant: op uitkomsten
+    die de markt boven 65% zet gebeurde het 86.0% van de tijd terwijl de herijkte schatting 53.8%
+    zei. Daarom kon de routine nooit een favoriet spelen, en bestond elke kandidatenlijst uit
+    longshots: na twaalf procentpunt aftrek overleeft alleen wat wild van de markt afwijkt.
+
+    De winner's curse blijft echt en moet ook echt worden afgevangen — maar dat hoort bij de
+    **selectie** (een hogere eis aan de edge, §5b) en niet bij de kansschatting van elke selectie.
+
+    Valt `calibration.jsonl` weg of staan er te weinig afgewikkelde rijen in, dan komt de oude
+    bron terug als terugval; hij is dan zichtbaar in `Fit.bron`.
     """
+    rows = _uit_kalibratielogboek()
+    if len(rows) >= MIN_OBSERVATIONS:
+        return rows
+    return _uit_picks_en_shadow()
+
+
+def _uit_kalibratielogboek() -> list[tuple[float, float, str]]:
+    """De ongeselecteerde ijksteekproef: drie 1X2-uitkomsten per doorgerekende wedstrijd."""
+    path = ROOT / "data" / "calibration.jsonl"
+    if not path.exists():
+        return []
+    rows: list[tuple[float, float, str]] = []
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        rec = json.loads(line)
+        prob, won = rec.get("p_mean"), rec.get("won")
+        if prob is None or won is None:
+            continue
+        rows.append((float(prob), float(won), rec.get("date") or ""))
+    rows.sort(key=lambda r: r[2])
+    return rows
+
+
+def _uit_picks_en_shadow() -> list[tuple[float, float, str]]:
+    """Terugval: de oude, geselecteerde bron. Zie de waarschuwing in `observations`."""
     rows: list[tuple[float, float, str]] = []
     for path, datefield in ((PICKS, "run_date"), (SHADOW, "date")):
         if not path.exists():
