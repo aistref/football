@@ -1834,6 +1834,10 @@ Elke run, ook een run met nul bets:
    door `ctxlog.py settle`. Dit vraagt om een contextblok bij **elke** wedstrijd waarvoor de context
    is opgehaald, dus ook bij de duels die `MAX_DEEP_ANALYSES` heeft afgekapt. Zie §1c; neem
    `ctxlog.py stats` op in het runrapport.
+5f. **Margelogboek** → `python3 scripts/margins.py stats`, en zodra er genoeg dagen zijn ook
+   `--since 2026-09-20`. Zie 6f; neem beide op in het runrapport. Dit is de enige controle die
+   ziet of het scoregrid de vórm van een uitslag goed heeft en niet alleen de winnaar, en het is
+   de reden dat handicapbets op de underdog met argwaan gelezen moeten worden.
 5e. **De dagelijkse top-N, twee keer** → `python3 scripts/toplist.py --run <a|b> --date <datum>`.
    Zie §5a. Neem beide lijsten op in het runrapport; op de HTML-pagina zet `report.py` ze er zelf
    in. Draai dit **na** `shadow.py collect`, zodat de regels die alleen op de herijking sneuvelden
@@ -2062,6 +2066,51 @@ seizoen), en nu op 19 sep het niveau zelf.
 Let ten slotte op wat poort 6 hier **niet** doet: het `(shrink, rho)`-grid van `robustness_check`
 varieert alleen `analyze_match` — precies de methode die vlak blijkt. "Deze bet overleeft het hele
 grid" zegt dus niets over de methode die de afwijking veroorzaakt.
+
+### 6f. Het margelogboek — klopt de vórm van de uitslag, en niet alleen wie er wint?
+
+```bash
+python3 scripts/margins.py stats
+python3 scripts/margins.py stats --since 2026-09-20     # alleen lambdas van ná de shrink-overstap
+```
+
+`calibration.py` meet of `my_prob` scheef staat op de 1X2-uitkomsten, `ledger.py` en `shadow.py`
+meten of de bets winnen. Geen van drieën ziet wat er op 19 sep 2026 boven water kwam toen de
+gebruiker vroeg waarom de routine handicapbets op de underdog bleef voorstellen — `Sevilla +2.5`
+tegen Barcelona, `Union +3.5` tegen Bayern (dat 7–0 werd):
+
+> *"Ik heb het idee dat je rekenmodel nog te simpel is: niet wat valt er te halen uit alle markten
+> rondom zo'n wedstrijd, maar gewoon 'de historische kans op een monsterscore is laag'."*
+
+Dat is nagerekend over **671 wedstrijden** met een opgeslagen lambdapaar en een uitslag, en het
+klopt:
+
+| duels met een duidelijke favoriet (λ-ratio ≥ 1.8, n=155) | voorspeld | werkelijk | |
+|---|---|---|---|
+| favoriet wint | 65,5% | 73,5% | **+8,0 pp** |
+| favoriet wint met 2 of meer | 43,3% | 52,3% | **+9,0 pp** |
+| favoriet wint met 4 of meer | 11,6% | 17,4% | **+5,8 pp** |
+| underdog wint of speelt gelijk | 34,5% | 26,5% | **−8,0 pp** |
+
+**Het totaal aantal doelpunten klopt wél** (0–1 doelpunt 19,8% tegen 19,5%; 6 of meer 9,7% tegen
+8,2%). Het model weet dus prima hóéveel er gescoord wordt; het weet niet hoe scheef die doelpunten
+verdeeld raken zodra één ploeg veel sterker is. De oorzaak is de aanname in `score_grid`: twee
+**onafhankelijke** Poisson-verdelingen, met een Dixon-Coles-correctie die alleen de lage standen
+bijstelt. Onafhankelijkheid kent geen wedstrijdverloop waarin de mindere ploeg wordt vastgezet.
+
+Daar komt de handicap op de underdog vandaan, en het is geen oordeel over Sevilla of Union maar een
+eigenschap van het grid: bij Sevilla – Barcelona stond de modelkans op `+2.5` op 77,6% tegen 58,5%
+bij de markt, en dát hele verschil zit in de staart van de margeverdeling.
+
+**Er is op 19 sep géén tweede correctie bovenop gezet, en dat is een bewuste keuze.** De
+shrink-wijziging van diezelfde dag (§6e) verbreedt het lambdaverschil met mediaan factor 1,15 en
+sluit daarmee op zichzelf al ongeveer tweederde van het gat bij "wint met 3 of meer" en veertig
+procent van het gat bij "4 of meer". Een margecorrectie er meteen naast zetten zou dezelfde
+dubbeltelling zijn waar het openstaande punt over `early_season_uplift` voor waarschuwt, en er is
+nog geen enkele afgewikkelde wedstrijd met lambdas van ná de overstap. Neem `margins.py stats` dus
+elke run op in het runrapport, en beantwoord de vraag opnieuw zodra `--since 2026-09-20` op ~150
+duels met een favoriet staat. Blijft het gat dan bestaan, dan is het grid zelf aan de beurt en niet
+een parameter erop.
 
 ### 6c. Het leesbare dagrapport — verplicht, elke run
 
