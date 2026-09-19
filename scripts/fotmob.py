@@ -96,6 +96,39 @@ def _get_json(url: str) -> dict:
     return json.loads(raw)
 
 
+# Memo binnen één run, zodat `context.py` en `dossier.py` dezelfde respons lezen in plaats van
+# hem tweemaal te ontleden. Dit is een consistentiemaatregel en GEEN besparing: gemeten op
+# 20 sep 2026 kost een matchDetails-verzoek mediaan 0,15 s, dus 57 wedstrijden is 9 seconden en
+# zelfs 627 verzoeken (tien historische duels per wedstrijd erbij) blijft onder de twee minuten.
+# Het verkeer naar Fotmob is geen schaars goed en de 20.000 credits van The Odds API gaan hier
+# helemaal niet over. De enige echte grens is de tijdsgrens van §0 — klaar om 06:30 — en daar is
+# ruim twee uur speling. Wat de memo wél garandeert: beide modules zien dezelfde opstelling, ook
+# als die tussen twee aanroepen bij de bron verandert.
+# Bewust in het geheugen en niet op schijf: de opstelling en de blessurelijst bewegen tot vlak
+# voor de aftrap, dus over runs heen cachen zou juist de verkeerde waarde vasthouden (anders dan
+# `fetch_league_stats`, waar een dagcache wél mag).
+_MATCH_DETAILS: dict[int, dict] = {}
+
+
+def fetch_match_details(match_id: int, *, use_cache: bool = True) -> dict:
+    """De volledige Fotmob-wedstrijdrespons: opstelling, h2h, insights, stand, weer, statistieken.
+
+    De bron is Opta (`source: "Opta"` in de respons, en `playerStats` draagt per speler een
+    `optaId`). Dat is het antwoord op de vraag van 20 sep 2026 of er Opta-cijfers bij kunnen:
+    ze zitten er al in, via een aanroep die de routine toch al deed.
+
+    Wat er vóór de aftrap gevuld is: `h2h`, `matchFacts` (incl. `insights`, `teamForm`,
+    `topPlayers`, `infoBox`), `lineup` (voorspelde basiself + uitvallers + marktwaarde), `table`
+    en `weather`. Wat er pas ná afloop bij komt: `stats` per periode, `playerStats` (40 spelers
+    met `optaId`), `shotmap` met x/y/minuut per schot, `momentum` en `attackingZones`.
+    """
+    if use_cache and match_id in _MATCH_DETAILS:
+        return _MATCH_DETAILS[match_id]
+    data = _get_json(f"https://www.fotmob.com/api/data/matchDetails?matchId={match_id}")
+    _MATCH_DETAILS[match_id] = data
+    return data
+
+
 def fetch_fixtures(day: date) -> dict:
     """Alle wedstrijden van een dag, gegroepeerd per competitie. Stage 1 van _shared-rules.md."""
     return _get_json(f"https://www.fotmob.com/api/data/matches?date={day:%Y%m%d}")

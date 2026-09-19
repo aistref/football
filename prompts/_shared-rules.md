@@ -1410,6 +1410,62 @@ Leg per doorgerekend duel in `data/run-state/` onder `seizoensweging` vast hoeve
 seizoen meetellen, met welk gewicht, en de xG per duel vorig/dit/gewogen. Zonder dat is niet na te
 gaan of de weging deed wat ze hoort te doen.
 
+### Het wedstrijddossier — wat er per duel te weten valt (toegevoegd 20 sep 2026)
+
+```bash
+python3 scripts/dossier.py show --match-id 5795455
+python3 scripts/dossier.py show --match-id 5795455 --history 5   # spelersdata van oude duels
+```
+
+De gebruiker vroeg of er Opta-cijfers, oude wedstrijdverslagen en de lezing van andere sites bij
+konden. Het onderzoek gaf één groot antwoord en drie kleine.
+
+**Groot: de Opta-data zat er al in, en werd weggegooid.** `context.py` haalde per wedstrijd de
+volledige Fotmob-respons op (50 KB), nam daaruit alleen de uitvallers en de vorm, en liet de rest
+liggen. Die respons draagt `"source": "Opta"` en geeft per speler een `optaId`. Vóór de aftrap zit
+erin: **h2h** (balans plus de laatste ontmoetingen met uitslag), **insights** (Fotmob's eigen
+voorbeschouwing in gewone taal — *"Have scored 11 goals in their last 5 matches"*, *"Evanilson is
+ranked 3 in big chances created"*), **vorm en rust**, **uitvallers met marktwaarde**, de
+**voorspelde basiself**, de **stand**, **topspelers** en het **weer**. Ná afloop komen daar
+`stats` per helft, `playerStats` (40 spelers met `optaId`), `shotmap` met x/y/minuut per schot,
+`momentum` en `attackingZones` bij — het materiaal waarmee een spelersvergelijking te bouwen is.
+
+**Wees ruimhartig in wat je ophaalt.** Een matchDetails-verzoek duurt mediaan **0,15 seconde**
+(gemeten 20 sep 2026). 57 wedstrijden is negen seconden; tien historische duels per wedstrijd
+erbij is 627 verzoeken en blijft onder de twee minuten, op een run van 14,6 minuten met ruim twee
+uur tot de deadline. **De 20.000 credits gaan hier niet over** — dat is het budget van The Odds API
+en dat staat op 54 van 793 verbruikt. Fotmob kost geen credits. Schrijf dus nooit dat iets
+"nul extra verzoeken kost" alsof dat een argument is; de enige grens die telt is de tijdsgrens van
+§0, en die is voorlopig niet in zicht.
+
+**Klein 1 — Betfair en Matchbook zitten al in de prijzen.** Ze staan bij de 25 aanbieders die The
+Odds API teruggeeft (op 19 sep 2026: Betfair bij 115 events, Matchbook bij 81), en hun koers wordt
+al meegenomen in de beste prijs, inclusief `net_price` voor de commissie. `betfair.com` zelf geeft
+403 achter Cloudflare; dat hoeft ook niet.
+
+**Klein 2 — bereikbaar maar marktafgeleid.** `voetbalwedden.net` (HTTP 200, server-side inhoud),
+`soccerway.com` (200) en `bbc.com/sport/football` (200, met wedstrijdverslagen) zijn te lezen.
+`whoscored.com` is 403 achter Cloudflare en blijft dicht (§3: niet omheen werken).
+
+**Klein 3 — een publieke Opta-bron bestaat niet.** `optasports.com` resolvet niet en
+`statsperform.com` is een bedrijfspagina zonder data. Opta komt bij het publiek terecht via
+licentienemers, en Fotmob is er daar één van. Dat is dus de route, en die is al open.
+
+#### De harde grens: wat mag in `my_prob` en wat niet
+
+Het dossier voedt **de lezing**, niet de kansschatting. Dat is §2 en het is geen smaakkwestie:
+
+| Bron | Lezing | `my_prob` |
+|---|---|---|
+| xG, doelpunten, schoten, opstellingen, blessures, vorm, h2h | ja | **ja** |
+| `insights` van Fotmob | ja | **nee** — het is een selectie van feiten die Fotmob interessant vindt, geen volledige beschrijving |
+| beurskoersen (Betfair, Matchbook) | ja, als marktbeeld | **nooit** |
+| tipsites, "modelkansen" die odds meewegen | ja, als andermans lezing | **nooit** |
+
+Een getal dat uit de markt komt en dan als `my_prob` tegen die markt wordt afgezet, meet niets meer
+(§2). Dat is precies de fout waarop de correctie van 31 aug is ingetrokken. Zet marktafgeleide
+bronnen daarom altijd in een eigen blok in `data/run-state/`, nooit in `prob_sources`.
+
 ### Promovendi: eerst omrekenen, dan pas `NONE` (toegevoegd 30 aug 2026)
 
 Een ploeg die niet in de tabel van vorig seizoen staat, is bijna nooit een ploeg zonder historie —

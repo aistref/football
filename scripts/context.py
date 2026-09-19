@@ -35,6 +35,11 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
+try:                        # als pakket: `from scripts import context`
+    from . import fotmob
+except ImportError:         # als los script: `python3 scripts/context.py`
+    import fotmob           # type: ignore[no-redef]
+
 TIMEOUT = 45
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"}
@@ -238,7 +243,9 @@ def fetch_match_context(match_id: int, kickoff_utc: str | None = None) -> MatchC
     gevuld (nagetrokken op vier competities op 23 aug 2026), de opstelling zelf is een voorspelling
     en wordt hier niet gebruikt — alleen `unavailable` en `totalStarterMarketValue`.
     """
-    data = _get_json(f"https://www.fotmob.com/api/data/matchDetails?matchId={match_id}")
+    # Via `fotmob.fetch_match_details` en niet rechtstreeks, zodat `dossier.py` dezelfde respons
+    # hergebruikt in plaats van hem opnieuw op te halen (§4, toegevoegd 20 sep 2026).
+    data = fotmob.fetch_match_details(match_id)
     content = data.get("content") or {}
     lineup = content.get("lineup") or {}
     facts = content.get("matchFacts") or {}
