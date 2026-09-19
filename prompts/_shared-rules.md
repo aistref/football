@@ -1239,6 +1239,60 @@ twijfel terug op de volgorde uit deze paragraaf (FULL boven LIGHT), en meld in h
 welke competities deze run voor het eerst zijn opgehaald (en dus in `data/cache/fotmob/` zijn
 gecached voor de volgende run).
 
+### Stage 5 — De volgorde van de analyse (vastgesteld 20 sep 2026, op verzoek van de gebruiker)
+
+**Vier stappen, in deze volgorde, en de prijs komt pas als derde.** De gebruiker:
+
+> *"Eerst kijken naar de context, daarna naar wat de voorspellingen op het internet zeggen, daarna
+> wat de marktodds zeggen en daarna de vergelijking en edge en bets."*
+
+De reden dat dit een regel is en geen smaak: zolang de analyse bij de koers begint, is elke
+redenering erna een verantwoording achteraf. Begin je bij de wedstrijd, dan is de koers iets om je
+mening aan te toetsen in plaats van iets om een mening bij te zoeken.
+
+1. **De wedstrijd.** Wie spelen er, wat voor duel is het, wat is de onderlinge historie, wat is er
+   over deze ploegen geschreven, wat is er in hun laatste duels werkelijk gebeurd, en wat is de
+   stand van het heden: blessures, schorsingen, vorm, rustdagen. `scripts/dossier.py` levert dit
+   per wedstrijd uit de Opta-respons die de routine toch al ophaalt (§4, "Het wedstrijddossier").
+2. **Wat anderen voorspellen.** Geschreven tips en modelkansen van derden. Wat hiervan bereikbaar
+   is, staat hieronder — het is minder dan je zou hopen.
+3. **De marktodds.** Beste prijs per selectie over alle aanbieders, beurskoersen na commissie.
+4. **De vergelijking, de edge en de bet.** Pas hier komen `my_prob`, `edge_pp` en §5b in beeld.
+
+#### Wat er van stap 2 werkelijk bereikbaar is (gemeten 20 sep 2026)
+
+| Bron | Status |
+|---|---|
+| Pinnacle, artikelroute | **404** — `/betting-articles/soccer/` bestaat niet meer |
+| Matchbook, blog | **530** — de server ligt eruit |
+| Betfair, betting-blog | **403** achter Cloudflare |
+| Forebet | **403** achter Cloudflare (onveranderd sinds 8 aug) |
+| voetbalwedden.net | **200**, maar de voorspellingenpagina bevatte geen van de 57 wedstrijden van die dag |
+| xgscore | 301, `fetch_today()` gaf 0 regels |
+
+**Geschreven voorspellingen zijn dus grotendeels niet te halen, en dat moet eerlijk in het rapport
+staan in plaats van stilzwijgend te worden overgeslagen.** Wat er wél is en wat stap 2 in de
+praktijk invult:
+
+- **De prijs van Pinnacle apart.** Pinnacle is de scherpste bookmaker van de markt — op 19 sep een
+  marge van 3,4 tot 4,9% tegenover 6 tot 10% bij de rest — en zijn de-vigde 1X2 is het beste
+  publieke expertoordeel dat beschikbaar is. Zet die naast je eigen kans, **los van** de beste
+  prijs uit stap 3: de een is om je aan te toetsen, de ander is waar je op speelt.
+- **De waarnemingen van Fotmob** (`insights`): feitelijke notities uit de wedstrijddata, geen
+  voorspelling.
+
+**En de grens van §2 blijft hard.** Alles uit stap 2 en 3 is marktafgeleid en mag nooit in
+`my_prob` of in `prob_sources` terechtkomen. Het hoort in de lezing en in de vergelijking, niet in
+de kansschatting. Anders meet `edge_pp` alleen nog je afstand tot een getal dat zelf uit de markt
+komt.
+
+#### Wat er in het dagrapport hoort (§6c)
+
+Vaste kopjes, in deze volgorde: **Bets vandaag** (de top `MAX_SHORTLIST`) · per wedstrijd de vier
+stappen hierboven · **Wat in beeld was maar het niet haalde** · **Dekkingsrapportage** · **De
+eerlijke stand** (`ledger.py stats`) · **Bevinding** · **Wat ik nog moet doen** · **De termen** ·
+en onderaan de disclaimer van §5, letterlijk.
+
 ### Stage 5 — Analyse en output
 Analyseer de geselecteerde wedstrijden volgens §4 en §5.
 
