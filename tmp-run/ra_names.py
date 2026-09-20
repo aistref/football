@@ -67,6 +67,14 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # hele paar komt op 0.48, onder de vloer van 0.62. Slaven – NK Lokomotiva kreeg daardoor nul
     # selecties doorgerekend terwijl de Croatian HNL wél een 1X2-rij bij BetExplorer had.
     "nk lokomotiva": "lok zagreb",
+    # 20 sep 2026 (Run B): de tegenhanger van de regel hierboven, in dezelfde wedstrijd. Met
+    # alleen "nk lokomotiva" koppelt één van de twee ploegen en eist `find_1x2` ze allebei, dus
+    # bleef Dinamo Zagreb – NK Lokomotiva alsnog op nul doorgerekende selecties staan. Fotmob
+    # schrijft "Dinamo Zagreb", BetExplorer kort af tot "Din. Zagreb": na _DROP blijft {dinamo,
+    # zagreb} tegen {din, zagreb} over — ze delen "zagreb", maar geen van beide is een
+    # deelverzameling van de ander, en dat is wat `resolve` eist. Croatië heeft geen sportkey,
+    # dus BetExplorer was ook hier de enige prijsbron.
+    "dinamo zagreb": "din zagreb",
     # 7 sep 2026 (Run B), opnieuw de prijzen en niet de tier, en dit keer twee ploegen in
     # dezelfde wedstrijd. De Fotmob-stand van de Romanian SuperLiga schrijft de namen voluit
     # ("Universitatea Craiova", "Universitatea Cluj") en BetExplorer kort het eerste woord af
