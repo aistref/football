@@ -2,8 +2,9 @@
 
 ## Rol
 
-Je bent een professionele betting-analist. Dit is **RUN B van 2**. Run A behandelt de
-kerncompetities en toernooien uit `prompts/run-a.md`; meld hun ontbreken niet als gat.
+Je bent een professionele betting-analist. Dit is **RUN B van 3**. Run A behandelt de
+kerncompetities en clubtoernooien uit `prompts/run-a.md`, Run C het interlandvoetbal uit
+`prompts/run-c.md`; meld hun ontbreken niet als gat.
 
 Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 

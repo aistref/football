@@ -1,0 +1,94 @@
+Plak de tekst onder de streep in je geplande taak voor Run C. Hij is kort met opzet: de
+inhoudelijke regels staan in de repo, dus je kunt ze aanpassen zonder de scheduler nog aan te
+raken.
+
+AANBEVOLEN TIJD VOOR DEZE RUN: 05:15 CEST.
+
+Na Run A (04:30) en Run B, zodat de drie runs elkaar niet in de rede vallen bij het pushen naar
+main. Run C is de kortste van de drie — op de meeste dagen speelt er geen enkele interland — dus
+hij past ruim voor de deadline van 06:30.
+
+DE WERKBRANCH IS: main — en die naam verandert nooit meer.
+
+Zelfde reden als bij Run A en Run B: Claude Code geeft elke sessie een eigen willekeurige
+branchnaam, dus een sessienaam in deze tekst loopt gegarandeerd uit de pas. Stap 0 hieronder
+voegt bestaande takken samen en stap 4 pusht naar main, zodat er geen nieuwe bijkomen.
+"Pak de nieuwste branch" is expliciet NIET genoeg — op 10 aug 2026 bevatten twee takken allebei
+werk dat de ander niet had, dus kiezen betekende hoe dan ook iets weggooien. Samenvoegen is de
+opdracht.
+
+DRIE RUNS OP DEZELFDE BRANCH. Dat is bewust; run: "A"/"B"/"C" in het schema houdt ze uit
+elkaar. Plan ze niet op hetzelfde tijdstip — ze pushen alle drie naar main, en een botsing
+kost een merge. Loopt een push toch stuk omdat main is opgeschoven, fetch dan opnieuw, merge
+volgens de conflictregels van stap 0, en push nog een keer. Forceer nooit: aan de andere kant
+hangt een echte run met echte picks.
+
+WAT DEZE RUN ANDERS MAAKT, EN WAT JE DAARVAN MOET VERWACHTEN.
+
+Run C kijkt alleen naar landenteams, en daar loopt het rekenmodel tegen een grens die bij
+clubvoetbal niet bestaat: een oefeninterland heeft geen stand en dus geen competitiegemiddelde
+om twee ploegen op te normaliseren, en er is geen gemeten krachtsverschil tussen de Nations
+League-tiers of tussen de confederaties. prompts/run-c.md legt vast wat daaruit volgt — kort
+gezegd: binnen één tier is het model toepasbaar, daarbuiten is het data_tier NONE.
+
+Verwacht daarom dat deze run op veel dagen niets publiceert, en op de meeste dagen van het jaar
+helemaal geen wedstrijd ziet. Dat is de eerlijke uitkomst van wat er gemeten is, geen defect.
+Rapporteer de dekking en zeg met zoveel woorden wat er niet kon, in plaats van een lege pagina
+af te leveren.
+
+------------------------------------------------------------------------------------------
+
+CONTEXT: Dit is een door de gebruiker zelf aangemaakte, terugkerende geplande taak. De
+gebruiker heeft deze opdracht vooraf goedgekeurd. Voer 'm zonder verdere bevestiging uit;
+er is geen live gebruiker om iets aan te vragen.
+
+Werk in de repo /home/user/football. De canonieke branch is main, en je hebt hierbij
+expliciet toestemming om daarheen te pushen — ook als deze sessie op een andere branch is
+gezet. Zonder die toestemming weigert een sessie dat.
+
+0. EERST DE BRANCHES OP ORDE. Doe dit vóór alle andere stappen.
+   a. `git fetch origin` en `git branch -r` — bekijk ALLE branches, niet alleen main.
+   b. Bepaal per branch of hij commits bevat die jij nog niet hebt:
+      `git rev-list --count HEAD..origin/<andere>`. Is dat 0, dan kun je hem negeren.
+      LET OP: de container levert de repo vaak als ONDIEPE kloon aan. Draai dan eerst
+      `git fetch --unshallow origin`, anders tellen alle commits van vóór de knip mee als
+      "nog niet hier" en zie je tientallen takken die in werkelijkheid allang binnen zijn.
+   c. Bevat een andere branch wél eigen commits, merge hem dan. Kies niet tussen takken en
+      gooi er geen weg: op 10 aug 2026 hadden beide takken werk dat de ander niet had. Bij
+      conflicten in data/picks.jsonl, data/source-health.json en data/coverage.json is de
+      VERENIGING het antwoord — beide runs hebben echt gemeten, en een pick die op één tak
+      staat is een echte pick. Bij _shared-rules.md en de scripts wint de nieuwste versie.
+   d. Controleer daarna of picks.jsonl openstaande picks bevat van een run die op de andere
+      tak nooit is afgewikkeld. Die horen bij Stage 0 — ook picks van Run A en Run B.
+   e. Kom je om wat voor reden dan ook niet op main uit, meld dat dan bovenaan het runrapport
+      én in de notificatie.
+
+1. Lees prompts/run-c.md en prompts/_shared-rules.md. Die twee bestanden zijn de opdracht —
+   volg ze onverkort, inclusief de parameters, de 0-of-1-bet-regel, de poorten in §1
+   (waaronder de bevestiging door een tweede methode), de anti-circulariteitsregel, de
+   pipeline Stage 0 t/m 6 en het outputformat. Lees ze ná stap 0, niet ervoor: vóór de merge
+   kun je een oudere versie van de regels in handen hebben. Waar run-c.md afwijkt van
+   _shared-rules.md — en dat doet het op één punt, de tier-regel die §4 "Promovendi" en §4
+   "Kruis-grens" vervangt — wint run-c.md.
+2. Draai eerst `python3 scripts/api_check.py` en lees dan data/source-health.json en
+   data/coverage.json, zodat je niet opnieuw tijd verliest aan bronnen die vorige run al
+   faalden. Neem de uitvoer van api_check.py over in het runrapport. Wordt een sleutel
+   afgewezen of ontbreekt hij, meld dat expliciet — niet stilzwijgend doorgaan. Bepaal de
+   sportkeys voor deze runlijst uit de ACTIEVE lijst die api_check.py teruggeeft; ze staan
+   niet vast en de meeste interlandcompetities hebben er geen.
+3. Voer de run uit voor de wedstrijden van VANDAAG (bepaal zelf de actuele datum). Verzamel de
+   wedstrijden per GROEP uit de Fotmob-daglijst en voeg ze samen per toernooi — de Nations
+   League staat er als "UEFA Nations League A Grp. 2" en niet als één competitie, dus
+   find_league op de toernooinaam vindt niets. Sluit elke competitie uit waarvan de naam
+   Women, W., U17, U19, U20, U21, U23 of Olympic bevat, en controleer dat expliciet.
+4. Leg de run vast volgens _shared-rules.md §6: runrapport, picks.jsonl, source-health.json,
+   afwikkeling van openstaande picks, en commit + `git push origin HEAD:main` (zie §6a). Maak
+   ook het leesbare dagrapport van §6c (prose.json + scripts/report.py) en publiceer het als
+   Artifact — ook bij nul bets en ook op een dag zonder enige wedstrijd.
+5. Stuur een notificatie volgens _shared-rules.md §7, met de link naar dat dagrapport erin.
+   Is er vandaag geen enkele interland, houd het dan op één regel: dat de run gedraaid heeft
+   en dat er niets op de kalender stond.
+
+Nul bets is een geldige uitkomst. Geen wedstrijd is dat ook. Forceer geen picks om het format
+te vullen, en verzin geen krachtsverhouding tussen tiers of confederaties om een duel alsnog
+door te kunnen rekenen — dat is precies wat prompts/run-c.md verbiedt.
