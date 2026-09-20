@@ -25,16 +25,22 @@ hangt een echte run met echte picks.
 
 WAT DEZE RUN ANDERS MAAKT, EN WAT JE DAARVAN MOET VERWACHTEN.
 
-Run C kijkt alleen naar landenteams, en daar loopt het rekenmodel tegen een grens die bij
-clubvoetbal niet bestaat: een oefeninterland heeft geen stand en dus geen competitiegemiddelde
-om twee ploegen op te normaliseren, en er is geen gemeten krachtsverschil tussen de Nations
-League-tiers of tussen de confederaties. prompts/run-c.md legt vast wat daaruit volgt — kort
-gezegd: binnen één tier is het model toepasbaar, daarbuiten is het data_tier NONE.
+Run C kijkt alleen naar landenteams. Het clubmodel werkt daar niet: een oefeninterland heeft
+geen stand en dus geen competitiegemiddelde om twee ploegen op te normaliseren. Daarvoor in de
+plaats staat scripts/national.py — een aanval- en verdedigingsrating voor elk landenteam op één
+gezamenlijke schaal, gefit op 6784 werkelijke interlanduitslagen, uit-steekproef gemeten op
+Brier 0,4796 tegen 0,6667 voor blind gokken. prompts/run-c.md legt uit hoe je hem gebruikt; de
+rest van de pijplijn draait er ongewijzigd op.
 
-Verwacht daarom dat deze run op veel dagen niets publiceert, en op de meeste dagen van het jaar
-helemaal geen wedstrijd ziet. Dat is de eerlijke uitkomst van wat er gemeten is, geen defect.
-Rapporteer de dekking en zeg met zoveel woorden wat er niet kon, in plaats van een lege pagina
-af te leveren.
+Twee dingen die je daarvan moet verwachten. Het datatier blijft op LIGHT staan — er is maar één
+methode en geen xG, dus de drempel is 16,0 procentpunt en er komt weinig doorheen. En op de
+meeste dagen van het jaar speelt er helemaal geen interland. Allebei is dat de eerlijke uitkomst
+van wat er gemeten is, geen defect. Rapporteer de dekking en zeg met zoveel woorden wat er niet
+kon, in plaats van een lege pagina af te leveren.
+
+Draai `python3 scripts/national.py build` en daarna `fit` aan het EIND van elk interlandvenster,
+niet elke dag: het corpus verandert alleen als er interlands gespeeld zijn. Commit de uitkomst
+mee — data/national-matches.jsonl en data/national-fit.json zijn metingen, geen cache.
 
 ------------------------------------------------------------------------------------------
 
@@ -68,7 +74,7 @@ gezet. Zonder die toestemming weigert een sessie dat.
    (waaronder de bevestiging door een tweede methode), de anti-circulariteitsregel, de
    pipeline Stage 0 t/m 6 en het outputformat. Lees ze ná stap 0, niet ervoor: vóór de merge
    kun je een oudere versie van de regels in handen hebben. Waar run-c.md afwijkt van
-   _shared-rules.md — en dat doet het op één punt, de tier-regel die §4 "Promovendi" en §4
+   _shared-rules.md — en dat doet het op één punt, de landenrating die §4 "Promovendi" en §4
    "Kruis-grens" vervangt — wint run-c.md.
 2. Draai eerst `python3 scripts/api_check.py` en lees dan data/source-health.json en
    data/coverage.json, zodat je niet opnieuw tijd verliest aan bronnen die vorige run al
@@ -90,5 +96,5 @@ gezet. Zonder die toestemming weigert een sessie dat.
    en dat er niets op de kalender stond.
 
 Nul bets is een geldige uitkomst. Geen wedstrijd is dat ook. Forceer geen picks om het format
-te vullen, en verzin geen krachtsverhouding tussen tiers of confederaties om een duel alsnog
-door te kunnen rekenen — dat is precies wat prompts/run-c.md verbiedt.
+te vullen. Valt een ploeg buiten national.in_range, laat het duel dan vallen in plaats van
+stil terug te vallen op een gemiddelde ploeg — dat is precies wat prompts/run-c.md verbiedt.

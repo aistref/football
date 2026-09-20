@@ -15,6 +15,9 @@ Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 **Doorlopend, het hele jaar:**
 
 - Vriendschappelijke interlands (Fotmob `Friendlies`, id **114**, ccode `INT`)
+- **CAF Afrika Cup-kwalificatie** (Fotmob id **10608**) — toegevoegd op 20 sep 2026 op verzoek
+  van de gebruiker. Speelt in dezelfde vensters als de Nations League en had op 24 september
+  tien duels op de kalender.
 
 **Seizoensgebonden — de kalender waar deze runlijst op staat:**
 
@@ -46,17 +49,17 @@ maar er niet staat is `GEEN WEDSTRIJD`, geen storing. Werk de tabel bij als een 
   namen lijken op de onze. Sluit elke competitie uit waarvan de naam `Women`, `W.`, `U17`, `U19`,
   `U20`, `U21`, `U23` of `Olympic` bevat, en **controleer dat expliciet per run** in plaats van
   erop te vertrouwen dat ze vanzelf buiten de lijst vallen.
-- **AFCON-kwalificatie en WK-kwalificatie.** Die staan niet op de lijst hierboven, terwijl
-  AFCON-kwalificatie op 24 september 2026 wél tien duels op de kalender had (Fotmob id **10608**).
-  Dat is volwassen mannenvoetbal en het zou er dus bij kunnen. Openstaand beslispunt voor de
-  gebruiker — niet zelf toevoegen.
+- **WK-kwalificatie.** Staat niet op de runlijst. De kwalificatie voor 2030 begint pas rond
+  2028; komt ze op de kalender, leg dan eerst aan de gebruiker voor of ze erbij hoort.
+  *(AFCON-kwalificatie stond hier tot 20 sep 2026 als openstaand beslispunt en staat sindsdien
+  gewoon op de runlijst — de gebruiker heeft ja gezegd.)*
 
 ## Werkwijze
 
 Volg **`prompts/_shared-rules.md`** onverkort: parameters, de 0-of-1-bet-regel, de
 anti-circulariteitsregel, de pipeline (Stage 0 t/m 6), datalabels, outputformat, vastleggen in de
-repo en notificatiebeleid. Eén uitzondering staat hieronder onder "De tier-regel", en die vervangt
-§4 "Promovendi" en §4 "Kruis-grens" voor deze run.
+repo en notificatiebeleid. Eén uitzondering staat hieronder onder "De landenrating", en die
+vervangt §4 "Promovendi" en §4 "Kruis-grens" voor deze run.
 
 Run-specifieke waarden:
 
@@ -98,7 +101,12 @@ Bekende ids, gemeten:
 | Vriendschappelijke interlands | 114 |
 | UEFA Nations League A / B / C / D | 9806 / 9807 / 9808 / 9809 |
 | CONCACAF Nations League (tier B gezien) | 9821 |
-| AFCON-kwalificatie (niet op de runlijst) | 10608 |
+| AFCON-kwalificatie | 10608 |
+| WK-kwalificatie UEFA/CAF/AFC/CONCACAF/CONMEBOL | 10195 / 10196 / 10197 / 10198 / 10199 |
+| WK-kwalificatie interconfederatie-play-off | 10201 |
+| Asian Cup-kwalificatie | 10609 |
+| WK · EK · AFCON · Copa América · Gold Cup | 77 · 50 · 289 · 44 · 298 |
+| **Club** Friendlies — NIET gebruiken | 489 |
 
 De overige toernooien hebben pas een id zodra ze op de kalender staan. Zoek hem dan op in de
 daglijst en **schrijf hem in deze tabel** in plaats van hem elke run opnieuw te zoeken.
@@ -115,7 +123,12 @@ python3 -c "from scripts import fotmob; print(fotmob.fetch_league_stats(9806,'20
 | Nations League A, editie **2026/2027** | 4 ploegen, **geen xG, 0 gespeeld** — de editie was nog niet begonnen |
 | Vriendschappelijk (id 114), seizoen 2026 | **`FotmobError: geen bruikbare stand gevonden`** |
 
-Daar staat het hele probleem van deze run in drie regels:
+> **Achterhaald op 20 september 2026, en met opzet blijven staan.** Dit was het probleem waarop
+> de eerste versie van Run C vastliep, en het is opgelost door `scripts/national.py` — zie "De
+> landenrating" hieronder. De metingen in de tabel kloppen nog steeds en zijn nuttig om te
+> weten; de conclusie eronder niet meer. Lees ze dus als achtergrond, niet als werkwijze.
+
+Wat er destijds uit volgde:
 
 1. **Binnen één Nations League-tier is het gewone model gewoon toepasbaar.** De vorige voltooide
    editie speelt de rol die "vorig seizoen" bij een competitie speelt: teamsterktes uit
@@ -136,60 +149,117 @@ terug op factor 1,0 — dat is precies de fout die §4 met die module heeft wegg
 
 ---
 
-## De tier-regel — dit vervangt §4 "Promovendi" en §4 "Kruis-grens" voor Run C
+## De landenrating — dit vervangt §4 "Promovendi" en §4 "Kruis-grens" voor Run C
 
-Bepaal per duel de basis in deze volgorde, en stop bij de eerste die past:
+**`scripts/national.py` geeft élk landenteam een aanval- en een verdedigingsgetal op één
+gezamenlijke schaal, gefit op 6784 werkelijke interlanduitslagen.** Daarmee vervalt het hele
+probleem waar de eerste versie van dit bestand op vastliep: er hoeft geen competitiebasis meer
+te zijn, want de rating ís de basis.
 
-1. **Beide ploegen in dezelfde Nations League-tier, en het duel is een Nations League-duel.**
-   Basis is die tier, teamsterktes uit de laatst **voltooide** editie, `blend_seasons` met de
-   lopende. `data_tier = FULL` als die editie xG heeft, anders `LIGHT`.
-2. **Beide ploegen in dezelfde tier, maar het duel is een oefenwedstrijd of een
-   kwalificatieduel.** Zelfde rekenwijze, maar `data_tier = LIGHT` en nooit `FULL`. Een
-   oefeninterland is geen Nations League-duel: andere opstellingen, andere inzet, wisselingen
-   zonder limiet. De sterkte komt uit een andere soort wedstrijd dan waarop hij wordt toegepast,
-   en dat is dezelfde soort onzekerheid als bij een omgerekende promovendus.
-3. **Ploegen uit verschillende tiers** (A tegen B, of een kwalificatiepoule waar alles door
-   elkaar loopt) → **`data_tier = NONE`**. Het krachtsverschil tussen twee tiers is precies wat
-   je moet kennen en niet hebt. Dit is dezelfde poort als `promotion.conversion_in_range` en
-   `interleague.in_range`, en om dezelfde reden: buiten het gemeten bereik is er geen meting.
-4. **Ploegen uit verschillende confederaties** (Japan – Uruguay, Palestina – Nieuw-Zeeland) →
-   **`data_tier = NONE`**. Er bestaat geen gemeten verhouding tussen de AFC, CONMEBOL, CAF,
-   CONCACAF, OFC en UEFA.
-5. **Alles wat hier niet onder valt** → `NONE`.
+```python
+from scripts import national
+fit = national.load_fit()                 # één keer per run
+ok_h, reden_h = national.in_range(home_id, fit)
+ok_a, reden_a = national.in_range(away_id, fit)
+if not (ok_h and ok_a):
+    tier = "NONE"                         # te weinig duels — zie de poort hieronder
+else:
+    lg   = national.context(fit)
+    hs   = national.team(home_id, fit)
+    as_  = national.team(away_id, fit)
+    p_xg = analyze_match(hs, as_, lg)     # ongewijzigd, zelfde functie als bij clubvoetbal
+```
 
-**Dit is streng en dat is de bedoeling.** Op de duels van 24 september 2026 laat deze regel
-ongeveer vier van de twintig wedstrijden door — de twee A-groepen — en zet de rest op `NONE`. Dat
-is geen storing en het hoort niet als gat gerapporteerd te worden; het is de eerlijke uitkomst van
-wat er gemeten is. Verzin geen factor om er meer doorheen te krijgen: dat is exact wat §2 en §4
-verbieden, en de Atlético–Málaga-fout van 19 augustus 2026 (zeventien procentpunt schijnedge uit
-een ontbrekend niveauverschil) is precies zo ontstaan.
+`team()` levert een gewone `model.TeamStats` en `context()` een gewone `model.LeagueContext`,
+dus **de rest van de pijplijn draait er ongewijzigd op**: beide methodes, de acht poorten,
+`robustness_check`, `selection_score`, de herijking van §1g, het schaduwlogboek.
+`python3 scripts/national.py verify` controleert dat `analyze_match` dezelfde lambdas
+teruggeeft als de fit zelf berekent.
 
----
+### Wat het waard is, en wat niet
 
-## Wat er gebouwd moet worden om deze run zinvol te maken
+Uit-steekproef gemeten op 20 september 2026 — gefit op 5956 duels t/m 1 september 2025 en
+getoetst op de 819 duels daarna:
 
-Zolang de tier-regel hierboven geldt, publiceert Run C vrijwel niets en meet ze vooral haar eigen
-dekking. **Schrijf dat elke run gewoon op**, in plaats van het te laten lezen als een reeks lege
-dagen.
+| | Brier op de 1X2-uitkomst |
+|---|---|
+| **de landenrating** | **0,4796** |
+| 1/3-1/3-1/3 gokken | 0,6667 |
 
-De ene module die dat verandert is een **landenteamsterkte**, `scripts/national.py`, gebouwd
-zoals `interleague.py` is gebouwd: een aanval- en verdedigingsfactor per tier en per confederatie,
-**gefit op werkelijke uitkomsten** van duels die die grenzen oversteken, met een `in_range`-poort
-en een minimum aantal waarnemingen. Bronmateriaal is er: elke voltooide Nations League-editie in
-alle vier de tiers, alle kwalificatiereeksen, en de interconfederatie-oefenduels die deze run
-sowieso elke dag langsloopt.
+Dat is een echt voorspellend model. Wat het **niet** is: een bewijs dat het de bookmaker
+verslaat. Die vergelijking staat nergens in `national.py` en hoort thuis in het
+kalibratielogboek van §6e — leg dus vanaf de eerste run een `calibration`-blok per doorgerekend
+duel vast, precies zoals Run A en Run B dat doen, zodat over enkele weken met cijfers te zeggen
+is hoe deze rating zich tot de markt verhoudt.
 
-Twee dingen die daarbij vastliggen voordat iemand eraan begint:
+### De poort: `in_range`
 
-- **Meet op uitkomsten, nooit tegen de markt** (§2, en de ingetrokken instructie in §1d).
-- **Lees het niet te vroeg.** Onder `interleague.MIN_MATCHES` = 40 duels per paar is een factor
-  vrijwel volledig door de regularisatie bepaald, en dan is het een aanname met een getal eromheen.
+`national.in_range(team_id)` is een **poort, geen aantekening** — dezelfde constructie als
+`promotion.conversion_in_range` en `interleague.in_range`. Onder `MIN_MATCHES` = 8 gewogen
+duels is de rating vrijwel volledig door de regularisatie bepaald: een aanname met een getal
+eromheen, geen meting. Dan `data_tier = NONE` en geen bet. Vang hem af en val **niet** stil
+terug op een gemiddelde ploeg.
 
-Tot die module bestaat is Run C een **meetinstrument voor dekking** en geen bettenlijst. Dat is
-een legitieme uitkomst, precies zoals §1g dat voor nul bets vastlegt — maar het moet met zoveel
-woorden in het runrapport staan, anders leest het als een kapotte run.
+### Welk datatier
 
----
+| Situatie | `data_tier` |
+|---|---|
+| Beide ploegen door `in_range`, en het duel is een **kwalificatie-, Nations League- of toernooiduel** | `LIGHT` |
+| Beide ploegen door `in_range`, en het duel is een **oefeninterland** | `LIGHT` |
+| Een van beide ploegen valt buiten `in_range` | `NONE` |
+
+**Nooit `FULL`, en dat is met opzet.** `FULL` eist in §4 minstens twee onafhankelijke inputs
+waarvan één uit categorie 1, en de landenrating is er één: hij komt uit doelpunten, niet uit
+xG, en er is geen tweede, onafhankelijk landenmodel naast gezet. `LIGHT` betekent
+`EDGE_THRESHOLD_LIGHT` = 16,0 procentpunt, en daar gaat de herijking van §1g nog overheen — dus
+verwacht ook met deze rating weinig bets. Dat is de juiste voorzichtigheid en geen defect.
+
+Twee dingen die je daarbij niet moet doen:
+
+- **Reken een oefeninterland niet zwaarder dan hij is.** De rating weegt oefenduels voor de
+  helft mee, maar dat gewicht is **niet gemeten** — Fotmob geeft voor oefeninterlands alleen het
+  lopende kalenderjaar, dus er zat er geen enkele in de trainingsperiode. Dat staat in de
+  parametertabel van `national.py` en het is de eerlijke stand: een aanname, geen bevinding.
+- **Verwar de rating niet met vorm.** Hij zegt hoe sterk een ploeg over jaren is, niet wie er
+  dinsdag speelt. Poort 7 (context) blijft dus gewoon draaien, met de kanttekening hieronder
+  over rustdagen bij interlands.
+
+### Het corpus onderhouden
+
+```bash
+python3 scripts/national.py build     # haalt alle edities opnieuw op (~60 verzoeken, geen credits)
+python3 scripts/national.py fit       # fit opnieuw en schrijft data/national-fit.json
+python3 scripts/national.py stats     # omvang en dekking
+python3 scripts/national.py tune      # de wegingen opnieuw uit-steekproef meten
+```
+
+**Draai `build` + `fit` aan het eind van elk interlandvenster**, niet elke dag: het corpus
+verandert alleen als er interlands zijn gespeeld, en `build` kost een minuut of wat. Commit
+`data/national-matches.jsonl` en `data/national-fit.json` mee — dat zijn metingen, geen cache.
+
+Wat er in het corpus zit (gemeten 20 sep 2026, 6784 duels van 2006 t/m nu): WK-kwalificatie van
+alle vijf de confederaties (2947), AFCON-kwalificatie (602), Nations League UEFA en CONCACAF,
+de eindtoernooien WK/EK/AFCON/Copa América/Gold Cup, Asian Cup-kwalificatie, en 287
+oefeninterlands. Dat laatste getal is het zwakke punt: het zijn er maar 287 en ze komen allemaal
+uit één kalenderjaar.
+
+### Wat hier nog niet goed aan is
+
+1. **Geen historische oefeninterlands.** Zie hierboven. Zolang dat zo is, is de oefenweging een
+   aanname. Een tweede jaargang lost het op; kijk of Fotmob ze ooit via een ander seizoenslabel
+   teruggeeft.
+2. **De AFC Asian Cup-eindronde zit niet in het corpus.** Zijn id is nog niet gevonden — het
+   toernooi speelde niet in de doorzochte periode. Voeg hem toe aan `national.COMPETITIONS`
+   zodra hij in de daglijst opduikt (jan/feb 2028) en draai `build` opnieuw.
+3. **De rating kent geen xG, alleen doelpunten.** Bij clubvoetbal draait alles op xG; hier niet,
+   want Fotmob geeft voor de meeste interlandcompetities geen team-xG. Een ploeg die veel
+   scoort uit weinig kansen wordt hier dus overschat, en de correctie die §1f daarvoor heeft
+   (de 80/20-weging tussen twee methodes) bestaat hier niet in dezelfde vorm.
+4. **Er is geen tweede, onafhankelijke methode.** Poort 5 eist dat twee methodes de markt
+   dezelfde kant op verslaan. Bij clubvoetbal zijn dat de xG-methode en de splitsmethode; hier
+   is er er maar één. Dat is de belangrijkste reden dat het datatier op `LIGHT` blijft, en het
+   is het eerste dat gebouwd zou moeten worden — bijvoorbeeld een rating op doelsaldo tegen een
+   rating op alleen winst/verlies.
 
 ## Let op bij deze runlijst
 
