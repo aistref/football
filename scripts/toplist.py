@@ -99,6 +99,44 @@ def _rows(state: dict) -> list[dict]:
     return out
 
 
+def _poorten_open(r: dict) -> bool:
+    """Alle poorten behalve `edge` open — afzonderlijk getoetst, niet via `failed_gate`.
+
+    `failed_gate` geeft alleen de eerste dichte poort in de volgorde, en `edge` staat daar op
+    plek twee. Een selectie met `failed_gate == "edge"` kan dus óók op context of robuustheid
+    gesneuveld zijn. Op 20 sep 2026 stond Athletic Club - Alavés daardoor op het punt
+    gepubliceerd te worden terwijl poort 7 dicht was (Alavés 4 dagen rust tegen 7). De analyse
+    legt sindsdien de volledige poortstand vast in `poorten`.
+    """
+    g = r.get("poorten")
+    if isinstance(g, dict):
+        return all(v is True for k, v in g.items() if k != "edge")
+    # Oudere run-states zonder poortkaart: dan is `failed_gate` het enige dat er is, en valt
+    # niet uit te sluiten dat er een latere poort dicht stond. Niet publiceren.
+    return False
+
+
+def _publiceerbaar(r: dict, edge: float | None, tier: str) -> bool:
+    """Mag deze selectie onder §5b meedingen naar een plek in de herijkte lijst?
+
+    De zeven andere poorten blijven poorten — een selectie die op de koersband, de context, de
+    robuustheid, de tweede methode, het datatier of de underdog-regel sneuvelde, hoort hier niet
+    in. Wat overblijft is precies de groep die vóór 20 sep 2026 alleen op 8.0 strandde.
+
+    ONDERGRENS. De eerste herdraai onder §5b zette bij Run B twee selecties met een NEGATIEVE
+    edge in de lijst (Crewe -0.08, Pardubice -0.54) en bij beide runs een handvol onder de 3 pp.
+    Dat is aanvullen, en §5 verbiedt dat met zoveel woorden: "zijn er minder gekwalificeerde bets
+    dan MAX_SHORTLIST, lever er dan minder". De grens is niet nieuw verzonnen maar de bestaande
+    NEAR-drempel: het niveau waaronder de routine een afgewezen kandidaat niet eens de moeite van
+    het schaduwlogboek waard vindt. Wat te zwak is om te loggen, is te zwak om te spelen.
+    `ledger.py validate` bewaakt dezelfde grens, dus rangorde en validatie spreken elkaar zo niet
+    tegen.
+    """
+    return (r.get("failed_gate") in (None, "edge", "herijking")
+            and _poorten_open(r)
+            and isinstance(edge, (int, float)) and edge >= NEAR.get(tier, 3.0))
+
+
 def _edges(c: dict) -> tuple[float | None, float | None]:
     """(herijkte edge, ruwe edge) in procentpunten, of None waar het niet te bepalen is."""
     imp = c.get("implied")
@@ -130,7 +168,20 @@ def build(state: dict, n: int | None = None) -> dict:
         key = c["match"]
         if isinstance(e_h, (int, float)) and isinstance(my_h, (int, float)):
             s = selection_score(e_h, my_h, tier)
-            if key not in best_h or s > best_h[key]["_score"]:
+            # De sterkste selectie van de wedstrijd wordt gekozen ONDER DE PUBLICEERBARE
+            # (§1a: "van alle selecties die alle acht de poorten halen, publiceer je die met de
+            # hoogste score"), niet eerst over alle kandidaten en daarna gefilterd.
+            #
+            # 20 sep 2026 — dat deed deze lus tot vandaag wél, en het kostte een bet. Bij
+            # NEC Nijmegen – Go Ahead Eagles scoorde "1X2 — NEC wint" het hoogst (6.35) maar
+            # stond poort 7 dicht (NEC mist selectiewaarde); `Over 3.5` stond op 5.86 met álle
+            # poorten open. De oude volgorde koos het 1X2, `_pool` gooide het er daarna uit, en
+            # de hele wedstrijd verdween — terwijl er een geldige selectie lag die hoger stond
+            # dan twee bets die wél werden gepubliceerd. Poort 7 en 8 zijn kantgebonden en staan
+            # bij `side = None` per definitie open (§1c), dus dit is geen randgeval: elke keer
+            # dat een kantmarkt op de context sneuvelt kan de doelpuntenmarkt van diezelfde
+            # wedstrijd er gewoon doorheen.
+            if _publiceerbaar(c, e_h, tier) and (key not in best_h or s > best_h[key]["_score"]):
                 best_h[key] = {**c, "_score": s, "_edge": e_h, "_prob": my_h,
                                "_gate": c.get("failed_gate")}
         if isinstance(e_r, (int, float)) and isinstance(my_r, (int, float)):
@@ -142,41 +193,10 @@ def build(state: dict, n: int | None = None) -> dict:
     def _pool(d: dict) -> list[dict]:
         """§5b: de kandidaten waarvan alleen de drempel (of de herijking) hen tegenhield.
 
-        De zeven andere poorten blijven poorten — een selectie die op de koersband, de context,
-        de robuustheid, de tweede methode, het datatier of de underdog-regel sneuvelde, hoort hier
-        niet in. Wat overblijft is precies de groep die vóór 20 sep 2026 alleen op 8.0 strandde.
+        De toets zelf staat in `_publiceerbaar` en is hierboven al per kandidaat toegepast; deze
+        lus blijft staan zodat een aanroep met een zelfgebouwde `d` dezelfde grenzen krijgt.
         """
-        def _poorten_open(r):
-            """Alle poorten behalve `edge` open — afzonderlijk getoetst, niet via `failed_gate`.
-
-            `failed_gate` geeft alleen de eerste dichte poort in de volgorde, en `edge` staat
-            daar op plek twee. Een selectie met `failed_gate == "edge"` kan dus óók op context
-            of robuustheid gesneuveld zijn. Op 20 sep 2026 stond Athletic Club - Alavés daardoor
-            op het punt gepubliceerd te worden terwijl poort 7 dicht was (Alavés 4 dagen rust
-            tegen 7). De analyse legt sindsdien de volledige poortstand vast in `poorten`.
-            """
-            g = r.get("poorten")
-            if isinstance(g, dict):
-                return all(v is True for k, v in g.items() if k != "edge")
-            # Oudere run-states zonder poortkaart: dan is `failed_gate` het enige dat er is, en
-            # valt niet uit te sluiten dat er een latere poort dicht stond. Niet publiceren.
-            return False
-
-        return [r for r in d.values()
-                if r.get("failed_gate") in (None, "edge", "herijking")
-                and _poorten_open(r)
-                # ONDERGRENS. De eerste herdraai onder §5b zette bij Run B twee selecties met
-                # een NEGATIEVE edge in de lijst (Crewe -0.08, Pardubice -0.54) en bij beide runs
-                # een handvol onder de 3 pp. Dat is aanvullen, en §5 verbiedt dat met zoveel
-                # woorden: "zijn er minder gekwalificeerde bets dan MAX_SHORTLIST, lever er dan
-                # minder".
-                #
-                # De grens is niet nieuw verzonnen maar de bestaande NEAR-drempel: het niveau
-                # waaronder de routine een afgewezen kandidaat niet eens de moeite van het
-                # schaduwlogboek waard vindt. Wat te zwak is om te loggen, is te zwak om te
-                # spelen. `ledger.py validate` bewaakt dezelfde grens, dus rangorde en validatie
-                # spreken elkaar zo niet tegen.
-                and isinstance(r.get("_edge"), (int, float)) and r["_edge"] >= NEAR.get(r["tier"], 3.0)]
+        return [r for r in d.values() if _publiceerbaar(r, r.get("_edge"), r["tier"])]
 
     def _cut(rows: list[dict]) -> tuple[list[dict], bool]:
         """Rangorde eerst, drempel alleen als er méér dan `n` boven staan (§5b stap 4-5)."""
