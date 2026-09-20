@@ -24,8 +24,8 @@ Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 - Keuken Kampioen Divisie (NED)
 - English League One (ENG)
 - English League Two (ENG)
-- Kategoria Superiore (ALB)
-- Kosovo Superleague (KOS)
+- MLS (USA)
+- Série A (BRA)
 
 ## Werkwijze
 
@@ -47,17 +47,31 @@ Run-specifieke waarden:
   Run A. Verwacht dat `BUITEN DATADEKKING` hier de normale uitkomst is voor een groot deel van de
   lijst, en dat runs met nul bets vaker voorkomen dan bij Run A. Dat is de eerlijke uitkomst, geen
   reden om de drempels te verlagen.
-- **Bevestigd werkend (8 aug 2026):** Fotmob levert xG en xG-tegen per team voor **English League
-  One**, **English League Two** en **Serie B (ITA)** — geverifieerd tijdens de Run A-diagnose van
-  die dag, zie `data/coverage.json`. Begin daar als er wedstrijden op de kalender staan.
-- **Nog niet getest:** de overige 14 competities in deze lijst (2. Bundesliga, Segunda División,
-  Eliteserien, Allsvenskan, Swiss Super League, Austrian Bundesliga, Keuken Kampioen Divisie,
-  Croatian HNL, Hungarian NB I, Romanian SuperLiga, Greek Super League, Czech First League,
-  Kategoria Superiore, Kosovo Superleague). Neem niet aan dat Fotmob-dekking van een competitie in
-  hetzelfde land zich automatisch uitstrekt naar een andere (bv. Bundesliga → 2. Bundesliga is geen
-  bevestiging) — trek dat per competitie na in Stage 3 en leg de uitkomst vast in
-  `data/coverage.json`, net als bij de Run A-diagnose.
-- Kategoria Superiore (ALB) en Kosovo Superleague (KOS) zijn qua publieke databeschikbaarheid het
-  minst gedocumenteerde deel van deze lijst. Verwacht dat een deel van deze wedstrijden op
-  `data_tier = NONE` uitkomt, ook als er wel fixtures te vinden zijn — dat is dan de eerlijke
-  uitkomst, geen storing.
+- **De xG-dekking van deze hele lijst is gemeten en staat in `data/coverage.json`.** Op 20 sep 2026
+  speelden dertien van de zeventien competities op één dag, waarmee de laatste "nog niet
+  getest"-regels zijn weggewerkt. Fotmob levert **wél** xG voor Greek Super League (135),
+  Eliteserien (59), Allsvenskan (67), Segunda División (140), Serie B (56), 2. Bundesliga (146),
+  Swiss Super League (69), Austrian Bundesliga (38), English League One (108), English League Two
+  (109), MLS (130) en Série A (268); en **geen** xG voor Czech First League (122), Croatian HNL
+  (252), Hungarian NB I (212), Romanian SuperLiga (189) en Keuken Kampioen Divisie (111).
+  Die laatste vijf draaien op doelpunten als sterktemaat en komen dus altijd op `LIGHT` uit, met
+  een drempel van 16.0 pp.
+- **Neem dekking nooit over van een andere competitie in hetzelfde land.** Dat is geen theoretische
+  waarschuwing: Duitsland hééft xG in de 2. Bundesliga en Nederland niet in de Keuken Kampioen
+  Divisie, terwijl beide landen het in hun hoogste divisie wel hebben. Trek het per competitie na
+  in Stage 3 en leg de uitkomst vast in `data/coverage.json`.
+- **Vier competities lopen op kalenderjaar** — Eliteserien, Allsvenskan, MLS en Série A. Gebruik
+  daar de notatie `"2025"` / `"2026"` en **niet** `"2025/2026"`: Fotmob geeft op een onbekende
+  seizoensnotatie geen fout maar valt stil terug op het lopende seizoen, en dan rekent de run zijn
+  prior op de stand van vandaag. Deze vier zitten bovendien midden in hun seizoen in plaats van aan
+  het begin, en daar gaat `early_season_uplift` de mist in — zie het openstaande punt in
+  `runs/2026-09-20-run-b.md`.
+- MLS (USA) kent **geen promotie of degradatie**. Een ploeg die niet in de stand van vorig seizoen
+  staat is daar dus geen promovendus maar een uitbreidingsploeg zonder enige historie op dit
+  niveau: `promotion.py` heeft daar niets voor en dat hoort ook zo. Dat wordt `NONE`, en dat is de
+  eerlijke uitkomst. Bij Série A (BRA) ligt Série B eronder, maar er is **geen gemeten factor** voor
+  dat divisiepaar, dus een Braziliaanse promovendus komt eveneens op `NONE` uit.
+- **Let op de aftraptijden van deze twee.** MLS en Série A spelen in Amerikaanse tijdzones: een
+  aftrap van 20:00 lokaal is in NL-tijd de volgende ochtend. Stage 1 werkt met wedstrijden van
+  **vandaag** in UTC, dus een deel van deze speelronden valt buiten de dag waarop de run draait.
+  Dat is geen gat in de dekking; rapporteer de tijden in NL-tijd zoals §5 voorschrijft.

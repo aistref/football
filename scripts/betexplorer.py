@@ -226,6 +226,17 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # allebei van die dag, met 1X2). Daarmee heeft ALB voor het eerst een prijsbron — The Odds API
     # heeft geen sportkey voor deze competitie.
     "Kategoria Superiore (ALB)": "https://www.betexplorer.com/football/albania/abissnet-superiore/",
+    # Toegevoegd 20 sep 2026 (Run B). MLS en Série A vervangen Kategoria Superiore en Kosovo
+    # Superleague op de runlijst; de twee oude slugs blijven hierboven staan, want ze werken en
+    # een verwijderde meting is een verloren meting.
+    #
+    # Brazilië laat dezelfde val zien als Griekenland en Albanië hierboven, en het is de derde
+    # keer dat deze val geld kost: 'brazil/serie-a', 'brazil/brasileirao-serie-a' en
+    # 'brazil/campeonato-brasileiro' geven alle drie de STILLE faalmodus (HTTP 200, 0 rijen), niet
+    # een fout. Zonder narekenen leest dat als "geen wedstrijden vandaag" in plaats van als een
+    # verkeerde slug. BetExplorer noemt de competitie bij haar sponsornaam.
+    "MLS (USA)": "https://www.betexplorer.com/football/usa/mls/",
+    "Série A (BRA)": "https://www.betexplorer.com/football/brazil/serie-a-betano/",
 }
 
 
