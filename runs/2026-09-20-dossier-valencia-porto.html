@@ -1,0 +1,570 @@
+<title>Mestalla en Dragão</title>
+<style>
+  :root{
+    --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+    --ink:#141A21; --ink-2:#3D4854; --muted:#68737F;
+    --line:#D3DAE2; --line-soft:#E3E8EE;
+    --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+    --pos:#256B4E; --pos-wash:#E2EFE8;
+    --neg:#9E3B33; --neg-wash:#F6E5E3;
+    --hold:#5C6672; --hold-wash:#E7EBEF;
+    --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --serif:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+      --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2;
+      --line:#2A343F; --line-soft:#212A34;
+      --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+      --pos:#5FB48C; --pos-wash:#16281F;
+      --neg:#D77A70; --neg-wash:#2B1917;
+      --hold:#8B98A6; --hold-wash:#1D252E;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2;
+    --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--ground); color:var(--ink); font-family:var(--sans);
+       font-size:15px; line-height:1.6; margin:0}
+  .wrap{max-width:820px; margin:0 auto; padding-inline:16px; padding-block:34px 56px}
+  .num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+  .masthead{border-bottom:2px solid var(--ink); padding-bottom:14px; margin-bottom:6px}
+  .kicker{font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+          color:var(--accent-ink); font-weight:650}
+  .masthead h1{font-family:var(--serif); font-size:clamp(28px,6vw,40px); line-height:1.1;
+               margin:.28em 0 .12em; text-wrap:balance; font-weight:600}
+  .standfirst{color:var(--ink-2); max-width:62ch; margin:0}
+
+  .jump{display:flex; flex-wrap:wrap; gap:8px; margin:20px 0 0}
+  .jump a{font-size:12.5px; text-decoration:none; color:var(--ink-2);
+          border:1px solid var(--line); border-radius:999px; padding:5px 12px;
+          background:var(--surface)}
+  .jump a:hover{border-color:var(--accent); color:var(--accent-ink)}
+  a:focus-visible,summary:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+  article{margin-top:40px}
+  .fixture{border-top:1px solid var(--line); padding-top:22px}
+  .fixture .when{font-size:12px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted)}
+  .fixture h2{font-family:var(--serif); font-size:clamp(23px,5vw,31px); line-height:1.15;
+              margin:.18em 0 .3em; font-weight:600; text-wrap:balance}
+  .verdict{display:inline-flex; align-items:baseline; gap:9px; flex-wrap:wrap;
+           background:var(--neg-wash); color:var(--neg); border-radius:7px;
+           padding:8px 13px; font-size:13.5px; font-weight:600}
+  .verdict em{font-style:normal; font-weight:450; color:var(--ink-2)}
+
+  section.step{margin-top:26px}
+  .eyebrow{display:flex; align-items:baseline; gap:10px; margin-bottom:11px}
+  .eyebrow b{font-family:var(--mono); font-size:12px; color:var(--accent);
+             border:1px solid var(--accent); border-radius:4px; padding:1px 6px; flex:none}
+  .eyebrow h3{font-size:14.5px; letter-spacing:.03em; margin:0; font-weight:650}
+  .eyebrow span{font-size:12px; color:var(--muted)}
+
+  .panel{background:var(--surface); border:1px solid var(--line-soft); border-radius:10px;
+         padding:16px 17px; box-shadow:var(--shadow)}
+  .panel + .panel{margin-top:12px}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fit,minmax(248px,1fr)); gap:12px}
+
+  .side h4{margin:0 0 3px; font-size:15px; font-weight:650}
+  .side .meta{font-size:12px; color:var(--muted); margin:0 0 9px}
+  dl.kv{margin:0; display:grid; grid-template-columns:auto 1fr; gap:3px 12px; font-size:13.5px}
+  dl.kv dt{color:var(--muted)}
+  dl.kv dd{margin:0; text-align:right; font-family:var(--mono);
+           font-variant-numeric:tabular-nums}
+  dl.kv dd.word{font-family:var(--sans)}
+
+  .form{display:inline-flex; gap:3px}
+  .form i{font-style:normal; width:17px; height:17px; border-radius:3px; font-size:10.5px;
+          font-weight:700; display:grid; place-items:center; font-family:var(--sans)}
+  .form .w{background:var(--pos-wash); color:var(--pos)}
+  .form .d{background:var(--hold-wash); color:var(--hold)}
+  .form .l{background:var(--neg-wash); color:var(--neg)}
+
+  ul.out{margin:8px 0 0; padding-left:17px; font-size:13px; color:var(--ink-2)}
+  ul.out li{margin-bottom:2px}
+  ul.plain{margin:6px 0 0; padding-left:17px; font-size:13.5px; color:var(--ink-2)}
+
+  .tablewrap{overflow-x:auto; border:1px solid var(--line-soft); border-radius:10px;
+             background:var(--surface); box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; font-size:13px; min-width:520px}
+  caption{caption-side:top; text-align:left; padding:12px 14px 0; font-size:12.5px;
+          color:var(--muted)}
+  th,td{padding:7px 11px; border-bottom:1px solid var(--line-soft); text-align:right;
+        white-space:nowrap}
+  th{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+     font-weight:650; background:var(--surface-2)}
+  th:first-child,td:first-child{text-align:left; white-space:normal}
+  tbody tr:last-child td{border-bottom:none}
+  td.n{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  tr.lead td{background:var(--accent-wash)}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .mut{color:var(--muted)}
+  .gates{font-size:11.5px; color:var(--neg); white-space:normal}
+  .gates.open{color:var(--pos)}
+
+  .note{border-left:3px solid var(--accent); background:var(--accent-wash);
+        padding:12px 15px; border-radius:0 8px 8px 0; margin-top:14px; font-size:13.5px}
+  .note strong{color:var(--accent-ink)}
+  .warn{border-left-color:var(--neg); background:var(--neg-wash)}
+  .warn strong{color:var(--neg)}
+
+  h4.sub{font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+         margin:0 0 7px; font-weight:650}
+  p{margin:0 0 10px} p:last-child{margin-bottom:0}
+  .lede{font-size:14.5px}
+  footer{margin-top:46px; border-top:1px solid var(--line); padding-top:18px;
+         font-size:12.5px; color:var(--muted)}
+  footer p{max-width:64ch}
+  .disc{font-style:italic; margin-top:12px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="kicker">Wedstrijddossier · Run A · zondag 20 september 2026</div>
+    <h1>Mestalla en Dragão</h1>
+    <p class="standfirst">Twee avondduels, allebei volledig doorgerekend, allebei zonder
+      gepubliceerde weddenschap. Hieronder staat per wedstrijd wat de routine heeft opgehaald,
+      wat ze ervan maakte, en op welke controle het afketste — in de vaste volgorde: eerst de
+      wedstrijd, dan wat anderen ervan vinden, dan pas de prijs.</p>
+  </header>
+
+  <nav class="jump">
+    <a href="#valencia">Valencia – Real Sociedad · 21:00</a>
+    <a href="#porto">FC Porto – Benfica · 21:30</a>
+    <a href="#slot">Wat ik erbij moet melden</a>
+  </nav>
+
+  <!-- ============================ VALENCIA ============================ -->
+  <article id="valencia">
+    <div class="fixture">
+      <div class="when">21:00 · LaLiga · Estadio de Mestalla, Valencia · 24 °C, wind 1 ENE</div>
+      <h2>Valencia – Real Sociedad</h2>
+      <div class="verdict">GEEN BET — poort 7, context
+        <em>Valencia mist 41% van zijn selectiewaarde</em></div>
+    </div>
+
+    <section class="step">
+      <div class="eyebrow"><b>1</b><h3>De wedstrijd</h3><span>Fotmob / Opta</span></div>
+      <div class="grid2">
+        <div class="panel side">
+          <h4>Valencia</h4>
+          <p class="meta">thuis · selectiewaarde € 50,1 mln</p>
+          <dl class="kv">
+            <dt>Vorm (laatste 5)</dt>
+            <dd class="word"><span class="form"><i class="l">V</i><i class="l">V</i><i class="l">V</i><i class="l">V</i><i class="w">W</i></span></dd>
+            <dt>Punten uit 5</dt><dd>3</dd>
+            <dt>Rustdagen</dt><dd>5,0</dd>
+            <dt>Afwezig</dt><dd>8 spelers</dd>
+            <dt>Ontbrekende waarde</dt><dd>€ 34,3 mln · 41%</dd>
+            <dt>xG per duel (gewogen)</dt><dd>1,083</dd>
+            <dt>xGA per duel (gewogen)</dt><dd>1,343</dd>
+          </dl>
+          <ul class="out">
+            <li>César Tárrega — begin oktober terug</li>
+            <li>Mouctar Diakhaby — eind september</li>
+            <li>Umar Sadiq — begin november</li>
+            <li>Diego López — begin januari 2027</li>
+            <li>Sergi Canós — begin december</li>
+            <li>Dimitri Foulquier, José Copete, Luis Rioja — twijfelgevallen</li>
+          </ul>
+        </div>
+        <div class="panel side">
+          <h4>Real Sociedad</h4>
+          <p class="meta">uit · selectiewaarde € 128,6 mln</p>
+          <dl class="kv">
+            <dt>Vorm (laatste 5)</dt>
+            <dd class="word"><span class="form"><i class="w">W</i><i class="d">G</i><i class="w">W</i><i class="l">V</i><i class="l">V</i></span></dd>
+            <dt>Punten uit 5</dt><dd>7</dd>
+            <dt>Rustdagen</dt><dd>3,0</dd>
+            <dt>Afwezig</dt><dd>1 speler</dd>
+            <dt>Ontbrekende waarde</dt><dd>€ 0,8 mln · 0,6%</dd>
+            <dt>xG per duel (gewogen)</dt><dd>1,232</dd>
+            <dt>xGA per duel (gewogen)</dt><dd>1,582</dd>
+          </dl>
+          <ul class="out"><li>Álvaro Odriozola — begin november terug</li></ul>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h4 class="sub">Onderling — 10 × Valencia, 8 × gelijk, 14 × Real Sociedad</h4>
+        <div class="tablewrap" style="border:none; box-shadow:none">
+          <table style="min-width:320px">
+            <tbody>
+              <tr><td>17 mei 2026</td><td class="n">Real Sociedad 3 – 4 Valencia</td><td class="mut">LaLiga</td></tr>
+              <tr><td>16 aug 2025</td><td class="n">Valencia 1 – 1 Real Sociedad</td><td class="mut">LaLiga</td></tr>
+              <tr><td>19 jan 2025</td><td class="n">Valencia 1 – 0 Real Sociedad</td><td class="mut">LaLiga</td></tr>
+              <tr><td>28 sep 2024</td><td class="n">Real Sociedad 3 – 0 Valencia</td><td class="mut">LaLiga</td></tr>
+              <tr><td>16 mei 2024</td><td class="n">Real Sociedad 1 – 0 Valencia</td><td class="mut">LaLiga</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h4 class="sub" style="margin-top:14px">Waarnemingen van Fotmob</h4>
+        <ul class="plain">
+          <li>Valencia scoorde <strong>2</strong> keer in de laatste vijf duels; Real Sociedad <strong>6</strong>.</li>
+          <li>Javier Guerra creëerde de meeste grote kansen voor Valencia (2).</li>
+          <li>Carlos Soler creëerde de meeste grote kansen voor Real Sociedad (2); Gonçalo Guedes de meeste schoten op doel (1,5 per duel).</li>
+          <li class="mut">Fotmob noemt Umar Sadiq nog als Valencia's beste schutter (1,7 schoten op doel per duel) terwijl hij op de blessurelijst staat. Deze notities zijn niet bijgewerkt op de uitvallers.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>2</b><h3>Wat anderen voorspellen</h3><span>het scherpste publieke oordeel</span></div>
+      <div class="tablewrap">
+        <table>
+          <caption>Kansen teruggerekend uit de koersen, met de marge eruit gehaald.</caption>
+          <thead><tr><th>Bron</th><th>Valencia</th><th>Gelijk</th><th>Sociedad</th><th>Marge</th></tr></thead>
+          <tbody>
+            <tr><td>Pinnacle</td><td class="n">34,7%</td><td class="n">28,2%</td><td class="n">37,1%</td><td class="n">3,25%</td></tr>
+            <tr><td>Betfair <span class="mut">beurs</span></td><td class="n">33,8%</td><td class="n">28,8%</td><td class="n">37,4%</td><td class="n">0,59%</td></tr>
+            <tr><td>Matchbook <span class="mut">beurs</span></td><td class="n">33,8%</td><td class="n">28,8%</td><td class="n">37,4%</td><td class="n">0,59%</td></tr>
+            <tr><td>Unibet (NL)</td><td class="n">34,4%</td><td class="n">27,9%</td><td class="n">37,7%</td><td class="n">2,12%</td></tr>
+            <tr><td>1xBet</td><td class="n">34,6%</td><td class="n">28,2%</td><td class="n">37,2%</td><td class="n">1,48%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><strong>Eensluidend.</strong> Eenentwintig aanbieders, en ze zitten allemaal
+        binnen een procentpunt van elkaar: Real Sociedad is de kleine favoriet, op verplaatsing.
+        Twee van hen doen dat met een marge van 0,59% — dat is een beursprijs, en dat is het beste
+        publieke oordeel dat er te krijgen is. Geschreven voorspellingen waren niet bereikbaar;
+        Forebet, Betfair's blog en Pinnacle's artikelen zitten dicht of bestaan niet meer.</div>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>3</b><h3>De marktodds</h3><span>beste prijs per uitkomst, ná commissie</span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Uitkomst</th><th>Consensus</th><th>Beste prijs</th><th>Bookmaker</th><th>Netto</th></tr></thead>
+          <tbody>
+            <tr class="lead"><td>Valencia wint</td><td class="n">2,75</td><td class="n">2,94</td><td>Matchbook <span class="mut">beurs</span></td><td class="n">2,901</td></tr>
+            <tr><td>Gelijkspel</td><td class="n">3,39</td><td class="n">3,50</td><td>Unibet (NL)</td><td class="n">3,500</td></tr>
+            <tr><td>Real Sociedad wint</td><td class="n">2,53</td><td class="n">2,66</td><td>Matchbook <span class="mut">beurs</span></td><td class="n">2,627</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lede" style="margin-top:12px">De beste prijs levert hier <strong>+4,19%</strong> op
+        tegenover het marktgemiddelde. Twee van de drie staan bij een beurs, waar 2% commissie van
+        je nettowinst afgaat — de laatste kolom is wat je werkelijk krijgt, en daarmee is gerekend.</p>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>4</b><h3>Mijn kans, en de vergelijking</h3><span>pas hier komt de edge</span></div>
+      <div class="panel">
+        <h4 class="sub">Hoe de doelverwachting is opgebouwd</h4>
+        <p>De Spaanse competitie leverde vorig seizoen 1,354 xG per ploeg per duel (1,574 thuis,
+          1,121 uit); dit seizoen ligt dat na zeven speeldagen op 1,448, en dat verschil gaat als
+          een correctie van <span class="num">×1,0818</span> over de basis. Beide ploegen hebben
+          zes duels gespeeld, dus het lopende seizoen weegt voor <span class="num">0,429</span> mee
+          naast het volledige vorige.</p>
+        <div class="tablewrap" style="margin-top:10px">
+          <table style="min-width:440px">
+            <thead><tr><th>Ploeg</th><th>xG vorig</th><th>xG dit</th><th>gewogen</th><th>xGA vorig</th><th>xGA dit</th><th>gewogen</th></tr></thead>
+            <tbody>
+              <tr><td>Valencia</td><td class="n">1,295</td><td class="n">0,800</td><td class="n">1,083</td><td class="n">1,250</td><td class="n">1,467</td><td class="n">1,343</td></tr>
+              <tr><td>Real Sociedad</td><td class="n">1,432</td><td class="n">0,967</td><td class="n">1,232</td><td class="n">1,518</td><td class="n">1,667</td><td class="n">1,582</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:11px">Daaruit volgt een doelverwachting van
+          <strong class="num">1,589</strong> voor Valencia tegen <strong class="num">1,094</strong>
+          voor Real Sociedad. <strong>Let op waar dat vandaan komt:</strong> Valencia's aanval is
+          met 1,083 juist zwak, ónder het competitiegemiddelde. Het hele voordeel komt uit Real
+          Sociedad's verdediging, die met 1,582 tegendoelpunten-verwachting per duel de slechtste
+          waarde in deze tabel is — plus het thuisvoordeel.</p>
+      </div>
+
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <caption>Vier manieren om naar dezelfde wedstrijd te kijken, en wat de markt ervan zegt.</caption>
+          <thead><tr><th>Methode</th><th>Valencia</th><th>Gelijk</th><th>Sociedad</th></tr></thead>
+          <tbody>
+            <tr><td>xG-methode</td><td class="n">48,2%</td><td class="n">26,2%</td><td class="n">25,6%</td></tr>
+            <tr><td>Understat <span class="mut">tweede xG-model</span></td><td class="n">48,0%</td><td class="n">24,9%</td><td class="n">27,1%</td></tr>
+            <tr><td>Splitsmethode</td><td class="n">41,3%</td><td class="n">25,8%</td><td class="n">32,9%</td></tr>
+            <tr class="lead"><td><strong>Mijn kans</strong> <span class="mut">gewogen + herijkt</span></td><td class="n"><strong>47,2%</strong></td><td class="n">25,9%</td><td class="n">26,8%</td></tr>
+            <tr><td><strong>De markt</strong></td><td class="n"><strong>34,5%</strong></td><td class="n">28,0%</td><td class="n">37,5%</td></tr>
+            <tr><td class="mut">verschil</td><td class="n pos">+12,8 pp</td><td class="n neg">−2,1 pp</td><td class="n neg">−10,7 pp</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <caption>Alle elf doorgerekende selecties, aflopend op voordeel.</caption>
+          <thead><tr><th>Markt</th><th>Koers</th><th>Mijn</th><th>Markt</th><th>Voordeel</th><th>xG</th><th>Splits</th><th>Controles</th></tr></thead>
+          <tbody>
+            <tr class="lead"><td>1X2 — Valencia wint</td><td class="n">2,90</td><td class="n">47,2%</td><td class="n">34,5%</td><td class="n pos">+12,78</td><td class="n">+13,77</td><td class="n">+6,85</td><td class="gates">context, underdog</td></tr>
+            <tr><td>Draw No Bet — Valencia</td><td class="n">2,06</td><td class="n">60,3%</td><td class="n">48,6%</td><td class="n pos">+11,71</td><td class="n">+12,38</td><td class="n">+5,29</td><td class="gates">context, underdog</td></tr>
+            <tr><td>Handicap — Valencia +1</td><td class="n">1,25</td><td class="n">86,7%</td><td class="n">80,0%</td><td class="n pos">+6,67</td><td class="n">+6,87</td><td class="n">+1,50</td><td class="gates">koersband, context, underdog</td></tr>
+            <tr><td>Over/Under — Over 2.5</td><td class="n">2,00</td><td class="n">51,8%</td><td class="n">50,0%</td><td class="n pos">+1,76</td><td class="n">+0,22</td><td class="n">+5,28</td><td class="gates open">alle open</td></tr>
+            <tr><td>Beide scoren — nee</td><td class="n">2,18</td><td class="n">45,7%</td><td class="n">46,0%</td><td class="n neg">−0,21</td><td class="n">+0,51</td><td class="n">−4,82</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Beide scoren — ja</td><td class="n">1,76</td><td class="n">55,2%</td><td class="n">56,7%</td><td class="n neg">−1,46</td><td class="n">−3,14</td><td class="n">+2,19</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Over/Under — Under 2.5</td><td class="n">1,95</td><td class="n">49,2%</td><td class="n">51,3%</td><td class="n neg">−2,08</td><td class="n">−1,51</td><td class="n">−6,57</td><td class="gates">tweede methode</td></tr>
+            <tr><td>1X2 — gelijkspel</td><td class="n">3,50</td><td class="n">25,9%</td><td class="n">28,6%</td><td class="n neg">−2,69</td><td class="n">−2,39</td><td class="n">−2,74</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Handicap — Sociedad −1</td><td class="n">4,35</td><td class="n">14,3%</td><td class="n">23,0%</td><td class="n neg">−8,72</td><td class="n">−9,39</td><td class="n">−3,96</td><td class="gates">tweede methode, context</td></tr>
+            <tr><td>1X2 — Real Sociedad wint</td><td class="n">2,63</td><td class="n">26,8%</td><td class="n">38,1%</td><td class="n neg">−11,24</td><td class="n">−12,49</td><td class="n">−5,22</td><td class="gates">tweede methode, context</td></tr>
+            <tr><td>Draw No Bet — Sociedad</td><td class="n">1,91</td><td class="n">40,9%</td><td class="n">52,4%</td><td class="n neg">−11,46</td><td class="n">−13,07</td><td class="n">−5,98</td><td class="gates">tweede methode, context</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn"><strong>Waarom er geen weddenschap uit komt.</strong>
+        De sterkste kandidaat — Valencia winnen tegen 2,90 — haalt met +12,78 procentpunt
+        ruimschoots de lat van 8,0, en overleeft ook de robuustheidstoets (+13,18 in de
+        ongunstigste stand). Hij sneuvelt op de blessurecontrole: Valencia mist acht spelers goed
+        voor 41% van de selectiewaarde tegen 0,6% bij de tegenstander. Die controle bestaat precies
+        hiervoor — het rekenmodel kent alleen xG-cijfers en weet niet wie er op het veld staat.
+        De enige selectie met álle controles open is Over 2.5 met +1,76 procentpunt, en dat is te
+        weinig om iets mee te doen.</div>
+
+      <div class="note"><strong>En het ongemakkelijke deel.</strong> Mijn model geeft Valencia 47,2%
+        waar eenentwintig bookmakers rond de 34% zitten, inclusief twee beurzen met een marge van
+        een half procent. Over 233 afgerekende weddenschappen schat de markt aantoonbaar scherper
+        dan dit model (Brier 0,235 tegen 0,251). Bij een meningsverschil van dertien procentpunt
+        tegen die achtergrond is de eerlijkste lezing niet "hier ligt waarde" maar "hier zit mijn
+        model er waarschijnlijk naast" — en de meest waarschijnlijke reden staat hierboven: acht
+        ontbrekende spelers die in geen enkel xG-cijfer zitten.</div>
+    </section>
+  </article>
+
+  <!-- ============================ PORTO ============================ -->
+  <article id="porto">
+    <div class="fixture">
+      <div class="when">21:30 · Liga Portugal · Estádio do Dragão, Porto · 27 °C, wind 3 NNW</div>
+      <h2>FC Porto – Benfica</h2>
+      <div class="verdict">GEEN BET — voordeel onder de lat
+        <em>+4,29 pp, nodig 8,0</em></div>
+    </div>
+
+    <section class="step">
+      <div class="eyebrow"><b>1</b><h3>De wedstrijd</h3><span>Fotmob / Opta</span></div>
+      <div class="grid2">
+        <div class="panel side">
+          <h4>FC Porto</h4>
+          <p class="meta">thuis · selectiewaarde € 138,8 mln</p>
+          <dl class="kv">
+            <dt>Vorm (laatste 5)</dt>
+            <dd class="word"><span class="form"><i class="w">W</i><i class="w">W</i><i class="w">W</i><i class="l">V</i><i class="w">W</i></span></dd>
+            <dt>Punten uit 5</dt><dd>12</dd>
+            <dt>Rustdagen</dt><dd>8,1</dd>
+            <dt>Afwezig</dt><dd>5 spelers</dd>
+            <dt>Ontbrekende waarde</dt><dd>€ 84,1 mln · 38%</dd>
+            <dt>xG per duel (gewogen)</dt><dd>2,131</dd>
+            <dt>xGA per duel (gewogen)</dt><dd>0,819</dd>
+          </dl>
+          <ul class="out">
+            <li>Samuel Aghehowa — eind oktober terug</li>
+            <li>Zaidu Sanusi, Vasco Sousa, Victor Froholdt, Oskar Pietuszewski — van dag tot dag</li>
+          </ul>
+        </div>
+        <div class="panel side">
+          <h4>Benfica</h4>
+          <p class="meta">uit · selectiewaarde € 127,7 mln</p>
+          <dl class="kv">
+            <dt>Vorm (laatste 5)</dt>
+            <dd class="word"><span class="form"><i class="w">W</i><i class="w">W</i><i class="w">W</i><i class="w">W</i><i class="w">W</i></span></dd>
+            <dt>Punten uit 5</dt><dd>15</dd>
+            <dt>Rustdagen</dt><dd>4,0</dd>
+            <dt>Afwezig</dt><dd>1 speler</dd>
+            <dt>Ontbrekende waarde</dt><dd>€ 5,1 mln · 3,9%</dd>
+            <dt>xG per duel (gewogen)</dt><dd>2,308</dd>
+            <dt>xGA per duel (gewogen)</dt><dd>0,730</dd>
+          </dl>
+          <ul class="out"><li>Alexander Bah — van dag tot dag</li></ul>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px">
+        <h4 class="sub">Onderling — 22 × Porto, 11 × gelijk, 12 × Benfica</h4>
+        <div class="tablewrap" style="border:none; box-shadow:none">
+          <table style="min-width:320px">
+            <tbody>
+              <tr><td>8 mrt 2026</td><td class="n">Benfica 2 – 2 FC Porto</td><td class="mut">Liga Portugal</td></tr>
+              <tr><td>14 jan 2026</td><td class="n">FC Porto 1 – 0 Benfica</td><td class="mut">Taça de Portugal</td></tr>
+              <tr><td>5 okt 2025</td><td class="n">FC Porto 0 – 0 Benfica</td><td class="mut">Liga Portugal</td></tr>
+              <tr><td>6 apr 2025</td><td class="n">FC Porto 1 – 4 Benfica</td><td class="mut">Liga Portugal</td></tr>
+              <tr><td>10 nov 2024</td><td class="n">Benfica 4 – 1 FC Porto</td><td class="mut">Liga Portugal</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h4 class="sub" style="margin-top:14px">Waarnemingen van Fotmob</h4>
+        <ul class="plain">
+          <li>Porto scoorde <strong>11</strong> keer in de laatste vijf duels, hield de meeste nullen van de competitie (4) en kreeg de meeste strafschoppen (3).</li>
+          <li>Benfica scoorde <strong>14</strong> keer in de laatste vijf en staat eerste op uitwedstrijden; Vangelis Pavlidis is topscorer van de competitie met 8.</li>
+          <li>Porto heeft acht dagen rust gehad, Benfica vier — het enige punt waarop Porto er in de context beter voor staat.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>2</b><h3>Wat anderen voorspellen</h3><span>het scherpste publieke oordeel</span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Bron</th><th>Porto</th><th>Gelijk</th><th>Benfica</th><th>Marge</th></tr></thead>
+          <tbody>
+            <tr><td>Pinnacle</td><td class="n">34,3%</td><td class="n">28,0%</td><td class="n">37,7%</td><td class="n">3,74%</td></tr>
+            <tr><td>Betfair <span class="mut">beurs</span></td><td class="n">34,1%</td><td class="n">28,6%</td><td class="n">37,2%</td><td class="n">1,06%</td></tr>
+            <tr><td>Matchbook <span class="mut">beurs</span></td><td class="n">34,4%</td><td class="n">28,1%</td><td class="n">37,5%</td><td class="n">0,25%</td></tr>
+            <tr><td>Unibet (NL)</td><td class="n">34,8%</td><td class="n">27,7%</td><td class="n">37,5%</td><td class="n neg">10,86%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><strong>Twintig boeken, één mening.</strong> Benfica is de kleine favoriet
+        op bezoek, met een halve procentpunt spreiding tussen de aanbieders. Let op de onderste
+        regel: Unibet rekent hier een marge van bijna elf procent, tegenover een kwart procent bij
+        Matchbook. De kans die eruit rolt is dezelfde — maar de prijs die je betaalt verschilt
+        enorm, en dat is precies waarom de routine de beste prijs opzoekt in plaats van bij één
+        aanbieder te blijven.</div>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>3</b><h3>De marktodds</h3><span>beste prijs per uitkomst, ná commissie</span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Uitkomst</th><th>Consensus</th><th>Beste prijs</th><th>Bookmaker</th><th>Netto</th></tr></thead>
+          <tbody>
+            <tr class="lead"><td>FC Porto wint</td><td class="n">2,67</td><td class="n">2,90</td><td>Betfair <span class="mut">beurs</span></td><td class="n">2,862</td></tr>
+            <tr><td>Gelijkspel</td><td class="n">3,32</td><td class="n">3,55</td><td>Matchbook <span class="mut">beurs</span></td><td class="n">3,499</td></tr>
+            <tr><td>Benfica wint</td><td class="n">2,48</td><td class="n">2,66</td><td>Betfair <span class="mut">beurs</span></td><td class="n">2,627</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lede" style="margin-top:12px">Beste prijs tegenover het marktgemiddelde:
+        <strong>+6,17%</strong>, de hoogste van de twee dossiers. Alle drie de beste prijzen staan
+        bij een beurs, dus alle drie de netto koersen liggen iets lager dan wat je op het scherm ziet.</p>
+    </section>
+
+    <section class="step">
+      <div class="eyebrow"><b>4</b><h3>Mijn kans, en de vergelijking</h3><span>pas hier komt de edge</span></div>
+      <div class="panel">
+        <h4 class="sub">Hoe de doelverwachting is opgebouwd</h4>
+        <p>De Portugese competitie leverde vorig seizoen 1,316 xG per ploeg per duel (1,497 thuis,
+          1,186 uit) en staat dit seizoen op 1,369 — dezelfde correctie van
+          <span class="num">×1,0818</span> gaat erover. Beide ploegen spelen ver boven dat
+          gemiddelde, en dat maakt dit de zwaarste wedstrijd van de avond op papier.</p>
+        <div class="tablewrap" style="margin-top:10px">
+          <table style="min-width:440px">
+            <thead><tr><th>Ploeg</th><th>xG vorig</th><th>xG dit</th><th>gewogen</th><th>xGA vorig</th><th>xGA dit</th><th>gewogen</th></tr></thead>
+            <tbody>
+              <tr><td>FC Porto</td><td class="n">1,841</td><td class="n">2,517</td><td class="n">2,131</td><td class="n">0,659</td><td class="n">1,033</td><td class="n">0,819</td></tr>
+              <tr><td>Benfica</td><td class="n">2,038</td><td class="n">2,667</td><td class="n">2,308</td><td class="n">0,815</td><td class="n">0,617</td><td class="n">0,730</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin-top:11px">Doelverwachting: <strong class="num">1,455</strong> voor Porto
+          tegen <strong class="num">1,402</strong> voor Benfica — vrijwel gelijk. Benfica is op
+          beide fronten iets beter (meer aanval, minder tegendoelpunten); het thuisvoordeel van
+          Porto heft dat net op.</p>
+      </div>
+
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <caption>Hier lopen mijn twee rekenmethodes ver uiteen — en dat bepaalt de hele uitkomst.</caption>
+          <thead><tr><th>Methode</th><th>Porto</th><th>Gelijk</th><th>Benfica</th></tr></thead>
+          <tbody>
+            <tr><td>xG-methode</td><td class="n">38,1%</td><td class="n">26,2%</td><td class="n">35,7%</td></tr>
+            <tr><td>Splitsmethode</td><td class="n">42,6%</td><td class="n">35,5%</td><td class="n neg">21,9%</td></tr>
+            <tr class="lead"><td><strong>Mijn kans</strong> <span class="mut">gewogen + herijkt</span></td><td class="n"><strong>39,2%</strong></td><td class="n">27,8%</td><td class="n">32,9%</td></tr>
+            <tr><td><strong>De markt</strong></td><td class="n"><strong>34,7%</strong></td><td class="n">27,9%</td><td class="n">37,4%</td></tr>
+            <tr><td class="mut">verschil</td><td class="n pos">+4,5 pp</td><td class="n">−0,1 pp</td><td class="n neg">−4,5 pp</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn"><strong>De splitsmethode slaat hier volledig door.</strong>
+        Die geeft Benfica 21,9% waar de xG-methode op 35,7% uitkomt en de markt op 37,4%. Ze rekent
+        met een doelverwachting van 0,99 om 0,625 — ze denkt dus dat dit een wedstrijd met weinig
+        doelpunten wordt, terwijl de xG-methode op 1,455 om 1,402 zit. Op Under 2.5 staan de twee
+        methodes <strong>32 procentpunt</strong> uit elkaar (xG −3,43 tegen splits +28,89). Dat is
+        het grootste meningsverschil van de hele dag, en het is de reden dat elf van de dertien
+        selecties hier op de controle "de twee methodes spreken elkaar tegen" sneuvelen.</div>
+
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <caption>Alle dertien doorgerekende selecties, aflopend op voordeel.</caption>
+          <thead><tr><th>Markt</th><th>Koers</th><th>Mijn</th><th>Markt</th><th>Voordeel</th><th>xG</th><th>Splits</th><th>Controles</th></tr></thead>
+          <tbody>
+            <tr class="lead"><td>Draw No Bet — FC Porto</td><td class="n">2,04</td><td class="n">53,3%</td><td class="n">49,0%</td><td class="n pos">+4,29</td><td class="n">+1,91</td><td class="n">+10,98</td><td class="gates">context</td></tr>
+            <tr><td>1X2 — FC Porto wint</td><td class="n">2,86</td><td class="n">39,2%</td><td class="n">34,9%</td><td class="n pos">+4,22</td><td class="n">+3,17</td><td class="n">+7,68</td><td class="gates">context</td></tr>
+            <tr><td>Over/Under — Under 2.5</td><td class="n">2,04</td><td class="n">52,6%</td><td class="n">49,0%</td><td class="n pos">+3,58</td><td class="n">−3,43</td><td class="n">+28,89</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Beide scoren — nee</td><td class="n">2,23</td><td class="n">47,8%</td><td class="n">44,8%</td><td class="n pos">+3,00</td><td class="n">−3,11</td><td class="n">+25,43</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Double Chance — Porto of gelijk</td><td class="n">1,51</td><td class="n">67,9%</td><td class="n">66,2%</td><td class="n pos">+1,70</td><td class="n">−1,96</td><td class="n">+11,85</td><td class="gates">tweede methode, context</td></tr>
+            <tr><td>Handicap — Porto +1</td><td class="n">1,22</td><td class="n">83,1%</td><td class="n">82,0%</td><td class="n pos">+1,09</td><td class="n">−2,13</td><td class="n">+9,28</td><td class="gates">koersband, tweede methode, context</td></tr>
+            <tr><td>1X2 — gelijkspel</td><td class="n">3,50</td><td class="n">27,8%</td><td class="n">28,6%</td><td class="n neg">−0,74</td><td class="n">−2,42</td><td class="n">+6,88</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Over/Under — Over 2.5</td><td class="n">1,88</td><td class="n">48,3%</td><td class="n">53,1%</td><td class="n neg">−4,79</td><td class="n">+1,25</td><td class="n">−31,08</td><td class="gates">tweede methode</td></tr>
+            <tr><td>1X2 — Benfica wint</td><td class="n">2,63</td><td class="n">32,9%</td><td class="n">38,1%</td><td class="n neg">−5,14</td><td class="n">−2,34</td><td class="n">−16,15</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Handicap — Benfica −1</td><td class="n">4,20</td><td class="n">18,6%</td><td class="n">23,8%</td><td class="n neg">−5,24</td><td class="n">−2,55</td><td class="n">−14,13</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Draw No Bet — Benfica</td><td class="n">1,84</td><td class="n">48,6%</td><td class="n">54,3%</td><td class="n neg">−5,66</td><td class="n">−4,34</td><td class="n">−13,10</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Beide scoren — ja</td><td class="n">1,70</td><td class="n">53,2%</td><td class="n">59,0%</td><td class="n neg">−5,75</td><td class="n">−0,60</td><td class="n">−29,15</td><td class="gates">tweede methode</td></tr>
+            <tr><td>Handicap — Benfica −0.5</td><td class="n">2,51</td><td class="n">32,9%</td><td class="n">39,8%</td><td class="n neg">−6,91</td><td class="n">−4,11</td><td class="n">−17,92</td><td class="gates">tweede methode</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note warn"><strong>Waarom er geen weddenschap uit komt.</strong>
+        De sterkste kandidaat haalt +4,29 procentpunt op een lat van 8,0 — niet eens in de buurt.
+        Daar komt bij dat hij óók op de blessurecontrole zou zijn gesneuveld: Porto mist 38% van
+        zijn selectiewaarde, waaronder Samuel Aghehowa tot eind oktober. En in de ongunstigste
+        stand van de robuustheidstoets blijft er +1,90 over, dus zelfs dat magere voordeel is niet
+        stevig. Dit is een wedstrijd waar het model niets weet wat de markt niet weet.</div>
+    </section>
+  </article>
+
+  <!-- ============================ SLOT ============================ -->
+  <article id="slot">
+    <div class="fixture">
+      <h2>Wat ik erbij moet melden</h2>
+    </div>
+
+    <div class="note warn"><strong>De blessurelijsten in dit dossier spreken elkaar tegen.</strong>
+      De cijfers die de controle lieten dichtklappen — 41% bij Valencia, 38% bij Porto — komen uit
+      de opgehaalde context van <strong>04:21</strong> vanochtend. De spelerslijsten hierboven komen
+      uit een verse opvraging van rond <strong>17:50</strong>, en die noemen deels andere namen:
+      Fotmob heeft de vermoedelijke opstellingen in de tussentijd bijgewerkt. Voor Valencia gaat
+      het om acht uitvallers vanochtend tegen vijf nu; bij Porto zijn drie namen vervangen. De
+      strekking blijft in beide gevallen overeind — allebei de thuisploegen missen fors meer dan
+      hun tegenstander — maar de exacte percentages zijn een momentopname van vanochtend, geen
+      stand van dit moment.</div>
+
+    <div class="note"><strong>Op beide wedstrijden kiest mijn model de thuisploeg en de markt de
+      uitploeg.</strong> Bij Valencia is het verschil 12,8 procentpunt, bij Porto 4,5. Dat is
+      hetzelfde patroon in twee competities op één avond, en het wijst dezelfde kant op als wat er
+      over langere tijd gemeten is: dit model overschat de mindere of de gehavende ploeg
+      structureel. Bij beide duels is de thuisploeg degene met de lange blessurelijst.</div>
+
+    <div class="note"><strong>En dit raakt de combi die ik eerder voorstelde.</strong> Daar zaten
+      Valencia en Porto allebei in, en dit dossier laat zien dat de markt bij allebei tegen ons is.
+      Dat maakt de combi niet ongeldig — bij een gratis weddenschap betaal je niets voor het risico
+      — maar het is wel eerlijker gezegd dan "mijn model ziet hier waarde".</div>
+
+    <footer>
+      <p><strong>Bronnen.</strong> Wedstrijdgegevens, opstellingen, blessures, vorm en onderlinge
+        historie van Fotmob (Opta-licentie). Koersen van The Odds API over 21 respectievelijk 20
+        aanbieders, uitgelezen rond 04:55, beurskoersen na 2% commissie. Marktgemiddelde van
+        BetExplorer. Tweede xG-model van Understat (alleen voor LaLiga beschikbaar). Geschreven
+        voorspellingen van derden waren niet bereikbaar.</p>
+      <p style="margin-top:10px"><strong>Lat en controles.</strong> Een selectie moet 8,0
+        procentpunt voordeel halen (16,0 bij zwakke data) en zeven controles passeren: koersband
+        1,30–6,00, onafhankelijke kansbron, datakwaliteit, de twee methodes mogen elkaar niet
+        tegenspreken, het voordeel moet standhouden als je aan de aannames schudt, de context mag
+        de weddenschap niet tegenspreken, en tot 25 september geldt een rem op de duidelijk mindere
+        ploeg.</p>
+      <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de
+        verwachtingswaarde negatief.</p>
+    </footer>
+  </article>
+
+</div>

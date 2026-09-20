@@ -1,6 +1,9 @@
-# Gedeelde analyseregels — Run A & Run B
+# Gedeelde analyseregels — Run A, Run B & Run C
 
-Deze regels gelden voor **elke** run. Wijzig ze hier in de repo, niet in de scheduler.
+Deze regels gelden voor **elke** run. Run C (interlandvoetbal) wijkt op één punt af: zijn
+tier-regel vervangt §4 "Promovendi" en §4 "Kruis-grens", omdat landenteams geen competitie
+hebben om ze op te normaliseren. Zie `prompts/run-c.md`; al het overige hieronder geldt daar
+onverkort. Wijzig ze hier in de repo, niet in de scheduler.
 De scheduler-prompt is met opzet kort en verwijst naar dit bestand, zodat je regels kunt
 aanpassen zonder de geplande taak aan te raken.
 
