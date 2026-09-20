@@ -326,6 +326,11 @@ for c in cands:
 
     p_xg = analyze_match(hs, as_, lg)
     p_xg_ns = analyze_match(hs, as_, lg, shrink=1.0)
+    # §6e sinds 19 sep 2026: nu DEFAULT_SHRINK op 1.00 staat zijn `p_xg` en `p_xg_noshrink`
+    # hetzelfde getal, en dan vergelijkt `calibration.py stats` de shrink-arm met zichzelf en
+    # drukt stilzwijgend +0.00 pp af. De 0.8-arm moet er dus apart bij. Run B wees erop dat Run A
+    # dit vanochtend niet deed (Bevinding 2 in runs/2026-09-20-run-b.md).
+    p_xg_s08 = analyze_match(hs, as_, lg, shrink=model.LEGACY_SHRINK)
     p_sp = analyze_match_from_splits(sp_h, sp_a, league=lg)
     row["lambdas"] = {"xg": [round(p_xg.lambda_home, 3), round(p_xg.lambda_away, 3)],
                       "split": [round(p_sp.lambda_home, 3), round(p_sp.lambda_away, 3)]}
@@ -348,6 +353,21 @@ for c in cands:
         row["verplaatst"] = ven
 
     # --- markten verzamelen ---
+    def _netto(o, book):
+        """(koers na commissie, bronnaam) — §1a, "Reken altijd met oddsapi.net_price".
+
+        Overgenomen uit `rb20_analyze.py`: Run B vond op 20 sep 2026 dat alleen de h2h-tak dit
+        deed. Spreads (AH/DNB/DC), totals (O/U) en BTTS gaven de BRUTO koers door aan `edge_pp`
+        en `selection_score`, en op een beurs is dat niet de koers die je krijgt — 2.26 bij 2%
+        commissie is effectief 2.2348. Dat overschat de edge structureel, en juist in de markten
+        waar vandaag alle vijf de bets van Run A vandaan komen.
+        """
+        if not oddsapi.is_exchange(book):
+            return o, f"The Odds API ({book})"
+        net = oddsapi.net_price(o, book)
+        pct = int(oddsapi.EXCHANGE_COMMISSION * 100)
+        return net, f"The Odds API ({book}, beurs: {o} bruto / {net:g} na {pct}% commissie)"
+
     sel = []
     # Het marktGEMIDDELDE (BetExplorer) blijft de meetlat voor §6e en poort 8: dat is een
     # oordeel over de wedstrijd. De bet zelf gaat op de BESTE prijs uit de h2h-bulk (§1a).
@@ -413,20 +433,24 @@ for c in cands:
             if line is None or side is None: continue
             ln = float(line)
             if abs(ln) < 1e-9:
-                sel.append(("Draw No Bet", f"DNB — {outcome}", o, f"The Odds API ({book})", side,
-                            (lambda s, oo: (lambda p: dnb_prob(p.grid, s, oo)))(side, o))); n_dnb += 1
+                no, bron = _netto(o, book)
+                sel.append(("Draw No Bet", f"DNB — {outcome}", no, bron, side,
+                            (lambda s, oo: (lambda p: dnb_prob(p.grid, s, oo)))(side, no))); n_dnb += 1
             elif abs(abs(ln) - 0.5) < 1e-9:
                 naam = c["home"] if side == "home" else c["away"]
                 if ln > 0:
-                    sel.append(("Double Chance", f"Double Chance — {naam} of gelijk (AH +0.5 @ {o})", o,
-                                f"The Odds API ({book})", side,
-                                (lambda s, oo: (lambda p: asian_prob(p.grid, 0.5, s, oo)))(side, o))); n_dc += 1
+                    no, bron = _netto(o, book)
+                    sel.append(("Double Chance", f"Double Chance — {naam} of gelijk (AH +0.5 @ {o})", no,
+                                bron, side,
+                                (lambda s, oo: (lambda p: asian_prob(p.grid, 0.5, s, oo)))(side, no))); n_dc += 1
                 else:
-                    sel.append(("Asian Handicap", f"{outcome} {ln:+g}", o, f"The Odds API ({book})", side,
-                                (lambda s, l, oo: (lambda p: asian_prob(p.grid, l, s, oo)))(side, ln, o))); n_ah += 1
+                    no, bron = _netto(o, book)
+                    sel.append(("Asian Handicap", f"{outcome} {ln:+g}", no, bron, side,
+                                (lambda s, l, oo: (lambda p: asian_prob(p.grid, l, s, oo)))(side, ln, no))); n_ah += 1
             else:
-                sel.append(("Asian Handicap", f"{outcome} {ln:+g}", o, f"The Odds API ({book})", side,
-                            (lambda s, l, oo: (lambda p: asian_prob(p.grid, l, s, oo)))(side, ln, o))); n_ah += 1
+                no, bron = _netto(o, book)
+                sel.append(("Asian Handicap", f"{outcome} {ln:+g}", no, bron, side,
+                            (lambda s, l, oo: (lambda p: asian_prob(p.grid, l, s, oo)))(side, ln, no))); n_ah += 1
         row["markets_checked"]["AH"] = f"The Odds API spreads, beste prijs per lijn — {n_ah} handicaplijnen"
         row["markets_checked"]["DNB"] = (f"The Odds API spreads, 0.0-lijn — {n_dnb} selecties" if n_dnb
                                          else "geen 0.0-lijn in de spreads-respons")
@@ -442,16 +466,18 @@ for c in cands:
         for (outcome, line), (o, book) in lines.items():
             if line is None: continue
             ln, sd = float(line), outcome.lower()
-            sel.append(("Over/Under", f"{outcome} {ln:g}", o, f"The Odds API ({book})", None,
-                        (lambda l, s, oo: (lambda p: totals_prob(p.grid, l, s, oo)))(ln, sd, o))); n += 1
+            no, bron = _netto(o, book)
+            sel.append(("Over/Under", f"{outcome} {ln:g}", no, bron, None,
+                        (lambda l, s, oo: (lambda p: totals_prob(p.grid, l, s, oo)))(ln, sd, no))); n += 1
         row["markets_checked"]["OU"] = f"The Odds API totals, beste prijs per lijn — {n} lijnen"
 
     bt = best_btts(c["match_id"])
     if bt:
         for naam, (o, book) in bt.items():
             ja = naam.startswith("y")
-            sel.append(("BTTS", f"Beide ploegen scoren — {'ja' if ja else 'nee'}", o,
-                        f"The Odds API ({book})", None,
+            no, bron = _netto(o, book)
+            sel.append(("BTTS", f"Beide ploegen scoren — {'ja' if ja else 'nee'}", no,
+                        bron, None,
                         (lambda j: (lambda p: p.btts if j else 1 - p.btts))(ja)))
         row["markets_checked"]["BTTS"] = f"The Odds API event-markt btts — {len(bt)} selecties"
     elif c["match_id"] in BTTS_GEKOCHT:
@@ -786,6 +812,7 @@ for c in cands:
         cal = {"market": [round(x, 4) for x in calibration.devig(list(m1["odds"]))],
                "p_xg": [round(p_xg.home, 4), round(p_xg.draw, 4), round(p_xg.away, 4)],
                "p_xg_noshrink": [round(p_xg_ns.home, 4), round(p_xg_ns.draw, 4), round(p_xg_ns.away, 4)],
+               "p_xg_shrink08": [round(p_xg_s08.home, 4), round(p_xg_s08.draw, 4), round(p_xg_s08.away, 4)],
                "p_split": [round(p_sp.home, 4), round(p_sp.draw, 4), round(p_sp.away, 4)]}
         if p_us:
             cal["p_xg_understat"] = [round(p_us.home, 4), round(p_us.draw, 4), round(p_us.away, 4)]
