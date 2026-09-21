@@ -156,19 +156,40 @@ gezamenlijke schaal, gefit op 6784 werkelijke interlanduitslagen.** Daarmee verv
 probleem waar de eerste versie van dit bestand op vastliep: er hoeft geen competitiebasis meer
 te zijn, want de rating ís de basis.
 
+**Sinds 21 september 2026 staat er een tweede methode naast**, `scripts/squadform.py`, op de
+marktwaarde van de selectie. Daarmee heeft Run C wat §1 poort 5 vraagt: twee onafhankelijke
+methodes die de markt dezelfde kant op moeten verslaan.
+
 ```python
-from scripts import national
-fit = national.load_fit()                 # één keer per run
-ok_h, reden_h = national.in_range(home_id, fit)
-ok_a, reden_a = national.in_range(away_id, fit)
+from scripts import national, squadform
+from scripts.model import analyze_match, combine_probs
+
+nf, sf = national.load_fit(), squadform.load_fit()      # één keer per run
+squads = squadform.load_squads()
+
+ok_h, _ = national.in_range(home_id, nf)
+ok_a, _ = national.in_range(away_id, nf)
+sq_h, _ = squadform.usable(home_id, squads)
+sq_a, _ = squadform.usable(away_id, squads)
 if not (ok_h and ok_a):
-    tier = "NONE"                         # te weinig duels — zie de poort hieronder
+    tier = "NONE"                         # te weinig interlands — zie de poort hieronder
 else:
-    lg   = national.context(fit)
-    hs   = national.team(home_id, fit)
-    as_  = national.team(away_id, fit)
-    p_xg = analyze_match(hs, as_, lg)     # ongewijzigd, zelfde functie als bij clubvoetbal
+    # methode 1 — uitslagen
+    p_res = analyze_match(national.team(home_id, nf), national.team(away_id, nf),
+                          national.context(nf))
+    # methode 2 — selectiewaarde (alleen als bij BEIDE ploegen de selectie bekend is)
+    p_val = None
+    if sq_h and sq_a:
+        p_val = analyze_match(squadform.team(home_id, sf, squads),
+                              squadform.team(away_id, sf, squads),
+                              squadform.context(sf))
 ```
+
+**Wegen: 0,70 op de uitslagenrating, 0,30 op de selectiewaarde.** Dat is gemeten, niet gekozen —
+zie de tabel hieronder. Het is dezelfde constructie als §1f bij clubvoetbal (daar 0,80/0,20).
+Ontbreekt de selectie bij een van beide ploegen, reken dan met de uitslagenrating alleen en
+**noteer dat poort 5 niet gemeten kon worden** — laat hem niet stilzwijgend slagen, dat is
+precies de fout die poort 7 hieronder maakt.
 
 `team()` levert een gewone `model.TeamStats` en `context()` een gewone `model.LeagueContext`,
 dus **de rest van de pijplijn draait er ongewijzigd op**: beide methodes, de acht poorten,
@@ -185,6 +206,26 @@ getoetst op de 819 duels daarna:
 |---|---|
 | **de landenrating** | **0,4796** |
 | 1/3-1/3-1/3 gokken | 0,6667 |
+
+En de twee methodes naast elkaar, op de 308 duels waarop ze allebei een kans geven (fit t/m
+1 maart 2026, gemeten op wat daarna kwam):
+
+| | Brier |
+|---|---|
+| alleen selectiewaarde | 0,53191 |
+| alleen uitslagenrating | 0,51652 |
+| **0,70 / 0,30 gemengd** | **0,51261** |
+
+**De mengeling verslaat beide methodes afzonderlijk, en dat is het punt.** De selectiewaarde is
+op zichzelf de zwakkere, maar ze weet iets wat de rating niet weet. De curve is glad met een
+optimum binnenin (0,5145 bij 0,50 · 0,5129 bij 0,60 · 0,5126 bij 0,70 · 0,5144 bij 0,90), en dat
+is de handtekening van echt aanvullende informatie in plaats van ruis. Tussen 0,60 en 0,80 zit
+0,0005 verschil — niet op fijnregelen.
+
+Dat deze getallen hoger liggen dan de 0,4796 hierboven komt door de **populatie**: dit zijn
+alleen de duels waarvoor ook selectiedata bestaat, en dat zijn overwegend de grotere landen.
+Daar is de uitslag minder voorspelbaar dan bij een mismatch tegen San Marino. Vergelijk de twee
+tabellen dus niet met elkaar.
 
 Dat is een echt voorspellend model. Wat het **niet** is: een bewijs dat het de bookmaker
 verslaat. Die vergelijking staat nergens in `national.py` en hoort thuis in het
@@ -204,25 +245,27 @@ terug op een gemiddelde ploeg.
 
 | Situatie | `data_tier` |
 |---|---|
-| Beide ploegen door `in_range`, en het duel is een **kwalificatie-, Nations League- of toernooiduel** | `LIGHT` |
-| Beide ploegen door `in_range`, en het duel is een **oefeninterland** | `LIGHT` |
-| Een van beide ploegen valt buiten `in_range` | `NONE` |
+| Beide ploegen door `national.in_range` **en** beide door `squadform.usable` | `LIGHT` |
+| Beide door `national.in_range`, maar de selectie ontbreekt bij een van beide | `LIGHT`, en noteer dat poort 5 niet gemeten kon worden |
+| Een van beide ploegen valt buiten `national.in_range` | `NONE` |
 
-**Nooit `FULL`, en dat is met opzet.** `FULL` eist in §4 minstens twee onafhankelijke inputs
-waarvan één uit categorie 1, en de landenrating is er één: hij komt uit doelpunten, niet uit
-xG, en er is geen tweede, onafhankelijk landenmodel naast gezet. `LIGHT` betekent
-`EDGE_THRESHOLD_LIGHT` = 16,0 procentpunt, en daar gaat de herijking van §1g nog overheen — dus
-verwacht ook met deze rating weinig bets. Dat is de juiste voorzichtigheid en geen defect.
+**Nog steeds nooit `FULL`, en dat is nu een keuze in plaats van een noodzaak.** Sinds er twee
+onafhankelijke methodes zijn, voldoet Run C aan de letter van §4 (`FULL` = ≥ 2 onafhankelijke
+inputs, waarvan ≥ 1 uit categorie 1). Drie redenen om het toch niet te doen zonder dat de
+gebruiker erover heeft besloten:
 
-Twee dingen die je daarbij niet moet doen:
+1. **De kwaliteit is niet vergelijkbaar met clubvoetbal.** De gemengde Brier staat op 0,513 op
+   de populatie waar beide methodes werken. Dat is beter dan blind gokken, maar er is nog
+   **geen enkele vergelijking met de markt** — en juist die regel is bij clubvoetbal de
+   belangrijkste (§6d, "is Brier eigen niet lager dan Brier markt, dan voegt de analyse geen
+   kansinformatie toe").
+2. **`FULL` halveert de drempel** van 16,0 naar 8,0 procentpunt. Dat is een grote verruiming op
+   een model dat nog nooit een afgerekende bet heeft opgeleverd.
+3. **De selectiewaarde draagt look-ahead.** Zie de docstring van `squadform.py`.
 
-- **Reken een oefeninterland niet zwaarder dan hij is.** De rating weegt oefenduels voor de
-  helft mee, maar dat gewicht is **niet gemeten** — Fotmob geeft voor oefeninterlands alleen het
-  lopende kalenderjaar, dus er zat er geen enkele in de trainingsperiode. Dat staat in de
-  parametertabel van `national.py` en het is de eerlijke stand: een aanname, geen bevinding.
-- **Verwar de rating niet met vorm.** Hij zegt hoe sterk een ploeg over jaren is, niet wie er
-  dinsdag speelt. Poort 7 (context) blijft dus gewoon draaien, met de kanttekening hieronder
-  over rustdagen bij interlands.
+**Voorstel: laat het op `LIGHT` tot het kalibratielogboek van §6e genoeg Run C-dagen heeft om
+tegen de markt te meten**, en beslis dan met cijfers. Leg daarom vanaf de eerste run een
+`calibration`-blok per doorgerekend duel vast, precies zoals Run A en Run B dat doen.
 
 ### Het corpus onderhouden
 
@@ -255,32 +298,27 @@ uit één kalenderjaar.
    want Fotmob geeft voor de meeste interlandcompetities geen team-xG. Een ploeg die veel
    scoort uit weinig kansen wordt hier dus overschat, en de correctie die §1f daarvoor heeft
    (de 80/20-weging tussen twee methodes) bestaat hier niet in dezelfde vorm.
-4. **Er is geen tweede, onafhankelijke methode.** Poort 5 eist dat twee methodes de markt
-   dezelfde kant op verslaan. Bij clubvoetbal zijn dat de xG-methode en de splitsmethode; hier
-   is er er maar één. Dat is de belangrijkste reden dat het datatier op `LIGHT` blijft.
+4. **~~Er is geen tweede, onafhankelijke methode.~~ OPGELOST op 21 september 2026.**
+   `scripts/squadform.py` levert er een op de marktwaarde van de selectie, en die is werkelijk
+   onafhankelijk: `national.py` kijkt naar uitslagen, `squadform.py` naar een prijs die op de
+   clubtransfermarkt wordt gezet. De mengeling (0,70 / 0,30) verslaat beide methodes
+   afzonderlijk — zie de tabel hierboven. Poort 5 kan daarmee draaien.
 
-   Twee kandidaten zijn op 20 september 2026 onderzocht, op voorstel van de gebruiker:
+   Wat er van het oorspronkelijke idee **niet** gelukt is: individuele spelersvorm. De velden
+   `rating`, `goals` en `assists` staan in de selectie-endpoint vrijwel overal leeg, en het zijn
+   bovendien interlandcijfers en geen clubvorm. De clubvorm zelf is in principe te halen via
+   `primaryTeamId` uit het `lineup`-blok, maar dat blok is er pas vlak voor de aftrap terwijl
+   Run C om 05:15 draait. Dat blijft dus openstaan.
 
-   - **Een wereldranglijst (FIFA).** Bruikbaar, maar zwakker dan hij lijkt: die ranglijst wordt
-     zelf berekend uit dezelfde uitslagen waarop `national.py` is gefit, en hij perst ze in één
-     getal terwijl de rating aanval en verdediging apart houdt en met doelsaldo rekent in plaats
-     van met winst/verlies. Als tweede methode voor poort 5 is hij dus grotendeels dezelfde
-     meting in een armere vorm, en "ze zijn het eens" zegt dan weinig. Wáár hij wél iets
-     toevoegt: als **prior voor ploegen onder `MIN_MATCHES`**, die nu helemaal wegvallen. Dat is
-     een smalle maar echte winst, en het is de enige reden om hem op te halen.
-   - **Individuele spelersvorm — de sterkste kandidaat.** Het `lineup`-blok geeft per speler
-     `id`, `marketValue` én `primaryTeamId`/`primaryTeamName`: de club waar hij speelt. Daarmee
-     is de clubvorm van de opgestelde spelers op te halen, en dát is informatie die
-     **orthogonaal** is aan de interlanduitslagen waarop de rating is gefit — anders dan de
-     ranglijst. Een landenteam is een greep uit clubspelers, en of die greep in vorm is weet een
-     rating op landenuitslagen per definitie niet.
+5. **81 van de 213 landen hebben geen bruikbare selectiedata** (gemeten 21 sep 2026; Guyana gaf
+   nul spelers terug). Voor die landen draait alleen de uitslagenrating en kan poort 5 niet
+   meten. Dat is vooral buiten Europa en Zuid-Amerika. Een wereldranglijst zou hier als prior
+   kunnen dienen — zie het vorige punt over de FIFA-ranglijst.
 
-     Twee harde beperkingen voordat iemand dit bouwt, allebei gemeten op 20 sep 2026: de
-     opstelling is er pas **vlak voor de aftrap** (bij Nederland – Duitsland stond er vier dagen
-     vooraf nog helemaal niets, en Run C draait om 05:15), en het kost ~22 spelersopvragingen
-     plus clubvorm per duel. Bouw het dus zo dat het duel gewoon doorgaat als de opstelling er
-     nog niet is — mét de aantekening dat er niets gemeten is, en niet stilzwijgend als "gemeten"
-     geteld. Dat is precies de fout die poort 7 hieronder wél maakt.
+6. **De selectie is een momentopname en veroudert.** `data/national-squads.json` draagt per land
+   een `fetched`-datum. Draai `squadform.py build` aan het **begin** van elk interlandvenster
+   (anders dan `national.py build`, dat aan het eind hoort): de bondscoach maakt zijn selectie
+   bekend in de week vóór de wedstrijden, en dat is precies wanneer je hem wilt hebben.
 
 ## Let op bij deze runlijst
 
@@ -315,13 +353,34 @@ uit één kalenderjaar.
   niets gemeten is.** Dat is precies het soort stille administratiefout waar §6b-5b voor is
   ingevoerd, en het is erger dan een dichte poort: hij telt mee als geslaagde controle.
 
-  **Wat je daarom doet:** noteer per duel in `data/run-state/` onder `context` expliciet
-  `"poort7_meetbaar": false` zodra `out_count == 0` én `squad_value == 0`, en schrijf in het
-  runrapport dat poort 7 deze run niet heeft kúnnen meten in plaats van hem als geslaagde
-  controle op te voeren. Laat hem verder gewoon draaien — hij kost niets en gaat vanzelf werken
-  zodra Fotmob meer levert — maar tel hem niet mee als bescherming. `ctxlog.py` houdt deze groep
-  bovendien apart: een interland hoort niet in dezelfde reeks als een clubduel, want het
-  beschikbaarheidsverschil is daar per definitie nul en zou de meting van §1c verwateren.
+  **OPGELOST op 21 september 2026 — voer poort 7 op interlands via de selectie.** De
+  blessurelijst bestáát wel voor landenteams, alleen niet op de wedstrijd maar op het **team**:
+  `squadform.injuries(team_id)` geeft het aantal uitvallers, hun gezamenlijke marktwaarde, het
+  aandeel van de selectiewaarde en de verwachte terugkeer per speler. Gemeten op 21 september:
+  Nederland miste Wieffer en De Jong, samen € 46,7 mln van € 676 mln (6,9%); Duitsland Goretzka
+  en Ouédraogo, € 24,0 mln van € 727 mln (3,3%).
+
+  ```python
+  from scripts import squadform
+  inf_h = squadform.injuries(home_id, squads)
+  inf_a = squadform.injuries(away_id, squads)
+  # poort 7 draait op hetzelfde criterium als §1c: ≥ 10 procentpunt méér ontbrekende
+  # selectiewaarde dan de tegenstander → dicht voor die kant.
+  ```
+
+  Twee dingen blijven staan. **`rest_days` blijft onbruikbaar** (86,7 dagen bij NED – GER): de
+  rust-arm van poort 7 kan op interlands nooit afgaan, en dat hoort zo te worden opgeschreven
+  in plaats van als "geslaagd" te tellen. En **haal de blessures nooit door `my_prob`** — §1c is
+  daar ondubbelzinnig over: poort 7 remt en stelt niet bij, want er is geen meting die zegt
+  hoeveel procentpunt een uitvaller waard is. De selectie**waarde** gaat wél in de kans (dat is
+  de tweede methode hierboven), de blessure**lijst** niet.
+
+  **Wat je daarom noteert:** per duel in `data/run-state/` onder `context` een
+  `"poort7_bron": "squadform"` met het gemeten aandeel, en `"poort7_rust_meetbaar": false`.
+  Ontbreekt de selectie bij een van beide ploegen (81 van de 213 landen op 21 sep), noteer dan
+  `"poort7_meetbaar": false` en tel de poort niet als bescherming. `ctxlog.py` houdt interlands
+  bovendien apart van clubduels: het beschikbaarheidsverschil is daar anders gemeten en zou de
+  reeks van §1c verwateren.
 - **De 90-minutenregel van §6d is hier extra belangrijk.** Nations League-play-offs, EK-
   kwalificatie-play-offs en alle knock-outrondes van AFCON, Gold Cup, Asian Cup, EK en Copa
   América kennen verlenging en strafschoppen. Wikkel af op de stand na 90 minuten inclusief
