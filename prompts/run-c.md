@@ -257,9 +257,30 @@ uit één kalenderjaar.
    (de 80/20-weging tussen twee methodes) bestaat hier niet in dezelfde vorm.
 4. **Er is geen tweede, onafhankelijke methode.** Poort 5 eist dat twee methodes de markt
    dezelfde kant op verslaan. Bij clubvoetbal zijn dat de xG-methode en de splitsmethode; hier
-   is er er maar één. Dat is de belangrijkste reden dat het datatier op `LIGHT` blijft, en het
-   is het eerste dat gebouwd zou moeten worden — bijvoorbeeld een rating op doelsaldo tegen een
-   rating op alleen winst/verlies.
+   is er er maar één. Dat is de belangrijkste reden dat het datatier op `LIGHT` blijft.
+
+   Twee kandidaten zijn op 20 september 2026 onderzocht, op voorstel van de gebruiker:
+
+   - **Een wereldranglijst (FIFA).** Bruikbaar, maar zwakker dan hij lijkt: die ranglijst wordt
+     zelf berekend uit dezelfde uitslagen waarop `national.py` is gefit, en hij perst ze in één
+     getal terwijl de rating aanval en verdediging apart houdt en met doelsaldo rekent in plaats
+     van met winst/verlies. Als tweede methode voor poort 5 is hij dus grotendeels dezelfde
+     meting in een armere vorm, en "ze zijn het eens" zegt dan weinig. Wáár hij wél iets
+     toevoegt: als **prior voor ploegen onder `MIN_MATCHES`**, die nu helemaal wegvallen. Dat is
+     een smalle maar echte winst, en het is de enige reden om hem op te halen.
+   - **Individuele spelersvorm — de sterkste kandidaat.** Het `lineup`-blok geeft per speler
+     `id`, `marketValue` én `primaryTeamId`/`primaryTeamName`: de club waar hij speelt. Daarmee
+     is de clubvorm van de opgestelde spelers op te halen, en dát is informatie die
+     **orthogonaal** is aan de interlanduitslagen waarop de rating is gefit — anders dan de
+     ranglijst. Een landenteam is een greep uit clubspelers, en of die greep in vorm is weet een
+     rating op landenuitslagen per definitie niet.
+
+     Twee harde beperkingen voordat iemand dit bouwt, allebei gemeten op 20 sep 2026: de
+     opstelling is er pas **vlak voor de aftrap** (bij Nederland – Duitsland stond er vier dagen
+     vooraf nog helemaal niets, en Run C draait om 05:15), en het kost ~22 spelersopvragingen
+     plus clubvorm per duel. Bouw het dus zo dat het duel gewoon doorgaat als de opstelling er
+     nog niet is — mét de aantekening dat er niets gemeten is, en niet stilzwijgend als "gemeten"
+     geteld. Dat is precies de fout die poort 7 hieronder wél maakt.
 
 ## Let op bij deze runlijst
 
@@ -275,11 +296,32 @@ uit één kalenderjaar.
   laag uit (§1a).
 - **`MAX_DEEP_ANALYSES` zal nooit knellen.** Twintig duels op de drukste dag van het jaar tegen
   een cap van 40 of 55. Rapporteer de afkapping toch, met 0.
-- **Blessures en vorm werken anders bij landenteams.** `context.fetch_match_context` levert de
-  opstelling en de uitvallers, maar "rustdagen" is bij een interland de tijd sinds het vórige
-  **club**duel van de spelers, en dat meet Fotmob niet per selectie. Lees poort 7 hier dus met
-  meer terughoudendheid dan bij clubvoetbal, en noteer in `data/run-state/` dat het om een
-  interland ging, zodat `ctxlog.py` die groep later apart kan meten.
+- **POORT 7 IS OP INTERLANDS INERT, EN DAT ZIET ERUIT ALS "POORT OPEN".** Nagemeten op
+  20 september 2026, en dit is de belangrijkste valkuil van deze run.
+  `context.fetch_match_context` draait wél op een interland, maar geeft lege of misleidende
+  waarden terug:
+
+  | | gemeten op een interland |
+  |---|---|
+  | uitvallers (`out_count`, `out_value`) | **altijd 0** — Fotmob houdt geen blessurelijst per landenteam bij |
+  | `squad_value` | wél gevuld zodra de opstelling er is (Frankrijk € 819 mln; bij Irak € 0) |
+  | `lineup_type` | leeg tot vlak voor de aftrap; bij NED – GER vier dagen vooraf helemaal niets |
+  | ploegnamen | vóór publicatie van de opstelling letterlijk `"thuis"` en `"uit"` |
+  | `rest_days` | tijd sinds de vórige **interland**, niet sinds het vorige clubduel — bij NED – GER **86,7 dagen** |
+
+  Gevolg: de blessure-arm van poort 7 kan nooit afgaan (0% ontbrekende waarde tegen 0%) en de
+  rust-arm evenmin (86 dagen haalt de drempel van "≤ 4 dagen rust" nooit). De poort meldt dan
+  `"geen materieel nadeel gemeten"` en gaat open — **niet omdat er geen nadeel is, maar omdat er
+  niets gemeten is.** Dat is precies het soort stille administratiefout waar §6b-5b voor is
+  ingevoerd, en het is erger dan een dichte poort: hij telt mee als geslaagde controle.
+
+  **Wat je daarom doet:** noteer per duel in `data/run-state/` onder `context` expliciet
+  `"poort7_meetbaar": false` zodra `out_count == 0` én `squad_value == 0`, en schrijf in het
+  runrapport dat poort 7 deze run niet heeft kúnnen meten in plaats van hem als geslaagde
+  controle op te voeren. Laat hem verder gewoon draaien — hij kost niets en gaat vanzelf werken
+  zodra Fotmob meer levert — maar tel hem niet mee als bescherming. `ctxlog.py` houdt deze groep
+  bovendien apart: een interland hoort niet in dezelfde reeks als een clubduel, want het
+  beschikbaarheidsverschil is daar per definitie nul en zou de meting van §1c verwateren.
 - **De 90-minutenregel van §6d is hier extra belangrijk.** Nations League-play-offs, EK-
   kwalificatie-play-offs en alle knock-outrondes van AFCON, Gold Cup, Asian Cup, EK en Copa
   América kennen verlenging en strafschoppen. Wikkel af op de stand na 90 minuten inclusief
