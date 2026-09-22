@@ -909,7 +909,7 @@ a{color:var(--accent-ink)}
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    parser.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("-o", "--output", help="standaard runs/<datum>-run-<id>.html")
     args = parser.parse_args()

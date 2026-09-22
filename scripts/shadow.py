@@ -346,7 +346,7 @@ def main() -> int:
 
     p_col = sub.add_parser("collect", help="haal near_miss-regels uit een voortgangsbestand")
     p_col.add_argument("--date", required=True, help="YYYY-MM-DD")
-    p_col.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    p_col.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
 
     p_open = sub.add_parser("open", help="toon schaduwpicks die nog afgewikkeld moeten worden")
     p_open.add_argument("--hours", type=float, default=settling.FALLBACK_HOURS,

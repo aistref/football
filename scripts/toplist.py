@@ -286,7 +286,7 @@ def _fmt(rows: list[dict], titel: str) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--run", required=True, choices=["a", "b", "A", "B"])
+    ap.add_argument("--run", required=True, choices=["a", "b", "c", "A", "B", "C"])
     ap.add_argument("--date", required=True)
     ap.add_argument("--n", type=int, default=None)
     ap.add_argument("--json", action="store_true")

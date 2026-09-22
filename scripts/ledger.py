@@ -390,7 +390,7 @@ def main() -> int:
                                "kwartlijn (half verlies = -0.5, half winst = (odds-1)/2)")
 
     p_stats = sub.add_parser("stats", help="hit rate, ROI, Brier en kalibratie")
-    p_stats.add_argument("--run", choices=("A", "B"))
+    p_stats.add_argument("--run", choices=("A", "B", "C"))
 
     args = parser.parse_args()
     return {"validate": cmd_validate, "add": cmd_add, "settle": cmd_settle,

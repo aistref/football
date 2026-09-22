@@ -242,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
     collect = sub.add_parser("collect", help="context van één run in het logboek zetten")
-    collect.add_argument("--run", required=True, choices=["a", "b", "A", "B"])
+    collect.add_argument("--run", required=True, choices=["a", "b", "c", "A", "B", "C"])
     collect.add_argument("--date", required=True, help="YYYY-MM-DD")
     collect.set_defaults(func=_cmd_collect)
     settle = sub.add_parser("settle", help="uitslagen ophalen voor wat nog openstaat")

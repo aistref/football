@@ -307,7 +307,7 @@ def main() -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     col = sub.add_parser("collect", help="haal de calibration-blokken uit een voortgangsbestand")
-    col.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    col.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     col.add_argument("--date", required=True, help="YYYY-MM-DD")
     col.set_defaults(func=cmd_collect)
 
@@ -315,7 +315,7 @@ def main() -> int:
 
     st = sub.add_parser("stats", help="toon de afwijking per marktkans-bak")
     st.add_argument("--since", help="alleen dagen vanaf deze datum (YYYY-MM-DD)")
-    st.add_argument("--run", choices=["A", "B", "a", "b"], help="alleen deze run")
+    st.add_argument("--run", choices=["A", "B", "C", "a", "b", "c"], help="alleen deze run")
     st.set_defaults(func=cmd_stats)
 
     args = parser.parse_args()

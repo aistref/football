@@ -213,17 +213,17 @@ def main() -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     show = sub.add_parser("show", help="toon de voortgang van een run")
-    show.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    show.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     show.add_argument("--date", required=True, help="YYYY-MM-DD")
     show.set_defaults(func=_cmd_show)
 
     verify = sub.add_parser("verify", help="controleer of elke wedstrijd alle zes markten heeft gehad")
-    verify.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    verify.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     verify.add_argument("--date", required=True, help="YYYY-MM-DD")
     verify.set_defaults(func=_cmd_verify)
 
     reset = sub.add_parser("reset", help="verwijder het voortgangsbestand, forceer een verse start")
-    reset.add_argument("--run", required=True, choices=["A", "B", "a", "b"])
+    reset.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     reset.add_argument("--date", required=True, help="YYYY-MM-DD")
     reset.set_defaults(func=_cmd_reset)
 
