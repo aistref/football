@@ -237,6 +237,18 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # verkeerde slug. BetExplorer noemt de competitie bij haar sponsornaam.
     "MLS (USA)": "https://www.betexplorer.com/football/usa/mls/",
     "Série A (BRA)": "https://www.betexplorer.com/football/brazil/serie-a-betano/",
+    # Toegevoegd 23 sep 2026 (Run C, eerste run met echte interlandwedstrijden). Geen van deze
+    # drie stond hier al, want Run C had tot dan alleen lege dagen gedraaid. Alle drie de eerste
+    # gok fout: 'world/friendlies', 'world/friendly-internationals' en 'world/international-
+    # friendly' redirecten stilzwijgend naar de homepage (HTTP 200 op de eind-URL, dus geen fout
+    # om op te vangen) in plaats van een 404 te geven — dezelfde stille faalmodus als hierboven,
+    # maar dan via een redirect in plaats van een lege tabel. Gevonden door de regiopagina's
+    # (world/, north-central-america/, asia/) te doorzoeken op de werkelijke sub-URL's.
+    "Vriendschappelijke interlands": "https://www.betexplorer.com/football/world/friendly-international/",
+    "CONCACAF Nations League": "https://www.betexplorer.com/football/north-central-america/concacaf-nations-league/",
+    # BetExplorer noemt dit toernooi bij zijn officiële naam, niet 'gulf-cup-of-nations' (dat stopt
+    # bij de editie van 2023); de generieke, actuele pagina heet 'arabian-gulf-cup'.
+    "Arabian Gulf Cup": "https://www.betexplorer.com/football/asia/arabian-gulf-cup/",
 }
 
 

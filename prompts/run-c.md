@@ -25,6 +25,7 @@ Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 |---|---|---|
 | UEFA Nations League — groepsfase | 24 sep t/m 17 nov 2026 | **loopt nu** |
 | CONCACAF Nations League — groepsfase | sep/okt 2026 | **loopt nu** |
+| Arabian Gulf Cup (Golfstaten, senior mannen) | editie gezien op 23-24 sep 2026 (Fotmob id 329) | **loopt nu** — stond hier niet op tot Run C hem op de daglijst zag; niet eerder op een kalender gevonden, dus geen bredere datumrange bekend |
 | UEFA Nations League — kwartfinales en play-offs | maart 2027 | |
 | CONCACAF Nations League — finales | maart 2027 | |
 | Kwalificatie UEFA EK 2028 | heel 2027 (loting 6 dec 2026) | |
@@ -107,6 +108,7 @@ Bekende ids, gemeten:
 | Asian Cup-kwalificatie | 10609 |
 | WK · EK · AFCON · Copa América · Gold Cup | 77 · 50 · 289 · 44 · 298 |
 | **Club** Friendlies — NIET gebruiken | 489 |
+| Arabian Gulf Cup (senior mannentoernooi, Golfstaten) | 329 — gevonden 23 sep 2026, stond nog niet in de daglijst-tabel hierboven totdat hij daadwerkelijk speelde |
 
 De overige toernooien hebben pas een id zodra ze op de kalender staan. Zoek hem dan op in de
 daglijst en **schrijf hem in deze tabel** in plaats van hem elke run opnieuw te zoeken.
