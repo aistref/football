@@ -1854,6 +1854,19 @@ het per selectie met een `bet_beide`-vlag in plaats van erop te vertrouwen: de f
 het logboek en is elke run een ander getal (§1g), en een toekomstige fit die binnen de band wél
 verhoogt zou anders stilzwijgend een bet doorlaten die maar één van de twee modellen haalt.
 
+> **Die toekomstige fit is er, sinds 20 september 2026 — lees de alinea hierboven dus als
+> historie en niet als de huidige stand.** Sinds `recalibrate.observations()` op de
+> ongeselecteerde waarnemingen uit `data/calibration.jsonl` fit in plaats van op picks + shadow,
+> staat de fit op **`a=1.030, b=0.019`** (gemeten 23 sep 2026 op 2346 afgerekende gevallen): het
+> ruwe model zei gemiddeld 33,3% en het gebeurde 33,3%. Die fit **verhoogt** een kans over vrijwel
+> de hele speelbare band — +0,2 pp op 40%, +0,5 pp op 50%, +0,9 pp op 70%, +1,0 pp op 80% — en
+> verlaagt alleen onder ongeveer 35%. "Herijkt haalt de drempel, dus ruw ook" is daarmee **niet
+> langer automatisch waar**: een selectie boven 35% kan de herijkte lat halen en de ruwe net niet.
+> Dat is precies het geval waarvoor `bet_beide` is gebouwd, dus er hoeft niets aan de code te
+> veranderen — maar vertrouw de redenering niet meer, vertrouw de vlag. En let op de omvang
+> voordat iemand hier een conclusie op bouwt: het gaat om tienden van procentpunten, waar de oude
+> fit er tien hele afhaalde.
+
 **De ruwe lijst is een meting en geen tip.** Lees haar met §1g ernaast: daar is op 552 afgerekende
 gevallen gemeten dat er géén drempel op de herijkte edge bestaat die geld oplevert, en dat het
 rendement het **slechtst** is bij de hoogste geclaimde edge. De ongecorrigeerde edge is precies de
