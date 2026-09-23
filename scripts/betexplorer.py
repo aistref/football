@@ -19,6 +19,7 @@ Alleen de standaardbibliotheek.
 from __future__ import annotations
 
 import re
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -55,7 +56,7 @@ _WHEN_RE = re.compile(r'class="table-main__datetime"[^>]*>([^<]*)<')
 _BOOKS_RE = re.compile(r'class="table-main__bs"[^>]*>(\d+)<')
 
 
-def fetch_league_fixtures(url: str) -> list[MatchOdds]:
+def fetch_league_fixtures(url: str, *, retries: int = 3, retry_pause: float = 1.5) -> list[MatchOdds]:
     """1X2-odds voor **alle** aankomende wedstrijden, via de /fixtures/-pagina.
 
     Waarom dit naast `fetch_league_odds` bestaat (15 aug 2026). De "Next matches"-tabel op de
@@ -77,14 +78,41 @@ def fetch_league_fixtures(url: str) -> list[MatchOdds]:
     2. De tijd in `when` is **UK-tijd**, net als elders op BetExplorer: "Today 12:30" hoort bij een
        aftrap van 13:30 Nederlandse tijd. Gebruik voor de aftrap dus Fotmob en niet dit label; het
        label is er om op de juiste speeldag te filteren, niet om de tijd te rapporteren.
+
+    DERDE FAALMODUS, gemeten 23 sep 2026 (Run B): dezelfde URL geeft **wisselend** twee versies
+    van dezelfde pagina terug — één mét `data-odd` en één zonder, met verder identieke inhoud.
+    Op de Tsjechische fixturepagina gaven zes opvolgende verzoeken 24/0/24/0/0/24 koersen bij
+    195.941 respectievelijk 201.868 bytes; de Roemeense deed hetzelfde. Eén verzoek geeft dus
+    een niet-reproduceerbaar rijenaantal, en 0 rijen leest dan als "geen wedstrijden" terwijl de
+    ronde er gewoon staat. Dat is precies de stille faalmodus waar dit bestand elders voor
+    waarschuwt, nu niet door een verkeerde slug maar door de bron zelf.
+
+    Daarom: geeft de pagina teamparen maar nul rijen mét koers, dan wordt het verzoek herhaald
+    (`retries`). Blijft het nul, dan is dat de echte uitkomst — een ronde waarvoor nog geen boek
+    prijzen heeft genoteerd, zoals Croatian HNL en Hungarian NB I op 23 sep (nul koersen in zes
+    verzoeken, bij 140 en 151 teamparen). Onderscheid die drie gevallen bij het rapporteren:
+    nul teamparen = verkeerde slug, teamparen zonder koers na herhaling = geen prijzen,
+    teamparen mét koers na herhaling = deze wisselende variant.
     """
     if not url.rstrip("/").endswith("fixtures"):
         url = url.rstrip("/") + "/fixtures/"
-    try:
-        raw = urllib.request.urlopen(urllib.request.Request(url, headers=HEADERS), timeout=TIMEOUT).read()
-    except urllib.error.HTTPError as exc:
-        raise BetExplorerError(f"HTTP {exc.code} op {url}") from exc
-    text = raw.decode(errors="replace")
+
+    text = ""
+    for poging in range(retries + 1):
+        if poging:
+            time.sleep(retry_pause)
+        try:
+            raw = urllib.request.urlopen(
+                urllib.request.Request(url, headers=HEADERS), timeout=TIMEOUT
+            ).read()
+        except urllib.error.HTTPError as exc:
+            raise BetExplorerError(f"HTTP {exc.code} op {url}") from exc
+        text = raw.decode(errors="replace")
+        # Alleen opnieuw proberen als de pagina wél wedstrijden toont maar geen enkele koers:
+        # dat is de wisselende variant. Nul teamparen is een verkeerde slug en daar helpt
+        # herhalen niet; koersen gevonden is klaar.
+        if _ODDS_RE.search(text) or not _TEAMS_RE.search(text):
+            break
 
     matches: list[MatchOdds] = []
     carried = ""
