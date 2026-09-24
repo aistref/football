@@ -109,6 +109,8 @@ Bekende ids, gemeten:
 | WK · EK · AFCON · Copa América · Gold Cup | 77 · 50 · 289 · 44 · 298 |
 | **Club** Friendlies — NIET gebruiken | 489 |
 | Arabian Gulf Cup (senior mannentoernooi, Golfstaten) | 329 — gevonden 23 sep 2026, stond nog niet in de daglijst-tabel hierboven totdat hij daadwerkelijk speelde |
+| ASEAN Cup Challenge Division (senior, Laos/Brunei/Myanmar/Timor-Leste) | 13287 — gezien 24 sep 2026; geen prijsbron gevonden (geen BetExplorer-pagina, geen sportkey), dus `BUITEN DATADEKKING` |
+| EURO U21-kwalificatie — NIET gebruiken (jeugd) | 10437 |
 
 De overige toernooien hebben pas een id zodra ze op de kalender staan. Zoek hem dan op in de
 daglijst en **schrijf hem in deze tabel** in plaats van hem elke run opnieuw te zoeken.
@@ -242,6 +244,14 @@ is hoe deze rating zich tot de markt verhoudt.
 duels is de rating vrijwel volledig door de regularisatie bepaald: een aanname met een getal
 eromheen, geen meting. Dan `data_tier = NONE` en geen bet. Vang hem af en val **niet** stil
 terug op een gemiddelde ploeg.
+
+### Geen LIGHT-grens in de topselectie (24 sep 2026, besluit van de gebruiker)
+
+`MAX_LIGHT_IN_SHORTLIST` uit §0 geldt **niet** voor Run C. Omdat elk Run C-duel `LIGHT` is,
+werkte die grens hier als een vast plafond van twee bets per dag, ongeacht hoeveel selecties alle
+poorten haalden — op 24 sep 2026 vielen er zo twee af. `MAX_SHORTLIST` (3 ma–do, 5 vr–zo) blijft
+gewoon gelden, net als alle acht poorten. `scripts/toplist.py` slaat de cap over bij
+`state["run"] == "C"`, dus zet `run` goed in de run-state.
 
 ### Welk datatier
 
@@ -379,6 +389,8 @@ uit één kalenderjaar.
 
   **Wat je daarom noteert:** per duel in `data/run-state/` onder `context` een
   `"poort7_bron": "squadform"` met het gemeten aandeel, en `"poort7_rust_meetbaar": false`.
+  Zet per kant ook `name` en `out_names` (de `names` uit `squadform.injuries`) erin: het dagrapport
+  toont de uitvallers bij naam onder elke bet (§6c, sinds 24 sep 2026).
   Ontbreekt de selectie bij een van beide ploegen (81 van de 213 landen op 21 sep), noteer dan
   `"poort7_meetbaar": false` en tel de poort niet als bescherming. `ctxlog.py` houdt interlands
   bovendien apart van clubduels: het beschikbaarheidsverschil is daar anders gemeten en zou de

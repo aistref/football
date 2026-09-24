@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+from zoneinfo import ZoneInfo
 from datetime import date, datetime
 from pathlib import Path
 
@@ -128,7 +129,10 @@ def signed(value: float, digits: int = 1) -> str:
 
 def kickoff_time(pick: dict) -> str:
     try:
-        return datetime.fromisoformat(pick["kickoff"]).strftime("%H:%M")
+        moment = datetime.fromisoformat(pick["kickoff"].replace("Z", "+00:00"))
+        if moment.tzinfo is not None:
+            moment = moment.astimezone(ZoneInfo("Europe/Amsterdam"))
+        return moment.strftime("%H:%M")
     except (ValueError, KeyError):
         return "tijd onbekend"
 
@@ -233,7 +237,79 @@ def ledger_summary(picks: list[dict]) -> dict:
 
 # --------------------------------------------------------------------------- rendering
 
-def render_bets(picks: list[dict], prose: dict, labels: dict) -> str:
+def find_match(state: dict, pick: dict) -> dict | None:
+    for comp in normalise_competitions(state).values():
+        for m in comp.get("matches") or []:
+            if isinstance(m, dict) and m.get("home") == pick["home"] and m.get("away") == pick["away"]:
+                return m
+    return None
+
+
+def money(value) -> str:
+    if not value:
+        return "€ 0"
+    return f"€ {value / 1e6:.1f} mln".replace(".", ",")
+
+
+def render_context(match: dict | None, pick: dict) -> str:
+    """De context die de run over deze wedstrijd heeft opgehaald, uit data/run-state/.
+
+    Toegevoegd 24 sep 2026 op verzoek van de gebruiker: de bets noemden de kans maar niet wát er
+    over de wedstrijd bekend was (uitvallers, selectiewaarde, vorm, rust, stadion). Uit de
+    run-state en niet uit de prose, zodat het er ook staat als de prose het vergeet.
+    """
+    if not match:
+        return ""
+    ctx = match.get("context") or {}
+    rows = []
+    rating = match.get("landenrating") or {}
+    value_txt = match.get("selectiewaarde") or {}
+    for side in ("home", "away"):
+        t = ctx.get(side) or {}
+        name = t.get("name") or match.get(side) or side
+        parts = []
+        if side in rating:
+            parts.append("landenrating op " + esc(rating[side].split(": ", 1)[-1]))
+        if side in value_txt:
+            parts.append("selectie " + esc(value_txt[side].split(": ", 1)[-1]))
+        elif t.get("squad_value"):
+            parts.append(f"selectiewaarde {money(t['squad_value'])}")
+        names = t.get("out_names") or []
+        if names:
+            share = t.get("out_share")
+            if share is None and t.get("squad_value"):
+                share = (t.get("out_value") or 0) / ((t.get("squad_value") or 0) + (t.get("out_value") or 0))
+            share_txt = f", {pct(share)} van de waarde" if share is not None else ""
+            names = [n.replace("(injury, ", "(blessure, ").replace("(suspension, ", "(schorsing, ")
+                     for n in names]
+            parts.append(f"mist {len(names)} ({money(t.get('out_value'))}{share_txt}): "
+                         + esc("; ".join(names)))
+        elif t.get("out_count") == 0 or "out_names" in t:
+            parts.append("geen uitvallers bekend")
+        if t.get("form"):
+            parts.append(f"vorm {esc(t['form'])} ({t.get('form_points', '?')} pt uit {t.get('form_matches', '?')})")
+        if t.get("rest_days") is not None and ctx.get("poort7_rust_meetbaar") is not False:
+            parts.append(f"{t['rest_days']:.1f} dagen rust".replace(".", ","))
+        rows.append(f'<div class="ctx-row"><dt>{esc(name)}</dt><dd>{" · ".join(parts) or "niets opgehaald"}</dd></div>')
+    extra = []
+    venue = ctx.get("venue") or match.get("venue")
+    if isinstance(venue, dict) and (venue.get("note") or venue.get("stadium")):
+        extra.append(("Stadion", esc(venue.get("note") or venue.get("stadium"))
+                      + (" — <b>verplaatst</b>" if venue.get("relocated") else "")))
+    if ctx.get("lineup_type"):
+        lineup = {"predicted": "verwacht", "confirmed": "bevestigd", "standard": "standaard"}
+        extra.append(("Opstelling", esc(lineup.get(ctx["lineup_type"], ctx["lineup_type"]))))
+    if ctx.get("poort7_rust_meetbaar") is False:
+        extra.append(("Rust", "niet meetbaar op interlands (de bron telt sinds de vorige interland)"))
+    cand = next((c for c in match.get("all_candidates") or []
+                 if c.get("market") == pick["market"] and abs((c.get("odds") or 0) - pick["odds"]) < 0.01), None)
+    if cand and cand.get("context_reason"):
+        extra.append(("Contextcontrole", esc(cand["context_reason"])))
+    rows += [f'<div class="ctx-row"><dt>{k}</dt><dd>{v}</dd></div>' for k, v in extra]
+    return f'<h4>Context die is meegewogen</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
+
+
+def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None = None) -> str:
     if not picks:
         return ('<div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> '
                 'Geen enkele wedstrijd haalde alle drempels. Dat is een geldige uitkomst, geen '
@@ -265,6 +341,7 @@ def render_bets(picks: list[dict], prose: dict, labels: dict) -> str:
     <div class="why">
       <h4>Waarom</h4>
       <p class="prose">{inline(why)}</p>
+      {render_context(find_match(state or {}, pick), pick)}
       <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
   </div>''')
@@ -719,7 +796,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     <span class="eyebrow">Het antwoord</span>
     <h2>{"De bet" if len(picks) == 1 else f"De {len(picks)} bets" if picks else "Geen bets vandaag"}</h2>
   </div>
-  {render_bets(ranked_picks, prose.get("bets", {}), labels)}
+  {render_bets(ranked_picks, prose.get("bets", {}), labels, state)}
 </section>
 {render_shortlist(picks, prose.get("bets", {}), labels, day)}
 {render_toplists(state, labels, day)}
@@ -850,6 +927,11 @@ header{padding:44px 0 0}
 
 .why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
 .why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
 .risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
 .dot{width:8px; height:8px; border-radius:50%; flex:none}
 .dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
