@@ -1112,7 +1112,48 @@ een doelpunt in de 90+4' is een doelpunt; wat niet meetelt is verlenging en stra
 
 ### Stage 1 — Fixtures van vandaag
 Bepaal zelf de actuele datum. Haal fixtures op; probeer meerdere bronnen (zie
-`data/source-health.json` voor wat laatst werkte). Werk uitsluitend met wedstrijden van **vandaag**.
+`data/source-health.json` voor wat laatst werkte).
+
+**"Vandaag" is het inzetvenster en niet de UTC-dag** (gewijzigd 24 sep 2026):
+
+```python
+from scripts.runwindow import days_needed, matches_for_run
+fixtures = {d: fotmob.fetch_fixtures(d) for d in days_needed(DAY)}   # DAY en DAY + 1
+per_comp = matches_for_run(DAY, fixtures, RUNLIST_IDS)               # {naam: [RunMatch, ...]}
+```
+
+Een wedstrijd hoort bij de run wiens inzetvenster hem nog kan bedienen: `[08:00 NL op de rundag,
+08:00 NL een dag later)`. De gebruiker zet tussen 07:00 en 08:00 in (§0), dus alles wat ná 08:00
+afgetrapt wordt is voor hem speelbaar en alles ervoor niet.
+
+Tot deze datum las elke run "vandaag" als "UTC-datum is de rundag", en dat gaat precies mis bij
+competities die in een Amerikaanse tijdzone spelen. Op 24 sep 2026 stond het enige duel van de Run
+B-runlijst — Seattle Sounders FC – Real Salt Lake, MLS — op `2026-09-24T01:40Z`, oftewel **03:40
+NL**; bij het eerste verzoek van die run was het al 89 minuten onderweg. De run van 23 september had
+het duel gezien en opgeschreven als "hoort bij de run van morgen", en dat was net verkeerd om: het
+hoorde bij de run van 23 september. Vandaag kostte dat één wedstrijd; op een volle MLS-speelronde
+(tien tot veertien duels) kost het de hele ronde, en het runrapport ziet er dan normaal uit met een
+nette nul erin.
+
+Wat je van deze module moet weten:
+
+- **Geen competitielijst en geen tijdzone-vlag.** Een Europese avondwedstrijd verschuift niet; alleen
+  de band van 00:00 tot 08:00 NL gaat een dag naar voren, en dat is exact de band die onspeelbaar bij
+  de run aankwam. De regel is daarom óók goed voor Run A en Run C (een CONCACAF-duel om 02:00 NL
+  heeft hetzelfde probleem).
+- **Twee daglijsten, geen extra verzoek.** `days_needed` geeft `DAY` en `DAY + 1`; die tweede haalden
+  de runs toch al op, juist om deze reden.
+- **`RunMatch.source_day`** zegt op welke daglijst het duel stond. Staat er `DAY + 1`, noem dat dan in
+  het runrapport — anders leest de lijst als een gewone speeldag.
+- **`RunMatch.playable = False`** betekent: al afgetrapt voordat de gebruiker kon inzetten. Zo'n duel
+  hoort in het rapport als `GEEN BET` met de aftraptijd als reden, nooit als bet.
+- **Eenmalig bij de overstap:** de eerste run die deze module gebruikt geeft `include_carry_over=True`
+  mee. De band `[00:00, 08:00)` NL van de eigen rundag is anders door niemand bekeken — de oude regel
+  gaf hem aan de run van vandaag (te laat) en dit venster aan die van gisteren (die hem niet zocht).
+  Daarna weglaten, want anders staat dezelfde wedstrijd in twee runrapporten.
+- **`kickoff_nl`** rekent met `zoneinfo` en dus met echte zomer-/wintertijd. De rest van de repo
+  gebruikt nog een hardgecodeerde `+02:00`; dat is een eigen openstaand punt vanaf de laatste zondag
+  van oktober.
 
 ### Stage 2 — Competitiepoort
 Competities uit je runlijst **zonder** wedstrijden vandaag: overslaan, één regel in de
@@ -1304,24 +1345,66 @@ vorige als het lopende seizoen op, en corrigeer de competitiebasis voordat je é
 doorrekent:
 
 ```python
-from scripts.model import early_season_uplift, scale_level
-obs = [(vorig["avg_xg_per_match"], huidig["avg_xg_per_match"], speeldagen) for elke competitie]
+from scripts.model import uplift_observations, early_season_uplift, league_level
+seizoenen = {comp: (vorig, huidig) for elke competitie}      # antwoorden van fetch_league_stats
+obs, overgeslagen = uplift_observations(seizoenen)           # laat de rijpe seizoenen weg
 factor, pooled, total_md = early_season_uplift(obs)
-league = scale_level(league_uit_vorig_seizoen, factor)
+keuze = league_level(vorig, huidig, uplift_factor=factor)    # per competitie
+league = keuze.league
 ```
 
-Waarom dit moet: met teamsterktes uit vorig seizoen komt het niveau óók uit vorig seizoen, en
-begin seizoen wordt er meer gescoord dan over een heel jaar gemiddeld. Op 9 aug 2026 lag het
+Waarom de correctie moet: met teamsterktes uit vorig seizoen komt het niveau óók uit vorig seizoen,
+en begin seizoen wordt er meer gescoord dan over een heel jaar gemiddeld. Op 9 aug 2026 lag het
 model daardoor over 17 wedstrijden gemiddeld 3.0 pp onder de markt op P(Over 2.5) — tien van de
 zeventien keer dezelfde kant op — waardoor zeven Under-kandidaten dezelfde scheefstand zeven keer
 telden. Na de correctie: +0.9 pp, gemiddelde absolute fout van 4.5 naar 3.9 pp. De correctie dooft
 vanzelf uit naarmate het seizoen vordert.
 
-**Regel de correctie nooit af op de markt.** Hij komt volledig uit xG-waarnemingen; zou je
-`prior_matchdays` bijstellen tot de afwijking tegenover de bookmakers nul is, dan is `my_prob`
-alsnog van de odds afgeleid en meet de edge niets meer (§2). Meten tegen de markt om te zien of
-de correctie werkt mag wel — dat is controleren, niet fitten. Meld de gemeten afwijking vóór en
-na in het runrapport, zodat een volgende run ziet of de correctie nog klopt.
+**`league_level` kiest de route, en dat is nieuw op 24 sep 2026.** Reken het niveau niet meer zelf
+uit en roep `scale_level` niet meer rechtstreeks aan: deze functie doet het voor alle drie de runs
+op één plek, en ze geeft terug wélke route ze nam. Leg dat blok per competitie vast in
+`data/run-state/` onder `niveau` (`keuze.as_dict()`) en noem in het runrapport de route en de
+overgeslagen competities uit `uplift_observations` — een stil weggelaten waarneming is hetzelfde
+probleem als een stille truncatie in Stage 4.
+
+| route | wanneer | niveau |
+|---|---|---|
+| `vorig+uplift` | lopend seizoen jonger dan `SEASON_MATURE_SHARE` (= de helft) van zijn speeldagen | vorig seizoen × `factor` |
+| `lopend` | lopend seizoen op of boven de helft | het lopende seizoen zelf, ongeschaald |
+
+Drie dingen die die tweede route oplost en die je moet kennen voordat je eraan sleutelt:
+
+1. **Bij een halverwege lopend seizoen meet `lopend / vorig` iets anders dan waar de correctie voor
+   is.** Dan is het geen tijdseffect binnen een seizoen maar een echt niveauverschil tussen twee
+   seizoenen, en naar 1.0 terugtrekken gooit dat verschil gedeeltelijk weg. Voor MLS op 24 sep 2026:
+   gemeten verhouding 1.0301 tegen een uplift-factor van 1.0232 — 0,7% te laag, en dat gat groeit met
+   de rest van het seizoen mee. Dit is openstaand punt 3 van `runs/2026-09-20-run-b.md`.
+2. **Het poolen loopt andersom voor de anderen.** De pool is competitie-overstijgend, dus een rijp
+   seizoen drukt zijn eigen niveauverschil in de factor van álle andere. Op 20 sep 2026 tilden
+   Eliteserien (21 speeldagen) en Allsvenskan (22) de gepoolde factor over zeven competities naar
+   1.0600. Narekening van 24 sep: zonder die twee wordt het 1.0565 — **−0,33% voor de vijf vroege
+   competities**, dus dat deel was kleiner dan het rapport van die dag suggereerde. Het effect op de
+   twee kalenderjaarcompetities zelf is wél groot: Eliteserien +2,94% en Allsvenskan −2,19% ten
+   opzichte van wat de oude route gaf, en drie van de vijf bets van die dag stonden in die twee.
+3. **De noemer was stil fout, in élke wedstrijd van élke run.** `avg_xg_per_match` is niet het niveau
+   maar de noemer waartegen `team_strength` normaliseert, en de teamsterktes komen sinds 3 sep uit
+   `blend_seasons` — dus uit een **weging** van beide seizoenen. De noemer hoort diezelfde weging te
+   krijgen en kreeg die niet: elk runscript gaf het `avg_xg` van één seizoen mee. Een noemer die 0,7%
+   te hoog staat gaat in aanval én verdediging mee, dus in `lambda` kwadratisch: ongeveer 1,4% te
+   weinig doelpunten. `league_level` zet de blend erin.
+
+Twee valkuilen die de functie nu zelf afdekt en die je dus niet meer per run hoeft over te typen: de
+**seizoenslengte** wordt gemeten aan het vorige seizoen (MLS heeft dertig ploegen en 34 speeldagen, dus
+`2 × (n − 1)` is daar fout), en bij een competitie **zonder xG** is het doelpuntgemiddelde de noemer.
+
+**Regel de correctie nooit af op de markt.** Ze komt volledig uit xG-waarnemingen; zou je
+`prior_matchdays` of `SEASON_MATURE_SHARE` bijstellen tot de afwijking tegenover de bookmakers nul is,
+dan is `my_prob` alsnog van de odds afgeleid en meet de edge niets meer (§2). Meten tegen de markt om
+te zien of de correctie werkt mag wel — dat is controleren, niet fitten. Meld de gemeten afwijking
+vóór en na in het runrapport, zodat een volgende run ziet of de correctie nog klopt. `SEASON_MATURE_SHARE`
+is **niet gefit**; omdat `league_level` de route per competitie vastlegt, is over een paar weken met
+het kalibratielogboek na te gaan of de `lopend`-route beter gekalibreerd is dan de uplift-route, en
+dát is waarop hij herzien hoort te worden.
 
 ### Stage 6 — Vastleggen
 Volg §6. Zonder commit is de run niet gebeurd.
@@ -2298,7 +2381,8 @@ bij de markt, en dát hele verschil zit in de staart van de margeverdeling.
 shrink-wijziging van diezelfde dag (§6e) verbreedt het lambdaverschil met mediaan factor 1,15 en
 sluit daarmee op zichzelf al ongeveer tweederde van het gat bij "wint met 3 of meer" en veertig
 procent van het gat bij "4 of meer". Een margecorrectie er meteen naast zetten zou dezelfde
-dubbeltelling zijn waar het openstaande punt over `early_season_uplift` voor waarschuwt, en er is
+dubbeltelling zijn die `early_season_uplift` op 24 sep 2026 is gebleken te doen bij een halverwege
+lopend seizoen (Stage 5, `league_level`) — twee correcties op hetzelfde gat — en er is
 nog geen enkele afgewikkelde wedstrijd met lambdas van ná de overstap. Neem `margins.py stats` dus
 elke run op in het runrapport, en beantwoord de vraag opnieuw zodra `--since 2026-09-20` op ~150
 duels met een favoriet staat. Blijft het gat dan bestaan, dan is het grid zelf aan de beurt en niet

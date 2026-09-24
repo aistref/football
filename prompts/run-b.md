@@ -65,14 +65,32 @@ Run-specifieke waarden:
   daar de notatie `"2025"` / `"2026"` en **niet** `"2025/2026"`: Fotmob geeft op een onbekende
   seizoensnotatie geen fout maar valt stil terug op het lopende seizoen, en dan rekent de run zijn
   prior op de stand van vandaag. Deze vier zitten bovendien midden in hun seizoen in plaats van aan
-  het begin, en daar gaat `early_season_uplift` de mist in — zie het openstaande punt in
-  `runs/2026-09-20-run-b.md`.
+  het begin, en daar ging `early_season_uplift` de mist in. **Opgelost op 24 sep 2026:**
+  `model.league_level` kiest nu per competitie de route en haalt het niveau bij een seizoen dat
+  over de helft is rechtstreeks uit het lopende seizoen, en `model.uplift_observations` houdt die
+  competities uit de gepoolde correctie zodat ze de factor van de andere niet optillen. Roep die
+  twee aan en reken het niveau niet zelf uit; zie `_shared-rules.md` Stage 5. Voor MLS op 24 sep gaf
+  dat route `lopend` op 27 van de 34 speeldagen.
 - MLS (USA) kent **geen promotie of degradatie**. Een ploeg die niet in de stand van vorig seizoen
   staat is daar dus geen promovendus maar een uitbreidingsploeg zonder enige historie op dit
   niveau: `promotion.py` heeft daar niets voor en dat hoort ook zo. Dat wordt `NONE`, en dat is de
   eerlijke uitkomst. Bij Série A (BRA) ligt Série B eronder, maar er is **geen gemeten factor** voor
   dat divisiepaar, dus een Braziliaanse promovendus komt eveneens op `NONE` uit.
 - **Let op de aftraptijden van deze twee.** MLS en Série A spelen in Amerikaanse tijdzones: een
-  aftrap van 20:00 lokaal is in NL-tijd de volgende ochtend. Stage 1 werkt met wedstrijden van
-  **vandaag** in UTC, dus een deel van deze speelronden valt buiten de dag waarop de run draait.
-  Dat is geen gat in de dekking; rapporteer de tijden in NL-tijd zoals §5 voorschrijft.
+  aftrap van 20:00 lokaal is in NL-tijd de volgende ochtend. Rapporteer de tijden in NL-tijd zoals §5
+  voorschrijft.
+
+  **Dit was tot 24 sep 2026 een gat en het is er nu geen meer — maar lees waarom, want het is het
+  duurste punt van deze runlijst.** Stage 1 werkte met wedstrijden van **vandaag in UTC**, en een
+  MLS-duel dat in UTC op de rundag valt, trapt af tussen 00:00 en 05:00 NL en is dus *altijd* al
+  gespeeld als Run B om 05:15 begint. Op 24 sep stond het enige duel van de hele runlijst — Seattle
+  Sounders FC – Real Salt Lake — bij het eerste verzoek op 89' met 2-0. De run van 23 sep had het
+  gezien en opgeschreven als "hoort bij de run van morgen", precies verkeerd om. Eén duel die dag,
+  maar op een volle speelronde (tien tot veertien duels op zaterdag en woensdag) is het de hele ronde,
+  en het rapport ziet er dan normaal uit met een nette nul erin.
+
+  Gebruik daarom `scripts/runwindow.py` (`days_needed` + `matches_for_run`) in plaats van op de
+  UTC-datum te filteren: een wedstrijd hoort bij de run wiens inzetvenster hem nog kan bedienen,
+  `[08:00 NL, 08:00 NL + 1 dag)`. Zie `_shared-rules.md` Stage 1, inclusief de eenmalige
+  `include_carry_over=True` bij de overstap. Let daarbij op `RunMatch.playable`: een duel dat al is
+  afgetrapt hoort in het rapport als `GEEN BET` met de aftraptijd als reden, nooit als bet.

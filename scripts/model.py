@@ -589,6 +589,260 @@ def scale_level(league: LeagueContext, factor: float) -> LeagueContext:
     )
 
 
+SEASON_MATURE_SHARE = 0.5
+"""Vanaf welk deel van zijn speeldagen een lopend seizoen zijn eigen niveau mag zetten.
+
+**Dit getal is niet gefit, en dat staat er met opzet bij.** Wat wél vastligt is het mechanisme
+eronder, en dat is met cijfers beschreven in `league_level`. De 0.5 is "ongeveer waar het omslaat",
+in dezelfde geest als `sides.UNDERDOG_FLOOR` en de gewichten van `ranking.data_richness`: hij
+scheidt een competitie die net begonnen is van een die halverwege is, en tussen die twee zit geen
+scherpe grens. Wat de keuze wél meetbaar maakt: `league_level` geeft per competitie terug welke
+route hij nam, dus over een paar weken is met het kalibratielogboek na te gaan of de
+lopend-seizoensroute beter gekalibreerd is dan de uplift-route. Herzie hem op die meting, niet op
+een nieuwe redenering."""
+
+
+def matchdays_played(teams: dict[str, dict]) -> int:
+    """Hoeveel speeldagen er in dit seizoen al zijn gespeeld, uit de stand van `fetch_league_stats`.
+
+    Het maximum en niet het gemiddelde: bij een uitgestelde wedstrijd lopen ploegen een duel uit
+    elkaar, en dan is de verst gevorderde ploeg de speeldag waar de competitie op staat.
+    """
+    return max((t.get("played") or 0) for t in teams.values()) if teams else 0
+
+
+def season_length(prev_teams: dict[str, dict]) -> int | None:
+    """Hoeveel speeldagen een volledig seizoen in deze competitie heeft — **gemeten, niet geraden**.
+
+    Het vorige seizoen is afgelopen, dus zijn eigen speeldagental is het antwoord: MLS 2025 staat op
+    34, Eliteserien 2025 op 30, Serie B 2025/2026 op 38. Dat is beter dan het uit het aantal ploegen
+    afleiden, want `2 x (n - 1)` klopt precies niet voor de competitie waar het hier om begon: MLS
+    heeft dertig ploegen en **34** speeldagen, niet 58, omdat het schema per conference loopt. Het is
+    ook beter dan een tabel in de repo: die veroudert stil zodra een competitie van formaat
+    verandert.
+
+    Geeft `None` als de stand van vorig seizoen leeg is of op 0 staat. De aanroeper hoort dat te
+    behandelen als "seizoenslengte onbekend" en niet als "seizoen nog niet begonnen" — zie
+    `season_is_mature`, die bij `None` de veilige kant kiest.
+    """
+    n = matchdays_played(prev_teams)
+    return n or None
+
+
+def season_is_mature(played: int, length: int | None,
+                     share: float = SEASON_MATURE_SHARE) -> bool:
+    """Heeft dit seizoen genoeg speeldagen achter zich om zijn eigen niveau te zetten?
+
+    Bij een onbekende seizoenslengte is het antwoord **False**: dan blijft de bestaande route staan
+    (vorig seizoen plus de vroeg-seizoenscorrectie), en dat is de conservatieve kant — de correctie
+    is klein en dooft uit, terwijl een onterecht "volwassen" seizoen het niveau op een handvol
+    speeldagen zou baseren.
+    """
+    if not length or length <= 0 or played <= 0:
+        return False
+    return played / length >= share
+
+
+@dataclass
+class LevelChoice:
+    """Het competitieniveau dat een run gebruikt, plus waarom het dat is.
+
+    Leg dit blok per competitie vast in `data/run-state/` onder `niveau`. Zonder `source` en
+    `share` erbij is achteraf niet na te gaan met welk niveau een pick is gepubliceerd, en dan is
+    de meting waar `SEASON_MATURE_SHARE` op herzien moet worden niet te doen.
+    """
+    league: LeagueContext
+    source: str
+    """`"lopend"` of `"vorig+uplift"`."""
+    played: int
+    length: int | None
+    share: float | None
+    ratio: float | None
+    """`avg_xg` lopend / `avg_xg` vorig — de verhouding waar de uplift op rekent."""
+    uplift_factor: float
+    """De factor die `early_season_uplift` gaf. Bij `source == "lopend"` is hij **niet toegepast**;
+    hij staat er om te kunnen zien wat de andere route zou hebben gedaan."""
+    blend_weight: float
+    """Het gewicht waarmee het lopende seizoen in de noemer meeweegt — hetzelfde gewicht dat
+    `blend_seasons` aan de teamsterktes geeft, want dat is waar de noemer bij hoort."""
+    xg_available: bool
+    reason: str
+
+    def as_dict(self) -> dict:
+        d = {k: v for k, v in self.__dict__.items() if k != "league"}
+        d["home_goals_per_match"] = self.league.home_goals_per_match
+        d["away_goals_per_match"] = self.league.away_goals_per_match
+        d["avg_xg_per_match"] = self.league.avg_xg_per_match
+        d["level_factor"] = self.league.level_factor
+        return d
+
+
+def _level(stats: dict) -> tuple[float, float]:
+    return stats["home_goals_per_match"], stats["away_goals_per_match"]
+
+
+def _denominator(stats: dict) -> float:
+    """De noemer waartegen teamsterktes genormaliseerd worden: `avg_xg_per_match`.
+
+    Zes van de zeventien Run B-competities hebben geen xG bij Fotmob. Dan is het doelpuntgemiddelde
+    de sterktemaat, en dus ook de noemer. Die terugval stond tot 24 sep 2026 in elk runscript apart
+    overgetypt (`rb20_analyze.py`, `b_analyze.py`); hier staat hij één keer.
+    """
+    avg = stats.get("avg_xg_per_match")
+    if avg:
+        return avg
+    home, away = _level(stats)
+    return (home + away) / 2
+
+
+def league_level(prev: dict, cur: dict | None = None, *, uplift_factor: float = 1.0,
+                 length: int | None = None, k: float = CREDIBILITY_K,
+                 share: float = SEASON_MATURE_SHARE) -> LevelChoice:
+    """Het `LeagueContext` waarmee een run rekent, langs de route die bij het seizoen past.
+
+    `prev` en `cur` zijn de antwoorden van `fotmob.fetch_league_stats` voor het vorige en het
+    lopende seizoen. Twee routes, en welke het wordt hangt alleen af van hoeveel er van het lopende
+    seizoen is gespeeld:
+
+    | route | wanneer | niveau |
+    |---|---|---|
+    | `vorig+uplift` | lopend seizoen jonger dan `share` van zijn speeldagen | vorig seizoen x `uplift_factor` |
+    | `lopend` | lopend seizoen op of boven `share` | het lopende seizoen zelf, ongeschaald |
+
+    **Waarom de tweede route moest bestaan (Run B, 20 en 24 sep 2026).** `early_season_uplift`
+    beantwoordt de vraag "er wordt nu meer gescoord dan het seizoensgemiddelde waarop mijn
+    teamsterktes staan — hoeveel?". Hij doet dat door de verhouding lopend/vorig te poolen over alle
+    competities van de dag en die dan met `EARLY_SEASON_PRIOR` naar 1.0 terug te trekken. Beide
+    stappen zijn goed vroeg in het seizoen, waar één competitie na één speeldag ruis is, en beide
+    zijn fout zodra een seizoen halverwege is:
+
+    - **De verhouding meet dan iets anders.** Bij 27 van de 34 gespeelde speeldagen is
+      `avg_xg` van het lopende seizoen een nette schatting van het volledige seizoensgemiddelde, en
+      is `lopend / vorig` dus geen tijdseffect binnen een seizoen maar een **echt niveauverschil
+      tussen twee seizoenen**. Terugtrekken naar 1.0 gooit dat verschil gedeeltelijk weg. Voor MLS
+      op 24 sep 2026: gemeten verhouding 1.0301, uplift-factor 1.0232 — 0,7% te laag, en dat gat
+      groeit met de rest van het seizoen mee.
+    - **Het poolen loopt andersom.** Omdat de pool competitie-overstijgend is, drukt een
+      halverwege lopende competitie haar eigen niveauverschil in de factor van álle andere. Dat is
+      op 20 sep 2026 gebeurd: Eliteserien (21 speeldagen) en Allsvenskan (22) tilden de gepoolde
+      factor over zeven competities naar 1.0600, en drie van de vijf bets van die dag stonden in die
+      twee competities. Gebruik daarom `uplift_observations` om de pool te vullen; die laat precies
+      de competities weg die hier op de `lopend`-route uitkomen.
+
+    **Wat de `lopend`-route óók repareert, en dat is nieuw op 24 sep 2026: de noemer.**
+    `avg_xg_per_match` is niet het niveau maar de **noemer** waartegen `team_strength` de
+    teamsterktes normaliseert (zie `scale_level`, die hem daarom met opzet laat staan). Die
+    teamsterktes komen sinds 3 sep uit `blend_seasons`, dus uit een **weging** van beide seizoenen
+    met gewicht `n / (n + k)`. De noemer hoort diezelfde weging te krijgen, en die kreeg hij niet:
+    elk runscript gaf tot nu toe het `avg_xg` van één seizoen mee. Voor MLS op 24 sep was dat het
+    lopende (1.537) bij een blendgewicht van 0.758, waar 0.758 x 1.537 + 0.242 x 1.492 = 1.526
+    hoort. Een noemer die 0,7% te hoog staat gaat in aanval **en** verdediging mee, dus in `lambda`
+    kwadratisch: ongeveer 1,4% te weinig doelpunten. Klein, maar het is een fout die in elke
+    wedstrijd van elke run zat, en hij hoort niet nog eens overgetypt te worden.
+
+    `level_factor` blijft betekenen wat hij in `analyze_match_from_splits` betekent: de factor
+    tussen het niveau dat hier wordt teruggegeven en het niveau waarin de splits zijn geméten. Op de
+    `lopend`-route is dat `niveau lopend / niveau vorig`, want de splitsmethode leest de
+    thuis/uit-reeksen van beide seizoenen samen en normaliseert op vorig seizoen. Zonder dat veld
+    zou de splitsmethode de niveaukeuze **omgekeerd** verwerken — dezelfde fout die op 24 aug 2026
+    bij de uplift is gevonden en gerepareerd.
+
+    `cur=None`, een leeg lopend seizoen of nul gespeelde speeldagen geeft de `vorig+uplift`-route
+    met het gedrag van vóór deze wijziging: bij `uplift_factor=1.0` is dat letterlijk het vorige
+    seizoen.
+    """
+    prev_teams = prev.get("teams") or {}
+    cur_teams = (cur or {}).get("teams") or {}
+    played = matchdays_played(cur_teams)
+    length = length if length is not None else season_length(prev_teams)
+    avg_prev = _denominator(prev)
+    xg_available = bool(prev.get("avg_xg_per_match"))
+
+    if not cur_teams or played <= 0:
+        home, away = _level(prev)
+        league = scale_level(LeagueContext(home_goals_per_match=home, away_goals_per_match=away,
+                                          avg_xg_per_match=avg_prev), uplift_factor)
+        return LevelChoice(league=league, source="vorig+uplift", played=played, length=length,
+                           share=None, ratio=None, uplift_factor=uplift_factor, blend_weight=0.0,
+                           xg_available=xg_available,
+                           reason="geen bruikbare stand van het lopende seizoen — niveau uit vorig "
+                                  f"seizoen met de vroeg-seizoenscorrectie ({uplift_factor:.4f})")
+
+    avg_cur = _denominator(cur)
+    weight = blend_weight(played, k)
+    denominator = weight * avg_cur + (1 - weight) * avg_prev
+    ratio = (avg_cur / avg_prev) if avg_prev else None
+    mature = season_is_mature(played, length, share)
+    part = (played / length) if length else None
+
+    if mature:
+        home_cur, away_cur = _level(cur)
+        home_prev, away_prev = _level(prev)
+        prev_total = home_prev + away_prev
+        factor = ((home_cur + away_cur) / prev_total) if prev_total else 1.0
+        league = LeagueContext(home_goals_per_match=home_cur, away_goals_per_match=away_cur,
+                               avg_xg_per_match=denominator, level_factor=factor)
+        reason = (f"lopend seizoen op {played} van {length} speeldagen ({part:.0%}) — niveau "
+                  f"rechtstreeks uit het lopende seizoen; de vroeg-seizoenscorrectie "
+                  f"({uplift_factor:.4f}) is NIET toegepast, want bij deze stand meet "
+                  f"lopend/vorig ({ratio:.4f}) een echt niveauverschil en geen tijdseffect")
+        return LevelChoice(league=league, source="lopend", played=played, length=length,
+                           share=part, ratio=ratio, uplift_factor=uplift_factor,
+                           blend_weight=weight, xg_available=xg_available, reason=reason)
+
+    home, away = _level(prev)
+    league = scale_level(LeagueContext(home_goals_per_match=home, away_goals_per_match=away,
+                                       avg_xg_per_match=denominator), uplift_factor)
+    deel = f"{part:.0%}" if part is not None else "onbekend deel"
+    reason = (f"lopend seizoen op {played} speeldagen van "
+              f"{length if length else 'onbekend'} ({deel}) — onder {share:.0%}, dus niveau uit "
+              f"vorig seizoen met de vroeg-seizoenscorrectie ({uplift_factor:.4f})")
+    return LevelChoice(league=league, source="vorig+uplift", played=played, length=length,
+                       share=part, ratio=ratio, uplift_factor=uplift_factor, blend_weight=weight,
+                       xg_available=xg_available, reason=reason)
+
+
+def uplift_observations(seasons: dict[str, tuple[dict, dict | None]], *,
+                        share: float = SEASON_MATURE_SHARE,
+                        ) -> tuple[list[tuple[float, float, int]], dict[str, str]]:
+    """De waarnemingen voor `early_season_uplift`, zonder de competities die er niet in horen.
+
+    Geeft `(observaties, overgeslagen)` terug; `overgeslagen` is `{competitie: reden}` en hoort in
+    het runrapport, want een stil weggelaten waarneming is hetzelfde probleem als een stille
+    truncatie in Stage 4.
+
+    Twee redenen om een competitie weg te laten:
+
+    1. **Halverwege haar seizoen** (op of boven `share`). Dat is de pooling-fout uit
+       `league_level`: haar verhouding lopend/vorig is een niveauverschil tussen seizoenen, en die
+       in de pool leggen tilt de factor van alle andere competities op. Op 20 sep 2026 deden
+       Eliteserien en Allsvenskan dat, met een gepoolde factor van 1.0600 als gevolg.
+    2. **Geen bruikbare xG in een van beide seizoenen.** `early_season_uplift` filtert die zelf al
+       weg, maar dan zonder te zeggen welke; hier komt de reden mee.
+    """
+    observations: list[tuple[float, float, int]] = []
+    skipped: dict[str, str] = {}
+    for comp, (prev, cur) in seasons.items():
+        if not prev or not cur:
+            skipped[comp] = "geen stand van beide seizoenen"
+            continue
+        base, now = prev.get("avg_xg_per_match"), cur.get("avg_xg_per_match")
+        played = matchdays_played(cur.get("teams") or {})
+        if not base or not now:
+            skipped[comp] = "geen xG in vorig of lopend seizoen"
+            continue
+        if played <= 0:
+            skipped[comp] = "lopend seizoen nog niet begonnen"
+            continue
+        length = season_length(prev.get("teams") or {})
+        if season_is_mature(played, length, share):
+            skipped[comp] = (f"halverwege het seizoen ({played} van {length} speeldagen) — "
+                             f"niveau komt uit het lopende seizoen, niet uit de gepoolde correctie")
+            continue
+        observations.append((base, now, played))
+    return observations, skipped
+
+
 @dataclass
 class TeamSplits:
     """Wat een ploeg thuis en uit werkelijk scoorde en incasseerde. Geen xG."""
@@ -743,10 +997,24 @@ if __name__ == "__main__":
     league = LeagueContext(home_goals_per_match=1.387, away_goals_per_match=1.229, avg_xg_per_match=1.460)
     standard = TeamStats(xg=47.9, xga=63.3, matches_played=40)
     cercle = TeamStats(xg=59.9, xga=54.9, matches_played=36)
+    # LET OP — dit anker is expliciet op shrink 0.80 en niet op de standaard. Dat was het tot
+    # 19 sep 2026 wel, en toen `DEFAULT_SHRINK` die dag van 0.80 naar 1.00 ging, is dit anker
+    # meeverschoven naar 44.3% en ging deze assert kapot. Gevolg: `python3 scripts/model.py`
+    # brak op regel 1 van de zelftest en ALLES eronder heeft vijf dagen niet gedraaid — ook de
+    # weegregelankers, waarvan hieronder staat dat ze bestaan omdat een stille verschuiving daar
+    # elke topselectie verschuift. Gevonden op 24 sep 2026. Een historisch anker hoort zijn eigen
+    # parameters mee te nemen in plaats van de standaard te volgen, want anders meet hij de
+    # standaard en niet de wedstrijd.
+    probs08 = analyze_match(standard, cercle, league, shrink=0.80)
     probs = analyze_match(standard, cercle, league)
-    print(f"Standard {probs.home * 100:.1f}%  Gelijk {probs.draw * 100:.1f}%  Cercle {probs.away * 100:.1f}%")
-    assert abs(probs.away - 0.418) < 0.002, f"verwacht ~41.8%, kreeg {probs.away * 100:.1f}%"
-    print(f"Edge op Cercle @2.85: {edge_pp(probs.away, 2.85):+.1f} pp (verwacht +6.7 pp)")
+    print(f"Standard {probs.home * 100:.1f}%  Gelijk {probs.draw * 100:.1f}%  Cercle {probs.away * 100:.1f}%"
+          f"   (shrink 0.80, het anker van 8 aug: Cercle {probs08.away * 100:.1f}%)")
+    assert abs(probs08.away - 0.418) < 0.002, f"verwacht ~41.8% bij shrink 0.80, kreeg {probs08.away * 100:.1f}%"
+    # En de huidige standaard, zodat een volgende wijziging van DEFAULT_SHRINK hier opvalt in
+    # plaats van de hele zelftest om te leggen.
+    assert abs(probs.away - 0.443) < 0.002, f"verwacht ~44.3% bij shrink {DEFAULT_SHRINK}, kreeg {probs.away * 100:.1f}%"
+    print(f"Edge op Cercle @2.85: {edge_pp(probs08.away, 2.85):+.1f} pp bij shrink 0.80 "
+          f"(verwacht +6.7 pp) · {edge_pp(probs.away, 2.85):+.1f} pp bij de standaard {DEFAULT_SHRINK}")
 
     # Vroeg-seizoenscorrectie, met de zes competitiemetingen van 9 aug 2026 als vaste invoer.
     obs = [(1.579, 1.820, 1), (1.316, 1.350, 1), (1.460, 1.875, 1),
@@ -823,4 +1091,76 @@ if __name__ == "__main__":
           f"DNB thuis @2.34 {dnb_prob(grid, 'home', 2.34) * 100:.1f}%  "
           f"Over 3.5 {totals_prob(grid, 3.5, 'over', 2.0) * 100:.1f}%  "
           f"BTTS {probs.btts * 100:.1f}%")
+
+    # Niveaukeuze (toegevoegd 24 sep 2026). Verankerd op MLS 2025/2026, de competitie waarop de
+    # regel is ontstaan, met de cijfers zoals `fetch_league_stats` ze die dag gaf.
+    _mls_prev = {"avg_xg_per_match": 1.4921296296296294, "home_goals_per_match": 1.6392156862745098,
+                 "away_goals_per_match": 1.3607843137254902,
+                 "teams": {f"t{i}": {"played": 34} for i in range(30)}}
+    _mls_cur = {"avg_xg_per_match": 1.5370179948586125, "home_goals_per_match": 1.8195876288659794,
+                "away_goals_per_match": 1.3891752577319587,
+                "teams": {f"t{i}": {"played": 27} for i in range(30)}}
+    assert season_length(_mls_prev["teams"]) == 34
+    assert matchdays_played(_mls_cur["teams"]) == 27
+    # MLS heeft 30 ploegen en 34 speeldagen: 2 x (n - 1) = 58 zou hier fout zijn, en dat is precies
+    # waarom `season_length` meet in plaats van rekent.
+    assert season_length(_mls_prev["teams"]) != 2 * (30 - 1)
+
+    _keuze = league_level(_mls_prev, _mls_cur, uplift_factor=1.0232)
+    assert _keuze.source == "lopend", _keuze.source
+    # Het niveau is dat van het lopende seizoen, niet vorig seizoen x de correctie.
+    assert abs(_keuze.league.home_goals_per_match - 1.8195876288659794) < 1e-12
+    # De noemer is de BLEND, niet één van de twee seizoenen. Dat is de stille fout van vóór 24 sep.
+    _w = blend_weight(27, CREDIBILITY_K)
+    assert abs(_keuze.league.avg_xg_per_match
+               - (_w * 1.5370179948586125 + (1 - _w) * 1.4921296296296294)) < 1e-12
+    assert _keuze.league.avg_xg_per_match < 1.5370179948586125   # lager dan het lopende alleen
+    assert _keuze.league.avg_xg_per_match > 1.4921296296296294   # hoger dan het vorige alleen
+    # `level_factor` moet de verhouding tussen het teruggegeven niveau en dat van vorig seizoen
+    # zijn, want de splitsmethode normaliseert op het seizoen waarin de splits zijn gemeten.
+    assert abs(_keuze.league.level_factor
+               - (1.8195876288659794 + 1.3891752577319587)
+               / (1.6392156862745098 + 1.3607843137254902)) < 1e-12
+    # En hij mag niet 1.0 zijn: dan zou `analyze_match_from_splits` de niveaukeuze omgekeerd
+    # verwerken, dezelfde fout die op 24 aug 2026 bij de uplift is gevonden.
+    assert _keuze.league.level_factor > 1.0
+
+    # Een jong seizoen houdt de oude route, inclusief de correctie.
+    _jong = {**_mls_cur, "teams": {f"t{i}": {"played": 6} for i in range(30)}}
+    _k2 = league_level(_mls_prev, _jong, uplift_factor=1.0600)
+    assert _k2.source == "vorig+uplift", _k2.source
+    assert abs(_k2.league.home_goals_per_match - 1.6392156862745098 * 1.0600) < 1e-12
+    assert abs(_k2.league.level_factor - 1.0600) < 1e-12
+    # Zonder lopend seizoen is het letterlijk vorig seizoen bij factor 1.0.
+    _k3 = league_level(_mls_prev, None)
+    assert _k3.source == "vorig+uplift" and _k3.blend_weight == 0.0
+    assert abs(_k3.league.avg_xg_per_match - 1.4921296296296294) < 1e-12
+    assert abs(_k3.league.level_factor - 1.0) < 1e-12
+    # Onbekende seizoenslengte kiest de veilige kant: de oude route.
+    assert league_level({**_mls_prev, "teams": {}}, _mls_cur).source == "vorig+uplift"
+    # Geen xG: dan is het doelpuntgemiddelde de noemer, en die terugval hoort hier en niet in een
+    # runscript. Zes van de zeventien Run B-competities zitten in dit geval.
+    _geen_xg = {"avg_xg_per_match": None, "home_goals_per_match": 1.4, "away_goals_per_match": 1.2,
+                "teams": {f"t{i}": {"played": 30} for i in range(16)}}
+    _k4 = league_level(_geen_xg, None)
+    assert abs(_k4.league.avg_xg_per_match - 1.3) < 1e-12 and _k4.xg_available is False
+
+    # De pool laat een halverwege lopende competitie weg. Cijfers van 20 sep 2026, de dag waarop
+    # Eliteserien (21 speeldagen) en Allsvenskan (22) de gepoolde factor naar 1.0600 tilden.
+    _eli_prev = {"avg_xg_per_match": 1.5425, "teams": {f"t{i}": {"played": 30} for i in range(16)}}
+    _eli_cur = {"avg_xg_per_match": 1.6831288343558284,
+                "teams": {f"t{i}": {"played": 21} for i in range(16)}}
+    _gre_prev = {"avg_xg_per_match": 1.3063559322033897,
+                 "teams": {f"t{i}": {"played": 26} for i in range(14)}}
+    _gre_cur = {"avg_xg_per_match": 1.33, "teams": {f"t{i}": {"played": 5} for i in range(14)}}
+    _obs, _weg = uplift_observations({"Eliteserien (NOR)": (_eli_prev, _eli_cur),
+                                     "Greek Super League (GRE)": (_gre_prev, _gre_cur)})
+    assert [o[2] for o in _obs] == [5], _obs
+    assert "Eliteserien (NOR)" in _weg and "Greek Super League (GRE)" not in _weg
+    assert "halverwege" in _weg["Eliteserien (NOR)"]
+
+    print(f"Niveaukeuze: MLS 27/34 speeldagen -> route '{_keuze.source}', niveau "
+          f"{_keuze.league.home_goals_per_match:.3f}/{_keuze.league.away_goals_per_match:.3f}, "
+          f"noemer {_keuze.league.avg_xg_per_match:.4f} (blendgewicht {_keuze.blend_weight:.3f}), "
+          f"level_factor {_keuze.league.level_factor:.4f}")
     print("Zelftest geslaagd.")

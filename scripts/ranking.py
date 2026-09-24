@@ -192,11 +192,20 @@ def sort_key(tier: str, richness: float, markets: int, kickoff: str):
 
 if __name__ == "__main__":
     from datetime import date as _d
-    assert max_deep_analyses(_d(2026, 8, 26)) == 30    # woensdag
-    assert max_deep_analyses(_d(2026, 8, 28)) == 35    # vrijdag
-    assert max_deep_analyses(_d(2026, 8, 29)) == 35    # zaterdag
-    assert max_deep_analyses(_d(2026, 8, 30)) == 35    # zondag
-    assert max_deep_analyses(_d(2026, 8, 31)) == 30    # maandag
+    # Deze vijf asserts stonden tot 24 sep 2026 op de vaste getallen 30 en 35, en braken dus op
+    # 5 sep toen DEEP_WEEKDAY/DEEP_WEEKEND op 40/55 gingen. Gevolg: `python3 scripts/ranking.py`
+    # sloeg af op de eerste regel van zijn zelftest en alles eronder draaide negentien dagen niet —
+    # dezelfde fout als in de zelftest van `model.py`, daar dezelfde dag gevonden. Wat deze asserts
+    # horen te toetsen is de **dagsoort**, niet de waarde van de constante; die twee door elkaar
+    # halen maakt van elke parameterwijziging een kapotte zelftest.
+    assert max_deep_analyses(_d(2026, 8, 26)) == DEEP_WEEKDAY    # woensdag
+    assert max_deep_analyses(_d(2026, 8, 28)) == DEEP_WEEKEND    # vrijdag
+    assert max_deep_analyses(_d(2026, 8, 29)) == DEEP_WEEKEND    # zaterdag
+    assert max_deep_analyses(_d(2026, 8, 30)) == DEEP_WEEKEND    # zondag
+    assert max_deep_analyses(_d(2026, 8, 31)) == DEEP_WEEKDAY    # maandag
+    assert DEEP_WEEKEND > DEEP_WEEKDAY, "het weekend hoort ruimer te zijn dan een werkdag"
+    # Dezelfde controle voor de shortlist, die hem nog niet had.
+    assert max_shortlist(_d(2026, 8, 26)) == 3 and max_shortlist(_d(2026, 8, 29)) == 5
     assert _continuity_points(None) == 0.75
     assert _continuity_points(0.1) == 1.5 and _continuity_points(2.0) == 0.0
     assert _lineup_points("lineup") > _lineup_points("predicted") > _lineup_points("")
