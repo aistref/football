@@ -158,6 +158,9 @@ def build(state: dict, n: int | None = None) -> dict:
     """
     if n is None:
         n = max_shortlist(date.fromisoformat(state["date"]))
+    # Run C is per ontwerp altijd LIGHT; daar zou de cap een vast plafond van twee bets per dag
+    # zijn. Op 24 sep 2026 door de gebruiker voor Run C geschrapt (prompts/run-c.md).
+    max_light = None if str(state.get("run", "")).upper() == "C" else MAX_LIGHT
 
     best_h: dict[str, dict] = {}
     best_r: dict[str, dict] = {}
@@ -206,7 +209,7 @@ def build(state: dict, n: int | None = None) -> dict:
             uit, light = [], 0
             for r in xs:
                 if r["tier"] != "FULL":
-                    if light >= MAX_LIGHT:
+                    if max_light is not None and light >= max_light:
                         continue
                     light += 1
                 uit.append(r)

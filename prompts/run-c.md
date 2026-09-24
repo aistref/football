@@ -245,6 +245,14 @@ duels is de rating vrijwel volledig door de regularisatie bepaald: een aanname m
 eromheen, geen meting. Dan `data_tier = NONE` en geen bet. Vang hem af en val **niet** stil
 terug op een gemiddelde ploeg.
 
+### Geen LIGHT-grens in de topselectie (24 sep 2026, besluit van de gebruiker)
+
+`MAX_LIGHT_IN_SHORTLIST` uit §0 geldt **niet** voor Run C. Omdat elk Run C-duel `LIGHT` is,
+werkte die grens hier als een vast plafond van twee bets per dag, ongeacht hoeveel selecties alle
+poorten haalden — op 24 sep 2026 vielen er zo twee af. `MAX_SHORTLIST` (3 ma–do, 5 vr–zo) blijft
+gewoon gelden, net als alle acht poorten. `scripts/toplist.py` slaat de cap over bij
+`state["run"] == "C"`, dus zet `run` goed in de run-state.
+
 ### Welk datatier
 
 | Situatie | `data_tier` |
@@ -381,6 +389,8 @@ uit één kalenderjaar.
 
   **Wat je daarom noteert:** per duel in `data/run-state/` onder `context` een
   `"poort7_bron": "squadform"` met het gemeten aandeel, en `"poort7_rust_meetbaar": false`.
+  Zet per kant ook `name` en `out_names` (de `names` uit `squadform.injuries`) erin: het dagrapport
+  toont de uitvallers bij naam onder elke bet (§6c, sinds 24 sep 2026).
   Ontbreekt de selectie bij een van beide ploegen (81 van de 213 landen op 21 sep), noteer dan
   `"poort7_meetbaar": false` en tel de poort niet als bescherming. `ctxlog.py` houdt interlands
   bovendien apart van clubduels: het beschikbaarheidsverschil is daar anders gemeten en zou de

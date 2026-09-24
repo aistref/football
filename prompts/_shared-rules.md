@@ -17,7 +17,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
 | `EDGE_THRESHOLD_FULL` | **8.0 procentpunt** | Verhoogd van 3.0 op 31 aug 2026, op verzoek van de gebruiker, en dit keer op **uitkomsten** gemeten in plaats van beredeneerd. Zie "Waarom de drempel op 8 staat" hieronder. |
 | `EDGE_THRESHOLD_LIGHT` | **16.0 procentpunt** | Zwakkere data eist een grotere marge: exact tweemaal `EDGE_THRESHOLD_FULL`. Die verhouding is geen keuze maar een afhankelijkheid — `model.DATA_WEIGHT` leidt het LIGHT-gewicht van 0.5 in `selection_score` er rechtstreeks uit af (§1a). Verander de een niet zonder de ander. |
-| `MAX_LIGHT_IN_SHORTLIST` | **2** | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. |
+| `MAX_LIGHT_IN_SHORTLIST` | **2** (Run A en B) · **geen** (Run C) | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. **Geldt niet voor Run C** — daar is alle data per ontwerp LIGHT en werkte de grens als een vast plafond van twee bets per dag; op 24 sep 2026 door de gebruiker geschrapt. `scripts/toplist.py` slaat hem over bij `run == "C"`. |
 | `MIN_ODDS` / `MAX_ODDS` | **1.30** / **6.00** | Buiten deze band is de kansschatting te onnauwkeurig om edge zinvol te noemen. |
 | `SETTLE_AFTER_HOURS` | **vervallen** | Vervangen op 3 sep 2026 door de statusregel hieronder. Stond van de eerste commit tot die datum op 12 uur na de **aftrap**, zonder onderbouwing. |
 | `SETTLE_FALLBACK_HOURS` | **2.0** | Alleen de terugval als de bron geen status geeft. `scripts/settling.FALLBACK_HOURS`. |
@@ -2321,6 +2321,23 @@ levert elke run **ook** een HTML-pagina op:
    stand van het logboek komen automatisch uit `picks.jsonl` en `data/run-state/` — niet
    overtypen, want dan gaan de twee rapporten uiteenlopen.
 3. Publiceer het bestand als Artifact en **zet die link in de notificatie** (§7).
+
+**Elke bet noemt de context die is meegewogen (toegevoegd 24 sep 2026, op verzoek van de
+gebruiker).** Tot die datum legde de `why`-tekst uit wat het model zag, maar niet wat er over de
+wedstrijd zelf bekend was — terwijl de run dat voor poort 7 wél ophaalt. Twee dingen, allebei
+verplicht:
+
+- `report.py` zet onder elke bet automatisch een blok **"Context die is meegewogen"** uit het
+  wedstrijdrecord in `data/run-state/`: per ploeg selectiewaarde, uitvallers **bij naam** met hun
+  aandeel in de selectiewaarde, vorm en rust, en daaronder stadion (en of het verplaatst is),
+  opstelling en de uitkomst van de contextcontrole. Leg die velden dus vast in het `context`-blok
+  (`name`, `out_names`, `out_value`, `squad_value`, `form`, `rest_days`, `venue`, `lineup_type`) —
+  wat daar niet staat, kan de pagina niet tonen.
+- De `why`-tekst zelf heeft een alinea **"Context."** die in gewone taal zegt wat die gegevens
+  voor déze bet betekenen: wie er ontbreekt en of dat telt, of een ploeg vermoeid is, waar er
+  gespeeld wordt. Ontbreekt er iets (geen blessurelijst, rust niet meetbaar, een selectie te dun
+  om iets te zeggen), schrijf dat dan op in plaats van het weg te laten — "geen uitvallers bekend"
+  is iets anders dan "iedereen fit".
 
 Schrijf de prose voor iemand die de repo niet kent en het jargon niet spreekt. Geen `edge_pp`,
 geen "de-viggen", geen ρ of shrink: die staan in de woordenlijst onderaan de pagina en horen niet
