@@ -1884,6 +1884,36 @@ De zeven andere poorten (koersband, anti-circulariteit, datatier, tegenstrijdige
 robuustheid, context, underdog tot 25 sep) blijven **wél** poorten. Die houden tegen omdat de
 selectie zelf niet deugt; de drempel hield alleen tegen omdat het er te weinig waren.
 
+#### Wat er gebeurt met een gekwalificeerde selectie die niet past (vastgelegd 26 sep 2026)
+
+Stap 5 hierboven beschrijft het geval dat er **méér** selecties boven de drempel staan dan er
+regels in de lijst passen. Wat er dan met de selecties gebeurt die afvallen, stond hier niet, en
+dat is sinds 24 september twee keer voorgekomen: Run C liet op die dag Portugal – Wales (BTTS ja
+@ 2.30, rang 4 bij `MAX_SHORTLIST` = 3) buiten de lijst, en Run B had er op 26 september twee —
+zeven selecties haalden alle acht de poorten én hun drempel, en er passen vijf regels in.
+
+Zo'n selectie is geen afgewezen kandidaat: er is geen enkele poort die haar heeft tegengehouden.
+Ze is ook geen bet. Leg haar daarom vast als:
+
+1. een `gekwalificeerd_niet_gepubliceerd`-blok op de wedstrijd in `data/run-state/`, met de
+   selectie, de koers, de edge, de `selection_score`, de **rang** in de dagranglijst en de reden;
+2. een `near_miss` met **`failed_gate = "lijstlengte"`**, zodat `shadow.py collect` haar afrekent.
+
+**Gebruik precies die naam en verzin geen tweede.** Het is één vraag — wat kost de lijstlengte ons
+— en twee namen zouden één populatie in twee reeksen splitsen, waarna geen van beide ooit de ~30
+afgewikkelde gevallen haalt die §6d eist. Op 26 sep 2026 stond de reeks op 3 rijen, waarvan 1
+afgewikkeld (verloren).
+
+**En tel `lijstlengte` nooit bij `edge` op.** `edge` betekent "te weinig voordeel"; deze rij
+betekent "genoeg voordeel, maar andere wedstrijden hadden er meer". Dat zijn twee populaties en een
+gezamenlijke ROI beantwoordt geen van beide vragen — dezelfde regel als bij `herijking` (6 sep) en
+`underdog_ruw` (15 sep).
+
+Let ten slotte op wat dit betekent voor `poort8_vervallen`: het veld `gepubliceerd` daarin zet de
+analyse op `True` zodra de wedstrijd een bet oplevert, en dat klopte zolang elke bet ook
+gepubliceerd werd. Met de lijstlengte als bindende afkapping niet meer — zet het bij zo'n selectie
+terug op `False`, anders meet de reeks van §1e kanten waarop nooit is gespeeld.
+
 **Schrijf er per regel bij waar hij staat.** Elke gepubliceerde regel draagt zijn edge én of hij de
 oude lat haalt, zodat de lijst leesbaar blijft als "dit is het beste van vandaag" en niet wordt
 gelezen als "dit is een gevonden voordeel". Dat onderscheid is de hele reden dat deze wijziging
