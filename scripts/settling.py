@@ -133,6 +133,35 @@ def kickoff_of(pick: dict) -> datetime | None:
     return None
 
 
+def _days_to_try(pick: dict, ko: datetime) -> list[date]:
+    """Op welke Fotmob-daglijsten je deze wedstrijd mag zoeken.
+
+    De aftrapdag zelf eerst. Daarna de dag erna, en pas daarna de dag ervoor.
+
+    Waarom de dag erna erbij hoort: een schaduwpick kent alleen de rundatum, en
+    `kickoff_of` maakt daar 23:59:59 UTC van. Een duel dat ná middernacht UTC
+    aftrapt — CONCACAF, MLS, Serie A (BRA) — staat dan op de daglijst van de dág
+    erna, de zoekopdracht mist hem, en dan valt `settleable` terug op de klok. Die
+    klok rekent vanaf 23:59 en staat dus meteen op meer dan twee uur, ook als het
+    duel nog moet beginnen. Op 26 sep 2026 gebeurde dat: El Salvador – Martinique
+    (aftrap 03:00 UTC, op dat moment 0-0 en bezig) werd als afwikkelbaar gemeld op
+    grond van een aftrap die de routine zelf had verzonnen.
+
+    Alleen de bron mag zeggen dat een wedstrijd afgelopen is; de klok is de terugval
+    voor als er géén status was, niet voor als er op de verkeerde dag is gekeken.
+    """
+    days = [ko.date()]
+    raw = pick.get("kickoff")
+    if not raw:  # alleen een rundatum: de echte aftrap kan een dag later liggen
+        days.append(ko.date() + timedelta(days=1))
+    days.append(ko.date() - timedelta(days=1))
+    out: list[date] = []
+    for d in days:
+        if d not in out:
+            out.append(d)
+    return out
+
+
 def settleable(pick: dict, index: DayIndex | None = None,
                fallback_hours: float = FALLBACK_HOURS,
                now: datetime | None = None) -> tuple[bool, str]:
@@ -148,7 +177,11 @@ def settleable(pick: dict, index: DayIndex | None = None,
         home, away = [x.strip() for x in pick["match"].split("–", 1)]
 
     if index is not None and home and away:
-        hit = index.lookup(ko.date(), home, away)
+        hit = None
+        for day in _days_to_try(pick, ko):
+            hit = index.lookup(day, home, away)
+            if hit is not None:
+                break
         if hit is not None:
             if hit["cancelled"]:
                 return True, f"bron meldt afgelast ({hit['score'] or 'geen stand'})"
