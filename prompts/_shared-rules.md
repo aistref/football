@@ -1050,8 +1050,29 @@ Bij conflicten:
 | Bestand | Regel |
 |---|---|
 | `data/picks.jsonl` | **Vereniging.** Een pick die op één tak staat is een echte, gepubliceerde pick. Staat dezelfde id op beide takken, neem dan de versie die het meest weet — een afgewikkelde regel wint van `pending`. |
+| `data/shadow.jsonl`, `data/calibration.jsonl`, `data/context-log.jsonl` | **Vereniging, per regel.** Zelfde redenering als bij `picks.jsonl`: het zijn metingen. Zie de waarschuwing hieronder — dit zijn precies de drie die vergeten worden. |
 | `data/source-health.json`, `data/coverage.json` | **Vereniging.** Beide runs hebben echt gemeten; bewaar beide waarnemingen naast elkaar in `detail` in plaats van er een te laten winnen. |
 | `prompts/_shared-rules.md`, `scripts/*` | De **nieuwste** versie wint. Regels en rekencode zijn geen metingen. |
+
+**Controleer alle vijf de logboeken, niet alleen `picks.jsonl`** (toegevoegd 27 sep 2026). Deze tabel
+noemde tot die datum `picks.jsonl`, `source-health.json` en `coverage.json`, en dat las als de
+volledige lijst. Het gevolg is diezelfde ochtend gemeten: **Run A controleerde per record alleen de
+pick-id's, vond niets, en concludeerde dat er niets te verenigen viel. Run B liep daarna alle vijf de
+logboeken na en vond in `data/shadow.jsonl` vijf rijen van Run A van 19 september die `main` nooit
+heeft gekregen** — Hibernian – Aberdeen, Korona Kielce – Raków, Paris FC – Straatsburg, Stuttgart –
+Dortmund en Wrexham – Southampton, alle vijf `failed_gate = herijking` en alle vijf nog `pending`, uit
+tak `claude/zealous-edison-elu4ga`. Vijf afgewikkelde schaduwrijen zijn bij de aantallen van §6d geen
+detail: de `herijking`-reeks stond die dag op 47 gevallen, dus dit is ruim tien procent ervan.
+
+Twee dingen die daaruit volgen:
+
+1. **Een controle op `picks.jsonl` alleen is geen controle.** De gepubliceerde bets zijn juist het
+   bestand dat het minst vaak uiteenloopt, want elke run raakt het bewust aan. De logboeken die een
+   script bijwerkt (`shadow.jsonl`, `calibration.jsonl`, `context-log.jsonl`) lopen ongemerkt uiteen.
+2. **Vergelijk op de inhoud en niet op de commitgraaf, ook ná een `--unshallow`.** Tak `elu4ga` telde
+   na het unshallowen **0** eigen commits en zág er dus schoon uit, terwijl er vijf metingen op
+   stonden die hier ontbraken. "0 eigen commits" is een uitspraak over de graaf; alleen een
+   vergelijking per regel is een uitspraak over de metingen.
 
 Lees deze regels pas ná de merge opnieuw: vóór de merge kun je een oudere versie van dit bestand in
 handen hebben dan er in de repo bestaat. Kom je uit op een andere branch dan de scheduler noemt, meld
