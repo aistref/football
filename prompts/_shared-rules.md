@@ -1194,6 +1194,8 @@ Neem de uitvoer letterlijk over in het runrapport onder "Bronstatus deze run". W
 - **Beide sleutels ontbreken** → er is geen API-bron. Ga verder met de scrape-bronnen uit
   `coverage.json`; verwacht dat vrijwel alles `BUITEN DATADEKKING` wordt. Meld in het rapport dat
   de sleutels ontbreken, met verwijzing naar `README.md` → "Sleutels toevoegen".
+- **`API_FOOTBALL_KEY` ontbreekt** → dat is **geen gat en geen actiepunt**. Zie
+  "`API_FOOTBALL_KEY` komt er niet — besluit van de gebruiker" hieronder.
 - **`API_FOOTBALL_KEY` werkt** → er is een onafhankelijke kansbron. Deze competities kunnen nu de
   datadekkingspoort passeren. Trek per competitie na of er daadwerkelijk xG in de respons zit:
   zo ja `FULL`, zo nee `LIGHT` op basis van teamstatistieken, doelgemiddelden en home/away-splits.
@@ -1202,6 +1204,42 @@ Neem de uitvoer letterlijk over in het runrapport onder "Bronstatus deze run". W
   maanden onopgemerkt blijft.
 - **Quota bijna op** → verlaag het aantal opvragingen deze run en meld het. Bij The Odds API kost
   een verzoek `markten × regio's`; houd het op één regio en maximaal twee markten.
+
+#### `API_FOOTBALL_KEY` komt er niet — besluit van de gebruiker (27 september 2026)
+
+**De gebruiker wil hier geen geld aan uitgeven. Dat is besloten en het is geen openstaand punt meer.**
+
+De aanleiding: op 27 september is de ontbrekende sleutel voor het eerst niet als constatering maar
+als vráág aan de gebruiker voorgelegd, met twee uitwegen (§6c, "Elk actiepunt zegt wat de gebruiker
+moet doen"). Zijn antwoord was "Dat wil ik niet." Dat is een keuze over geld en die hoort bij hem en
+niet bij de data — dezelfde redenering als bij `selection_score` (§1a) en bij het vervallen van
+poort 8 (§1e).
+
+**Wat dat betekent voor elke run vanaf nu:**
+
+1. **Meld het niet als gat, niet als actiepunt en niet in de notificatie.** De regel hierboven ("een
+   stilzwijgend afgewezen sleutel is het soort storing dat maanden onopgemerkt blijft") gaat over een
+   **afgewezen** sleutel. Een sleutel die er met opzet niet is, is iets anders: daar is niets aan
+   stuk. Zet hem dus niet meer in `todo` van het dagrapport en niet in "Wat ik nog moet doen".
+2. **Blijf hem wel feitelijk noemen onder "Bronstatus deze run".** Eén regel: de sleutel ontbreekt,
+   dat is een besluit van 27 sep 2026, en de kanskant komt van Fotmob en Understat. Dat is
+   boekhouding en geen vraag — en het is de enige manier waarop een latere run ziet dat de stilte
+   een keuze was en geen vergeetachtigheid.
+3. **De uitzondering, en dit is waarom punt 1 geen risico is.** De sleutel wordt een echt probleem
+   zodra de gratis kansbronnen wegvallen. Meld het dus **wel**, vooraan in de notificatie, zodra
+   **Fotmob** niet meer levert: dat is voor vrijwel elke competitie de enige xG-bron, en Understat
+   dekt er maar vijf (§4). Valt Fotmob om, dan is er geen onafhankelijke kansinput meer, wordt élke
+   wedstrijd `data_tier = NONE` (§2) en levert elke run gegarandeerd nul bets — en dan is "de
+   betaalde bron alsnog nemen" een reële vraag in plaats van een aanbod zonder aanleiding.
+   Schrijf er dan bij dat het besluit van 27 september onder ándere omstandigheden is genomen.
+4. **Draai `api_check.py` onveranderd.** Het script blijft melden dat de statistiekenbron niet
+   beschikbaar is; dat is waar. Het dringt sinds deze datum niet meer aan op het zetten van de
+   sleutel, want dat is tegen een besloten keuze in aandringen.
+
+**Wat het niet verandert:** `api_football` blijft in de `prob_sources`-lijsten van `coverage.json`
+staan, precies zoals hij daar sinds 10 augustus staat met status `plan_limited`. Hem eruit schrappen
+zou de lijsten moeten herschrijven voor iets wat vanzelf weer meedoet als er ooit tóch een plan komt,
+en de datadekkingspoort slaat hem nu al over.
 
 Werk daarna `data/source-health.json` bij met wat je gemeten hebt: de statusregels van
 `api_check.py` én de scrape-bronnen die je deze run hebt geprobeerd (inclusief HTTP-status bij
@@ -2610,7 +2648,13 @@ weet of zijn routine nog leeft. Draai dit niet terug zonder de vier dagen hierbo
 
 ## 8. Wat deze regels expliciet níet oplossen
 
-De bronnen zijn nog steeds grotendeels dichtgezet (zie `data/source-health.json`). Zolang er geen
-API-key beschikbaar is, zullen veel competities in `BUITEN DATADEKKING` blijven vallen en zullen
-runs vaak nul bets opleveren. Dat is de eerlijke uitkomst van de huidige input, niet een defect
-in deze regels. De structurele fix staat in `README.md` onder "Nog te doen".
+De bronnen zijn nog steeds grotendeels dichtgezet (zie `data/source-health.json`). Veel competities
+zullen daardoor in `BUITEN DATADEKKING` blijven vallen en runs zullen vaak nul bets opleveren. Dat
+is de eerlijke uitkomst van de huidige input, niet een defect in deze regels.
+
+**En het is vanaf 27 september 2026 ook geen openstaande fix meer.** Hier stond tot die datum dat de
+structurele oplossing een API-key was, met een verwijzing naar `README.md` → "Nog te doen". De
+gebruiker heeft op 27 september besloten daar geen geld aan uit te geven (zie §3, "`API_FOOTBALL_KEY`
+komt er niet"). De kanskant komt dus van Fotmob en Understat, en dat is de bewuste, definitieve
+opzet — niet een tussenstand in afwachting van budget. Wie deze paragraaf leest als "er ligt nog een
+oplossing klaar die niemand heeft opgepakt", leest hem verkeerd.

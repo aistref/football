@@ -3,6 +3,12 @@
 
     python3 scripts/api_check.py
 
+`API_FOOTBALL_KEY` ontbreekt met opzet: de gebruiker heeft op 27 sep 2026 besloten daar geen geld
+aan uit te geven (`_shared-rules.md` §3, "API_FOOTBALL_KEY komt er niet"). Dit script meldt dat dus
+als stand van zaken en niet als actiepunt. Het blijft wél melden dat er geen statistieken-API is,
+want dat is waar — en het zegt onder welke voorwaarde die keuze opnieuw ter tafel komt: als Fotmob
+wegvalt.
+
 Draai dit nadat je een sleutel hebt toegevoegd aan de omgeving van de geplande taak.
 Het script kost bijna geen quota: de sportenlijst van The Odds API is gratis, en de
 statuscall van API-Football kost één verzoek van je dagbudget.
@@ -86,7 +92,9 @@ def check_api_football() -> bool:
     key = os.environ.get("API_FOOTBALL_KEY")
     if not key:
         print("  API_FOOTBALL_KEY niet gezet — overgeslagen.")
-        print("  Zet hem in de omgeving van de geplande taak (zie README, 'Sleutels toevoegen').")
+        print("  Dat is een besluit van de gebruiker (27 sep 2026), geen storing: hij wil hier geen")
+        print("  geld aan uitgeven. De kanskant komt van Fotmob en Understat. Zie")
+        print("  _shared-rules.md §3, 'API_FOOTBALL_KEY komt er niet'. Niet als actiepunt melden.")
         return False
 
     status, _, body = get("https://v3.football.api-sports.io/status",
@@ -140,9 +148,12 @@ def main() -> int:
     print(f"  statistieken (kansen) {'OK' if stats_ok else 'niet beschikbaar'}")
 
     if not stats_ok:
-        print("\n  Zonder een werkende statistiekenbron blijft de routine bets overslaan:")
-        print("  zonder onafhankelijke kansinput zou 'my_prob' uit de odds zelf komen, en dat")
-        print("  is precies wat _shared-rules.md §2 verbiedt. Dit is dus de sleutel die telt.")
+        print("\n  Er is geen statistieken-API. Dat is sinds 27 sep 2026 de bewuste opzet en geen")
+        print("  gat: de onafhankelijke kansinput komt van Fotmob (alle competities) en Understat")
+        print("  (vijf). Zolang die twee leveren, is §2 gedekt en is er niets te doen.")
+        print("  WEL melden, vooraan in de notificatie: als Fotmob niet meer levert. Dan is er voor")
+        print("  vrijwel elke wedstrijd geen kansbron meer, wordt alles data_tier = NONE en levert")
+        print("  elke run gegarandeerd nul bets. Pas dán is een betaald plan een reële vraag.")
     if not odds_ok:
         print("\n  Zonder odds-API blijft Oddschecker de prijsbron. Dat werkt, maar de")
         print("  individuele bookmaker is daar niet altijd herleidbaar.")

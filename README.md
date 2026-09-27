@@ -159,7 +159,7 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 
 | Variabele | Dienst | Levert | Nodig? |
 |---|---|---|---|
-| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Nee — op het gratis plan waardeloos, zie de waarschuwing hieronder** |
+| `API_FOOTBALL_KEY` | api-football.com (gratis: 100 verzoeken/dag) | statistieken, opstellingen, blessures | **Nee, en er komt er ook geen** — besluit van de gebruiker, 27 sep 2026; zie hieronder |
 | `ODDS_API_KEY` | the-odds-api.com (**20K-plan sinds 30 aug 2026**: 20.000 credits/maand) | odds per bookmaker als JSON | Ja, dit is de enige bron met een herleidbare bookmaker |
 
 > **Het gratis plan van api-football.com is niet bruikbaar voor deze routine.** Gemeten op 10 aug
@@ -173,6 +173,14 @@ Twee diensten, met verschillende rollen. **De statistieken-sleutel is de belangr
 > **xGscore** (gepubliceerde modelkansen, geen sleutel nodig). Wie deze bron wél wil, heeft een
 > betaald plan nodig; laat het gratis plan anders gewoon staan, `source-health.json` markeert hem
 > als `plan_limited` en de datadekkingspoort slaat hem dan over.
+
+> **En dat betaalde plan komt er niet — besloten op 27 september 2026.** Tot die datum stond de
+> ontbrekende sleutel elke ochtend in de runrapporten als openstaand punt. Op 27 september is hij
+> voor het eerst als vráág aan de gebruiker voorgelegd in plaats van als constatering, en het
+> antwoord was nee. **Dat is dus geen vergeten actiepunt maar de definitieve opzet:** Fotmob en
+> Understat dragen de kanskant, en geen enkele run meldt dit nog als gat, actiepunt of notificatie.
+> De volledige regel, inclusief de éne voorwaarde waaronder de vraag terugkomt (Fotmob valt weg),
+> staat in `prompts/_shared-rules.md` §3 onder "`API_FOOTBALL_KEY` komt er niet".
 
 ### Reservebronnen als de credits op zijn (onderzocht 15 aug 2026)
 
@@ -291,4 +299,6 @@ League One, League Two, Serie B (ITA) en Serie C (ITA). Zie `data/coverage.json`
 **5. Status van de overige diagnosepunten** — gevraagd waren punt 2, 3 en 5; die zijn af. Van de
 rest: punt 4 (dynamische competitielijst) viel vanzelf uit de poort in Stage 2 en is meegenomen;
 punt 6 (vroeg-seizoen-behandeling) staat als regel in `_shared-rules.md §4` maar is nog niet in de
-praktijk getoetst; punt 1 (API-keys) staat hierboven en vraagt een key van de gebruiker.
+praktijk getoetst; **punt 1 (API-keys) is op 27 sep 2026 gesloten** — de odds-sleutel is er en
+werkt, en de statistieken-sleutel komt er bewust niet (zie "Sleutels toevoegen"). Dit punt vraagt
+dus niets meer van de gebruiker.
