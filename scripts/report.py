@@ -659,6 +659,48 @@ def render_finding(finding) -> str:
 </section>'''
 
 
+# Wie er aan zet is, en met welk opschrift dat op de pagina komt. `jij` is de enige waarde die
+# werkelijk iets van de gebruiker vraagt; `besluit` vraagt een keuze en `ik` vraagt niets.
+TODO_OWNERS = {
+    "jij": ("act you", "Wat jij moet doen"),
+    "besluit": ("act decide", "Jouw besluit"),
+    "ik": ("act me", "Van jou is hier niets nodig"),
+}
+
+
+def render_todo_action(item: dict) -> str:
+    """De regel die zegt wat de gebruiker moet doen (§6c, op verzoek van de gebruiker 27 sep 2026).
+
+    Tot die datum heette deze sectie "Wat jij nog moet doen" en stond er onder elk punt alleen
+    een uitleg. De gebruiker las vijftien van die punten over drie runs en kon bij geen enkele
+    zien wát hij moest doen -- en terecht: veertien van de vijftien waren werk voor de routine
+    zelf, en het ééne dat wel van hem was (de ontbrekende API-sleutel) stond als constatering en
+    niet als opdracht. Vandaar twee velden per punt:
+
+    `owner`  -- `jij` (een handeling buiten Claude), `besluit` (een keuze die bij hem hoort en niet
+                bij de data, vgl. §5) of `ik` (werk voor een volgende run). Ontbreekt hij, dan
+                geldt `jij`: dat is de veilige kant, want een punt dat ten onrechte bij de
+                gebruiker belandt valt op en een punt dat stil bij de routine belandt niet.
+    `action` -- één gebiedende zin. Bij `owner = "ik"` is dat de zin die zegt dat er niets van hem
+                nodig is, plus wanneer ik het doe. Nooit leeglaten "omdat het vanzelf spreekt".
+
+    **Een ontbrekende `action` wordt zichtbaar gemeld en niet stil overgeslagen.** Dat is met opzet
+    en het is de les van dezelfde ochtend: `settled_note` stond op 26 sep netjes in het
+    prosebestand en werd door deze module nooit gelezen, en dat was van buitenaf niet te zien.
+    Een nieuw verplicht veld dat stil kan wegvallen is hetzelfde probleem in wording.
+    """
+    owner = (item.get("owner") or "jij").strip().lower()
+    cls, label = TODO_OWNERS.get(owner, TODO_OWNERS["jij"])
+    action = (item.get("action") or "").strip()
+    if not action:
+        return ('<span class="act act-missing"><strong>Actie ontbreekt</strong> — dit punt heeft '
+                'geen <code>action</code> in het prosebestand, dus hier hoort een regel te staan '
+                'die zegt wat je moet doen (§6c).</span>')
+    if owner not in TODO_OWNERS:
+        label = "Wat jij moet doen"
+    return f'<span class="{cls}"><strong>{esc(label)}:</strong> {inline(action)}</span>'
+
+
 def render_todo(items: list[dict]) -> str:
     if not items:
         return ""
@@ -672,15 +714,28 @@ def render_todo(items: list[dict]) -> str:
       <span class="body">
         <span class="t">{esc(item["title"])}</span>
         <span class="d">{inline(item.get("detail") or item.get("body") or "")}</span>
+        {render_todo_action(item)}
         {when}
       </span>
     </div>''')
+    n_you = sum(1 for it in items if (it.get("owner") or "jij").strip().lower() != "ik")
+    if n_you == 0:
+        intro = ('<p class="prose">Van deze punten is er <strong>geen enkele</strong> iets voor '
+                 'jou — het is allemaal werk voor mij in een volgende run. Ze staan er zodat je '
+                 'kunt zien waar ik mee bezig ben, niet omdat er iets van je gevraagd wordt.</p>')
+    elif n_you == len(items):
+        intro = ""
+    else:
+        intro = (f'<p class="prose">Van de {len(items)} punten hieronder '
+                 f'{"is er 1" if n_you == 1 else f"zijn er {n_you}"} iets voor jou; bij de rest '
+                 f'staat erbij dat je niets hoeft te doen.</p>')
     return f'''
 <section>
   <div class="sectionhead">
     <span class="eyebrow">Actie</span>
-    <h2>Wat jij nog moet doen</h2>
+    <h2>Wat er nog moet gebeuren</h2>
   </div>
+  {intro}
   <div class="todo">
     {"".join(blocks)}
   </div>
@@ -971,6 +1026,13 @@ td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
 .task .t{font-weight:680; letter-spacing:-.008em}
 .task .d{font-size:.88rem; color:var(--ink-2)}
 .when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
 
 .gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
 .term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}

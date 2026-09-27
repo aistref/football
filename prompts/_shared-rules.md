@@ -2431,10 +2431,70 @@ levert elke run **ook** een HTML-pagina op:
    Gebruik voor `risk_level` **`low` / `med` / `high`**; `report.py` normaliseert sinds 22 aug 2026
    ook `medium`, `laag`, `gemiddeld` en `hoog`, maar tot die datum leverde het verschil tussen
    Run A's `med` en Run B's `medium` stilzwijgend een chip zonder kleur op.
+   **Elk punt in `todo` draagt een `owner` en een `action`** — zie "Elk actiepunt zegt wat de
+   gebruiker moet doen" hieronder. Dat geldt voor Run A, B en C; deze paragraaf staat met opzet
+   maar op één plek.
 2. Draai `python3 scripts/report.py --run <a|b> --date YYYY-MM-DD`. Bets, dekkingstabel en de
    stand van het logboek komen automatisch uit `picks.jsonl` en `data/run-state/` — niet
    overtypen, want dan gaan de twee rapporten uiteenlopen.
 3. Publiceer het bestand als Artifact en **zet die link in de notificatie** (§7).
+
+#### Elk actiepunt zegt wat de gebruiker moet doen (toegevoegd 27 sep 2026, op verzoek van de gebruiker)
+
+De sectie `todo` op de HTML-pagina heette tot deze datum **"Wat jij nog moet doen"** en gaf onder
+elk punt een uitleg en verder niets. De gebruiker:
+
+> *"Is het mij nooit duidelijk wat ik dan moet doen. Zorg ervoor dat er aan het einde van elke
+> actie dikgedrukt staat wát ik moet doen (besluiten, een handeling buiten Claude, etc.)"*
+
+**Dat verwijt is precies na te rekenen, en het is erger dan "onduidelijk".** Op 26 september 2026
+stonden er over de drie runs samen **vijftien** punten onder dat kopje. Veertien ervan waren werk
+voor de routine zelf — een tijdzonefout in de afwikkeling, een logboek dat onbeperkt groeit, een
+hermeting na het interlandvenster. Er was er **één** die werkelijk van de gebruiker was (de
+ontbrekende `API_FOOTBALL_KEY`), en die stond als constatering: *"De extra sleutel ontbreekt nog
+steeds"*, zonder één woord over wat hij ermee moest. Het kopje beloofde dus vijftien handelingen
+en vroeg er nul. Dat is niet alleen onduidelijk maar misleidend, en het maakt het punt dat er wél
+toe doet onvindbaar tussen veertien die dat niet doen.
+
+Vanaf nu draagt elk punt in `todo` **twee extra velden**, en `scripts/report.py` rendert de
+`action` als een eigen, dikgedrukte regel onderaan het punt:
+
+| Veld | Waarde | Wanneer | Opschrift op de pagina |
+|---|---|---|---|
+| `owner` | `"jij"` | een handeling **buiten Claude**: een sleutel zetten, een inzet plaatsen, een abonnement wijzigen | **Wat jij moet doen:** … |
+| | `"besluit"` | een **keuze** die bij de gebruiker hoort en niet bij de data — dezelfde redenering als bij `selection_score` (§1a) en bij het vervallen van poort 8 (§1e) | **Jouw besluit:** … |
+| | `"ik"` | werk voor een volgende run; er is niets van hem nodig | **Van jou is hier niets nodig:** … |
+| `action` | één **gebiedende** zin | altijd, ook bij `owner = "ik"` | de dikgedrukte regel zelf |
+
+Vier dingen die daarbij vastliggen:
+
+1. **`action` is ook bij `owner = "ik"` verplicht, en mag dan niet leeg blijven.** Schrijf op dát
+   er niets van hem nodig is én wanneer ik het doe ("niets — ik pak dit op in de run van
+   9 oktober"). Precies bij die punten is de verleiding om het veld leeg te laten het grootst, en
+   het is de categorie waar de gebruiker over viel: hij hoeft niet te raden of stilte "voor jou" of
+   "voor mij" betekent.
+2. **`action` staat niet in `detail`.** De uitleg mag lang zijn; de actie is één zin, staat apart,
+   en is op de pagina te vinden zonder de uitleg te lezen. Zet er geen tweede zin bij met een
+   voorbehoud — dat hoort in `detail`.
+3. **Ontbreekt `owner`, dan geldt `jij`.** Dat is de veilige kant: een punt dat ten onrechte bij de
+   gebruiker belandt valt op en wordt gecorrigeerd, een punt dat stil bij de routine belandt niet.
+4. **Een ontbrekende `action` wordt zichtbaar op de pagina gemeld**, in rood, in plaats van stil
+   te worden overgeslagen. Dat is met opzet. Op dezelfde ochtend bleek `settled_note` een
+   prosesleutel die `report.py` **nooit** heeft gelezen: de run van 26 september vulde hem netjes en
+   de tekst kwam alleen op de pagina omdat dezelfde alinea's óók in `verdict` stonden. Dat is de
+   derde keer dat een prosesleutel stil wegviel (`bets.*.why` op 5 sep, `todo.detail` op 16 sep), en
+   een nieuw verplicht veld dat óók stil kan wegvallen is hetzelfde probleem in wording.
+
+Het kopje heet daarom vanaf nu **"Wat er nog moet gebeuren"** in plaats van "Wat jij nog moet doen",
+met een regel erboven die zegt hoeveel van de punten werkelijk van de gebruiker zijn. Een sectie die
+belooft dat alles van hem is terwijl vrijwel niets van hem is, leert hem de sectie over te slaan —
+en dan mist hij het ene punt dat telt.
+
+**Dit is geen uitnodiging om punten naar de gebruiker te schuiven.** Dat veertien van de vijftien
+punten werk voor de routine waren is niet het probleem; het probleem was dat ze niet als zodanig
+waren gelabeld. Een run die zijn eigen openstaande werk als "actie voor de gebruiker" opschrijft om
+de sectie te vullen, maakt dezelfde fout in de andere richting — vergelijk §1: bets forceren om het
+format te vullen is verboden, en hier geldt dat net zo.
 
 **Elke bet noemt de context die is meegewogen (toegevoegd 24 sep 2026, op verzoek van de
 gebruiker).** Tot die datum legde de `why`-tekst uit wat het model zag, maar niet wat er over de
