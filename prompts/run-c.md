@@ -109,7 +109,7 @@ Bekende ids, gemeten:
 | WK · EK · AFCON · Copa América · Gold Cup | 77 · 50 · 289 · 44 · 298 |
 | **Club** Friendlies — NIET gebruiken | 489 |
 | Arabian Gulf Cup (senior mannentoernooi, Golfstaten) | 329 — gevonden 23 sep 2026, stond nog niet in de daglijst-tabel hierboven totdat hij daadwerkelijk speelde |
-| ASEAN Cup Challenge Division (senior, Laos/Brunei/Myanmar/Timor-Leste) | 13287 — gezien 24 sep 2026; geen prijsbron gevonden (geen BetExplorer-pagina, geen sportkey), dus `BUITEN DATADEKKING` |
+| ASEAN Cup Challenge Division (senior, Laos/Brunei/Myanmar/Timor-Leste) | 13287 — gezien 24 sep 2026; de **Challenge Division** heeft geen prijsbron (geen sportkey), dus `BUITEN DATADEKKING`. De **Premier Division** (Thailand, Vietnam, Filipijnen, Pakistan…) heeft sinds 29 sep 2026 wél 1X2-koersen op BetExplorer: `https://www.betexplorer.com/football/asia/fifa-asean-cup/` (`rc29_bx.py`) |
 | EURO U21-kwalificatie — NIET gebruiken (jeugd) | 10437 |
 
 De overige toernooien hebben pas een id zodra ze op de kalender staan. Zoek hem dan op in de
