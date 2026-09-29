@@ -51,12 +51,39 @@ Run-specifieke waarden:
 - **De xG-dekking van deze hele lijst is gemeten en staat in `data/coverage.json`.** Op 20 sep 2026
   speelden dertien van de zeventien competities op één dag, waarmee de laatste "nog niet
   getest"-regels zijn weggewerkt. Fotmob levert **wél** xG voor Greek Super League (135),
-  Eliteserien (59), Allsvenskan (67), Segunda División (140), Serie B (56), 2. Bundesliga (146),
+  Eliteserien (59), Allsvenskan (67), Segunda División (140), Serie B (**86**), 2. Bundesliga (146),
   Swiss Super League (69), Austrian Bundesliga (38), English League One (108), English League Two
   (109), MLS (130) en Série A (268); en **geen** xG voor Czech First League (122), Croatian HNL
   (252), Hungarian NB I (212), Romanian SuperLiga (189) en Keuken Kampioen Divisie (111).
   Die laatste vijf draaien op doelpunten als sterktemaat en komen dus altijd op `LIGHT` uit, met
   een drempel van 16.0 pp.
+- **De id's staan in `data/coverage.json` onder `fotmob_id` — typ ze niet over, en controleer ze
+  elke run.** Dit stond hier tot 29 sep 2026 als losse getallen in de alinea hierboven, en één
+  ervan was fout: **`Serie B (ITA)` stond op 56 in plaats van 86.** Bij Fotmob is 56 "Serie B
+  Qualification", een sub-toernooi zonder enige stand; 86 is de echte Serie B, met xG voor alle
+  twintig ploegen.
+
+  **Lees waarom dit vier dagen onopgemerkt bleef, want de faalstand zit in de opzet en niet in de
+  typefout.** Stage 1 matcht op id en nooit op naam, met goede redenen (`runwindow.py` noemt ze).
+  Maar een fout id geeft geen foutmelding — het geeft **nul wedstrijden**, en nul wedstrijden is
+  `GEEN WEDSTRIJD`: precies de uitkomst die op deze runlijst elke dag tientallen keren terecht in
+  het rapport staat. En Stage 3 vangt het niet, want die haalt de stand alleen op voor competities
+  die wél wedstrijden in het venster hebben; bij een fout id zijn die er niet, dus werd de stand
+  nooit opgevraagd en kon het kapotte id geen fout geven. De controle moet dus juist draaien op de
+  competities die vandaag **niet** spelen — het omgekeerde van wat Stage 3 doet.
+
+  Het kostte **tien duels**, alle drie de dagen keurig als "geen wedstrijd" gerapporteerd: 18 sep
+  één (Juve Stabia – Cesena), 19 sep vijf en 20 sep vier. Daarna begon het interlandvenster en viel
+  er niets meer te missen; Serie B speelt weer op **9 oktober**, en zonder deze controle was dát de
+  eerste run die het had gemerkt — drie weken na de fout.
+
+  ```bash
+  python3 scripts/idcheck.py     # alle fotmob_id's uit coverage.json, ook die van vandaag stil zijn
+  ```
+
+  Draai dit elke run naast `api_check.py` en neem de uitvoer op in het runrapport. Afsluitcode 1
+  betekent dat minstens één competitie stil uit de runlijst is verdwenen; dat is een blokkade en
+  hoort vooraan in de notificatie (§7).
 - **Neem dekking nooit over van een andere competitie in hetzelfde land.** Dat is geen theoretische
   waarschuwing: Duitsland hééft xG in de 2. Bundesliga en Nederland niet in de Keuken Kampioen
   Divisie, terwijl beide landen het in hun hoogste divisie wel hebben. Trek het per competitie na
