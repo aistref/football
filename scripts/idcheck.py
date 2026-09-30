@@ -44,6 +44,14 @@ COVERAGE = ROOT / "data" / "coverage.json"
 #: een lopend seizoen kan op speeldag 0 staan en dan zegt een lege stand niets over het id.
 SEASONS = ("2025/2026", "2025")
 
+# `python3 scripts/idcheck.py` draait dit bestand als script, en dan staat `scripts/` op
+# `sys.path` in plaats van de repowortel — `from scripts import fotmob` valt dan om met
+# ModuleNotFoundError. Run B van 30 sep 2026 liep daar op vast. Dat is hier niet alleen
+# hinderlijk: afsluitcode 1 betekent volgens run-b.md "er is een competitie stil uit de
+# runlijst verdwenen", en een importfout geeft diezelfde 1. Een kapotte controle zag er dus
+# precies uit als de vondst waarvoor de controle is gebouwd.
+sys.path.insert(0, str(ROOT))
+
 
 def check_one(league_id: int) -> tuple[bool, str]:
     """`(ok, toelichting)` voor één id. Probeert beide seizoensnotaties (§ run-b.md: vier

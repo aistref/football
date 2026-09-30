@@ -13,6 +13,17 @@ _DROP = {"fc", "afc", "cf", "sc", "ac", "as", "sv", "vfl", "vfb", "tsv", "bsc", 
 
 ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "hamkam": "hamarkameratene",
+    # 30 sep 2026 (Run B): woordVOLGORDE, niet een afkorting of een andere taal. Fotmob schrijft
+    # "Red Bull New York", The Odds API "New York Red Bulls" — na _DROP blijft {red, bull, new,
+    # york} tegen {new, york, red, bulls} over, en dat is in geen van beide richtingen een
+    # deelverzameling ("bull" is niet "bulls"). Zoals bij FC København raakt dit niet de tier maar
+    # de PRIJZEN, en het faalt stil: `side_of` gaf None en de analyse deed `continue`, dus de
+    # THUISKANT van de 1X2 werd niet doorgerekend terwijl LeoVegas en negen andere boeken er een
+    # koers voor hadden. Het duel stond op FULL en kreeg toch maar twee 1X2-selecties in plaats
+    # van drie; in het runrapport is dat niet te zien, want een overgeslagen selectie laat geen
+    # spoor na. MLS speelt in deze runlijst elke paar dagen.
+    "new york red bulls": "red bull new york",
+    "red bull new york": "new york red bulls",
     # 1 sep 2026: de Engelse daglijst kort af tot een deel dat na _DROP niets overhoudt dat
     # met de tabelnaam overlapt. Zonder deze drie leest een ploeg die gewoon in de stand
     # staat als "geen historie in deze divisie" en gaat hij ten onrechte de omrekening in.
