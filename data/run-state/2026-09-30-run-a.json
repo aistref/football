@@ -661,8 +661,22 @@
   "takken_getoetst": 43,
   "takken_met_eigen_commits": 0,
   "verenigd": [],
-  "les": "Een ondiepe kloon maakt Stage -2 duurder dan nodig. De vergelijking per record van 27 t/m 29 september was het juiste antwoord zolang de ancestry ontbrak, maar --unshallow haalt de ancestry gewoon terug en dan is één rev-list per tak genoeg. Doe dat eerst; het kostte vandaag één commando en vervangt de hele conflicttabel.",
-  "branch": "main — de scheduler-prompt geeft expliciet toestemming (§6a), en de run staat op main. Niets te melden bovenaan het rapport."
+  "les": "git fetch --unshallow staat al als eerste handeling in Stage -2 en haalt het valse alarm weg, maar het is de goedkope helft van de controle en niet de hele. De rev-list zegt niets over de metingen; branchaudit.py wel. Draai ze beide, in die volgorde.",
+  "branch": "main — de scheduler-prompt geeft expliciet toestemming (§6a), en de run staat op main. Niets te melden bovenaan het rapport.",
+  "branchaudit": {
+   "gedraaid": "scripts/branchaudit.py --ref HEAD",
+   "waarom": "0 eigen commits is een uitspraak over de commitgraaf, niet over de metingen. Tak elu4ga telde na het unshallowen ook 0 en droeg toch vijf schaduwrijen die main nooit had gekregen (§3 Stage -2, toegevoegd 27 sep). Deze run had het bijna bij de rev-list gelaten; dat was onvoldoende.",
+   "uitkomst": {
+    "data/picks.jsonl": "volledig — 326 records",
+    "data/shadow.jsonl": "volledig — 760 records",
+    "data/context-log.jsonl": "volledig — 837 records",
+    "data/calibration.jsonl": "volledig — 3543 records",
+    "data/source-health.json": "volledig — 106 bladpaden, op sources.oddspapi na",
+    "data/coverage.json": "volledig — 285 bladpaden"
+   },
+   "oddspapi": "staat op vijf oudere takken en niet op main; besluit van 30 aug 2026 na de overstap naar het 20K-creditplan (commit f342894). branchaudit.py kent die uitzondering bij naam. Niet teruggezet.",
+   "takken_met_ontbrekende_records": 0
+  }
  },
  "afwikkeling": {
   "picks_afgewikkeld": 3,

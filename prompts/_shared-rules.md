@@ -2192,8 +2192,35 @@ Elke run, ook een run met nul bets:
 5. **Schaduwlogboek** → `python3 scripts/shadow.py collect --date <datum> --run <a|b>`, en de
    schaduwpicks van vorige runs afwikkelen (zie 6d).
 5c. **Kalibratielogboek** → een `calibration`-blok per doorgerekende wedstrijd in
-   `data/run-state/`, en daarna `python3 scripts/calibration.py collect --run <a|b> --date <datum>`.
+   `data/run-state/`, en daarna **twee** commando's, in deze volgorde:
+
+   ```bash
+   python3 scripts/calibration.py collect --run <a|b> --date <datum>
+   python3 scripts/calibration.py settle        # VERPLICHT — zie de waarschuwing hieronder
+   ```
+
    Zie 6e; neem `calibration.py stats` op in het runrapport.
+
+   **`settle` is hier op 30 september 2026 bijgeschreven, en het ontbreken ervan heeft elf dagen
+   stil schade gedaan.** Tot die datum eiste deze regel alleen `collect` — anders dan 5d, waar
+   `ctxlog.py settle` er vanaf het begin bij staat. Gevolg: `calibration.py settle` is van
+   18 t/m 29 september door geen enkele run gedraaid, en 1023 van de 1077 waarnemingen van
+   19 t/m 29 september stonden onafgewikkeld. `recalibrate.load_fit()` leest sinds 20 september
+   uit ditzelfde logboek (zie de docstring van `recalibrate.observations`), dus de herijking van
+   §1g rekende elf dagen door op `fitted_through = 2026-09-18`.
+
+   **Waarom dat niet opviel, en waarom deze regel daarom expliciet moet zijn.** Een niet
+   afgewikkeld logboek geeft geen foutmelding: `load_fit()` levert gewoon een geldige fit op de
+   laatste stand die hij heeft, elke run past hem netjes toe en schrijft netjes op dát hij is
+   toegepast. Dat is dezelfde stille faalstand als het Serie B-id (`idcheck.py`) en als
+   `settled_note` op 27 september — een stap die overgeslagen kan worden zonder dat iets klaagt.
+   Draai `settle` dus élke run, ook een run met nul bets: het logboek van gisteren wordt door de
+   run van vandaag afgewikkeld, precies zoals Stage 0 dat voor de picks doet.
+
+   **Controleer het aan één getal.** `recalibrate.load_fit().fitted_through` hoort op de vorige
+   rundag te staan of daarna. Staat er een oudere datum, dan is `settle` blijven liggen. Neem dat
+   getal op in het runrapport onder "Stand van het logboek", zodat het niet nog eens elf dagen kan
+   wegvallen.
 5d. **Contextlogboek** → `python3 scripts/ctxlog.py collect --run <a|b> --date <datum>`, gevolgd
    door `ctxlog.py settle`. Dit vraagt om een contextblok bij **elke** wedstrijd waarvoor de context
    is opgehaald, dus ook bij de duels die `MAX_DEEP_ANALYSES` heeft afgekapt. Zie §1c; neem
