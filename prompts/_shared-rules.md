@@ -23,7 +23,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `SETTLE_FALLBACK_HOURS` | **2.0** | Alleen de terugval als de bron geen status geeft. `scripts/settling.FALLBACK_HOURS`. |
 | `XG_WEIGHT` | **0.80** | Hoe zwaar de xG-methode weegt in `my_prob` tegenover de splitsmethode. Was tot 5 sep 2026 impliciet 0.50 (ongewogen gemiddelde), en dat was nooit ergens op gebaseerd. Op **uitslagen** gemeten over 392 afgerekende gevallen; zie §1f. De curve is vlak tussen 0.7 en 1.0 — niet op fijnregelen. `scripts/model.XG_WEIGHT`. |
 | `CREDIBILITY_K` | **8** | Na hoeveel duels het lopende seizoen even zwaar weegt als het hele vorige. Op 5 sep 2026 op verzoek van de gebruiker van 16 naar 8 gezet: sneller meebewegen, tegen 13% van de gemeten blendwinst. Zie §4. `scripts/model.CREDIBILITY_K`. |
-| `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. **Poort 8 heeft van 25 t/m 29 sep 2026 stilgestaan en staat sinds 30 sep 2026 weer aan**, op verzoek van de gebruiker: de herijking waarop het vervallen was verantwoord, bleek de identiteit te zijn. Het venster staat in `scripts/sides.LAPSED_FROM` / `LAPSED_UNTIL` en blijft daar, zodat een herberekening van die vijf dagen hetzelfde antwoord geeft als toen. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
+| `UNDERDOG_FLOOR` | **0.35** | Onder deze marktkans gaat poort 8 dicht op de underdog-kant; daarboven staat hij open. Verving op 5 sep 2026 de zware versie die élke underdog blokkeerde. **Poort 8 heeft van 25 t/m 30 sep 2026 stilgestaan en bindt weer vanaf 1 okt 2026**, op verzoek van de gebruiker: de herijking waarop het vervallen was verantwoord, bleek de identiteit te zijn. Het venster staat in `scripts/sides.LAPSED_FROM` / `LAPSED_UNTIL` en blijft daar, zodat een herberekening van die zes dagen hetzelfde antwoord geeft als toen. Zie §1e. `scripts/sides.UNDERDOG_FLOOR`. |
 | `EXCHANGE_COMMISSION` | **2%** | Commissie over de nettowinst bij een beurs (Betfair, Matchbook). Op 5 sep 2026 stond de beste 1X2-prijs in 61% van de gevallen bij een beurs, dus dit is geen randgeval: reken elke koers door `oddsapi.net_price` voordat je er edge op meet. `scripts/oddsapi.EXCHANGE_COMMISSION`. |
 | `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
 | `SHRINK` | **1.00** | Hoeveel de xG-verhouding van een ploeg naar het competitiegemiddelde wordt getrokken; 1.00 is géén regressie. Op 19 sep 2026 van 0.80 hierheen, op **uitkomsten** gemeten over de 782 wedstrijden die de routine zelf heeft doorgerekend. Regressie maakt ploegen onderling gelijker, en dat geeft de zwakkere ploeg meer kans dan hij verdient — de rekenkundige oorzaak onder §1e. Zie §6e, "De `shrink`-vraag". `scripts/model.DEFAULT_SHRINK`. |
@@ -160,9 +160,9 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
    `robustness_check(...).min_edge > 0` over het hele (shrink, rho)-grid;
 7. **de context spreekt de bet niet tegen** (§1c): `context.check(ctx, side).passed`;
 8. **de selectie staat niet op een underdog-kant die de markt onder `UNDERDOG_FLOOR` zet** (§1e):
-   `sides.check(side, odds_1x2, today=DAY).passed`. Deze poort heeft van 25 t/m 29 sep 2026
-   stilgestaan en **werkt sinds 30 sep 2026 weer**; geef `today` mee met de rundag, zodat een
-   herberekening van die vijf dagen niet stil over een andere poort gaat dan er toen stond.
+   `sides.check(side, odds_1x2, today=DAY).passed`. Deze poort heeft van 25 t/m 30 sep 2026
+   stilgestaan en **bindt weer vanaf 1 okt 2026**; geef `today` mee met de rundag, zodat een
+   herberekening van die zes dagen niet stil over een andere poort gaat dan er toen stond.
 
 ### Poort 7 — contextfactoren (toegevoegd 23 aug 2026, op aanwijzing van de gebruiker)
 
@@ -361,7 +361,7 @@ structureel winnaars tegenhoudt (positieve ROI over ≥ 30 afgewikkelde kandidat
 kalibratie op de underdog-kant staat weer recht. Het echte werk blijft de rekenfout zelf — welke
 stap maakt de mindere ploeg te sterk.
 
-> **Stand op 30 september 2026.** Die einddatum is gehaald, de poort is vijf dagen vervallen
+> **Stand op 30 september 2026.** Die einddatum is gehaald, de poort is zes dagen vervallen
 > geweest en staat nu weer aan — zie "De poort is teruggezet op 30 september 2026" hieronder. De
 > twee uitwegen hierboven zijn nog steeds de twee uitwegen, en geen van beide is dicht: de
 > `underdog`-reeks staat op +15,8% over **20** afgewikkelde kandidaten (de regel eist er 30), en
@@ -384,8 +384,8 @@ stap maakt de mindere ploeg te sterk.
 
 #### De poort is teruggezet op 30 september 2026, op verzoek van de gebruiker
 
-**De poort werkt weer.** Hij heeft precies vijf dagen stilgestaan — 25 t/m 29 september 2026 — en
-houdt sinds 30 september opnieuw de underdog-kant onder `UNDERDOG_FLOOR` tegen. In **dezelfde
+**De poort werkt weer.** Hij heeft precies zes dagen stilgestaan — 25 t/m 30 september 2026 — en
+houdt vanaf 1 oktober opnieuw de underdog-kant onder `UNDERDOG_FLOOR` tegen. In **dezelfde
 lichte vorm** als vóór het vervallen: ondergrens 0,35, niet de zware versie van vóór 5 september
 die élke underdog-kant blokkeerde.
 
@@ -406,12 +406,17 @@ die élke underdog-kant blokkeerde.
    `a = 1,0001` en `b = 0,0000` over 3243 waarnemingen, wat nergens meer dan één procentpunt van
    een schatting afhaalt. De correctie waar punt 1 zich op beroept bestaat sinds 20 september niet
    meer.
-4. Daarmee stond er van 25 t/m 29 september **geen enkele rem** op deze kant, terwijl de
+4. Daarmee stond er van 25 t/m 30 september **geen enkele rem** op deze kant, terwijl de
    scheefstand zelf nog meetbaar aanwezig is: +1,9 pp te veel kans op longshots en −3,7 pp te
    weinig op favorieten, over 3549 uitkomsten.
 
 De gebruiker heeft gekozen de poort terug te zetten vóór 9 oktober, de eerste dag waarop Run A
-weer wedstrijden heeft. Dat is zijn keuze om te maken — risicobereidheid, niet data, dezelfde
+weer wedstrijden heeft. **Ingangsdatum 1 oktober en niet 30 september**, want op 30 september
+hadden Run B en Run C hun analyse al gedraaid en had Run C twee bets gepubliceerd — waarvan
+Seychelles – Sri Lanka (1 @ 3.15) er één is die deze poort zou hebben tegengehouden (28,3%, onder
+de ondergrens). De poort halverwege die dag laten ingaan zou een al gepubliceerde en mogelijk al
+ingezette bet met terugwerkende kracht blokkeren, en zou een herberekening van 30 september een
+andere poort geven dan de drie runs van die dag gebruikten. Dat is zijn keuze om te maken — risicobereidheid, niet data, dezelfde
 redenering als bij `selection_score` (§1a) en bij het vervallen zelf.
 
 **Waarom de lichte en niet de zware versie**, want hierboven staat *"zet de herijking ooit uit,
@@ -441,20 +446,21 @@ kalibratiefout die zegt dat deze kant scheef staat, en een keuze van de gebruike
 op te houden zolang dat zo is.
 
 **Wat er blijft meten.** `poort8_vervallen` en `poort8_zou_hebben_geblokkeerd` (hieronder) hebben
-vijf dagen lang niets kunnen opleveren, want Run A had in die periode geen enkele wedstrijd en er
-is sinds 25 september geen bet gepubliceerd op een kant die de poort zou hebben geblokkeerd. Die
-reeks staat dus op **nul** en gaat niet meer groeien. Wat er vanaf 9 oktober weer groeit zijn de
+in die zes dagen precies **één** geval opgeleverd: Seychelles – Sri Lanka, 1 @ 3.15, gepubliceerd
+door Run C op 30 september op een kant die de poort zou hebben geblokkeerd (28,3%). Dat is één
+afgerekende bet op de kant waar de vraag over gaat — waardevol, maar één, waar §6d er ~30 eist.
+Die reeks gaat niet meer groeien. Wat er vanaf 9 oktober weer groeit zijn de
 twee schaduwreeksen `underdog` en `underdog_ruw`, op de twee schalen van de paragraaf hieronder.
 Dat is de meting die de vraag ooit moet beantwoorden, en ze staat weer aan.
 
 **Leg `today` vast bij elke aanroep.** `sides.check(side, odds_1x2, today=DAY)` met de rundag,
-niet zonder argument: het venster van vijf dagen blijft in de code staan (`sides.LAPSED_FROM` en
-`LAPSED_UNTIL`) zodat een herberekening van 25 t/m 29 september hetzelfde antwoord geeft als die
+niet zonder argument: het venster van zes dagen blijft in de code staan (`sides.LAPSED_FROM` en
+`LAPSED_UNTIL`) zodat een herberekening van 25 t/m 30 september hetzelfde antwoord geeft als die
 dagen zelf gaven. Zonder `today` krijgt zo'n hermeting stil de poort van vandaag.
 
 ##### De oorspronkelijke beslissing van 18 september 2026 (historie)
 
-> Deze paragraaf beschrijft het vervallen zelf. Ze blijft staan omdat het venster van vijf dagen
+> Deze paragraaf beschrijft het vervallen zelf. Ze blijft staan omdat het venster van zes dagen
 > in de code en in de logboeken blijft bestaan, maar ze is **geen beschrijving van de huidige
 > stand** — zie hierboven.
 
@@ -470,7 +476,7 @@ die hoort bij hem en niet bij de data (§5, dezelfde redenering als bij `selecti
 Vastgelegd in `scripts/sides.LAPSES_ON = 2026-09-25`. Tot die datum werkt de poort ongewijzigd;
 vanaf die datum laat `sides.check()` élke kant door. *(Achterhaald op 30 september 2026: het
 vervallen is teruggedraaid en de constante heet nu `LAPSED_FROM`, met `LAPSED_UNTIL =
-2026-09-30` ernaast. `LAPSES_ON` blijft als alias bestaan omdat oudere runrapporten en
+2026-10-01` ernaast. `LAPSES_ON` blijft als alias bestaan omdat oudere runrapporten en
 `data/run-state`-bestanden ernaar verwijzen.)*
 
 **Schrijf er niet omheen wat dit kost.** De groep die deze poort tegenhoudt is de enige waarvan op
@@ -544,7 +550,8 @@ antwoord komt pas als deze reeks is afgewikkeld. Lees hem niet eerder dan bij ~3
 > teruggezet op 30 september 2026" hierboven — dus deze constructie geldt weer onverkort: boek
 > vanaf die datum opnieuw op **beide** schalen, `underdog` op de herijkte en `underdog_ruw` op de
 > ruwe kans. Dat is nu de enige reeks die de vraag van 25 september nog kan beantwoorden, want
-> `poort8_vervallen` heeft in het venster van vijf dagen nul gevallen opgeleverd (Run A lag stil).
+> `poort8_vervallen` heeft in het venster van zes dagen precies één geval opgeleverd (Run C,
+> 30 september, Seychelles – Sri Lanka).
 > De twee reeksen staan op 20 en 17 afgewikkelde gevallen; ze blijven twee populaties.
 
 ### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
@@ -2038,7 +2045,7 @@ Vanaf nu dus:
 De zeven andere poorten (koersband, anti-circulariteit, datatier, tegenstrijdige methodes,
 robuustheid, context, underdog) blijven **wél** poorten. Die houden tegen omdat de selectie zelf
 niet deugt; de drempel hield alleen tegen omdat het er te weinig waren. De underdog-poort stond
-van 25 t/m 29 september 2026 stil en is sinds 30 september weer een poort (§1e).
+van 25 t/m 30 september 2026 stil en is vanaf 1 oktober weer een poort (§1e).
 
 #### Wat er gebeurt met een gekwalificeerde selectie die niet past (vastgelegd 26 sep 2026)
 

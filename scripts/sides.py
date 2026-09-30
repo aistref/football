@@ -64,8 +64,8 @@ Drie eigenschappen, met opzet gelijk aan poort 7 (§1c):
 
 ## Teruggezet op 30 september 2026, op verzoek van de gebruiker
 
-**De poort werkt weer.** Hij heeft van 25 t/m 29 september 2026 stilgestaan en houdt sinds
-30 september opnieuw de underdog-kant onder `UNDERDOG_FLOOR` tegen. De reden staat hieronder onder
+**De poort werkt weer.** Hij heeft van 25 t/m 30 september 2026 stilgestaan en houdt sinds
+1 oktober opnieuw de underdog-kant onder `UNDERDOG_FLOOR` tegen. De reden staat hieronder onder
 "Waarom hij terug is"; de twee alinea's daaronder beschrijven het vervallen en blijven staan omdat
 het venster in de code blijft bestaan.
 
@@ -123,7 +123,7 @@ worden opgeteld, want het zijn twee populaties. Er is dus geen cijfer dat zegt d
 goed is; er is een gemeten kalibratiefout die zegt dat de kant scheef staat, en een keuze van de
 gebruiker om daar een rem op te houden.
 
-## Het vervallen van 25 t/m 29 september 2026 (keuze van de gebruiker, 18 september 2026)
+## Het vervallen van 25 t/m 30 september 2026 (keuze van de gebruiker, 18 september 2026)
 
 De poort is ingevoerd met een herzieningsdatum van 25 september en met één voorwaarde erbij: *lees
 het schaduwlogboek pas bij ~30 afgewikkelde gevallen, daaronder is elk verschil ruis*. Die twee
@@ -147,8 +147,9 @@ overblijft — **wie haar ooit uitzet, zet deze poort terug.**
 
 > **Precies dat is gebeurd, en niemand heeft het gezien.** De herijking is op 20 september niet
 > uitgezet maar wél tot bijna niets teruggebracht, en voor deze poort komt dat op hetzelfde neer.
-> Zie "Waarom hij terug is" bovenaan: de poort staat sinds 30 september 2026 weer aan. Deze alinea
-> beschrijft dus een venster van vijf dagen dat voorbij is, en niet de huidige stand.
+> Zie "Waarom hij terug is" bovenaan: de poort is op 30 september 2026 teruggezet en bindt weer
+> vanaf 1 oktober. Deze alinea beschrijft dus een venster van zes dagen dat voorbij is, en niet de
+> huidige stand.
 
 **Wat er blijft meten.** `check()` geeft na het vervallen `would_block=True` op precies de
 gevallen die hij eerder zou hebben tegengehouden. Leg dat per selectie vast in `data/run-state/`,
@@ -173,17 +174,26 @@ PICKEM_TOLERANCE = 0.03
 UNDERDOG_FLOOR = 0.35
 
 # De poort is op 25 september 2026 vervallen (keuze C van de gebruiker, 18 sep) en op
-# 30 september 2026 op zijn verzoek teruggezet. Dat is dus een **venster** waarin hij niets deed,
-# en geen einddatum meer. Het venster blijft met opzet in de code staan in plaats van te worden
-# weggehaald: `check(..., today=<rundag>)` moet voor een herberekening van 25 t/m 29 september
-# hetzelfde antwoord geven als die dagen zelf gaven, anders gaat een hermeting van die vijf dagen
-# stil over een andere poort dan er toen stond.
+# 30 september 2026 op zijn verzoek teruggezet, met ingang van 1 oktober. Dat is dus een
+# **venster** waarin hij niets deed, en geen einddatum meer. Het venster blijft met opzet in de
+# code staan in plaats van te worden weggehaald: `check(..., today=<rundag>)` moet voor een
+# herberekening van 25 t/m 30 september hetzelfde antwoord geven als die dagen zelf gaven, anders
+# gaat een hermeting van die zes dagen stil over een andere poort dan er toen stond.
+#
+# WAAROM 1 OKTOBER EN NIET 30 SEPTEMBER, terwijl het besluit op 30 september is genomen: Run B en
+# Run C hadden die dag hun analyse al gedraaid en Run C had twee bets gepubliceerd, waarvan
+# Seychelles – Sri Lanka (1 @ 3.15) er één is die deze poort zou hebben tegengehouden — de markt
+# gaf Seychelles 28.3%, onder de ondergrens. De poort halverwege die dag laten ingaan zou een al
+# gepubliceerde en mogelijk al ingezette bet met terugwerkende kracht blokkeren, en zou een
+# herberekening van 30 september een andere poort geven dan de drie runs van die dag gebruikten.
+# De gebruiker vroeg om de poort "vóór 9 oktober"; 1 oktober is de eerste dag waarop nog geen run
+# had gedraaid en haalt dat ruim.
 LAPSED_FROM = date(2026, 9, 25)
-LAPSED_UNTIL = date(2026, 9, 30)
+LAPSED_UNTIL = date(2026, 10, 1)
 
 # Gehouden voor de leesbaarheid van oudere runrapporten en run-state, die naar deze naam verwijzen.
 LAPSES_ON = LAPSED_FROM
-REINSTATED_ON = LAPSED_UNTIL
+REINSTATED_ON = LAPSED_UNTIL   # 1 okt 2026: eerste dag waarop de poort weer bindt
 
 
 @dataclass(frozen=True)
@@ -202,8 +212,8 @@ class SideCheck:
 def has_lapsed(today: date | None = None) -> bool:
     """Stond de poort op deze dag stil? (§1e)
 
-    Waar is dat alleen voor het venster van 25 t/m 29 september 2026. Vóór 25 september werkte de
-    poort en vanaf 30 september werkt hij weer, dus voor elke dag buiten dat venster is dit False.
+    Waar is dat alleen voor het venster van 25 t/m 30 september 2026. Vóór 25 september werkte de
+    poort en vanaf 1 oktober werkt hij weer, dus voor elke dag buiten dat venster is dit False.
     Geef `today` mee met de **rundag** als je een oude dag herberekent; zonder argument geldt
     vandaag, en dan is het antwoord False.
     """
@@ -241,7 +251,7 @@ def check(side: str | None, odds_1x2, today: date | None = None) -> SideCheck:
     1X2-koersen van de wedstrijd, in de volgorde 1 / X / 2. `today` is de **rundatum**: geef hem
     mee zodat een herberekening van een oude dag hetzelfde antwoord geeft als die dag zelf.
 
-    Binnen het venster `LAPSED_FROM` t/m `LAPSED_UNTIL` (25 t/m 29 sep 2026) is `passed` altijd
+    Binnen het venster `LAPSED_FROM` t/m `LAPSED_UNTIL` (25 t/m 30 sep 2026) is `passed` altijd
     True en zegt alleen `would_block` nog wat de poort zou hebben gedaan. Daarbuiten — dus ook
     vandaag — houdt de poort weer tegen. Zie de docstring van de module.
     """
