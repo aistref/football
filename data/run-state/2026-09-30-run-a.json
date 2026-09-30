@@ -391,8 +391,8 @@
  "completed": true,
  "duur": {
   "gestart": "2026-09-30T02:17:23.373206+00:00",
-  "afgerond": "2026-09-30T02:37:25.234280+00:00",
-  "minuten": 20.0
+  "afgerond": "2026-09-30T04:15:01.691443+00:00",
+  "minuten": 117.6
  },
  "parameters": {
   "MAX_DEEP_ANALYSES": 40,
@@ -417,9 +417,9 @@
   },
   "HERIJKING": "niet toegepast — er is geen wedstrijd doorgerekend. De fit zelf is wel gelezen en staat in het runrapport onder 'Stand van het logboek'.",
   "POORT8": {
-   "lapses_on": "2026-09-25",
-   "actief_vandaag": false,
-   "toelichting": "Vijfde volle dag ná de vervaldatum van §1e: sides.check() laat elke kant door en zet alleen nog would_block. Opnieuw geen selectie om hem op toe te passen. De eerste Run A waarin het vervallen van poort 8 werkelijk iets kan doen is die van 9 oktober; leg daar poort8_vervallen per selectie vast en zet poort8_zou_hebben_geblokkeerd in de pick zodra zo'n selectie een gepubliceerde bet wordt (§1e). Wat de afwikkeling van vandaag daarover zegt staat onder 'afwikkeling'."
+   "venster_vervallen": "2026-09-25 t/m 2026-09-29",
+   "actief_vandaag": true,
+   "toelichting": "Teruggezet op 30 sep 2026 op verzoek van de gebruiker, in de lichte vorm (UNDERDOG_FLOOR = 0.35). Zie besluit_poort8."
   }
  },
  "stage1": {
@@ -700,5 +700,26 @@
   "poort8_reeks": "Deze drie picks zijn van Run C 29 september en dus van ná de vervaldatum van poort 8 (25 sep). Of ze het veld poort8_zou_hebben_geblokkeerd dragen is de vraag die §1e vanaf die datum wil meten; nagekeken in picks.jsonl staat het er bij alle drie niet op, omdat Run C met alleen LIGHT-data geen 1X2-prijzen als referentie had. Dat is een gat in die meting en het hoort bij Run C, niet hier — opgeschreven zodat het niet stil blijft.",
   "schaduw_bevinding": "De schaduwkant: acht winnaars, 23 verliezers en één void op 32 rijen. Dat zijn de kandidaten die de poorten hebben tegengehouden, dus op één dag gelezen betekent het dat de poorten vandaag geld hebben bespaard. Van de acht winnaars vielen er zeven af op 'odds' of 'edge' en één op 'robuustheid'. Precies daarom zegt §6d dat één dag bij deze aantallen ruis is; niet op grond hiervan een poort verruimen of aanscherpen."
  },
- "dagrapport": "https://claude.ai/artifact/EkddnnnTpQnnR5fnHrFFgp"
+ "dagrapport": "https://claude.ai/artifact/EkddnnnTpQnnR5fnHrFFgp",
+ "besluit_poort8": {
+  "gevraagd": "2026-09-30, in het dagrapport en de notificatie van deze run",
+  "antwoord_gebruiker": "Zet de rem op de zwakkere ploeg terug vóór 9 oktober.",
+  "uitgevoerd_op": "2026-09-30T04:15:01.691336+00:00",
+  "vorm": "de lichte versie, UNDERDOG_FLOOR = 0.35 — dezelfde vorm als vóór het vervallen, niet de zware versie van vóór 5 sep die élke underdog-kant blokkeerde",
+  "waarom_niet_zwaar": "§1e zegt 'zet de herijking ooit uit, dan moet deze poort weer zwaarder', en dat zou hier gelezen kunnen worden als grond voor de zware versie. Die zin is echter geschreven toen het alternatief was dat een herijking van ~10 pp zou worden uitgezet. De herijking staat aan; ze corrigeert alleen bijna niets meer omdat er op de ongeselecteerde ijksteekproef bijna niets te corrigeren blijkt. De scheefstand die overblijft is +1,9 pp op longshots en −3,7 pp op favorieten, niet ~10 pp. De zware versie was op die grootte al te grof: op 5 sep gaf ze 311 doorgerekende selecties en nul bets. De lichte versie mikt op de groep waar de schade zat (29 gevallen onder de grens: −31,4%; zestig erboven: −11,1%, gelijk aan de favorietenkant).",
+  "implementatie": {
+   "scripts/sides.py": "LAPSES_ON vervangen door een venster LAPSED_FROM = 2026-09-25 / LAPSED_UNTIL = 2026-09-30; has_lapsed() is nu alleen waar binnen dat venster. LAPSES_ON blijft als alias bestaan omdat oudere runrapporten en run-state-bestanden ernaar verwijzen.",
+   "venster_blijft_staan": "Met opzet. check(..., today=<rundag>) moet voor een herberekening van 25 t/m 29 september hetzelfde antwoord geven als die dagen zelf gaven; zonder het venster zou een hermeting van die vijf dagen stil over een andere poort gaan dan er toen stond.",
+   "prompts/_shared-rules.md": "§0 (UNDERDOG_FLOOR), §1 (poort 8 in de poortenlijst), §1e (nieuwe kop 'De poort is teruggezet op 30 september 2026' met de keten en de kostenkant; de oude beslissing als historie behouden) en §5b (poortenlijst) bijgewerkt."
+  },
+  "gecontroleerd": {
+   "poort blokkeert weer": "underdog-kant met marktkans 13,2% → passed=False op 30 sep en 9 okt",
+   "venster reproduceert": "dezelfde selectie op 25, 27 en 29 sep → passed=True, would_block=True",
+   "vóór het venster": "24 sep → passed=False (ongewijzigd)",
+   "grens werkt als grens": "underdog met 35,5% → passed=True; met 34,7% → passed=False",
+   "poort blijft open zonder kant": "side=None → True; geen 1X2-prijzen → True; favorietenkant → True; pick'em binnen 3 pp → True"
+  },
+  "wat_dit_kost": "De underdog-reeks in het schaduwlogboek staat op +15,8% over 20 afgewikkelde gevallen (55% trefkans) — de poort houdt dus aantoonbaar ook winnaars tegen. §6d eist ~30 gevallen voordat die reeks gelezen mag worden, en underdog_ruw staat tegengesteld op −8,8% over 17. Er is geen cijfer dat zegt dat terugzetten goed is; er is een gemeten kalibratiefout en een keuze van de gebruiker. Zo opgeschreven in §1e.",
+  "eerste_werking": "9 oktober 2026 — de eerste dag waarop Run A weer wedstrijden heeft. Tot dan is er geen selectie om de poort op toe te passen."
+ }
 }

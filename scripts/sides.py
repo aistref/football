@@ -62,7 +62,68 @@ Drie eigenschappen, met opzet gelijk aan poort 7 (§1c):
 * **Ontbrekende meting laat hem open.** Zonder 1X2-prijzen is er geen marktoordeel over wie de
   mindere ploeg is, en een meting die er niet is, is geen bewijs van een probleem.
 
-## Vervalt op 25 september 2026, op uitdrukkelijke keuze van de gebruiker (18 september 2026)
+## Teruggezet op 30 september 2026, op verzoek van de gebruiker
+
+**De poort werkt weer.** Hij heeft van 25 t/m 29 september 2026 stilgestaan en houdt sinds
+30 september opnieuw de underdog-kant onder `UNDERDOG_FLOOR` tegen. De reden staat hieronder onder
+"Waarom hij terug is"; de twee alinea's daaronder beschrijven het vervallen en blijven staan omdat
+het venster in de code blijft bestaan.
+
+**In dezelfde vorm als vóór het vervallen**, dus de lichte versie met `UNDERDOG_FLOOR = 0.35` en
+niet de zware versie van vóór 5 september die élke underdog-kant blokkeerde. Dat is een keuze en
+ze hoort uitgelegd, want §1e zegt letterlijk *"zet de herijking ooit uit, dan moet deze poort weer
+zwaarder"* en je zou kunnen vinden dat dat hier van toepassing is:
+
+* Die zin is geschreven toen het alternatief was dat de herijking van ~10 procentpunt zou worden
+  uitgezet. Dat is niet wat er gebeurd is. De herijking staat aan; ze corrigeert alleen bijna
+  niets meer, doordat ze op 20 september op de **ongeselecteerde** ijksteekproef is gezet en het
+  ruwe model daarop al goed gekalibreerd blijkt.
+* De scheefstand die overblijft is dus niet ~10 procentpunt maar **+1.9 pp op longshots en
+  −3.7 pp op favorieten** (3549 uitkomsten, gemeten 30 sep 2026). De zware versie was op een
+  scheefstand van die grootte al te grof bevonden: op 5 september leverde ze 311 doorgerekende
+  selecties en **nul** bets op.
+* De lichte versie mikt precies op de groep waar de schade op uitkomsten zat: de 29 gevallen
+  onder de ondergrens deden −31.4%, de zestig erboven −11.1% — niet te onderscheiden van de
+  −10.9% van de favorietenkant.
+
+Wordt de herijking ooit écht uitgezet (niet: naar de identiteit gemeten, maar niet meer
+toegepast), dan geldt die zin uit §1e onverkort en moet de ondergrens omhoog.
+
+## Waarom hij terug is (30 september 2026)
+
+De onderbouwing van het vervallen is op 30 september onhoudbaar gebleken, en dat is aan de
+gebruiker voorgelegd. De keten:
+
+1. Het vervallen is verantwoord met één argument, hieronder vetgedrukt: de herijking van §1g haalt
+   ~10 procentpunt van elke te optimistische schatting af en pakt daarmee de oorzaak aan waar deze
+   poort een symptoom afdekte.
+2. Maar op 20 september is de bron van die herijking veranderd — van `picks.jsonl` + `shadow.jsonl`
+   (de geselecteerde groep, met de winner's curse erin) naar `data/calibration.jsonl` (de
+   ongeselecteerde ijksteekproef). Dat was een verbetering en ze blijft staan: de oude correctie
+   maakte de voorspelling méétbaar slechter.
+3. Het gevolg is niemand opgevallen. Op de nieuwe steekproef is de fit ongeveer de identiteit — op
+   30 september gemeten `a = 1.0001`, `b = 0.0000` over 3243 waarnemingen, wat nergens meer dan
+   één procentpunt van een schatting afhaalt. De correctie waar punt 1 zich op beroept bestaat dus
+   sinds 20 september niet meer.
+4. Daarmee stond er vanaf 25 september geen enkele rem op deze kant, terwijl de scheefstand zelf
+   nog meetbaar aanwezig is.
+
+De gebruiker heeft op 30 september gekozen de poort terug te zetten vóór 9 oktober, de eerste dag
+waarop Run A weer wedstrijden heeft. Dat is zijn keuze om te maken — het gaat over
+risicobereidheid en niet over de data, dezelfde redenering als bij `selection_score` (§1a) en bij
+het vervallen zelf.
+
+**Wat dit kost, en dat hoort er net zo eerlijk bij als bij het vervallen.** De poort houdt bets
+tegen die hadden kunnen winnen: de `underdog`-reeks in het schaduwlogboek staat op **+15.8% over
+20 afgewikkelde gevallen** (55% trefkans). Dat is precies de reeks die het vervallen moest
+beantwoorden, en hij staat positief. Twee dingen die dat relativeren, maar het niet wegnemen:
+§6d eist ~30 gevallen voordat zo'n reeks gelezen mag worden en het zijn er 20, en de tegenhanger
+`underdog_ruw` staat op **−8.8% over 17 gevallen** — die twee mogen volgens §1e nooit bij elkaar
+worden opgeteld, want het zijn twee populaties. Er is dus geen cijfer dat zegt dat terugzetten
+goed is; er is een gemeten kalibratiefout die zegt dat de kant scheef staat, en een keuze van de
+gebruiker om daar een rem op te houden.
+
+## Het vervallen van 25 t/m 29 september 2026 (keuze van de gebruiker, 18 september 2026)
 
 De poort is ingevoerd met een herzieningsdatum van 25 september en met één voorwaarde erbij: *lees
 het schaduwlogboek pas bij ~30 afgewikkelde gevallen, daaronder is elk verschil ruis*. Die twee
@@ -83,6 +144,11 @@ deden −31.4%. Dat de reeks sinds 5 september nauwelijks groeit, bewijst niet d
 is; het komt doordat de herijking van §1g diezelfde kandidaten nu al bij de edge-poort afvangt
 (§1e, "de poort wordt op twee schalen geboekt"). Die herijking is daarmee de enige bescherming die
 overblijft — **wie haar ooit uitzet, zet deze poort terug.**
+
+> **Precies dat is gebeurd, en niemand heeft het gezien.** De herijking is op 20 september niet
+> uitgezet maar wél tot bijna niets teruggebracht, en voor deze poort komt dat op hetzelfde neer.
+> Zie "Waarom hij terug is" bovenaan: de poort staat sinds 30 september 2026 weer aan. Deze alinea
+> beschrijft dus een venster van vijf dagen dat voorbij is, en niet de huidige stand.
 
 **Wat er blijft meten.** `check()` geeft na het vervallen `would_block=True` op precies de
 gevallen die hij eerder zou hebben tegengehouden. Leg dat per selectie vast in `data/run-state/`,
@@ -106,11 +172,18 @@ PICKEM_TOLERANCE = 0.03
 # van de favorietenkant (−10.9%), en dan is er geen grond om één van beide af te sluiten.
 UNDERDOG_FLOOR = 0.35
 
-# Vanaf deze datum houdt de poort niets meer tegen — keuze C van de gebruiker, 18 sep 2026; zie de
-# docstring hierboven. Tot die datum werkt hij ongewijzigd. Dit is met opzet een datum en geen
-# vlag: de afspraak was een einddatum, en een datum in de code is de enige vorm daarvan die niet
-# vergeten kan worden.
-LAPSES_ON = date(2026, 9, 25)
+# De poort is op 25 september 2026 vervallen (keuze C van de gebruiker, 18 sep) en op
+# 30 september 2026 op zijn verzoek teruggezet. Dat is dus een **venster** waarin hij niets deed,
+# en geen einddatum meer. Het venster blijft met opzet in de code staan in plaats van te worden
+# weggehaald: `check(..., today=<rundag>)` moet voor een herberekening van 25 t/m 29 september
+# hetzelfde antwoord geven als die dagen zelf gaven, anders gaat een hermeting van die vijf dagen
+# stil over een andere poort dan er toen stond.
+LAPSED_FROM = date(2026, 9, 25)
+LAPSED_UNTIL = date(2026, 9, 30)
+
+# Gehouden voor de leesbaarheid van oudere runrapporten en run-state, die naar deze naam verwijzen.
+LAPSES_ON = LAPSED_FROM
+REINSTATED_ON = LAPSED_UNTIL
 
 
 @dataclass(frozen=True)
@@ -127,8 +200,15 @@ class SideCheck:
 
 
 def has_lapsed(today: date | None = None) -> bool:
-    """Is de poort vervallen? (§1e, keuze C van 18 sep 2026)"""
-    return (today or date.today()) >= LAPSES_ON
+    """Stond de poort op deze dag stil? (§1e)
+
+    Waar is dat alleen voor het venster van 25 t/m 29 september 2026. Vóór 25 september werkte de
+    poort en vanaf 30 september werkt hij weer, dus voor elke dag buiten dat venster is dit False.
+    Geef `today` mee met de **rundag** als je een oude dag herberekent; zonder argument geldt
+    vandaag, en dan is het antwoord False.
+    """
+    day = today or date.today()
+    return LAPSED_FROM <= day < LAPSED_UNTIL
 
 
 def devig(odds_1x2) -> tuple[float, float, float] | None:
@@ -161,8 +241,9 @@ def check(side: str | None, odds_1x2, today: date | None = None) -> SideCheck:
     1X2-koersen van de wedstrijd, in de volgorde 1 / X / 2. `today` is de **rundatum**: geef hem
     mee zodat een herberekening van een oude dag hetzelfde antwoord geeft als die dag zelf.
 
-    Vanaf `LAPSES_ON` is `passed` altijd True en zegt alleen `would_block` nog wat de poort zou
-    hebben gedaan — zie de docstring van de module.
+    Binnen het venster `LAPSED_FROM` t/m `LAPSED_UNTIL` (25 t/m 29 sep 2026) is `passed` altijd
+    True en zegt alleen `would_block` nog wat de poort zou hebben gedaan. Daarbuiten — dus ook
+    vandaag — houdt de poort weer tegen. Zie de docstring van de module.
     """
     if side not in ("home", "away"):
         return SideCheck(True, "geen kant om te benadelen")
@@ -181,9 +262,10 @@ def check(side: str | None, odds_1x2, today: date | None = None) -> SideCheck:
                        f"{mine:.1%} tegen {theirs:.1%} voor de tegenstander, onder de "
                        f"{UNDERDOG_FLOOR:.0%} waar poort 8 (§1) dichtging")
             if has_lapsed(today):
-                return SideCheck(True, f"{blocked}; poort 8 is per {LAPSES_ON} vervallen "
-                                       f"(keuze van de gebruiker, 18 sep 2026) en houdt hem niet "
-                                       f"meer tegen", probs, would_block=True)
+                return SideCheck(True, f"{blocked}; poort 8 stond van {LAPSED_FROM} tot "
+                                       f"{LAPSED_UNTIL} stil (keuze van de gebruiker, 18 sep 2026) "
+                                       f"en hield hem op die dag niet tegen", probs,
+                                       would_block=True)
             return SideCheck(False, blocked.replace("dichtging", "dichtgaat"), probs,
                              would_block=True)
         return SideCheck(True, f"underdog-kant, maar boven de ondergrens ({mine:.1%} om "
