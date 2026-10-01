@@ -569,12 +569,15 @@ def render_near_misses(state: dict, labels: dict) -> str:
                 cls = "num" + (" below" if isinstance(v, (int, float)) and v < 3.0 else "")
                 cells.append(f'<td class="{cls}">{signed(v) + " pp" if isinstance(v, (int, float)) else "—"}</td>')
             odds = nm.get("odds")
+            # De selectie zelf (bv. "Under 3.5", "Draw No Bet +0 — Israel"): zonder die staat er
+            # alleen een markt en een koers, en is niet te zien wát er is afgewezen.
+            sel = (f'<strong>{esc(nm["selection"])}</strong><br>' if nm.get("selection") else "")
             price = (f'<br><span class="note">koers {odds:.2f}</span>'
                      if isinstance(odds, (int, float)) else "")
             rows.append(
                 f'<tr><td class="comp">{esc(match.get("match", "?"))}<br>'
                 f'<span class="note">{esc(short_competition(comp, labels))}</span></td>'
-                f'<td>{esc(nm.get("market", "—"))}{price}</td>'
+                f'<td>{sel}<span class="note">{esc(nm.get("market", "—"))}</span>{price}</td>'
                 + "".join(cells)
                 + f'<td><span class="chip gap">{esc(gate)}</span></td></tr>')
     if not rows:
@@ -595,7 +598,7 @@ def render_near_misses(state: dict, labels: dict) -> str:
 
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Wedstrijd</th><th>Markt</th><th>xG-model</th><th>2e methode</th>
+      <thead><tr><th>Wedstrijd</th><th>Selectie</th><th>xG-model</th><th>2e methode</th>
         <th>zwakste stand</th><th>Valt af op</th></tr></thead>
       <tbody>
         {chr(10).join(rows)}
