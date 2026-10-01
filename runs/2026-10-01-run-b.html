@@ -1,0 +1,363 @@
+<title>Run B — donderdag 1 oktober 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run B</h1>
+    <span class="date">donderdag 1 oktober 2026 · gedraaid om 05:04</span>
+  </div>
+
+  <p class="verdict"><b>Geen inzet vannacht. Er was één wedstrijd, daar zat op het eerste gezicht een weddenschap in, en ik heb hem laten lopen — niet uit voorzichtigheid, maar omdat drie losse controles me onafhankelijk van elkaar hetzelfde vertelden.</b><br><br><b>Eerst de kalender.</b> Zestien van je zeventien competities spelen vandaag niet. Het is de laatste dag van de interlandweek; de meeste beginnen weer tussen 2 en 10 oktober, met de grote bulk op donderdag 9 en vrijdag 10 oktober. Eén wedstrijd valt binnen jouw inzetmoment: <b>Seattle Sounders – Sporting Kansas City</b> in de Amerikaanse competitie, aftrap <b>03:30 vannacht</b> (Nederlandse tijd, in de nacht naar vrijdag). Die staat op de wedstrijdlijst van <i>morgen</i> en hoort tóch bij het rapport van vandaag — om half vier vannacht kun je er met de inzet van vanochtend nog bij, morgenochtend is hij al gespeeld. Dat is dezelfde regel die gisteren ook goed uitpakte.<br><br><b>Wat ik daar zag.</b> Seattle is al zeven wedstrijden ongeslagen, maakte tien doelpunten in vijf wedstrijden, en de tegenstander maakte er vier. Mijn rekenwerk geeft Seattle <b>71% kans om te winnen</b>, waar de beste prijs op de markt (1,56 bij Betfair) op 65% neerkomt. Daar zitten drie varianten van dezelfde gedachte boven nul: Seattle winnen, Seattle met minstens één doelpunt verschil, en Seattle met minstens twee. Zes à zeven procentpunt voordeel, en <b>alle drie heb ik tegengehouden</b>.<br><br><b>Reden één: het voordeel verdwijnt als ik aan één knop draai.</b> Voor elke weddenschap reken ik niet één keer maar een heel rooster van redelijke instellingen door, en ik eis dat het voordeel in <i>elk</i> hoekje van dat rooster overblijft. Bij alle drie deze kandidaten slaat het om naar een nadeel: −1,2, −0,8 en −3,5 procentpunt op het zwakste punt. Dat is geen krappe afwijzing. Het betekent dat het voordeel bestaat bij de instelling die ik vandaag koos en verdwijnt bij een even verdedigbare andere — en dan weet ik niet of ik iets heb gevonden of alleen iets heb gekozen.<br><br><b>En van juist deze rem weet ik inmiddels wat hij waard is.</b> Ik houd van elke weddenschap die ik tegenhoud bij hoe hij zou zijn afgelopen. Deze rem staat nu op 27 afgehandelde gevallen met een rendement van <b>−41%</b>: de weddenschappen die hij tegenhield zouden samen ruim veertig procent van de inzet hebben gekost. Dat is het slechtste rendement van al mijn remmen, en het betekent dat een dag als vandaag geen gemiste kans is maar een vermeden verlies. Eén geval onder de dertig die ik voor mezelf als ondergrens heb gesteld, dus ik zeg het met een voorbehoud — maar de richting staat al weken zo.<br><br><b>Reden twee: de scherpste bookmaker van de markt is het oneens met me, en de rest is het met hém eens.</b> Pinnacle rekent het laagste opgeld van allemaal (4,5% tegen 6 à 10% bij de rest), en zijn prijs komt — zonder dat opgeld — uit op <b>62,9%</b> voor Seattle. Ik zeg 71,1%. Dat is ruim acht procentpunt verschil. En het is geen slordig geprijsde markt: alle 23 bookmakers liggen tussen 60,7% en 64,6%, dus binnen vier procentpunt van elkaar. Als ik acht procentpunt afwijk van een markt die het onderling zó eens is, is de kans groter dat ik het mis heb dan zij. Dat is niet bescheidenheid maar iets wat ik heb gemeten: over al mijn 328 afgehandelde weddenschappen schat de bookmaker nog steeds nauwkeuriger dan ik.<br><br><b>Reden drie, en die is nieuw vandaag.</b> Twee van de drie kandidaten waren handicaps op de favoriet: Seattle moet met één of twee doelpunten verschil winnen. Ik houd sinds kort apart bij of mijn rekenwerk de <i>vorm</i> van een uitslag goed heeft en niet alleen wie er wint. Over de wedstrijden sinds mijn instellingswijziging van 19 september zegt dat logboek dat ik bij een duidelijke favoriet juist <b>te optimistisch</b> ben over ruime overwinningen: ik voorspelde 45,9% kans op 'wint met twee of meer' en het gebeurde 38,2%. Dat zijn 34 wedstrijden, veel te weinig om er iets op te baseren — maar het wijst precies de kant op die deze twee weddenschappen slechter maakt, en niet beter.<br><br><b>Wat ik níet als reden heb gebruikt.</b> Mijn eigen lat van acht procentpunt voordeel. Die lat ligt sinds 20 september aan het <i>eind</i> van de dag in plaats van bij elke weddenschap apart: als er te veel goede kandidaten zijn, snijdt hij, en anders laat hij de rangorde bepalen. Geen van de kandidaten van vandaag is dus afgewezen omdat het voordeel te klein was. Ze zijn afgewezen op echte controles.<br><br><b>En iets over beide ploegen dat ik eerlijk moet noemen.</b> Seattle mist vijf spelers, samen bijna 40% van de waarde van de basisopstelling — waaronder Dejan Joveljić (interlandplicht), Pedro De la Vega (hele seizoen weg) en Jesús Ferreira. Mijn rem op afwezigen sloeg hier <i>niet</i> aan, en terecht: Kansas City mist 37%, dus het verschil is maar 2,6 procentpunt en mijn rem kijkt naar het verschil. Maar het is wel een wedstrijd tussen twee gehavende ploegen, en dat maakt elke voorspelling minder waard dan de cijfers suggereren. Reken het mee bij het lezen van die 71%.<br><br><b>Er was niets af te handelen van gisteren.</b> Geen enkele weddenschap van mij stond nog open, en ook in mijn schaduwlijst — de kandidaten die ik tegenhield maar waarvan ik toch bijhoud hoe ze zouden zijn afgelopen — stond niets te wachten op een uitslag. Dat is voor het eerst in weken.<br><br><b>Kort gezegd:</b> er stond vannacht één wedstrijd op het programma, er zat op papier voordeel in, en drie onafhankelijke controles zeiden alle drie dat dat voordeel er waarschijnlijk niet echt is. Vanaf morgen loopt je kalender weer vol.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">0</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">1</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">1</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">119/274</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>Geen bets vandaag</h2>
+  </div>
+  <div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> Geen enkele wedstrijd haalde alle drempels. Dat is een geldige uitkomst, geen mislukte run — de lijst wordt niet aangevuld om hem voller te laten lijken.</p></div>
+</section>
+
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top 3</span>
+    <h2>Mijn 3 beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op maandag t/m donderdag laat ik er 3 zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  <p class="prose">Geen enkele doorgerekende selectie.</p>
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Seattle Sounders FC – Sporting Kansas City</span>
+            <span class="sl-pick">1X2 — 1 (Seattle Sounders FC wint) · MLS · aftrap 03:30</span>
+          </td>
+          <td class="num">1.55</td>
+          <td class="num">71.1%</td>
+          <td class="num">+6.5</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">edge draait om in het (shrink, rho)-grid</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:14px">Geen van deze zou ook zonder de correctie een weddenschap zijn geweest. Over de hele run
+  gaat het om <strong>0</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>
+
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Markt</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Seattle Sounders FC – Sporting Kansas City<br><span class="note">MLS</span></td><td>Asian Handicap — Seattle Sounders FC -1<br><span class="note">koers 1.82</span></td><td class="num">+5,3 pp</td><td class="num">+12,3 pp</td><td class="num below">-1,2 pp</td><td><span class="chip gap">verdwijnt bij andere rekeninstellingen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van deze punten is er <strong>geen enkele</strong> iets voor jou — het is allemaal werk voor mij in een volgende run. Ze staan er zodat je kunt zien waar ik mee bezig ben, niet omdat er iets van je gevraagd wordt.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Er is vannacht niets van jou nodig — geen inzet, geen keuze</span>
+        <span class="d">Eén wedstrijd in jouw zeventien competities en nul weddenschappen. De drie kandidaten met voordeel zijn tegengehouden op de controle die eist dat een voordeel overeind blijft bij andere instellingen, en twee andere controles wezen dezelfde kant op.<br><br>Vanaf morgen loopt de kalender weer vol: Spanje en Nederland op vrijdag 2 oktober, Brazilië in de nacht van 2 op 3, Engeland op zaterdag 3 oktober, en de grote bulk — Tsjechië, Noorwegen, Zweden, Kroatië, Italië, Duitsland — op donderdag 9 en vrijdag 10 oktober. Reken erop dat je van mij weer volle dagen krijgt.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets. Ik meld me weer met het dagrapport van morgenochtend.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">De controle die vandaag de enige reden was voor nul weddenschappen, is bijna leesbaar</span>
+        <span class="d">Van elke weddenschap die ik tegenhoud, houd ik bij hoe hij zou zijn afgelopen. Zo kan ik meten of een rem geld spaart of alleen weddenschappen kost. De rem die vandaag alle drie de kandidaten tegenhield — de rekenkundige controle op andere instellingen — staat nu op 28 gevallen, waarvan dat van vannacht nog open is. Van de 27 afgehandelde gevallen werd er 29,6% gewonnen, met een rendement van <b>−41%</b>: samen bijna elf keer de inzet gespaard.<br><br>Dat is het slechtste rendement van al mijn remmen, en dus het sterkste bewijs dat ik heb dat deze rem zijn werk doet. Mijn eigen regel zegt dat ik zo&#x27;n reeks pas hard mag lezen bij ongeveer dertig gevallen, en hij zit daar één onder. Daarom staat het er met een voorbehoud en niet als conclusie.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets. Ik lees die reeks in de run waarin hij de dertig haalt — vermoedelijk half oktober — en schrijf dan op wat eruit komt.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Een controle bouwen die merkt dat ik een prijs heb laten liggen</span>
+        <span class="d">Dit is het punt dat gisteren ontstond en vandaag nog open staat. Mijn twee prijsbronnen schrijven clubnamen niet gelijk, en als mijn vergelijking er niet langs komt, laat ze stilzwijgend een hele kant van een wedstrijd weg — zonder foutmelding, met een administratie die groen blijft.<br><br>Vandaag heb ik het met de hand nagelopen: alle namen van beide bronnen kwamen goed uit, dus er is vannacht niets overgeslagen. Maar met de hand nalopen is geen controle. Wat het moet worden is simpel: tel per wedstrijd hoeveel uitkomsten de bron aanbood en hoeveel ik er heb gekoppeld, en meld het verschil. Vandaag was er één wedstrijd en dus weinig om die controle op te bouwen.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets. Ik bouw die controle in de eerstvolgende run met meer dan één wedstrijd, dus vermoedelijk morgen of zaterdag.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Drie controles die elkaar niet kennen en toch hetzelfde zeggen</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Een dag met nul weddenschappen leest makkelijk als een dag waarop niets gebeurde. Vandaag is het omgekeerde waar: er is iets gebeurd dat ik in zeven weken niet eerder zo duidelijk heb gezien.</p>
+    <p class="prose">Ik heb drie manieren om te controleren of een weddenschap deugt, en ze weten niets van elkaar. De eerste is een rekenkundige: ik draai mijn hele model nog een paar keer door met andere instellingen en eis dat het voordeel overal overblijft. De tweede is een vergelijking met de scherpste bookmaker van de markt — niet om zijn prijs te spelen, maar om te zien hoe ver ik van het beste publieke oordeel af zit. De derde is een logboek dat bijhoudt of ik de <i>vorm</i> van een uitslag goed voorspel: hoe ruim een favoriet wint, niet alleen of hij wint.</p>
+    <p class="prose">Vandaag zeiden alle drie dezelfde drie weddenschappen af. De rekenkundige zei: dit voordeel slaat om als ik aan een knop draai. De bookmakervergelijking zei: je zit acht procentpunt boven een markt waarin 23 partijen het binnen vier procentpunt met elkaar eens zijn. En het vormlogboek zei: bij precies dit soort wedstrijd — één duidelijke favoriet — ben je sinds half september te optimistisch over ruime overwinningen, en twee van je drie kandidaten zíjn ruime overwinningen.</p>
+    <p class="prose">Geen van die drie is op zichzelf hard. De eerste is een rekenregel en geen bewijs. De tweede is gezag en geen meting. De derde staat op 34 wedstrijden waar ik er 150 voor wil hebben. Maar ze zijn langs drie verschillende wegen tot stand gekomen, en dat ze op dezelfde dag hetzelfde zeggen is informatie die geen van de drie afzonderlijk geeft.</p>
+    <p class="prose">Waarom ik dit opschrijf in plaats van het stil af te doen met 'nul weddenschappen': er is een belangrijk verschil tussen een dag waarop ik niets vond en een dag waarop ik iets vond en het bewust heb laten liggen. Dit was het tweede. En de eerlijke versie daarvan is niet 'ik was voorzichtig' maar 'ik had drie redenen om te denken dat het voordeel dat ik zag voornamelijk mijn eigen rekenfout was'.</p>
+    <p class="prose">Er is nog een vierde ding dat vandaag werkte zonder dat het te zien is. Mijn rem op weddenschappen op de zwakkere ploeg staat sinds vandaag weer aan, na zes dagen stilstand. Hij blokkeerde vannacht de hele kant van Kansas City — de markt geeft die ploeg 18% en mijn ondergrens ligt op 35%. Het kostte geen enkele weddenschap, want die drie kandidaten waren al eerder afgevallen op een andere controle. Dat is precies het geval waarin een rem onzichtbaar werkt, en het is de reden dat ik in mijn administratie heb opgeschreven dát hij wakker was en niets te doen had. Anders is daar over een maand niets meer van terug te vinden.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 17 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">MLS</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Seattle Sounders – Sporting Kansas City, 03:30 Nederlandse tijd in de nacht naar 2 oktober. Alle zes soorten weddenschappen bekeken, dertien kandidaten doorgerekend; drie stonden boven nul en alle drie zijn tegengehouden omdat hun voordeel omslaat zodra ik aan de instellingen draai</td></tr>
+        <tr><td class="comp">2. Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober</td></tr>
+        <tr><td class="comp">Allsvenskan</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober</td></tr>
+        <tr><td class="comp">Austrian Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 10 oktober</td></tr>
+        <tr><td class="comp">Croatian HNL</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober</td></tr>
+        <tr><td class="comp">Czech First League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober</td></tr>
+        <tr><td class="comp">Eliteserien</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober</td></tr>
+        <tr><td class="comp">English League One</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 3 oktober</td></tr>
+        <tr><td class="comp">English League Two</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 3 oktober</td></tr>
+        <tr><td class="comp">Greek Super League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 10 oktober</td></tr>
+        <tr><td class="comp">Hungarian NB I</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 10 oktober</td></tr>
+        <tr><td class="comp">Keuken Kampioen Divisie</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer morgen, vrijdag 2 oktober om 21:00 — die staat dus in het rapport van morgen</td></tr>
+        <tr><td class="comp">Romanian SuperLiga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op woensdag 8 oktober</td></tr>
+        <tr><td class="comp">Segunda División</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer morgen, vrijdag 2 oktober om 20:30 — die staat dus in het rapport van morgen</td></tr>
+        <tr><td class="comp">Serie B</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op donderdag 9 oktober — dit is de competitie die vier dagen op het verkeerde nummer stond; het nummer is vanmorgen opnieuw goed bevonden (twintig ploegen met volledige cijfers), maar 9 oktober is de echte toets</td></tr>
+        <tr><td class="comp">Swiss Super League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer op zaterdag 10 oktober</td></tr>
+        <tr><td class="comp">Série A</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">begint weer in de nacht van 2 op 3 oktober, om 01:00 Nederlandse tijd — die valt net buiten vandaag en staat in het rapport van morgen</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 40 per run diep worden bekeken en het waren er 1.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.235 tegen mijn 0.254 — lager is beter). Bij 274 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Onder de 8 wordt er niets gepubliceerd — 16 als de cijfers zwakker zijn. <em>In de repo: “edge_pp”.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run B · donderdag 1 oktober 2026 · 0 bets uit 1 wedstrijden · wedstrijdkalender van Fotmob — twee daglijsten (31 en 56 competities) plus achttien dagen vooruit om te zien wanneer je competities hervatten · zeventien standenlijsten om te toetsen of elk competitienummer nog naar de bedoelde competitie wijst · twee seizoensoverzichten van de Amerikaanse competitie (2025 en 2026) · blessures, opstelling, vorm en het volledige wedstrijddossier van de enige wedstrijd · prijzen van 23 bookmakers via The Odds API, en het marktgemiddelde over tien boeken van BetExplorer als tweede meetlat · 4 van de 20.000 maandcredits gebruikt</p>
+</footer>
+
+</div>
