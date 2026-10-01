@@ -1,0 +1,216 @@
+{
+ "run": "A",
+ "date": "2026-10-01",
+ "resumed_count": 0,
+ "completed": false,
+ "duur": {
+  "gestart": "2026-10-01T02:05:00+00:00"
+ },
+ "parameters": {
+  "MAX_DEEP_ANALYSES": 40,
+  "MAX_SHORTLIST": 3,
+  "EDGE_THRESHOLD_FULL": 8.0,
+  "EDGE_THRESHOLD_LIGHT": 16.0,
+  "MAX_LIGHT_IN_SHORTLIST": 2,
+  "MIN_ODDS": 1.3,
+  "MAX_ODDS": 6.0,
+  "SHRINK": 1.0,
+  "XG_WEIGHT": 0.8,
+  "CREDIBILITY_K": 8,
+  "SELECTIE": "§5b — rangorde over de hele runlijst, drempel als afkapping",
+  "afgekapt": 0,
+  "afkapping": {
+   "cap": 40,
+   "afgekapt": 0,
+   "laagste_die_het_haalde": null,
+   "hoogste_die_afviel": null,
+   "lijst": [],
+   "reden": "0 wedstrijden in de runlijst, dus de cap bond nergens"
+  },
+  "HERIJKING": "niet toegepast — er is geen wedstrijd doorgerekend. De fit zelf is wel gelezen: a=1.000, b=-0.000 over 3252 afgerekende gevallen, fitted_through 2026-09-30.",
+  "POORT8": {
+   "lapsed_from": "2026-09-25",
+   "lapsed_until": "2026-10-01",
+   "actief_vandaag": true,
+   "toelichting": "Eerste dag waarop poort 8 weer bindt (§1e, teruggezet 30 sep 2026, lichte vorm met UNDERDOG_FLOOR = 0.35). Er is vandaag geen selectie om hem op toe te passen — nul wedstrijden in de runlijst — dus de eerste Run A waarin hij werkelijk iets doet is die van 9 oktober. Leg daar per selectie sides.check(side, odds_1x2, today=DAY) vast, met today meegegeven zoals §1e eist, en boek op beide schalen (underdog en underdog_ruw)."
+  }
+ },
+ "stage_min2": {
+  "ondiepe_kloon_bij_start": true,
+  "unshallow": "git fetch --unshallow origin uitgevoerd; daarna is de kloon volledig (is-shallow-repository = false).",
+  "vals_alarm_voor_unshallow": "Vóór het unshallowen leken 33 van de 44 takken 27 tot 359 eigen commits te hebben. Dat is exact het valse alarm dat §3 Stage -2 beschrijft: main telt zelf maar 75 commits en de oude takken dragen een geschiedenis van vóór de knip. Na het unshallowen is de vergelijking per record gedaan en niet op de graaf.",
+  "vergelijking_per_regel": "scripts/branchaudit.py over alle 44 origin-takken: picks.jsonl op id, shadow.jsonl op id, context-log.jsonl op id, calibration.jsonl op (datum, run, wedstrijd, markt, methode), source-health.json en coverage.json op bladpaden.",
+  "gevonden": {
+   "data/picks.jsonl": "volledig — 328 id's op origin/main, geen tak heeft er één die hier mist",
+   "data/shadow.jsonl": "volledig — 763 records",
+   "data/context-log.jsonl": "volledig — 838 records",
+   "data/calibration.jsonl": "volledig — 3558 records",
+   "data/source-health.json": "volledig — 106 bladpaden; alleen sources.oddspapi staat op oudere takken en niet op main, en dat is het bekende besluit van 30 aug 2026 (commit f342894), geen verlies",
+   "data/coverage.json": "volledig — 285 bladpaden"
+  },
+  "verenigd": [],
+  "openstaande_picks_van_een_andere_tak": "Geen. De twee openstaande picks die Stage 0 vond (Seychelles – Sri Lanka en Bahrain – Yemen, beide van Run C op 30 sep) stonden gewoon op main en zijn deze run afgewikkeld.",
+  "branch": "main — de scheduler-prompt geeft expliciet toestemming (§6a). De sessiebranch claude/stoic-davinci-3wklc8 is op origin/main gezet en er wordt met git push origin HEAD:main gepusht. Niets te melden bovenaan het rapport."
+ },
+ "stage1": {
+  "module": "scripts/runwindow.py",
+  "venster_nl": "[08:00 1 okt 2026, 08:00 2 okt 2026)",
+  "include_carry_over": false,
+  "reden_carry_over": "Uit, zoals §3 Stage 1 voorschrijft na de eenmalige overstap van 25 september. Hem aanzetten zou de band [00:00, 08:00) NL in twee runrapporten zetten.",
+  "daglijsten": {
+   "2026-10-01": 31,
+   "2026-10-02": 56
+  },
+  "wedstrijden_op_de_daglijsten": {
+   "2026-10-01": 61,
+   "2026-10-02": 95
+  },
+  "gevonden_in_venster": 0,
+  "source_day_plus_1": 0,
+  "onspeelbaar": 0
+ },
+ "bevestiging": {
+  "vraag": "Speelt er vandaag werkelijk niets uit de runlijst, of matcht alleen de naam niet?",
+  "methode_1": "Fotmob-daglijsten van 1 en 2 oktober 2026 (31 respectievelijk 56 competities, samen 156 wedstrijden), per competitie uit de runlijst getoetst met find_league op naam, ccode en aliassen — 21 van de 21 leeg, op beide dagen. Dat het geen naamkwestie is, is aan de daglijsten zelf te zien: wat er vandaag wél staat is interlandvoetbal (UEFA Nations League A t/m D, EURO U21-kwalificatie, AFCON-kwalificatie, FIFA ASEAN Cup, CONCACAF Nations League, friendlies) plus lagere en buitenlandse divisies — Israëlische Leumit League (8 duels), Women's Champions League, Noorse Cup, Salvadoraanse Primera, QSL Cup, UAE League Cup, USL Championship. Let op dezelfde bijna-treffer als op 29 september: op de daglijst van 2 oktober staat de Deense 2. Division (id 239) wél en Superligaen (id 46) niet. Bij een afwijkende competitienaam zou juist de hoogste divisie er staan; hier staan alleen de lagere niveaus op de lijst, en dat is het omgekeerde van wat een naamfout zou geven.",
+  "methode_2": "Achttien BetExplorer-fixturepagina's, los van Fotmob opgehaald: Premier League 19 komende duels, Serie A 20, La Liga 20, Bundesliga 18, Ligue 1 18, Championship 12, Eredivisie 18, Primeira Liga 9, Pro League 9, Süper Lig 9, Scottish Premiership 12, Danish Superliga 6, UCL 18, UEL 18, UECL 18, League Cup 8 — nul daarvan op vandaag, en de eerstvolgende staat overal op 9, 10, 11, 13, 15 of 27 oktober. Ekstraklasa en Coppa Italia gaven HTTP 200 met een lege tabel. Plus de drie bekers zonder URL in de hoofdlijst: DFB Pokal 8 komende duels met de eerste op 27 oktober; FA Cup 8 komende duels zonder leesbare aftraptijd; KNVB Beker geeft bij BetExplorer een lege tabel, dus voor die ene blijft Fotmob de enige bron — dat is een bronbeperking en geen bevestiging, en het hoort zo opgeschreven te staan.",
+  "methode_3_tegenproef": "De daglijsten van 1 t/m 16 oktober zijn met dezelfde toets nagelopen. 1 t/m 8 oktober geven alle acht nul runlijstwedstrijden terwijl die lijsten wél gevuld zijn (31, 56, 107, 88, 29, 58, 22 en 24 competities). Vanaf 9 oktober springt het terug: 12 wedstrijden in 10 competities op 9 okt, 56 in 12 op 10 okt, 41 in 13 op 11 okt. De daglijsten zijn dus gezond; het zijn werkelijk alleen de topdivisies die stilliggen, en de hervatting op 9 oktober komt uit twee bronnen (Fotmob-daglijst en BetExplorer-fixturepagina's) in plaats van uit één.",
+  "conclusie": "Nul wedstrijden in de runlijst is de werkelijkheid en geen storing. Dit is het FIFA-interlandvenster; de eerste Run A-speeldag is maandag 9 oktober 2026."
+ },
+ "credits": {
+  "plafond": 0,
+  "uitgegeven": 0,
+  "markten_gekocht": {},
+  "reden": "geen wedstrijd in de runlijst, dus geen enkele competitie om prijzen voor te kopen. The Odds API staat op 20.000 van de 20.000 over — de maandteller is op 1 oktober gereset (api_check.py deze run: 'Quota: 20000 over, 0 gebruikt deze maand').",
+  "marktbalans": "niet van toepassing — er is niets ingekocht. §1a eist minstens één doelpunten- en één uitkomstmarkt zodra er wél wordt ingekocht."
+ },
+ "competitions": {
+  "Premier League (ENG)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Serie A (ITA)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "La Liga (ESP)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Bundesliga (GER)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Ligue 1 (FRA)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Championship (ENG)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Eredivisie (NED)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Primeira Liga (POR)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Belgian Pro League (BEL)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Süper Lig (TUR)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Scottish Premiership (SCO)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Danish Superliga (DEN)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Ekstraklasa (POL)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "UEFA Champions League": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "UEFA Europa League": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "UEFA Conference League": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "FA Cup (ENG)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "League Cup (ENG)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "Coppa Italia (ITA)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "KNVB Beker (NED)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  },
+  "DFB Pokal (GER)": {
+   "status": "GEEN WEDSTRIJD",
+   "matches": [],
+   "fotmob_id": null
+  }
+ },
+ "afwikkeling": {
+  "picks_afgewikkeld": 2,
+  "schaduw_afgewikkeld": 3,
+  "niet_afgewikkeld": [],
+  "picks_uitslag": {
+   "gewonnen": 0,
+   "verloren": 2,
+   "void": 0
+  },
+  "schaduw_uitslag": {
+   "gewonnen": 0,
+   "verloren": 3,
+   "void": 0
+  },
+  "negentig_minuten": "Alle vijf de rijen komen uit groeps- of competitieduels die Fotmob als afgelopen meldde zonder verlenging of strafschoppen, dus de eindstand ís hier de stand na 90 minuten (§6d). Nagekeken op de knock-outval: Seychelles – Sri Lanka en Lithuania – Andorra zijn friendlies (Fotmob-competitie 'Friendlies', id 114), Bahrain – Yemen en UAE – Qatar staan onder 'Gulf Cup Grp. B' en zijn dus groepsduels, en Red Bull New York – St. Louis City is een reguliere MLS-competitiewedstrijd. Geen enkele rij komt uit een tweeluik of play-offduel waar 90 minuten en eindstand kunnen verschillen.",
+  "bevinding": "Vijf rijen afgewikkeld, vijf verliezers — twee echte picks en drie schaduwrijen. De twee picks zijn allebei van Run C van 30 september: Seychelles wint @ 3.15 werd 0-2 en Bahrain wint @ 1.62 werd 2-5. Dat is geen bevinding over de routine maar één dag met twee bets (§6d), en het is ook geen reeks van 5+ verliezende picks in de zin van §7 — het zijn er twee; de andere drie zijn tegengehouden kandidaten, en die horen per definitie niet bij elkaar opgeteld te worden.",
+  "poort8_noot": "Seychelles – Sri Lanka is de ene afgerekende bet uit het venster van zes dagen waarin poort 8 vervallen was (§1e, poort8_zou_hebben_geblokkeerd). Hij is verloren. Dat is precies één waarneming waar §6d er ~30 eist, en de reeks groeit niet meer: vanaf vandaag bindt de poort weer en nemen de twee schaduwreeksen underdog en underdog_ruw het over."
+ },
+ "dagrapport": {
+  "html": "runs/2026-10-01-run-a.html",
+  "artifact": "https://claude.ai/artifact/JBa3kUWuHR15rrAfwvaEJ3",
+  "gepubliceerd_op": "2026-10-01T02:30:39.629140+00:00"
+ }
+}
