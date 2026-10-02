@@ -1,0 +1,552 @@
+<title>Run C — vrijdag 2 oktober 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run C</h1>
+    <span class="date">vrijdag 2 oktober 2026 · gedraaid om ±05:20</span>
+  </div>
+
+  <p class="verdict"><b>Drie bets vandaag, op rangorde gevuld en alle drie onder de oude lat van 16 punt voordeel: Under 3,5 doelpunten bij Frankrijk – Italië (1,77, 20:45), Zweden met handicap 0 bij Bosnië – Zweden (1,89, 20:45) en China wint van Palestina (2,50, 13:35).</b> De eerste komt met 15,8 punt dicht bij de lat, de andere twee met 6,6 en 6,7 punt niet. De lijst wordt op rangorde gevuld en de lat is een label; er is dus geen sterk voordeel gevonden, alleen het beste van wat vandaag overbleef. Gisteren hield zo'n selectie het twee keer niet vol, dus kleiner of helemaal niet inzetten is verdedigbaar.<br><br><b>Let op de volgorde van de aftrappen:</b> China – Palestina begint al om 13:35 en is daarmee de eerste; de prijs daar is een <i>gemiddelde</i> van één boekmaker op BetExplorer, geen beste prijs, dus de koers die je krijgt kan lager of hoger uitvallen.<br><br>Van de 25 interlands in het venster zijn er 24 doorgerekend; 1 viel af omdat Fiji en Vanuatu te weinig gespeelde interlands hebben voor een rating. 8 duels hadden geen enkele prijsbron (o.a. DR Congo – Oeganda, Mauritius – Sri Lanka, de ASEAN Cup, vier kleine CONCACAF-duels). Vijf duels in de Nations League vielen af op de koersband, te weinig voordeel of de rem voor underdogs (o.a. Polen – Roemenië, waar de hoogste edge op de underdog-kant stond).</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">3</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">25</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">6</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">121/277</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 3 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">UEFA Nations League A · aftrap 20:45</span>
+        <span class="bet-match">France – Italy</span>
+        <span class="bet-pick">Under 3.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.77</span>
+        <span class="book">bij Matchbook (beste prijs, The Odds API)</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">56,4%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">72,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+15,8</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">Onder 3,5 doelpunten bij Frankrijk – Italië. Bij een koers van 1,77 (Matchbook, na commissie) geeft de markt 56% kans; mijn twee methodes komen op 73% en 71%. Beide zitten dus boven de markt. Reden: ik verwacht in totaal ongeveer 2,6 doelpunten, en vier of meer is dan niet waarschijnlijk.<br><br><b>Context.</b> Frankrijk mist Warren Zaïre-Emery (6% van de selectiewaarde, terug begin oktober), Italië mist Federico Dimarco (twijfelgeval) en Bryan Cristante (terug eind oktober), samen 7%. Dat is bij beide ploegen klein en onderling gelijk. Rust en vorm zijn bij interlands niet te meten.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>France</dt><dd>selectiewaarde € 1031,9 mln · mist 1 (€ 64,2 mln, 6,2% van de waarde): Warren Zaïre-Emery (terug Early October 2026)</dd></div><div class="ctx-row"><dt>Italy</dt><dd>selectiewaarde € 622,2 mln · mist 2 (€ 44,9 mln, 7,2% van de waarde): Federico Dimarco (terug Doubtful); Bryan Cristante (terug Late October 2026)</dd></div><div class="ctx-row"><dt>Rust</dt><dd>niet meetbaar op interlands (de bron telt sinds de vorige interland)</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico: hoger dan 70% kans is hier niet te vergelijken met een wedstrijd waarin één goal alles verandert, maar het voordeel is 15,8 punt en de zwakste variant van het model houdt nog +7,3 over. Met een koers van 1,77 moet de bet ruim 56% van de keren winnen.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">UEFA Nations League B · aftrap 20:45</span>
+        <span class="bet-match">Bosnia and Herzegovina – Sweden</span>
+        <span class="bet-pick">AH Sweden +0.0</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.89</span>
+        <span class="book">bij 1xBet (beste prijs, The Odds API)</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">52,9%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">59,5%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+6,6</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">Zweden met handicap 0 (geld terug bij gelijkspel) bij Bosnië – Zweden, koers 1,89 bij 1xBet. De markt geeft 53% kans, mijn modellen 58% en 63%. De uitslagenrating ziet Zweden duidelijk sterker dan Bosnië, de marktwaarde van de selecties nog meer.<br><br><b>Context.</b> Bosnië heeft geen bekende uitvallers, Zweden mist Gustaf Lagerbielke (0,7% van de selectiewaarde, terug over ongeveer een week). Dat is niets. Rust en vorm zijn niet te meten.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Bosnia and Herzegovina</dt><dd>selectiewaarde € 77,8 mln · geen uitvallers bekend</dd></div><div class="ctx-row"><dt>Sweden</dt><dd>selectiewaarde € 325,6 mln · mist 1 (€ 2,3 mln, 0,7% van de waarde): Gustaf Lagerbielke (terug About a week)</dd></div><div class="ctx-row"><dt>Rust</dt><dd>niet meetbaar op interlands (de bron telt sinds de vorige interland)</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>uitvallers 0.7% tegen 0.0%</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico: voordeel van 6,6 punt, de zwakste variant van het model houdt +2,1 over. De markt noemt dit bijna een gelijk duel (Bosnië 37,6%, Zweden 35,5%), dus de handicap met geld-terug-bij-gelijk is een redelijk veilige manier om dezelfde mening te spelen.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Vriendschappelijke interlands · aftrap 13:35</span>
+        <span class="bet-match">China – Palestine</span>
+        <span class="bet-pick">1 (China wint)</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.50</span>
+        <span class="book">bij BetExplorer marktgemiddelde (1 boek)</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">40,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">46,7%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+6,7</span></div>
+    </div>
+    <div class="why">
+      <h4>Waarom</h4>
+      <p class="prose">China wint van Palestina, koers 2,50. De markt geeft 40% kans; mijn modellen komen op 44% (uitslagenrating) en 52% (marktwaarde van de selecties). Beide boven de markt, dus de tweede controle is geslaagd.<br><br><b>Context.</b> Geen bekende uitvallers bij beide ploegen, maar bij kleinere landen betekent dat vaak dat er niets wordt bijgehouden, niet dat iedereen fit is. Rust en vorm zijn niet te meten.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>China</dt><dd>selectiewaarde € 18,2 mln · geen uitvallers bekend</dd></div><div class="ctx-row"><dt>Palestine</dt><dd>selectiewaarde € 9,0 mln · geen uitvallers bekend</dd></div><div class="ctx-row"><dt>Rust</dt><dd>niet meetbaar op interlands (de bron telt sinds de vorige interland)</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>uitvallers 0.0% tegen 0.0%</dd></div></dl>
+      <span class="risk"><span class="dot high"></span>Hoog risico: het voordeel is 6,7 punt, de koers is een gemiddelde van één boekmaker en geen beste prijs, en de aftrap is al om 13:35. In een oefenduel is de opstelling zelden de sterkste.</span>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>De beste 3 als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op vrijdag t/m zondag houd ik maximaal
+  <strong>5</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">France – Italy</span>
+            <span class="sl-pick">Under 3.5 · UEFA Nations League A · aftrap 20:45</span>
+          </td>
+          <td class="num">1.77</td>
+          <td class="num">72,2%</td>
+          <td class="num">+15.8</td>
+          <td class="num">5.70</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Bosnia and Herzegovina – Sweden</span>
+            <span class="sl-pick">AH Sweden +0.0 · UEFA Nations League B · aftrap 20:45</span>
+          </td>
+          <td class="num">1.89</td>
+          <td class="num">59,5%</td>
+          <td class="num">+6.6</td>
+          <td class="num">1.95</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">China – Palestine</span>
+            <span class="sl-pick">1 (China wint) · Vriendschappelijke interlands · aftrap 13:35</span>
+          </td>
+          <td class="num">2.50</td>
+          <td class="num">46,7%</td>
+          <td class="num">+6.7</td>
+          <td class="num">1.57</td>
+          <td><span class="chip high">hoog</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:18px">Er waren maar 3 bets, dus de lijst is korter dan de 5 plekken die er op vrijdag t/m zondag zijn. Hij wordt niet aangevuld om hem voller te laten lijken.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top 5</span>
+    <h2>Mijn 5 beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op vrijdag t/m zondag laat ik er 5 zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">France – Italy</span>
+            <span class="sl-pick">Over/Under — Under 3.5 · UEFA Nations League A · aftrap 20:45</span>
+          </td>
+          <td class="num">1.77</td>
+          <td class="num">72.2%</td>
+          <td class="num">+15.8</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 16.0 pp (§5b)</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Bosnia and Herzegovina – Sweden</span>
+            <span class="sl-pick">Asian Handicap — AH Sweden +0.0 · UEFA Nations League B · aftrap 20:45</span>
+          </td>
+          <td class="num">1.89</td>
+          <td class="num">59.5%</td>
+          <td class="num">+6.6</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 16.0 pp (§5b)</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">China – Palestine</span>
+            <span class="sl-pick">1X2 — 1X2 1 · Vriendschappelijke interlands · aftrap 13:35</span>
+          </td>
+          <td class="num">2.50</td>
+          <td class="num">46.7%</td>
+          <td class="num">+6.7</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 16.0 pp (§5b)</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">France – Italy</span>
+            <span class="sl-pick">Over/Under — Under 3.5 · UEFA Nations League A · aftrap 20:45</span>
+          </td>
+          <td class="num">1.77</td>
+          <td class="num">72.2%</td>
+          <td class="num">+15.9</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">zou een bet zijn geweest — nu tegengehouden door: BET</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Poland – Romania</span>
+            <span class="sl-pick">Asian Handicap — AH Romania +1.5 · UEFA Nations League B · aftrap 20:45</span>
+          </td>
+          <td class="num">1.56</td>
+          <td class="num">72.4%</td>
+          <td class="num">+8.3</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">underdog-kant onder de ondergrens (poort 8)</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Bosnia and Herzegovina – Sweden</span>
+            <span class="sl-pick">Asian Handicap — AH Sweden +0.0 · UEFA Nations League B · aftrap 20:45</span>
+          </td>
+          <td class="num">1.89</td>
+          <td class="num">59.5%</td>
+          <td class="num">+6.6</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">zou een bet zijn geweest — nu tegengehouden door: BET</span></td>
+        </tr><tr>
+          <td class="num rank">4</td>
+          <td>
+            <span class="sl-match">China – Palestine</span>
+            <span class="sl-pick">1X2 — 1X2 1 · Vriendschappelijke interlands · aftrap 13:35</span>
+          </td>
+          <td class="num">2.50</td>
+          <td class="num">46.7%</td>
+          <td class="num">+6.7</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">zou een bet zijn geweest — nu tegengehouden door: BET</span></td>
+        </tr><tr>
+          <td class="num rank">5</td>
+          <td>
+            <span class="sl-match">Faroe Islands – Slovakia</span>
+            <span class="sl-pick">Over/Under — Over 2.5 · UEFA Nations League C · aftrap 20:45</span>
+          </td>
+          <td class="num">2.39</td>
+          <td class="num">47.1%</td>
+          <td class="num">+5.3</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">edge onder de drempel</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:14px">Geen van deze zou ook zonder de correctie een weddenschap zijn geweest. Over de hele run
+  gaat het om <strong>0</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>
+<div class="wrap-callout"><div class="callout"><p class="prose">Net buiten de bets: <b>Polen – Roemenië (handicap Roemenië +1,5, 1,56)</b> met +8,3 punt en <b>Zuid-Korea – Venezuela (Venezuela wint, 5,25)</b> met +6,8 punt — beide gestopt door de rem voor underdogs. Ook <b>Faeröer – Slowakije (Over 2,5, 2,39)</b> met +5,3 punt en <b>Oekraïne – Noord-Ierland (Over 2,5, 2,42)</b> met +3,5 punt zitten onder de minimale rand van 6 punt voor deze dataklasse.</p></div></div>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Selectie</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Belgium – Turkiye<br><span class="note">UEFA Nations League A</span></td><td><strong>AH Belgium -1.5</strong><br><span class="note">Asian Handicap</span><br><span class="note">koers 2.38</span></td><td class="num below">+2,6 pp</td><td class="num">—</td><td class="num below">-3,1 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Hungary – Georgia<br><span class="note">UEFA Nations League B</span></td><td><strong>Over 2.5</strong><br><span class="note">Over/Under</span><br><span class="note">koers 2.16</span></td><td class="num">+4,7 pp</td><td class="num">—</td><td class="num">+4,7 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Ukraine – Northern Ireland<br><span class="note">UEFA Nations League B</span></td><td><strong>Over 2.5</strong><br><span class="note">Over/Under</span><br><span class="note">koers 2.42</span></td><td class="num">+3,5 pp</td><td class="num">—</td><td class="num">+3,5 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Poland – Romania<br><span class="note">UEFA Nations League B</span></td><td><strong>AH Romania +1.5</strong><br><span class="note">Asian Handicap</span><br><span class="note">koers 1.56</span></td><td class="num">+8,3 pp</td><td class="num">—</td><td class="num">+8,3 pp</td><td><span class="chip gap">underdog</span></td></tr>
+<tr><td class="comp">Kazakhstan – Moldova<br><span class="note">UEFA Nations League C</span></td><td><strong>Over 2.5</strong><br><span class="note">Over/Under</span><br><span class="note">koers 2.18</span></td><td class="num">+3,0 pp</td><td class="num">—</td><td class="num">+3,0 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Faroe Islands – Slovakia<br><span class="note">UEFA Nations League C</span></td><td><strong>Over 2.5</strong><br><span class="note">Over/Under</span><br><span class="note">koers 2.39</span></td><td class="num">+5,3 pp</td><td class="num">—</td><td class="num">+5,3 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Cyprus – Armenia<br><span class="note">UEFA Nations League C</span></td><td><strong>Over 2.5</strong><br><span class="note">Over/Under</span><br><span class="note">koers 2.17</span></td><td class="num">+4,6 pp</td><td class="num">—</td><td class="num">+4,4 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Latvia – Montenegro<br><span class="note">UEFA Nations League C</span></td><td><strong>AH Latvia +0.0</strong><br><span class="note">Asian Handicap</span><br><span class="note">koers 3.43</span></td><td class="num">+3,2 pp</td><td class="num">—</td><td class="num below">+2,9 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">South Korea – Venezuela<br><span class="note">Vriendschappelijke interlands</span></td><td><strong>1X2 2</strong><br><span class="note">1X2</span><br><span class="note">koers 5.25</span></td><td class="num">+6,8 pp</td><td class="num">—</td><td class="num">+6,2 pp</td><td><span class="chip gap">underdog</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Drie bets om zelf te beoordelen</span>
+        <span class="d">Alle drie zijn gepubliceerd op rangorde en onder de oude lat van 16 punt. De onderbouwing is bij Frankrijk – Italië het sterkst, bij China – Palestina het zwakst. Gisteren verloor Wales – Noorwegen; over de hele Run C-reeks staat het schaduwlogboek nog te weinig afgewikkelde gevallen om er iets uit af te leiden.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Beslis zelf of je China – Palestina (13:35, dus vóór 13:00 inzetten), Frankrijk – Italië en Bosnië – Zweden (beide 20:45) wilt inzetten.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>De vrijdaglijst van vijf werd niet vol</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Er waren maar drie selecties met minstens 6 punt voordeel die alle poorten haalden. Er is niets aangevuld om op vijf te komen.</p>
+    <p class="prose">Het hoogste voordeel van de dag (Frankrijk – Italië, Under 3,5, +15,8 punt) ligt 0,2 punt onder de oude lat van 16. Dat is een label en geen veto, maar het blijft een model dat nog nergens tegen de markt is bewezen.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 9 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">CONCACAF Nations League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">7 duels: Suriname – Guatemala, Martinique – Honduras en El Salvador – Jamaica hadden een 1X2-prijs bij BetExplorer maar geen voordeel; Saint Lucia – Guadeloupe, St. Kitts – Cuba, Barbados – Bermuda en Bonaire – Grenada zonder prijsbron</td></tr>
+        <tr><td class="comp">FIFA ASEAN Cup</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">2 duels (Thailand – Filipijnen, Vietnam – Pakistan): geen prijs op BetExplorer, dus buiten datadekking</td></tr>
+        <tr><td class="comp">UEFA Nations League A</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">2 duels, alle zes markten doorgerekend: Frankrijk – Italië leverde een bet (Under 3,5), België – Turkije had geen voordeel</td></tr>
+        <tr><td class="comp">UEFA Nations League B</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">4 duels, alle zes markten: Bosnië – Zweden leverde een bet (Zweden handicap 0); Polen – Roemenië viel af op de underdog-rem; Hongarije – Georgië en Oekraïne – Noord-Ierland hadden te weinig voordeel</td></tr>
+        <tr><td class="comp">UEFA Nations League C</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">4 duels: Kazachstan – Moldavië, Faeröer – Slowakije, Cyprus – Armenië, Letland – Montenegro; geen enkele haalde de minimale rand van 6 punt</td></tr>
+        <tr><td class="comp">Vriendschappelijke interlands</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">6 duels: China – Palestina leverde een bet (China wint); Zuid-Korea – Venezuela viel af op de underdog-rem; Colombia – Paraguay had geen voordeel; DR Congo – Oeganda en Mauritius – Sri Lanka zonder prijsbron; Fiji – Vanuatu heeft te weinig interlands voor een rating</td></tr>
+        <tr><td class="comp">Arabian Gulf Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">geen duel in het venster (de eerste twee duels staan op 3 oktober, na 08:00 NL)</td></tr>
+        <tr><td class="comp">CAF Afrika Cup-kwalificatie</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">geen duel in het venster</td></tr>
+        <tr><td class="comp">UEFA Nations League D</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">geen duel in het venster</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 55 per run diep worden bekeken en het waren er 25.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.234 tegen mijn 0.252 — lager is beter). Bij 277 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Onder de 8 wordt er niets gepubliceerd — 16 als de cijfers zwakker zijn. <em>In de repo: “edge_pp”.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run C · vrijdag 2 oktober 2026 · 3 bets uit 25 wedstrijden · de landenrating in scripts/national.py (6784 interlands sinds 2006) · de marktwaarde van de selecties in scripts/squadform.py · beste prijs per bookmaker van The Odds API voor de Nations League (23 credits: 3 bulk + 20 voor BTTS en Double Chance) · marktgemiddelde 1X2-koersen van BetExplorer voor oefeninterlands en de CONCACAF Nations League</p>
+</footer>
+
+</div>
