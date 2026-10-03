@@ -56,8 +56,11 @@ GLOSSARY = [
      "gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em>"),
     ("Voordeel in procentpunten",
      "Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan "
-     "is dat +7,9. Onder de 8 wordt er niets gepubliceerd — 16 als de cijfers zwakker zijn. "
-     "<em>In de repo: “edge_pp”.</em>"),
+     "is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt "
+     "sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst "
+     "zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat "
+     "een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe "
+     "hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em>"),
     ("Kansenkwaliteit (xG)",
      "Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. "
      "Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is."),
