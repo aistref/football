@@ -105,6 +105,27 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # eronder. The Odds API schrijft "AGF Aarhus" en kwam wél door — daar is {agf} een
     # deelverzameling van {agf, aarhus}.
     "agf": "aarhus",
+    # 3 okt 2026 (Run B): Braziliaanse Série A, en het is NIET de diakrietenval waar het
+    # coverage-briefje van 2 oktober voor waarschuwt — `norm` haalt accenten gewoon weg. Hier
+    # schrijven de twee bronnen een ANDER DEEL van de naam: Fotmob "Atlético-MG" (de
+    # staatsafkorting) tegen The Odds API "Atletico Mineiro" (de staat voluit), en Fotmob
+    # "RB Bragantino" (de sponsor) tegen The Odds API "Bragantino-SP". In beide paren delen de
+    # tokens er één maar is geen van beide een deelverzameling van de ander, en dat is wat
+    # `resolve` eist.
+    #
+    # Het faalt stil en het kost meer dan één prijs. `find_event` koppelt de wedstrijd nog wél
+    # (`best_pair` haalt de vloer), maar `side_of` draait op `resolve` en gaf None voor allebei
+    # de ploegen. Gevolg op 3 oktober bij Atlético-MG – RB Bragantino: van de 1X2 bleef alleen
+    # het GELIJKSPEL over (dat heeft geen kant), en Asian Handicap, Draw No Bet en Double Chance
+    # kwamen alle drie op nul selecties uit terwijl de spreads-respons gewoon lijnen bevatte.
+    # Elf van de veertien doorgerekende selecties van dat duel vielen weg, en in
+    # `markets_checked` stond "0 handicaplijnen" — wat leest als "geen boek bood ze aan".
+    # BetExplorer koppelde wél ("Atletico-MG" en "Bragantino"), dus het marktgemiddelde en
+    # daarmee het kalibratieblok en poort 8 bleven overeind; alleen de bet zelf was blind.
+    "atletico mineiro": "atletico mg",
+    "atletico mg": "atletico mineiro",
+    "bragantino sp": "rb bragantino",
+    "rb bragantino": "bragantino sp",
 }
 
 
