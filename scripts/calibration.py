@@ -70,7 +70,7 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -280,7 +280,28 @@ def cmd_settle(_args: argparse.Namespace) -> int:
         if r.get("won") is not None or " – " not in (r.get("match") or ""):
             continue
         home, away = r["match"].split(" – ", 1)
-        hit = index.lookup(date.fromisoformat(r["date"]), home, away)
+        # De rundag is niet altijd de UTC-dag van de aftrap. Sinds `runwindow.py` (24 sep 2026)
+        # hoort een wedstrijd bij de run wiens inzetvenster hem nog kan bedienen — `[08:00 NL,
+        # 08:00 NL + 1 dag)` — en dat venster loopt door over middernacht UTC. Een duel in een
+        # Amerikaanse tijdzone (MLS, Série A (BRA), CONCACAF) staat daardoor op de Fotmob-daglijst
+        # van de dag ná de rundag, en een opzoeking op alleen `r["date"]` vindt hem nooit.
+        #
+        # Gevolg, gemeten op 3 okt 2026: 195 waarnemingen van vóór vandaag stonden nog op
+        # `won = None`, waaronder élke CONCACAF-rij van Run C en de MLS-rijen van Run B. Dat is
+        # geen foutmelding en geen kapot logboek — het is een stille lek in de steekproef waarop
+        # `recalibrate.load_fit()` sinds 20 september de herijking van §1g fit, en het lekt
+        # systematisch één soort wedstrijd weg. Dit is openstaand punt 2 van
+        # `runs/2026-09-27-run-a.md`, daar nog als voorstel ("geef DayIndex twee daglijsten").
+        #
+        # Dezelfde volgorde als `settling._days_to_try`: de dag zelf eerst, dan de dag erna, dan
+        # de dag ervoor. `DayIndex` cachet per kalenderdag, dus dit kost hooguit één extra
+        # Fotmob-verzoek per dag en nul credits.
+        d0 = date.fromisoformat(r["date"])
+        hit = None
+        for d in (d0, d0 + timedelta(days=1), d0 - timedelta(days=1)):
+            hit = index.lookup(d, home, away)
+            if hit is not None:
+                break
         if not hit or not hit.get("finished") or not hit.get("score"):
             open_ += 1
             continue
