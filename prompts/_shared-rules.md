@@ -2703,6 +2703,13 @@ verplicht:
   om iets te zeggen), schrijf dat dan op in plaats van het weg te laten — "geen uitvallers bekend"
   is iets anders dan "iedereen fit".
 
+**De afrekening van gisteren staat in elk dagrapport (toegevoegd 4 okt 2026, op verzoek van de gebruiker).**
+De run die als eerste afwikkelt (Run A, ±04:20 NL) was tot die datum de enige die `settled` in de
+prose invulde; Run B en C vonden niets meer open en toonden niets. `report.py` vult de tabel nu
+zelf uit `data/picks.jsonl` (picks van vóór de rundag, afgewikkeld op de rundag) wanneer `settled`
+leeg is. Laat het veld dus leeg of vul het met nettere labels, maar schrijf nooit "geen pick open"
+als reden om de afrekening weg te laten.
+
 Schrijf de prose voor iemand die de repo niet kent en het jargon niet spreekt. Geen `edge_pp`,
 geen "de-viggen", geen ρ of shrink: die staan in de woordenlijst onderaan de pagina en horen niet
 in de lopende tekst. Noem bedragen, tijden en bookmakers concreet.

@@ -748,6 +748,29 @@ def render_todo(items: list[dict]) -> str:
 </section>'''
 
 
+def auto_settled(all_picks: list[dict], day: date) -> list[dict]:
+    """De afrekening van gisteren, rechtstreeks uit picks.jsonl (4 okt 2026).
+
+    `prose["settled"]` is handwerk, en de run die als eerste afwikkelt (Run A, ~04:20 NL) is
+    ook de enige die het invult: Run B en C vonden niets meer open en lieten het veld leeg,
+    dus hun dagrapport toonde de afrekening van gisteren niet. Is `settled` in de prose leeg,
+    dan komt het hier uit het logboek: elke pick van vóór `day` die op `day` (UTC) is
+    afgewikkeld, ongeacht welke run hem publiceerde.
+    """
+    out = []
+    for p in all_picks:
+        at = (p.get("settled_at") or "")[:10]
+        if at != day.isoformat() or p.get("run_date", "") >= day.isoformat():
+            continue
+        if p.get("result") not in ("won", "lost", "void"):
+            continue
+        score = (p.get("settled_score") or "–").replace("-", "–")
+        out.append({"label": f'{p["home"]} – {p["away"]} · {p["market"]}: {p["selection"]} '
+                             f'({p["odds"]:.2f}) · Run {p["run"]}'.replace(".", ","),
+                    "score": score, "result": p["result"]})
+    return out
+
+
 def render_settled(entries: list[dict], stats: dict) -> str:
     # Een push (inzet terug) is geen verlies. Tot 31 aug 2026 rendeerde elke uitkomst die niet
     # 'won' was als "verloren", en dat maakte van een teruggegeven inzet stilzwijgend een nederlaag.
@@ -883,7 +906,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
   </div>
   {trunc_line}
 </section>
-{render_settled(prose.get("settled", []), stats)}
+{render_settled(prose.get("settled") or auto_settled(all_picks, day), stats)}
 <section>
   <div class="sectionhead">
     <span class="eyebrow">De termen</span>
