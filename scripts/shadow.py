@@ -105,10 +105,20 @@ def cmd_collect(args: argparse.Namespace) -> int:
             # `near_miss` voedt óók de "Net niet"-tabel van §5 en blijft daarvoor in het
             # voortgangsbestand staan, maar hij hoort niet twee keer in het schaduwlogboek.
             # Vergelijking op markt én koers, want dat is wat een selectie identificeert.
+            # Sinds 4 okt 2026 geldt dezelfde vergelijking ook tegen `poort8_geblokkeerd`.
+            # Die stond er niet, en dat is precies dezelfde fout een categorie verderop: een
+            # `near_miss` die zélf op poort 8 sneuvelde beschrijft dezelfde selectie als het
+            # `poort8_geblokkeerd`-blok van die wedstrijd, dus kreeg één wedstrijd twee rijen in
+            # de categorie `underdog` en telde haar opbrengst dubbel. Op 3 okt 2026 gebeurde dat
+            # vier keer op één dag (Canada – Peru, Croatia – England, Estonia – Luxembourg,
+            # Switzerland – Slovenia), terwijl de `underdog`-reeks op 30 afgewikkelde gevallen
+            # stond — de grens waarboven §6d hem pas mag lezen. Vier dubbele rijen zijn daar geen
+            # detail. Zie §1e, punt 2: "Nooit dezelfde selectie twee keer".
             _p8r = [b for b in (match.get("poort8_ruw") or []) if isinstance(b, dict)]
+            _p8g = [b for b in (match.get("poort8_geblokkeerd") or []) if isinstance(b, dict)]
             _dubbel = (isinstance(nm0, dict)
                        and any(b.get("market") == nm0.get("market")
-                               and b.get("odds") == nm0.get("odds") for b in _p8r))
+                               and b.get("odds") == nm0.get("odds") for b in _p8r + _p8g))
             if isinstance(nm0, dict) and nm0.get("failed_gate") != "herijking" and not _dubbel:
                 kandidaten.append(("", nm0))
             for i, blk in enumerate(match.get("poort8_geblokkeerd") or []):
