@@ -1,0 +1,322 @@
+<title>Run A — maandag 5 oktober 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run A</h1>
+    <span class="date">maandag 5 oktober 2026 · gedraaid om ±04:15</span>
+  </div>
+
+  <p class="verdict"><b>Geen bets vandaag: geen van de 21 competities die ik voor je volg speelt.</b> Het is nog steeds de interlandperiode. De competities beginnen weer op <b>vrijdag 9 en zaterdag 10 oktober</b> (Spanje, Duitsland, Frankrijk, Nederland, Portugal, België, Turkije, Denemarken en Polen op vrijdag; Engeland, Italië en Schotland op zaterdag). De Champions League hervat op 13 oktober, de Europa en Conference League op 15 oktober.<br><br>Dat er niets is, heb ik weer met <b>twee bronnen apart</b> nagegaan in plaats van het aan te nemen — en vandaag is dat geen formaliteit gebleken. Bij de ene bron (Fotmob) staan er voor morgen nul Engelse bekerduels; bij de andere (BetExplorer) staan er <b>vijf</b>, morgenavond kwart voor acht. Zonder die tweede bron zou de run van morgen een hele competitie overslaan zonder dat iemand dat merkt. Meer daarover onder "Wat ik heb gevonden".<br><br>Wat ik verder met de tijd heb gedaan: de weddenschappen van gisteren afgerekend (vier stuks, net winst) en het eigen huishouden nagelopen. Daar komt één meting uit die nu voor het tweede dagje bruikbaar is en waar een keuze van jou aan hangt.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">0</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">129/291</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>Geen bets vandaag</h2>
+  </div>
+  <div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> Geen enkele wedstrijd haalde alle drempels. Dat is een geldige uitkomst, geen mislukte run — de lijst wordt niet aangevuld om hem voller te laten lijken.</p></div>
+</section>
+
+
+<div class="wrap-callout"><div class="callout"><p class="prose">Niets — en dat is iets anders dan "alles viel net af". Er is vandaag geen enkele wedstrijd doorgerekend, dus er is ook geen kandidaat die op een haar strandde. De lijst is leeg omdat er niet gespeeld wordt, niet omdat de lat te hoog lag.</p></div></div>
+
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van de 4 punten hieronder is er 1 iets voor jou; bij de rest staat erbij dat je niets hoeft te doen.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">De rem op underdogs: laten staan of eraf?</span>
+        <span class="d">Ik heb een rem aanstaan die weddenschappen tegenhoudt op de ploeg die de markt als de mindere ziet. Afgesproken was dat die rem eraf mag zodra blijkt dat hij structureel winnaars tegenhoudt — gemeten over minstens 30 afgerekende gevallen. Gisteren ging die teller voor het eerst over de grens, vandaag staat hij op 36 gevallen: 58% zou zijn gewonnen, met een rendement van +16,9%. Over één dag is dat van +12,6% naar +16,9% gelopen, dus de richting is dezelfde en wordt sterker. De rem kost dus geld in plaats van dat hij het bespaart. Wat er tegenover staat is onveranderd: op de andere meetschaal staat dezelfde rem op −8,8% over 17 gevallen, en die twee mag ik niet bij elkaar optellen omdat het twee verschillende groepen zijn. En de onderliggende reden dat de rem er is, geldt nog steeds: mijn model geeft underdogs meetbaar te veel kans (bijna 2 punt te veel) en favorieten te weinig (bijna 4 punt te weinig), nu over 3831 uitkomsten. Ik heb de rem niet aangeraakt — hij is in september twee keer gewijzigd, beide keren omdat jij dat vroeg, en dit is een keuze over hoeveel risico je wilt nemen.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Laat weten of de rem op underdogs blijft of eraf gaat; zolang je niets zegt laat ik hem staan zoals hij staat.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">Dezelfde meting opnieuw doen bij ongeveer 60 gevallen</span>
+        <span class="d">36 gevallen is over de afgesproken grens maar nog geen stevig getal. De reeks groeit met ongeveer vijf gevallen per week en komt dus rond eind oktober op 60. Tot 9 oktober groeit hij alleen via Run B en Run C, omdat Run A tot die dag geen wedstrijd heeft.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets — ik meet dit opnieuw in de run van 9 oktober en daarna wekelijks tot de reeks rond 60 staat.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Een tweede bron zoeken voor de Coppa Italia en de KNVB Beker</span>
+        <span class="d">Voor 19 van de 21 competities kan ik een lege kalender met twee bronnen bevestigen. Voor die twee bekers niet: Fotmob toont ze niet en BetExplorer geeft een lege lijst, en een lege lijst is geen bevestiging. Vandaag maakt dat niets uit, maar in de week van 27 oktober staan er bekerrondes. Dit punt stond er gisteren ook en is nog niet opgelost; de FA Cup van morgen laat zien waarom het geen theoretisch punt is.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets — ik zoek vóór de bekerrondes van 27 oktober een werkende tweede bron voor die twee.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">4</span>
+      <span class="body">
+        <span class="t">Twee metingen over de vorm van uitslagen spreken elkaar tegen</span>
+        <span class="d">Ik controleer niet alleen of ik de winnaar goed voorspel, maar ook of ik de vórm van een uitslag goed voorspel — of een duidelijke favoriet met 1 of met 3 wint. Over alle dagen samen (211 wedstrijden met een duidelijke favoriet) onderschat ik hoe scheef die duels aflopen; over alleen de periode sinds 20 september (36 wedstrijden) overschat ik dat juist, en flink: voorspeld 26% dat de favoriet met 3 of meer wint, werkelijk 14%. Beide steekproeven zijn te klein om er iets aan te veranderen, en ze wijzen tegengesteld, dus ik raak er niets aan. Dit is het soort meting dat pas over een maand iets zegt.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets — ik herhaal deze meting begin november, als er genoeg wedstrijden op de huidige instelling staan.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Wat ik heb gevonden: één bron zou morgen een hele competitie laten verdwijnen</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose"><b>Er staan morgenavond vijf Engelse bekerduels op het programma, en de ene bron die ik gebruik weet dat niet.</b> Atherton – Trafford, Halesowen – Stafford, Scarborough – Macclesfield, Spalding United – Bury Town en Wingate &amp; Finchley – Bedford, alle vijf morgen om 19:45. Bij BetExplorer staan ze er gewoon. In de wedstrijdlijst van Fotmob voor 6 oktober — 58 competities lang — komt de FA Cup niet voor.</p>
+    <p class="prose"><b>Dat is dezelfde ontdekking als vorige week, en dat is precies waarom hij telt.</b> Op 2 oktober bleek dat de kwalificatierondes van de FA Cup niet in de wedstrijdlijst van Fotmob staan; op 3 oktober heeft Run A 40 van die duels doorgerekend, die uitsluitend bij de tweede bron stonden. Vandaag gebeurt het voor de tweede keer. Een ontdekking die één keer gebeurt kan toeval zijn; een die zich herhaalt is een eigenschap van de bron. Vandaag staat het label "speelt niet" bij de FA Cup dus terecht — morgen staat het er onterecht als ik alleen naar Fotmob kijk.</p>
+    <p class="prose"><b>Wat het praktisch oplevert is vermoedelijk niets, en dat verandert niets aan de zaak.</b> Vijf duels tussen clubs van dit niveau hebben vrijwel zeker geen bruikbare cijfers, dus ze zullen morgen eindigen als "geen bruikbare gegevens" en geen weddenschap opleveren. Maar het verschil tussen "nagekeken en er zat niets in" en "nooit gezien" is het verschil tussen een lijst die je kunt vertrouwen en een lijst die er alleen volledig uitziet. Ik laat de tweede bron voor de FA Cup dus staan, en dat is het hele punt van twee bronnen naast elkaar: niet dat ze het eens zijn, maar dat je merkt wanneer ze dat niet zijn.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 21 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Belgian Pro League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Championship</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Coppa Italia</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — er staat bij BetExplorer geen ronde gepland; voor deze beker heb ik nog geen tweede bron die dat kan bevestigen</td></tr>
+        <tr><td class="comp">DFB Pokal</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — volgende ronde op 27 oktober</td></tr>
+        <tr><td class="comp">Danish Superliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Ekstraklasa</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Eredivisie</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">FA Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt vandaag niet, maar wél morgenavond: vijf kwalificatieduels om 19:45. Die staan alleen bij BetExplorer en niet in de wedstrijdlijst van Fotmob — zie "Wat ik heb gevonden"</td></tr>
+        <tr><td class="comp">KNVB Beker</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — er staat bij BetExplorer geen ronde gepland; voor deze beker heb ik nog geen tweede bron die dat kan bevestigen</td></tr>
+        <tr><td class="comp">La Liga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">League Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — volgende ronde op 27 oktober</td></tr>
+        <tr><td class="comp">Ligue 1</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Premier League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 10 oktober</td></tr>
+        <tr><td class="comp">Primeira Liga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">Scottish Premiership</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 10 oktober</td></tr>
+        <tr><td class="comp">Serie A</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 10 oktober</td></tr>
+        <tr><td class="comp">Süper Lig</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — interlandperiode; weer op 9 oktober</td></tr>
+        <tr><td class="comp">UEFA Champions League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — hervat op 13 oktober</td></tr>
+        <tr><td class="comp">UEFA Conference League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — hervat op 15 oktober</td></tr>
+        <tr><td class="comp">UEFA Europa League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">speelt niet — hervat op 15 oktober</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 40 per run diep worden bekeken en het waren er 0.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Nederland – Servië · beide teams scoren (2,22)</td><td class="num">2–1</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Girona – Mallorca · minder dan 2,5 doelpunten (2,02)</td><td class="num">0–0</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Real Sociedad B – Granada · minder dan 2,5 doelpunten (1,94)</td><td class="num">2–3</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Las Palmas – Real Valladolid · minder dan 2,5 doelpunten (1,86)</td><td class="num">2–2</td><td><span class="chip gap">verloren</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.235 tegen mijn 0.252 — lager is beter). Bij 291 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run A · maandag 5 oktober 2026 · 0 bets uit 0 wedstrijden · de wedstrijdlijsten van Fotmob voor 5 en 6 oktober (30 en 58 competities) · de fixturepagina van BetExplorer voor alle 21 competities van de lijst, apart opgevraagd · The Odds API alleen voor de sleutelcontrole, 0 credits verbruikt</p>
+</footer>
+
+</div>
