@@ -47,7 +47,7 @@ import json
 import math
 import re
 import statistics as S
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -163,7 +163,9 @@ def _cmd_collect(args: argparse.Namespace) -> int:
 
 
 def _cmd_settle(_args: argparse.Namespace) -> int:
-    from settling import DayIndex, norm            # zelfde module als ledger en shadow (§0)
+    # 5 okt 2026 (Run B): `norm` is hier niet meer nodig, en dat is de hele reparatie —
+    # zie de opmerking bij de aanroep hieronder.
+    from settling import DayIndex                  # zelfde module als ledger en shadow (§0)
 
     rows = load()
     open_rows = [r for r in rows if r["result"] == "pending"]
@@ -176,7 +178,33 @@ def _cmd_settle(_args: argparse.Namespace) -> int:
         if "–" not in naam:
             continue
         home, away = (x.strip() for x in naam.split("–", 1))
-        hit = index._day(date.fromisoformat(row["date"])).get((norm(home), norm(away)))
+        # Via `lookup` en NIET via `_day(...).get(...)`, want dat laatste sloeg de
+        # naamkoppeling van `DayIndex` volledig over: het las de index rauw uit op de
+        # genormaliseerde naam en kreeg dus noch de voorvoegselstap van 1 sep, noch de
+        # aliasstap van 5 okt. Dat is precies de faalstand waar de kop van `settling.py`
+        # voor waarschuwt ("zolang beide scripts hun eigen versie hebben, lopen ze
+        # uiteen"), nu niet tussen twee modules maar tussen een module en haar aanroeper —
+        # en het liet 22 wedstrijden van 9 september t/m 3 oktober op `pending` staan
+        # terwijl ze lang gespeeld waren, Charlton – QPR onder meer, dat `calibration.py`
+        # diezelfde ochtend wél afwikkelde. `_day` is privé en hoort hier dus ook niet
+        # aangeroepen te worden.
+        dag = date.fromisoformat(row["date"])
+        hit = index.lookup(dag, home, away)
+        if hit is None:
+            # Ook de VOLGENDE kalenderdag, en dat is Stage 1 van §3 in omgekeerde richting.
+            # Een contextrij draagt alleen de RUNDATUM en geen aftraptijd, terwijl een
+            # wedstrijd sinds 24 sep bij de run hoort wiens inzetvenster hem kan bedienen —
+            # `[08:00 NL, 08:00 NL + 1 dag)`. Een MLS-duel dat om 20:00 lokaal begint staat
+            # dus op de UTC-daglijst van de dag ná de run, en die stond hier nooit op de
+            # lijst: tien MLS-duels van 26 september, Seattle – Kansas City van 1 oktober en
+            # vijf interlands van 2 en 3 oktober bleven daardoor `pending` terwijl ze
+            # allemaal waren afgelopen. Dit is dezelfde fout als de UTC-filter die
+            # `runwindow.py` aan de ophaalkant heeft weggenomen, nu aan de afwikkelkant.
+            #
+            # Dat dit niet verkeerd kan koppelen zit in `lookup` zelf: het eist een
+            # wedstrijd van ÉÉN kant tegen ÉÉN andere kant op die dag, en twee ploegen die
+            # op twee opeenvolgende dagen tegen elkaar spelen bestaat in het voetbal niet.
+            hit = index.lookup(dag + timedelta(days=1), home, away)
         if not hit or not hit.get("finished") or not hit.get("score"):
             continue
         try:

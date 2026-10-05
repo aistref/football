@@ -52,9 +52,10 @@ import unicodedata
 from datetime import date, datetime, timedelta, timezone
 
 try:                        # als pakket: `from scripts import settling`
-    from . import fotmob
+    from . import fotmob, teamnames
 except ImportError:         # als los script: `python3 scripts/ledger.py`
     import fotmob           # type: ignore[no-redef]
+    import teamnames        # type: ignore[no-redef]
 
 # Terugvalmarge in uren sinds de aftrap, voor het geval de bron niets zegt. Twee uur is
 # de speelduur inclusief rust en blessuretijd; het is met opzet krap, want dit geldt
@@ -100,6 +101,26 @@ class DayIndex:
         self._days[day] = index
         return index
 
+    @staticmethod
+    def _name_candidates(candidates: set[str], name: str) -> set[str]:
+        """Elke daglijstnaam die bij `name` zou kunnen horen — ruim, niet streng.
+
+        Drie regels naast elkaar: genormaliseerd exact, de aliastabel van
+        `scripts/teamnames.py`, en een tokenvergelijking waarbij de ene naam een
+        deelverzameling van de andere is. Bewust GEEN keuze tussen de uitkomsten: welke het
+        is, beslist de wedstrijdlijst zelf in `lookup` hieronder.
+        """
+        n = teamnames.norm(name)
+        alias = teamnames.ALIASES.get(n)
+        tn = teamnames.tokens(name)
+        out = set()
+        for c in candidates:
+            nc = teamnames.norm(c)
+            if nc == n or (alias and nc == alias) \
+                    or teamnames.tokens(c) <= tn or tn <= teamnames.tokens(c):
+                out.add(c)
+        return out
+
     def lookup(self, day: date, home: str, away: str) -> dict | None:
         index = self._day(day)
         if not index:
@@ -112,7 +133,44 @@ class DayIndex:
         # geen uitslag dan de verkeerde.
         nh, na = norm(home)[:6], norm(away)[:6]
         cand = [v for k, v in index.items() if k[0].startswith(nh) and k[1].startswith(na)]
-        return cand[0] if len(cand) == 1 else None
+        if len(cand) == 1:
+            return cand[0]
+        # Laatste stap, toegevoegd 5 okt 2026 (Run B) — de aliastabel van
+        # `scripts/teamnames.py`. ZIE DE KOP VAN DAT BESTAND voor wat het ontbreken ervan
+        # heeft gekost: 141 waarnemingen (47 wedstrijden over dertien rundagen) stonden
+        # onafgewikkeld in `data/calibration.jsonl`, het logboek waaruit de herijking van
+        # §1g wordt gefit, en 31 ervan worden door deze stap opgelost.
+        #
+        # De twee stappen hierboven kúnnen dit niet: de daglijst schrijft "Swansea" en
+        # "PSG" waar de pick "Swansea City" en "Paris Saint-Germain" heeft, en een
+        # voorvoegsel van zes letters bridget daar geen van beide.
+        #
+        # DE VEILIGHEID ZIT IN DE LAATSTE REGEL, niet in de naamkoppeling. Beide ploegen
+        # worden ONAFHANKELIJK opgezocht, met alle kandidaten die de drie naamregels
+        # opleveren, en er wordt alleen geaccepteerd als er precies ÉÉN combinatie bij
+        # hoort die werkelijk een wedstrijd van die dag is. De wedstrijdlijst beslist dus
+        # welke naam het is, niet de naamgelijkenis — en dat is wat een fuzzy vergelijking
+        # over het hele paar niet heeft.
+        #
+        # Twee gevallen die dat concreet maken, beide uit het logboek van vandaag:
+        # (1) op 26 sep 2026 koppelt de tokenregel "Red Bull New York" óók aan "York City"
+        #     — {york} is een deelverzameling van {red, bull, new, york} — en juist omdat
+        #     York City die dag niet tegen St. Louis City speelde, blijft er geen enkele
+        #     combinatie over en komt er None uit in plaats van een verkeerde uitslag;
+        # (2) op 29 aug 2026 past "Frankfurt" op zowel "Eintracht Frankfurt" als
+        #     "Eintracht Frankfurt II", en op 5 sep "Dortmund" op "Borussia Dortmund" en
+        #     "Borussia Dortmund II". Een regel die één naam moest kiezen gaf daar op (twee
+        #     kandidaten) en liet de wedstrijd onafgewikkeld; nu valt het beloftenelftal
+        #     weg omdat het dat duel niet speelde.
+        # Eén verkeerd afgerekende regel weegt bij de aantallen van §6d zwaarder dan alles
+        # wat deze stap goed doet, dus de twijfel valt altijd naar None.
+        hs = self._name_candidates({v["home"] for v in index.values()}, home)
+        as_ = self._name_candidates({v["away"] for v in index.values()}, away)
+        treffers = {(norm(h), norm(a)) for h in hs for a in as_
+                    if (norm(h), norm(a)) in index}
+        if len(treffers) == 1:
+            return index[treffers.pop()]
+        return None
 
 
 def kickoff_of(pick: dict) -> datetime | None:
