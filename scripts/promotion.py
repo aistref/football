@@ -111,6 +111,25 @@ TIER2: dict[str, Tier2] = {
     # niet "2025/2026".
     "Eliteserien (NOR)":          Tier2(203, "1. Divisjon (NOR)"),
     "Allsvenskan (SWE)":          Tier2(168, "Superettan (SWE)"),
+
+    # Toegevoegd 5 okt 2026, op besluit van de gebruiker, en met een EIGEN METING in
+    # MEASURED_TIER2_GAP — dus geen gepoolde factor (zie daar).
+    #
+    # Waarom dit er moest komen: vier runs op rij kostte het een duel. Een promovendus uit de
+    # Primera Federación kwam op `data_tier = NONE` uit omdat er geen Spaans paar
+    # LaLiga2/Primera Federación bestond — 2 en 3 okt 2026 Sabadell, 4 okt Celta Fortuna, 5 okt
+    # Tenerife, drie verschillende ploegen en één gat. De foutmelding noemde alleen de TIER1-tak
+    # ("staat niet in de stand van La Liga"), wat de oorzaak makkelijk verkeerd laat lezen.
+    #
+    # LET OP: DEZE DIVISIE SPEELT IN TWEE PARALLELLE GROEPEN van twintig ploegen, en dat is geen
+    # administratief detail. `fotmob.fetch_league_stats` zonder `group` levert de eerste van de
+    # twee en zegt niet welke; een ploeg uit de andere groep "staat niet in de stand", en een
+    # ploeg die er toevallig wél in staat wordt genormaliseerd op een gemiddelde van een groep
+    # waarin hij niet speelde. Die gemiddeldes lopen meetbaar uiteen: 1.366 thuis / 1.058 uit in
+    # Group 1 tegen 1.316 / 0.937 in Group 2 (2025/2026). `lower_table()` kiest daarom de groep
+    # waarin de ploeg werkelijk staat, en `measure_gap` meet per groep tegen diens eigen
+    # gemiddelde. Verwijder die twee niet zonder de meting opnieuw te doen.
+    "LaLiga2 (ESP)":              Tier2(8968, "Primera Federación (ESP)"),
 }
 
 
@@ -130,6 +149,40 @@ TIER2: dict[str, Tier2] = {
 #: (0.614 / 1.564) maar corrigeert Denemarken duidelijk: de verdedigingsfactor is daar **1.807**
 #: tegen 1.513 gepoold, oftewel een Deense promovendus incasseert fors meer dan de gepoolde factor
 #: aannam. Voor Polen geldt hetzelfde in mindere mate (1.743).
+#:
+#: **LaLiga2 (ESP) / Primera Federación is er op 5 okt 2026 bij gekomen, op besluit van de
+#: gebruiker.** Zelfde methode, zelfde `measure_gap`, maar met twee dingen die het vermelden
+#: waard zijn voordat iemand eraan sleutelt.
+#:
+#: 1. **De divisie is twee keer van vorm veranderd en de factor niet.** Fotmob-id 8968 dekt de
+#:    hele Spaanse derde divisie, maar in 2016/17-2019/20 was dat Segunda B met VIER groepen, in
+#:    2020/21 en 2021/22 heeft dat id helemaal geen stand, en vanaf 2022/23 is het de Primera
+#:    Federación met TWEE groepen. Apart gemeten geven die twee tijdperken bijna hetzelfde
+#:    antwoord: Primera Federación 0.719 / 1.544 (n=12) tegen Segunda B 0.695 / 1.637 (n=16).
+#:    Dat ze zo dicht bij elkaar liggen is de reden dat ze hier samen één factor vormen over
+#:    n=28 — niet het verlangen naar een hoger getal voor n. Wijken ze ooit wél uiteen, dan
+#:    hoort alleen het Primera Federación-tijdperk te blijven.
+#: 2. **Het gat is op de AANVALSKANT KLEINER dan de gepoolde factor aannam** (0.716 tegen
+#:    0.605), en dat is dezelfde soort correctie als bij Denemarken, nu de andere kant op: de
+#:    gepoolde factor was hier te streng. Een Spaanse promovendus houdt méér van zijn aanval
+#:    over dan de pool suggereerde. Verdediging 1.581 tegen 1.513 gepoold, wat nauwelijks
+#:    scheelt.
+#:
+#: De twaalf promovendi van het Primera Federación-tijdperk, voor wie het wil narekenen:
+#: Alcorcón, Eldense, Racing de Ferrol en SD Amorebieta (2022), Castellón, Córdoba, Deportivo A
+#: Coruña en Málaga (2023), AD Ceuta FC, Cultural Leonesa, FC Andorra en Real Sociedad B (2024).
+#:
+#: Wat het bereik hier tegenhoudt, en dat is geen bijzaak: **Celta Fortuna valt erbuiten.** Zijn
+#: relatieve verdediging in 2025/2026 is 1.042 tegen een gemeten maximum van 0.925, dus
+#: `conversion_in_range` weigert en de ploeg blijft `NONE`. Dat is correct gedrag en precies de
+#: Coventry-val waarvoor die poort bestaat — een beloftenelftal dat promoveerde met een
+#: verdediging zwakker dan alles wat ooit gemeten is, is geen geval om op te extrapoleren. Van
+#: de drie ploegen die deze lacune in oktober 2026 zichtbaar maakten worden er dus twee
+#: opgelost (Tenerife, Sabadell) en wordt de derde met reden geweigerd.
+#:
+#: Narekenen:
+#:     PYTHONPATH=. python3 -c "from scripts import promotion as P; \
+#:         print(P.measure_gap('LaLiga2 (ESP)', 140, range(2016, 2025)).summary())"
 MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, float]] = {
     "Eredivisie (NED)":         (0.614, 1.564, 23, 0.941, 1.775, 0.407, 0.979),
     "Danish Superliga (DEN)":   (0.624, 1.807, 18, 0.989, 1.747, 0.462, 0.989),
@@ -137,6 +190,18 @@ MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, floa
     "Belgian Pro League (BEL)": (0.696, 1.604, 13, 0.759, 1.691, 0.462, 1.109),
     "Süper Lig (TUR)":          (0.708, 1.497, 27, 0.979, 1.912, 0.497, 1.124),
     "Ekstraklasa (POL)":        (0.680, 1.743, 24, 1.069, 1.516, 0.505, 0.929),
+    # Gemeten 5 okt 2026, niet 31 aug — zie `MEASURED_GAP_DATE` hieronder.
+    "LaLiga2 (ESP)":            (0.716, 1.581, 28, 1.019, 1.905, 0.498, 0.925),
+}
+
+#: Wanneer elk paar hierboven is gemeten. Stond tot 5 okt 2026 als "31 aug 2026" hard in de
+#: notitie van `gap_and_range`, en dat zou met de eerste latere meting een onwaarheid zijn
+#: geworden die in elke pick-notitie en elk runrapport terechtkomt.
+MEASURED_GAP_DATE: dict[str, str] = {
+    "Eredivisie (NED)": "31 aug 2026", "Danish Superliga (DEN)": "31 aug 2026",
+    "Primeira Liga (POR)": "31 aug 2026", "Belgian Pro League (BEL)": "31 aug 2026",
+    "Süper Lig (TUR)": "31 aug 2026", "Ekstraklasa (POL)": "31 aug 2026",
+    "LaLiga2 (ESP)": "5 okt 2026",
 }
 
 
@@ -154,13 +219,14 @@ def gap_and_range(top_competition: str, t2: "Tier2", attack: float, defence: flo
         hi, lo = top_competition, t2.name
         return fd.gap_for(hi, lo, "up"), *fd.conversion_in_range(hi, lo, "up", attack, defence)
     a, d, n, a_min, a_max, d_min, d_max = m
-    gap = fd.GapResult(a, d, n, f"up (gemeten 31 aug 2026 op Fotmob, {top_competition}/{t2.name})")
+    wanneer = MEASURED_GAP_DATE.get(top_competition, "datum onbekend")
+    gap = fd.GapResult(a, d, n, f"up (gemeten {wanneer} op Fotmob, {top_competition}/{t2.name})")
     buiten = []
     if not a_min <= attack <= a_max:
         buiten.append(f"aanval {attack:.3f} buiten {a_min:.3f}-{a_max:.3f}")
     if not d_min <= defence <= d_max:
         buiten.append(f"verdediging {defence:.3f} buiten {d_min:.3f}-{d_max:.3f}")
-    label = f"{top_competition}/{t2.name} up (eigen meting, n={n})"
+    label = f"{top_competition}/{t2.name} up (eigen meting {wanneer}, n={n})"
     if buiten:
         return gap, False, f"{label}: " + "; ".join(buiten)
     return gap, True, (f"{label}: aanval {attack:.3f} in {a_min:.3f}-{a_max:.3f}, "
@@ -261,6 +327,62 @@ def _resolve(competition: str) -> str:
     return COMPETITION_ALIASES.get(competition, competition)
 
 
+def lower_table(t2: "Tier2", season: str, team: str, *, use_cache: bool = True):
+    """De stand van de divisie eronder waarin `team` werkelijk staat, plus de groepsnaam.
+
+    **Toegevoegd 5 okt 2026, omdat een divisie in parallelle groepen hier stil misging.** De
+    Primera Federación (ESP) speelt in twee groepen van twintig; `fetch_league_stats` zonder
+    `group` levert dan de eerste van de twee (zie `fotmob._pick_table`). Een promovendus uit de
+    andere groep staat daar niet in, en de foutmelding die eruit komt — "staat niet in de stand" —
+    leest als "deze ploeg heeft geen historie" in plaats van "ik heb in de verkeerde groep
+    gekeken". Erger nog is het geval dat hij er wél toevallig in staat: dan wordt hij
+    genormaliseerd op het gemiddelde van een groep waarin hij niet speelde, en dat gemiddelde
+    verschilt meetbaar (1.366/1.058 in Group 1 tegen 1.316/0.937 in Group 2, 2025/2026).
+
+    Geeft `(tabel, groepsnaam_of_None)`. Een ploeg die in twee groepen voorkomt wordt geweigerd —
+    liever geen omrekening dan een omrekening op de verkeerde stand.
+    """
+    # `partitioned_groups` en NIET `league_groups`: alleen een echte opdeling in parallelle
+    # groepen hoort hier een rol te spelen. Een kampioens-/degradatiesplitsing gebruikt hetzelfde
+    # veld in de respons maar is iets anders — daar overlappen de groepen met de volledige stand
+    # en is "de grootste groep" wél het juiste antwoord, precies zoals `_pick_table` het zonder
+    # `group` al deed. Dat onderscheid is niet academisch: een eerdere versie van deze functie
+    # keek naar alle groepen en liep daarmee vast op Lyngby, dat in de Deense 1. Division zowel in
+    # "Promotion Group" als in de volledige stand staat. De zelftest onderaan dit bestand ving dat.
+    groups = []
+    try:
+        import urllib.parse
+        enc = urllib.parse.quote(season, safe="")
+        meta = fotmob._get_json(
+            f"https://www.fotmob.com/api/data/leagues?id={t2.fotmob_id}&season={enc}")
+        groups = fotmob.partitioned_groups(meta.get("table", []))
+    except Exception:
+        groups = []
+
+    # Bij een opdeling wordt de groep EXPLICIET bepaald, ook als de ongesplitste stand de ploeg
+    # toevallig zou bevatten: zonder `group` geeft `fetch_league_stats` bij twee gelijke groepen
+    # de eerste, dus een ploeg uit Group 1 zou op de juiste stand uitkomen bij geluk in plaats van
+    # bij ontwerp — en stil op de verkeerde zodra Fotmob de groepen in een andere volgorde geeft.
+    treffers = []
+    for g in groups:
+        try:
+            cand = fotmob.fetch_league_stats(t2.fotmob_id, season, use_cache=use_cache, group=g)
+        except Exception:
+            continue
+        if find_team(cand["teams"], team) is not None:
+            treffers.append((g, cand))
+    if len(treffers) == 1:
+        g, cand = treffers[0]
+        return cand, g
+    if len(treffers) > 1:
+        raise PromotionError(
+            f"{team!r} staat in meer dan één groep van {t2.name} {season} "
+            f"({', '.join(g for g, _ in treffers)}) — geen omrekening op een onzekere stand")
+    # Geen opdeling, of de ploeg staat in geen van de groepen: de ongesplitste stand, en `convert`
+    # maakt er een PromotionError van als de ploeg daar ook niet in staat.
+    return fotmob.fetch_league_stats(t2.fotmob_id, season, use_cache=use_cache), None
+
+
 def convert(top_competition: str, team: str, season: str, top_league: LeagueContext,
             *, use_cache: bool = True) -> Converted:
     """Reken een promovendus om naar `top_competition`, op de cijfers van `season` in de divisie eronder.
@@ -277,11 +399,12 @@ def convert(top_competition: str, team: str, season: str, top_league: LeagueCont
     if t2 is None:
         raise PromotionError(f"geen tweede divisie bekend voor {top_competition!r}")
 
-    lower = fotmob.fetch_league_stats(t2.fotmob_id, season, use_cache=use_cache)
+    lower, groep = lower_table(t2, season, team, use_cache=use_cache)
     table = lower["teams"]
     row = find_team(table, team)
     if row is None:
-        raise PromotionError(f"{team!r} staat niet in de stand van {t2.name} {season}")
+        waar = f"{t2.name} {season}" + (f" (groep {groep})" if groep else "")
+        raise PromotionError(f"{team!r} staat niet in de stand van {waar}")
 
     ts = table[row]
     if "home" not in ts or "away" not in ts:
@@ -331,7 +454,8 @@ def convert(top_competition: str, team: str, season: str, top_league: LeagueCont
         away_played=ap,
     )
 
-    note = (f"{team}: {t2.name} {season} (Fotmob {t2.fotmob_id}) relatieve aanval {attack:.3f} / "
+    groep_noot = f", groep {groep}" if groep else ""
+    note = (f"{team}: {t2.name} {season} (Fotmob {t2.fotmob_id}{groep_noot}) relatieve aanval {attack:.3f} / "
             f"verdediging {defence:.3f} over {played} duels, omgerekend met "
             f"gap_for({higher_slug},{lower_slug},up) x{gap.attack:.3f}/{gap.defence:.3f} "
             f"[{gap.direction}] naar {new_attack:.3f}/{new_defence:.3f}; "
@@ -563,8 +687,23 @@ def _selftest() -> int:
 
     cases = [
         ("Eredivisie (NED)", 57, ["ADO Den Haag", "Cambuur", "Willem II"]),
+        # Lyngby staat in de Deense 1. Division zowel in "Promotion Group" als in de volledige
+        # stand. Dat is een kampioenssplitsing en géén opdeling in parallelle groepen, dus
+        # `lower_table` hoort hier de volledige stand te nemen. Deze regel is op 5 okt 2026 de
+        # zelftest die een regressie ving: een versie die naar ALLE groepen keek in plaats van
+        # alleen naar een echte opdeling, weigerde hem met "staat in meer dan één groep".
         ("Danish Superliga (DEN)", 46, ["Lyngby"]),
+        # Toegevoegd 5 okt 2026 met de meting voor LaLiga2/Primera Federación. Deze drie dekken
+        # alle drie de uitkomsten die de groepsafhandeling moet geven, en ze zijn alle drie een
+        # echt duel uit oktober 2026:
+        #   Tenerife      Group 1, binnen het gemeten bereik           -> LIGHT
+        #   Sabadell      Group 2, dus NIET in de ongesplitste stand   -> LIGHT
+        #   Celta Fortuna Group 1, verdediging 1.042 buiten het bereik -> NONE (terecht)
+        # Verwacht wordt dat de derde op NONE uitkomt; dat is geen fout en de controle hieronder
+        # rekent hem dus niet mee.
+        ("LaLiga2 (ESP)", 140, ["Tenerife", "Sabadell", "Celta Fortuna"]),
     ]
+    verwacht_none = {("LaLiga2 (ESP)", "Celta Fortuna")}
     fouten = 0
     for comp, top_id, teams in cases:
         top = fotmob.fetch_league_stats(top_id, "2025/2026")
@@ -586,6 +725,13 @@ def _selftest() -> int:
             print(f"                   {c.note}")
             if not (0.2 < c.stats.xg_per_match < 4.0):
                 print("                   ^^ ONWAARSCHIJNLIJK, controleer de omrekening")
+                fouten += 1
+            if (comp, team) in verwacht_none and c.tier != "NONE":
+                print("                   ^^ VERWACHT NONE (buiten het gemeten bereik) "
+                      f"maar kreeg {c.tier} — conversion_in_range laat te veel door")
+                fouten += 1
+            if (comp, team) not in verwacht_none and c.tier == "NONE":
+                print("                   ^^ ONVERWACHT NONE — de omrekening is stukgelopen")
                 fouten += 1
     print(f"\n{'ALLES OK' if not fouten else str(fouten) + ' PROBLEEM(EN)'}")
     return 1 if fouten else 0
@@ -628,12 +774,53 @@ def _rel(row: dict, table: dict) -> tuple[float, float]:
     return (row["gf"] / played) / avg, (row["ga"] / played) / avg
 
 
+def _season_tables(league_id: int, season: str) -> list[tuple[str | None, dict]]:
+    """De stand(en) van één competitie-seizoen: [(groepsnaam of None, {naam: rij})].
+
+    Toegevoegd 5 okt 2026. Een competitie die in PARALLELLE groepen is verdeeld heeft geen
+    competitiegemiddelde — hij heeft er één per groep, en die lopen uiteen: de Primera Federación
+    (ESP) staat in 2025/2026 op 1.366 thuisdoelpunten per duel in Group 1 tegen 1.316 in Group 2,
+    en het verschil in uitdoelpunten is groter (1.058 tegen 0.937). `_rel` normaliseert op het
+    gemiddelde van de tabel die hij meekrijgt, dus een ploeg hoort tegen de stand van ZIJN EIGEN
+    groep te worden afgezet en niet tegen die van de andere.
+
+    Zonder groepen geeft dit precies wat er altijd al gebeurde: één tabel, groepsnaam None.
+    """
+    try:
+        raw = fotmob.fetch_league_stats(league_id, season)
+    except Exception:
+        return []
+    groups = []
+    try:
+        import urllib.parse
+        enc = urllib.parse.quote(season, safe="")
+        meta = fotmob._get_json(
+            f"https://www.fotmob.com/api/data/leagues?id={league_id}&season={enc}")
+        groups = fotmob.league_groups(meta.get("table", []))
+    except Exception:
+        groups = []
+    if not groups:
+        return [(None, raw["teams"])]
+    out = []
+    for g in groups:
+        try:
+            out.append((g, fotmob.fetch_league_stats(league_id, season, group=g)["teams"]))
+        except Exception:
+            continue
+    return out
+
+
 def measure_gap(top_competition: str, top_id: int, years: range, *, direction: str = "up",
                 min_played: int = 10) -> "fd.GapResult":
     """Meet het gat tussen een competitie en de divisie eronder, aan ploegen die verhuisden.
 
     Zelfde definitie als `footballdata.division_gap()`, maar op Fotmob-standen, zodat ook de
     divisieparen meetbaar zijn die football-data.co.uk niet heeft.
+
+    **Sinds 5 okt 2026 ook voor een divisie die in parallelle groepen speelt** — zie
+    `_season_tables`. Elke groep wordt apart tegen zijn eigen gemiddelde genormaliseerd; de
+    gemeten verhoudingen gaan daarna op één hoop, want de vraag is wat een promovendus overhoudt
+    en niet uit welke groep hij kwam.
     """
     import statistics
     t2 = TIER2[top_competition]
@@ -641,31 +828,16 @@ def measure_gap(top_competition: str, top_id: int, years: range, *, direction: s
     for y in years:
         s_from, s_to = f"{y}/{y + 1}", f"{y + 1}/{y + 2}"
         lo, hi = (t2.fotmob_id, top_id) if direction == "up" else (top_id, t2.fotmob_id)
+        tabellen = _season_tables(lo, s_from)
         try:
-            t_from = fotmob.fetch_league_stats(lo, s_from)["teams"]
             t_to = fotmob.fetch_league_stats(hi, s_to)["teams"]
         except Exception:
             continue
-        for name, before in t_from.items():
-            # Exact of genormaliseerd-exact, en verder niets: een ploeg die echt verhuisde houdt
-            # bij Fotmob dezelfde naam. Elke soepelere match haalt hier beloftenelftallen binnen
-            # (zie find_team) en die verhuizen nooit.
-            hit = name if name in t_to else next(
-                (r for r in t_to if _norm_name(r) == _norm_name(name)), None)
-            after = t_to.get(hit) if hit else None
-            if after is None:
-                continue
-            if (before.get("played") or 0) < min_played or (after.get("played") or 0) < min_played:
-                continue
-            a0, d0 = _rel(before, t_from)
-            a1, d1 = _rel(after, t_to)
-            if a0 <= 0 or d0 <= 0:
-                continue
-            att.append(a1 / a0)
-            dfn.append(d1 / d0)
-            # ook de INVOERsterkte bewaren: daarop rust het bereik waarbinnen de factor geldig is
-            samples.append((name, y, round(a1 / a0, 3), round(d1 / d0, 3),
-                            round(a0, 3), round(d0, 3)))
+        for groep, t_from in tabellen:
+            att_n, dfn_n, samples_n = _gap_rows(t_from, t_to, y, groep, min_played)
+            att += att_n
+            dfn += dfn_n
+            samples += samples_n
     if not att:
         return fd.GapResult(1.0, 1.0, 0, direction)
 
@@ -676,3 +848,29 @@ def measure_gap(top_competition: str, top_id: int, years: range, *, direction: s
 
     return fd.GapResult(statistics.median(att), statistics.median(dfn), len(att), direction,
                         spread(att), spread(dfn), samples)
+
+
+def _gap_rows(t_from: dict, t_to: dict, y: int, groep: str | None, min_played: int):
+    """De verhuisde ploegen van één (groeps)stand, met hun verhouding ná/vóór."""
+    att, dfn, samples = [], [], []
+    for name, before in t_from.items():
+        # Exact of genormaliseerd-exact, en verder niets: een ploeg die echt verhuisde houdt
+        # bij Fotmob dezelfde naam. Elke soepelere match haalt hier beloftenelftallen binnen
+        # (zie find_team) en die verhuizen nooit.
+        hit = name if name in t_to else next(
+            (r for r in t_to if _norm_name(r) == _norm_name(name)), None)
+        after = t_to.get(hit) if hit else None
+        if after is None:
+            continue
+        if (before.get("played") or 0) < min_played or (after.get("played") or 0) < min_played:
+            continue
+        a0, d0 = _rel(before, t_from)
+        a1, d1 = _rel(after, t_to)
+        if a0 <= 0 or d0 <= 0:
+            continue
+        att.append(a1 / a0)
+        dfn.append(d1 / d0)
+        # ook de INVOERsterkte bewaren: daarop rust het bereik waarbinnen de factor geldig is
+        samples.append((name, y, round(a1 / a0, 3), round(d1 / d0, 3),
+                        round(a0, 3), round(d0, 3), groep))
+    return att, dfn, samples

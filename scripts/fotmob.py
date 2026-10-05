@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -149,12 +150,19 @@ def find_league(fixtures: dict, name: str, ccode: str, aliases: tuple[str, ...] 
     return None
 
 
-def _cache_path(league_id: int, season: str) -> Path:
+def _cache_path(league_id: int, season: str, group: str | None = None) -> Path:
     safe_season = season.replace("/", "-")
-    return CACHE_DIR / f"{league_id}_{safe_season}.json"
+    if group is None:
+        return CACHE_DIR / f"{league_id}_{safe_season}.json"
+    # Een groep krijgt zijn EIGEN bestand. Zonder dit achtervoegsel zou de stand van Group 2 die
+    # van Group 1 overschrijven onder dezelfde naam, en dan hangt de uitkomst af van wie er het
+    # eerst was — precies de stille verwisseling die `group` moet wegnemen (zie `_pick_table`).
+    safe_group = re.sub(r"[^A-Za-z0-9]+", "-", group).strip("-").lower()
+    return CACHE_DIR / f"{league_id}_{safe_season}_{safe_group}.json"
 
 
-def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -> dict:
+def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True,
+                       group: str | None = None) -> dict:
     """Team-xG, xG-tegen en stand (met thuis/uit-splits) voor één competitie-seizoen.
 
     `season` in Fotmob-vorm, bv. "2025/2026". Retourneert:
@@ -182,7 +190,7 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
        de (wél vergelijkbare) reguliere stand voordat je op zo'n competitie bet — wijzen ze niet
        dezelfde kant op, dan is de invoer conflicterend en hoort er geen bet uit te komen.
     """
-    cache_file = _cache_path(league_id, season)
+    cache_file = _cache_path(league_id, season, group)
     if use_cache and cache_file.exists():
         cached = json.loads(cache_file.read_text())
         if cached.get("_fetched_on") == date.today().isoformat():
@@ -205,9 +213,12 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
                 team[label] = row["StatValue"]
                 team["mp"] = row["MatchesPlayed"]
 
-    table = _pick_table(league.get("table", []))
+    table = _pick_table(league.get("table", []), group)
     if table is None:
-        raise FotmobError(f"geen bruikbare stand gevonden voor league_id={league_id}, season={season}")
+        waar = f"league_id={league_id}, season={season}"
+        if group:
+            waar += f", group={group!r} (beschikbaar: {league_groups(league.get('table', []))})"
+        raise FotmobError(f"geen bruikbare stand gevonden voor {waar}")
 
     home_goals = away_goals = home_played = away_played = 0
     for side, key in (("home", "home"), ("away", "away")):
@@ -242,6 +253,7 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
         "_fetched_on": date.today().isoformat(),
         "_league_id": league_id,
         "_season": season,
+        "_group": group,
     }
     if use_cache:
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -249,27 +261,114 @@ def fetch_league_stats(league_id: int, season: str, *, use_cache: bool = True) -
     return result
 
 
-def _pick_table(table_field: list) -> dict | None:
+def league_groups(table_field: list) -> list[str]:
+    """De namen van de groepen in deze stand, of `[]` bij een gewone ongesplitste competitie.
+
+    Toegevoegd 5 okt 2026. Zie `_pick_table` voor waarom dit nodig is.
+    """
+    if not table_field:
+        return []
+    data = table_field[0]["data"]
+    return [str(t.get("leagueName") or t.get("name") or "")
+            for t in data.get("tables", []) or []
+            if isinstance(t.get("table"), dict) and "all" in t["table"]]
+
+
+def partitioned_groups(table_field: list) -> list[str]:
+    """De groepsnamen, maar alleen als de groepen een echte OPDELING van de competitie zijn.
+
+    Toegevoegd 5 okt 2026, en dit onderscheid is de hele reden dat `group` veilig kan bestaan.
+    Fotmob gebruikt hetzelfde `tables`-veld voor twee dingen die niets met elkaar te maken hebben:
+
+    * **Een kampioens-/degradatiesplitsing** — Denemarken 1. Division geeft "Promotion Group" (6),
+      "Relegation Group" (6) EN "1. Division" (12). De groepen OVERLAPPEN met de volledige stand:
+      Lyngby staat in twee ervan. De hoofdcompetitie is hier de grootste groep, en dat is precies
+      wat `_pick_table` zonder `group` al jaren goed doet. Idem de Belgian Pro League (4 groepen
+      naast een stand van 16) en de Scottish Premiership.
+    * **Parallelle groepen** — de Primera Federación (ESP) geeft "Group 1" (20) en "Group 2" (20),
+      DISJUNCT en zonder volledige stand. Er is hier geen hoofdcompetitie om te kiezen: elke groep
+      heeft zijn eigen competitiegemiddelde, en "de grootste" is een greep uit twee gelijke.
+
+    Het verschil is dus niet het aantal groepen of hun grootte maar of een ploeg in meer dan één
+    groep voorkomt. Deze functie geeft de namen alleen in het tweede geval, en anders `[]` — zodat
+    een aanroeper die op groepen wil werken de splitsingscompetities ongemoeid laat.
+    """
+    if not table_field:
+        return []
+    data = table_field[0]["data"]
+    tabs = [t for t in data.get("tables", []) or []
+            if isinstance(t.get("table"), dict) and "all" in t["table"]]
+    if len(tabs) < 2:
+        return []
+    namen, gezien = [], set()
+    for t in tabs:
+        leden = {str(r.get("name")) for r in t["table"]["all"]}
+        if leden & gezien:
+            return []                      # overlap -> splitsing, geen opdeling
+        gezien |= leden
+        namen.append(str(t.get("leagueName") or t.get("name") or ""))
+    return namen
+
+
+def _pick_table(table_field: list, group: str | None = None) -> dict | None:
     """Fotmob geeft `table: [{"data": {"table": {...}}}]` voor een gewone competitie, maar
     `table: [{"data": {"tables": [...meerdere groepen...]}}]` zodra er play-offs of
     degradatiegroepen zijn (bv. Belgian Pro League, Scottish Premiership). Pak dan de grootste
-    groep — dat is de hoofdcompetitie, niet de na-seizoen-subgroep."""
+    groep — dat is de hoofdcompetitie, niet de na-seizoen-subgroep.
+
+    **`group` is toegevoegd op 5 okt 2026 en de reden is een stille misgreep.** Die
+    "pak de grootste"-regel is geschreven voor een kampioens-/degradatiesplitsing, waar de
+    hoofdcompetitie aantoonbaar de grootste groep is. Bij een competitie die in even grote
+    PARALLELLE groepen is verdeeld, klopt de aanname niet meer: de Primera Federación (ESP, id
+    8968) heeft twee groepen van precies twintig ploegen, en `max()` levert dan de eerste van de
+    twee — zonder foutmelding en zonder dat van buiten te zien is welke. Dat is geen halve
+    meting maar een verkeerde: Tenerife en Celta Fortuna staan in Group 1 en Sabadell in Group 2,
+    en het competitiegemiddelde waartegen `_rel` normaliseert is dat van één groep.
+
+    Met `group` ("Group 1", "Group 2", …) vraag je één groep expliciet op; `league_groups` geeft
+    de namen. Zonder `group` blijft het gedrag precies zoals het was, zodat de competities met
+    een kampioenssplitsing niets merken.
+    """
     if not table_field:
         return None
     data = table_field[0]["data"]
     if "table" in data:
-        return data["table"]
-    groups = [t["table"] for t in data.get("tables", []) if isinstance(t.get("table"), dict) and "all" in t["table"]]
-    if not groups:
+        return data["table"] if group is None else None
+    tabs = [t for t in data.get("tables", []) or []
+            if isinstance(t.get("table"), dict) and "all" in t["table"]]
+    if not tabs:
         return None
-    return max(groups, key=lambda t: len(t["all"]))
+    if group is not None:
+        hit = [t for t in tabs if str(t.get("leagueName") or t.get("name") or "") == group]
+        return hit[0]["table"] if len(hit) == 1 else None
+    return max((t["table"] for t in tabs), key=lambda t: len(t["all"]))
 
 
 if __name__ == "__main__":
     # Zelftest: reproduceert de xG-cijfers van Standard Luik en Cercle Brugge uit
     # runs/2026-08-08-run-a-2.md (Belgian Pro League, id=40, seizoen 2025/2026).
     stats = fetch_league_stats(40, "2025/2026", use_cache=False)
-    standard, cercle = stats["teams"]["Standard Liege"], stats["teams"]["Cercle Brugge"]
+
+    def _vind(naam: str) -> dict:
+        """Zoek op naam, zonder accenten te laten meewegen.
+
+        Deze zelftest stond van 8 aug t/m 5 okt 2026 op `stats["teams"]["Standard Liege"]` en
+        FAALDE sinds enig moment met een KeyError: Fotmob geeft de ploeg nu als "Standard Liège",
+        met accent. De zelftest was daarmee stil kapot — hij meldde niet dat de xG-cijfers waren
+        veranderd maar dat de sleutel niet bestond, en wie hem draaide zag een stacktrace in
+        plaats van een meting. `_fold` doet precies deze normalisatie al voor
+        `_merge_accent_duplicates`, dus gebruik die in plaats van de naam over te typen.
+        """
+        hit = stats["teams"].get(naam)
+        if hit is not None:
+            return hit
+        gevonden = [v for k, v in stats["teams"].items() if _fold(k) == _fold(naam)]
+        if len(gevonden) != 1:
+            raise KeyError(f"{naam!r} niet (eenduidig) gevonden; "
+                           f"stand heeft {len(stats['teams'])} ploegen")
+        return gevonden[0]
+
+    standard, cercle = _vind("Standard Liege"), _vind("Cercle Brugge")
     print(f"Standard: xG/duel {standard['xg'] / standard['mp']:.2f}  xGA/duel {standard['xga'] / standard['mp']:.2f}")
     print(f"Cercle:   xG/duel {cercle['xg'] / cercle['mp']:.2f}  xGA/duel {cercle['xga'] / cercle['mp']:.2f}")
     assert abs(standard["xg"] / standard["mp"] - 1.20) < 0.01

@@ -368,6 +368,34 @@ stap maakt de mindere ploeg te sterk.
 > de kalibratie op deze kant staat niet recht (+1,9 pp op longshots over 3549 uitkomsten). Er is
 > dus nog geen grond om hem er definitief uit te halen, en dat is precies waarom hij terug is.
 
+> **Stand op 5 oktober 2026 — de meetlat is gehaald en de gebruiker heeft de poort tóch laten
+> staan. Dit is de huidige stand; lees de alinea's hierboven en hieronder als de weg erheen.**
+>
+> De `underdog`-reeks staat op **36 afgewikkelde kandidaten met +16,9% rendement** (21 winnaars,
+> 58,3% trefkans): 20 op 30 september, 31 op 4 oktober, 36 vandaag. De eerste van de twee
+> uitwegen hierboven — *"positieve ROI over ≥ 30 afgewikkelde kandidaten"* — is daarmee met marge
+> gehaald, twee dagen op rij, en het is de meting die de vraag van 25 september moest beantwoorden.
+>
+> **De vraag is op 5 oktober aan de gebruiker voorgelegd en zijn antwoord was: "Rem blijft zoals
+> die nu is."** Dus: de lichte vorm, ondergrens `UNDERDOG_FLOOR` = 0,35, onveranderd.
+>
+> **Wat dat betekent voor de regel hierboven, want anders staat dit bestand zichzelf tegen te
+> spreken.** De formulering *"hij gaat eruit zodra één van beide waar is"* beschrijft vanaf nu
+> niet meer wat er gebeurt: de voorwaarde is waar en de poort blijft. Behandel die twee uitwegen
+> dus als **aanleidingen om de vraag te stellen** en niet als een automatisme dat een volgende
+> run zelf mag uitvoeren. Een run verandert deze poort nooit op eigen initiatief — net als bij
+> `selection_score` (§1a) en bij het vervallen zelf gaat het over risicobereidheid, en die hoort
+> bij de gebruiker.
+>
+> **En stel de vraag niet elke dag opnieuw.** Hij is op 4 én 5 oktober gesteld en op 5 oktober
+> beantwoord. Noem de stand van de reeks gewoon in het runrapport onder "Stand van het logboek",
+> zoals elke andere reeks, en leg hem pas opnieuw als besluit voor wanneer er iets wezenlijk
+> verandert: de reeks draait van teken, of de kalibratiefout die de poort afdekt is verdwenen.
+> Die fout is er namelijk nog — **+1,95 pp te veel kans op longshots en −3,80 pp te weinig op
+> favorieten over 3831 uitkomsten** — en dat is de gemeten reden waarom de rem staat. De
+> tegenhanger `underdog_ruw` staat op −8,8% over 17 gevallen; die twee blijven twee populaties en
+> mogen nooit worden opgeteld.
+
 > **Dat werk is op 19 september 2026 gedaan.** De gebruiker merkte op dat de schaduwlijst dag na
 > dag uit dezelfde soort bet bestaat en vroeg of de routine niet op een andere manier naar de
 > wedstrijden kon kijken. Dat is nagemeten, en de spanning die hier stond — `§6e wijst richting
@@ -1817,6 +1845,49 @@ de run op (ADO Den Haag +2.5 bij Feyenoord, +23.6 pp). De meting bevestigde Nede
 (0.614/1.564 tegen 0.605/1.513 gepoold) maar corrigeerde **Denemarken** duidelijk: de
 verdedigingsfactor is daar 1.807 in plaats van 1.513, oftewel een Deense promovendus incasseert
 fors meer dan de gepoolde factor aannam.
+
+### De Spaanse derde divisie is er op 5 oktober 2026 bij gekomen
+
+**`LaLiga2 (ESP)` / `Primera Federación (ESP)` staat sinds die datum in `TIER2` én in
+`MEASURED_TIER2_GAP`: aanval 0.716, verdediging 1.581, n=28.** Op besluit van de gebruiker
+gemeten, met dezelfde `measure_gap` als de zes paren van 31 augustus.
+
+Aanleiding: **vier runs op rij kostte dit gat een duel**, en elke keer een andere ploeg — Sabadell
+op 2 en 3 oktober, Celta Fortuna op 4 oktober, Tenerife op 5 oktober, die laatste de énige
+wedstrijd die Run B die dag in het inzetvenster had. Er bestond geen Spaans divisiepaar onder
+LaLiga2, dus viel de omrekening terug op de TIER1-tak (degradant uit La Liga) en kwam er `NONE`
+uit met een foutmelding die alleen over La Liga sprak.
+
+Drie dingen die hierbij vastliggen:
+
+1. **De divisie speelt in twee parallelle groepen, en dat is geen administratief detail.** De
+   Primera Federación heeft Group 1 en Group 2 van elk twintig ploegen, met **eigen**
+   competitiegemiddeldes: 1.366 thuis / 1.058 uit tegen 1.316 / 0.937 (2025/2026). Een ploeg hoort
+   tegen de stand van zijn **eigen** groep te worden genormaliseerd. `promotion.lower_table()`
+   zoekt die groep op en `fotmob.fetch_league_stats(..., group=...)` haalt hem; `measure_gap` meet
+   per groep. Zonder dat levert `fetch_league_stats` stil de eerste van de twee en klopt de
+   normalisatie bij geluk in plaats van bij ontwerp.
+2. **Verwar een opdeling niet met een kampioenssplitsing.** Fotmob gebruikt hetzelfde veld voor
+   beide, maar bij een splitsing (Denemarken, België, Schotland) **overlappen** de groepen met de
+   volledige stand — Lyngby staat in zowel "Promotion Group" als "1. Division" — en dáár is de
+   grootste groep wél het juiste antwoord. `fotmob.partitioned_groups()` geeft groepsnamen alleen
+   bij een echte, disjuncte opdeling. Dat onderscheid is niet theoretisch: de zelftest van
+   `promotion.py` ving een eerdere versie die Lyngby weigerde.
+3. **Het bereik blijft een poort, en het bindt hier meteen.** Van de drie ploegen die de lacune
+   zichtbaar maakten komen er twee door (Tenerife `LIGHT`, Sabadell `LIGHT`) en blijft de derde
+   `NONE`: de relatieve verdediging van **Celta Fortuna** is 1.042 tegen een gemeten maximum van
+   0.925, dus `conversion_in_range` weigert. Dat is correct gedrag en precies de Coventry-val
+   waarvoor die poort bestaat — een beloftenelftal dat promoveerde met een verdediging zwakker dan
+   alles wat ooit is gemeten, is geen geval om op te extrapoleren.
+
+Wat de meting zelf zegt, en het wijst de andere kant op dan Denemarken: **op de aanvalskant is het
+gat kleiner dan de gepoolde factor aannam** (0.716 tegen 0.605), dus de pool was hier te streng en
+een Spaanse promovendus houdt méér van zijn aanval over. De verdediging (1.581 tegen 1.513) scheelt
+nauwelijks. En de twee tijdperken van die divisie — Segunda B met vier groepen t/m 2019/20, Primera
+Federación met twee vanaf 2022/23 — geven apart gemeten bijna hetzelfde antwoord (0.695/1.637 bij
+n=16 tegen 0.719/1.544 bij n=12). **Dát is de reden dat ze samen één factor vormen**, niet de wens
+om n groter te maken; lopen ze ooit uiteen, dan hoort alleen het Primera Federación-tijdperk te
+blijven.
 
 **Meet zo'n gat nooit met een soepele naamvergelijking.** De eerste poging koppelde `Jong Ajax` aan
 `Ajax` en `Jong FC Utrecht` aan `FC Utrecht` — beloftenelftallen spelen permanent in de Eerste
