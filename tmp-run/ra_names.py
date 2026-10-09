@@ -25,6 +25,24 @@ def resolve(name: str, table: dict) -> str | None:
         return by_norm[n]
     if ALIASES.get(n) in by_norm:
         return by_norm[ALIASES[n]]
+    # De aliastabel moet BEIDE kanten op worden gelezen, en tot 9 okt 2026 gebeurde dat maar
+    # één kant op: de regel hierboven zoekt de GEVRAAGDE naam op in ALIASES, maar niet de
+    # sleutel in `table`. Staat de afkorting in de tabel en de volledige naam in de vraag, dan
+    # mist de koppeling — ALIASES heeft `qpr -> queens park rangers`, en dat helpt alleen als de
+    # vraag "QPR" is. Gevonden op West Ham United – Queens Park Rangers (Run A, 9 okt 2026):
+    # BetExplorer noteert de Championship-rij als "West Ham - QPR", `resolve` koppelde de
+    # thuisploeg wel en de uitploeg niet, en `best_pair` viel daarna terug op 0.273 gelijkenis
+    # (onder de vloer van 0.62). Dat kostte geen bet — het duel haalde zijn LIGHT-drempel niet —
+    # maar wel twee dingen die §6e en §1e nodig hebben: het kalibratieblok van deze wedstrijd
+    # bleef leeg (1 van de 12 waarnemingen van de dag) en poort 8 kwam uit op "geen 1X2-prijzen,
+    # geen marktoordeel over wie de mindere is" en stond dus OPEN zonder te zijn getoetst.
+    # Dezelfde soort stille faalstand als de `is_today`-filter die op 7 oktober is gerepareerd,
+    # nu aan de naamkant. Deze lus leest de tabelsleutels óók door ALIASES heen.
+    by_alias = {}
+    for k in table:
+        by_alias.setdefault(ALIASES.get(norm(k), norm(k)), k)
+    if n in by_alias:
+        return by_alias[n]
     tn = tokens(name)
     hits = [k for k in table if tokens(k) <= tn or tn <= tokens(k)]
     if len(hits) == 1:
