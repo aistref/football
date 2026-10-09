@@ -89,11 +89,11 @@ TIER2: dict[str, Tier2] = {
     # was dat twee keer NONE geweest op een ontbrekende aanroep in plaats van op een ontbrekende
     # meting — precies wat §4 van _shared-rules.md verbiedt.
     #
-    # LET OP: allebei zonder `fd_pair` én zonder eigen meting in MEASURED_TIER2_GAP, dus
-    # `gap_and_range` valt hier terug op POOLED_GAP. Meld dat in het runrapport; `GapResult.direction`
-    # zegt het zelf ("gepoold — ... niet apart gemeten"). Wie hier tijd in wil steken: `measure_gap`
-    # over 2016/2017-2024/2025 doet voor deze twee wat de meting van 31 aug voor NED/DEN/POR/BEL/
-    # TUR/POL deed.
+    # BIJGEWERKT 9 okt 2026: hier stond dat deze twee zonder eigen meting op POOLED_GAP vielen en
+    # dat een volgende run `measure_gap` over 2016/2017-2024/2025 moest draaien. Dat is diezelfde
+    # dag gedaan, op besluit van de gebruiker — CZE staat nu op 0.608/1.835 (n=12) en SUI op
+    # 0.625/1.434 (n=12) in MEASURED_TIER2_GAP. De Tsjechische reeks begint bij 2018: id 253 heeft
+    # voor 2016/2017 en 2017/2018 geen bruikbare stand.
     "Czech First League (CZE)":   Tier2(253, "FNL (CZE)"),
     "Swiss Super League (SUI)":   Tier2(163, "Challenge League (SUI)"),
     # Toegevoegd 5 sep 2026 (Run B), op dezelfde grond als de twee regels hierboven. Beide id's
@@ -102,13 +102,18 @@ TIER2: dict[str, Tier2] = {
     # competitie, met Lillestrøm in de Noorse en Västerås SK in de Zweedse — precies de twee
     # promovendi die die dag op `NONE` uitkwamen omdat er geen tweede divisie bekend was.
     #
-    # LET OP, hetzelfde voorbehoud als bij CZE en SUI: geen `fd_pair` en geen eigen meting in
-    # MEASURED_TIER2_GAP, dus `gap_and_range` valt hier terug op POOLED_GAP. Dat is de factor die
-    # op 30 aug de grootste schijnedge van de run opleverde (ADO Den Haag +23.6 pp), dus meld hem
-    # in het runrapport — `GapResult.direction` zegt zelf dat hij gepoold is. Wie hier tijd in wil
-    # steken: `measure_gap` over 2016/2017-2024/2025 doet voor NOR en SWE wat de meting van
-    # 31 aug voor NED/DEN/POR/BEL/TUR/POL deed. Kalenderjaarcompetities, dus seizoen "2025" en
-    # niet "2025/2026".
+    # BIJGEWERKT 9 okt 2026, en deze twee zijn de reden dat het gat werd gevonden. Hier stond dat
+    # NOR en SWE op POOLED_GAP vielen en dat een volgende run ze moest meten; diezelfde dag bleek
+    # dat niet vrijblijvend te zijn — Västerås SK is in de run van 9 oktober op die gepoolde
+    # factor omgerekend. Nu gemeten, op besluit van de gebruiker: NOR 0.600/1.592 (n=22) en SWE
+    # 0.551/1.723 (n=22). SWE wijkt op BEIDE kanten ongunstiger af dan de pool, dus daar schatte
+    # de pool een promovendus te sterk in.
+    #
+    # EN LET OP DE VLAG, want de oude notitie hierboven noemde de kalenderjaarnotatie wél als
+    # valkuil terwijl `measure_gap` er geen knop voor had: wie die opdracht uitvoerde kreeg stil
+    # factor 1.000/1.000 over n=0, oftewel "er is geen divisiegat". Die val is op 9 okt
+    # gerepareerd (de functie weigert nu bij nul waarnemingen) en deze twee zijn met
+    # `calendar_year=True` gemeten.
     "Eliteserien (NOR)":          Tier2(203, "1. Divisjon (NOR)"),
     "Allsvenskan (SWE)":          Tier2(168, "Superettan (SWE)"),
 
@@ -234,7 +239,63 @@ MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, floa
     "LaLiga2 (ESP)":            (0.716, 1.581, 28, 1.019, 1.905, 0.498, 0.925),
     # Gemeten 9 okt 2026 (Run B), op besluit van de gebruiker — zie de toelichting hieronder.
     "Romanian SuperLiga (ROU)": (0.541, 1.811, 16, 0.888, 1.740, 0.285, 1.250),
+    # De laatste vier gepoolde paren, óók gemeten op 9 okt 2026 (Run B) en op besluit van de
+    # gebruiker — zie "De laatste vier gepoolde paren" hieronder. Hiermee draait GEEN enkel paar
+    # in TIER2 nog op POOLED_GAP.
+    "Czech First League (CZE)":  (0.608, 1.835, 12, 1.136, 1.807, 0.370, 0.894),
+    "Swiss Super League (SUI)":  (0.625, 1.434, 12, 1.028, 1.720, 0.445, 0.940),
+    "Eliteserien (NOR)":         (0.600, 1.592, 22, 1.004, 1.926, 0.324, 0.967),
+    "Allsvenskan (SWE)":         (0.551, 1.723, 22, 0.925, 1.583, 0.370, 0.918),
 }
+
+#: **De laatste vier gepoolde paren, gemeten 9 okt 2026 (Run B), op besluit van de gebruiker.**
+#: Hiermee staat er geen enkel paar in `TIER2` meer op `POOLED_GAP` — acht paren komen van
+#: football-data.co.uk en twaalf van een eigen meting.
+#:
+#: Aanleiding, en het is geen opruimwerk. `_shared-rules.md` §4 beweerde dat na de meting van
+#: 31 aug 2026 geen enkele competitie uit de runlijst nog op een gepoolde factor draaide. Dat was
+#: onwaar: CZE en SUI zijn op 2 sep aan `TIER2` toegevoegd en NOR en SWE op 5 sep, alle vier
+#: zonder eigen meting. En het was geen dode letter — op 9 okt 2026 is **Västerås SK**
+#: (Allsvenskan) op de gepoolde factor omgerekend en met die sterkte doorgerekend, in dezelfde
+#: run die dit gat vond. De notities bij die vier regels in `TIER2` droegen een volgende run al
+#: op de meting te doen; dit is die meting.
+#:
+#: Wat eruit komt, naast de gepoolde 0.605 / 1.513:
+#:
+#: | paar | aanval | verdediging | n |
+#: |---|---|---|---|
+#: | Allsvenskan (SWE) / Superettan | **0.551** | **1.723** | 22 |
+#: | Czech First League (CZE) / FNL | 0.608 | **1.835** | 12 |
+#: | Eliteserien (NOR) / 1. Divisjon | 0.600 | 1.592 | 22 |
+#: | Swiss Super League (SUI) / Challenge League | 0.625 | **1.434** | 12 |
+#:
+#: Drie dingen die erbij horen voordat iemand hier conclusies op bouwt.
+#:
+#: 1. **Zweden en Tsjechië wijken echt af, Noorwegen en Zwitserland nauwelijks.** SWE staat op
+#:    beide kanten ongunstiger dan de pool (0.551 tegen 0.605 én 1.723 tegen 1.513): een Zweedse
+#:    promovendus houdt minder aanval over én incasseert meer, dus de pool schatte hem op beide
+#:    kanten tegelijk te sterk. CZE wijkt vooral op de verdediging af (1.835), in dezelfde orde
+#:    als Denemarken (1.807). NOR (0.600 / 1.592) en SUI (0.625 / 1.434) liggen zo dicht bij de
+#:    pool dat de meting daar vooral bevestigt — en dat is óók een uitkomst: nu staat het zwart
+#:    op wit in plaats van dat het wordt aangenomen.
+#: 2. **CZE en SUI staan op n=12, het kleinste van alle twaalf paren** (BEL was met n=13 tot nu
+#:    toe het kleinste). Het is een mediaan, dus één ingestorte promovendus verschuift hem niet,
+#:    maar lees die twee met meer terughoudendheid dan NOR en SWE (n=22). De Tsjechische reeks
+#:    begint bovendien pas bij 2018: id 253 (FNL) heeft voor 2016/2017 en 2017/2018 geen bruikbare
+#:    stand, net als bij Liga II (ROU).
+#: 3. **NOR en SWE zijn KALENDERJAARCOMPETITIES en zijn met `calendar_year=True` gemeten.** Zonder
+#:    die vlag bestaat het seizoen "2016/2017" daar niet, sloeg `measure_gap` elk jaar over en gaf
+#:    hij **factor 1.000 / 1.000 over n=0** terug — zonder foutmelding, en dat is precies het
+#:    getal dat zegt "er is geen divisiegat". Die val is op dezelfde dag gerepareerd (zie de
+#:    docstring van `measure_gap`); de functie weigert nu luidruchtig bij nul waarnemingen. Dit is
+#:    de reden dat de twee notities in `TIER2` die een volgende run opdroegen deze meting te doen,
+#:    hem niet hadden kunnen uitvoeren.
+#:
+#: Narekenen — let op de vlag bij de laatste twee:
+#:     PYTHONPATH=. python3 -c "from scripts import promotion as P; \
+#:         print(P.measure_gap('Czech First League (CZE)', 122, range(2016, 2025)).summary())"
+#:     PYTHONPATH=. python3 -c "from scripts import promotion as P; \
+#:         print(P.measure_gap('Allsvenskan (SWE)', 67, range(2016, 2025), calendar_year=True).summary())"
 
 #: **Romanian SuperLiga (ROU) / Liga II is er op 9 okt 2026 bij gekomen, op besluit van de
 #: gebruiker.** Zelfde methode en dezelfde `measure_gap` als de zeven paren hierboven, maar er
@@ -291,6 +352,8 @@ MEASURED_GAP_DATE: dict[str, str] = {
     "Süper Lig (TUR)": "31 aug 2026", "Ekstraklasa (POL)": "31 aug 2026",
     "LaLiga2 (ESP)": "5 okt 2026",
     "Romanian SuperLiga (ROU)": "9 okt 2026",
+    "Czech First League (CZE)": "9 okt 2026", "Swiss Super League (SUI)": "9 okt 2026",
+    "Eliteserien (NOR)": "9 okt 2026", "Allsvenskan (SWE)": "9 okt 2026",
 }
 
 

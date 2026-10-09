@@ -1854,12 +1854,67 @@ fors meer dan de gepoolde factor aannam.
 > tegen. En het is geen dode letter: op 9 oktober is **Västerås SK** (Allsvenskan) op de gepoolde
 > factor omgerekend en met die sterkte doorgerekend.
 >
-> **Stand sinds 9 okt 2026** (`Romanian SuperLiga (ROU)` is die dag gemeten en toegevoegd, zie
-> hieronder): van de twintig paren in `TIER2` draaien er acht op football-data.co.uk, acht op een
-> eigen meting, en **vier nog op de gepoolde factor** — CZE, SUI, NOR en SWE. Lees de stand dus
-> altijd uit `GapResult.direction`, die zegt zelf "gepoold — ... niet apart gemeten", en neem die
-> tekst over in het runrapport. Zet hier geen nieuwe samenvattende zin neer die morgen weer
-> achterhaald is.
+> **Stand sinds 9 okt 2026.** Op die dag zijn, op besluit van de gebruiker, eerst
+> `Romanian SuperLiga (ROU)` en daarna de laatste vier gepoolde paren gemeten — CZE, SUI, NOR en
+> SWE. Van de twintig paren in `TIER2` draaien er nu acht op football-data.co.uk en twaalf op een
+> eigen meting; **in de richting omhoog staat er geen enkel paar meer op `POOLED_GAP`.**
+>
+> Zet hier evengoed geen samenvattende zin neer die morgen weer achterhaald is: dat is precies hoe
+> de vorige onwaarheid is ontstaan. **Lees de stand per selectie uit `GapResult.direction`**, die
+> zelf "gepoold — ... niet apart gemeten" zegt, en neem die tekst over in het runrapport. Zodra er
+> een nieuw paar aan `TIER2` wordt toegevoegd staat het weer op de pool tot iemand het meet.
+>
+> **En let op de richting OMLAAG, want die is nog niet af.** `MEASURED_TIER2_GAP` meet uitsluitend
+> omhoog. `TIER1` heeft één paar zonder `fd_pair` — `Keuken Kampioen Divisie (NED)` →
+> `Eredivisie (NED)` — en `convert_relegated` valt daar dus nog wél op `POOLED_GAP` terug
+> (x1.654 aanval / x0.647 verdediging, n=240). Dat is geen randgeval: op 9 oktober liepen FC
+> Volendam, Heracles en NAC Breda alle drie langs die tak, en één ervan is een gepubliceerde bet
+> geworden. Het paar is die dag wél gemeten — **x1.772 / x0.621 over n=23**, dus een Nederlandse
+> degradant houdt méér aanval over dan de pool aanneemt — maar niet toegepast: daarvoor is een
+> eigen tabel voor de neerwaartse richting nodig en dat is meer dan een regel bijschrijven. Het
+> staat als besluit bij de gebruiker.
+
+### De laatste vier gepoolde paren zijn op 9 oktober 2026 gemeten
+
+**`Czech First League (CZE)`, `Swiss Super League (SUI)`, `Eliteserien (NOR)` en
+`Allsvenskan (SWE)` staan sinds die datum in `MEASURED_TIER2_GAP`**, op besluit van de gebruiker
+en met dezelfde `measure_gap` als de acht paren ervoor:
+
+| Paar | Aanval | Verdediging | n | tegen gepoold 0.605 / 1.513 |
+|---|---|---|---|---|
+| Allsvenskan (SWE) / Superettan | **0.551** | **1.723** | 22 | op **beide** kanten ongunstiger |
+| Czech First League (CZE) / FNL | 0.608 | **1.835** | 12 | verdediging als Denemarken (1.807) |
+| Eliteserien (NOR) / 1. Divisjon | 0.600 | 1.592 | 22 | bevestigt de pool |
+| Swiss Super League (SUI) / Challenge League | 0.625 | **1.434** | 12 | verdediging milder |
+
+**Waarom dit moest, en het is geen opruimwerk.** Deze vier zijn op 2 en 5 september aan `TIER2`
+toegevoegd, ná de meting van 31 augustus, en draaiden sindsdien op de gepoolde factor — terwijl de
+regel hierboven beweerde dat dat niet meer voorkwam. Op 9 oktober is **Västerås SK** op die
+gepoolde factor omgerekend en doorgerekend, in dezelfde run die het gat vond. Zweden is precies
+het paar waar de pool het meest naast zat, en in dezelfde richting op beide kanten: een Zweedse
+promovendus houdt minder aanval over (0.551 tegen 0.605) én incasseert meer (1.723 tegen 1.513),
+dus de pool schatte hem dubbel te sterk in.
+
+Vier dingen die erbij horen:
+
+1. **Twee van de vier bevestigen de pool, en dat is óók een uitkomst.** NOR (0.600 / 1.592) en SUI
+   (0.625 / 1.434) liggen zo dicht bij 0.605 / 1.513 dat de meting daar vooral vastlegt wat werd
+   aangenomen. Dat is winst: het staat nu zwart op wit in plaats van dat het hoopvol wordt
+   overgenomen uit zes andere landen.
+2. **CZE en SUI staan op n=12, het kleinste van alle twaalf paren** (BEL was met 13 de vorige
+   ondergrens). Lees die twee met meer terughoudendheid dan NOR en SWE (beide n=22). De Tsjechische
+   reeks begint bovendien bij 2018: id 253 heeft voor 2016/2017 en 2017/2018 geen bruikbare stand.
+3. **NOR en SWE zijn met `calendar_year=True` gemeten.** Zonder die vlag bestaat "2016/2017" daar
+   niet en gaf `measure_gap` stil **factor 1.000 / 1.000 over n=0** terug — het getal dat zegt dat
+   er helemaal geen divisiegat is. Die val is op dezelfde dag gerepareerd: de functie weigert nu
+   luidruchtig bij nul waarnemingen. Dat is ook de reden dat de notities in `TIER2`, die een
+   volgende run al opdroegen deze meting te doen, hem niet hadden kunnen uitvoeren.
+4. **Dit is niet met terugwerkende kracht op de run van 9 oktober toegepast**, net als bij
+   Roemenië. Nagemeten wat het die dag zou hebben gedaan: bij IFK Göteborg – Västerås SK verdubbelt
+   de edge op de thuiszege van +2,97 naar +5,96 pp, en de LIGHT-ondergrens om in de rangorde mee te
+   dingen is 6,0 pp (`toplist.NEAR`). De selectie mist die grens dus met **0,04 procentpunt** en de
+   gepubliceerde lijst van die dag blijft exact gelijk — op een haar, en dat hoort er zo bij te
+   staan in plaats van als "geen effect".
 
 ### Roemenië is er op 9 oktober 2026 bij gekomen, Kroatië kan niet
 
