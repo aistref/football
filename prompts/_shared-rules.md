@@ -1839,12 +1839,70 @@ divisieparen in `TIER2`, alle dertien op naam en land geverifieerd) en rekent he
    2016/2017 t/m 2024/2025, op Fotmob, voor NED, DEN, POR, BEL, TUR en POL;
 3. en pas als laatste `POOLED_GAP`.
 
-Na stap 2 draait geen enkele competitie uit de runlijst nog op een gepoolde factor. Dat was tot
-31 aug wél zo, en het was geen detail: op 30 aug leverde de gepoolde factor de grootste edge van
-de run op (ADO Den Haag +2.5 bij Feyenoord, +23.6 pp). De meting bevestigde Nederland grotendeels
+Die meting van 31 aug was geen detail: op 30 aug leverde de gepoolde factor de grootste edge van
+de run op (ADO Den Haag +2.5 bij Feyenoord, +23.6 pp). Ze bevestigde Nederland grotendeels
 (0.614/1.564 tegen 0.605/1.513 gepoold) maar corrigeerde **Denemarken** duidelijk: de
 verdedigingsfactor is daar 1.807 in plaats van 1.513, oftewel een Deense promovendus incasseert
 fors meer dan de gepoolde factor aannam.
+
+> **Hier stond tot 9 okt 2026 bij dat "na stap 2 geen enkele competitie uit de runlijst nog op een
+> gepoolde factor draait". Dat was onwaar, en het is drie keer in een runrapport overgenomen.**
+> De zin klopte op 31 augustus en is daarna niet meegegroeid: `Czech First League (CZE)` en
+> `Swiss Super League (SUI)` zijn op 2 september aan `TIER2` toegevoegd en `Eliteserien (NOR)` en
+> `Allsvenskan (SWE)` op 5 september, alle vier **zonder** eigen meting — dus alle vier op
+> `POOLED_GAP`. De notities in `promotion.py` zeggen dat er zelf eerlijk bij; deze regel sprak ze
+> tegen. En het is geen dode letter: op 9 oktober is **Västerås SK** (Allsvenskan) op de gepoolde
+> factor omgerekend en met die sterkte doorgerekend.
+>
+> **Stand sinds 9 okt 2026** (`Romanian SuperLiga (ROU)` is die dag gemeten en toegevoegd, zie
+> hieronder): van de twintig paren in `TIER2` draaien er acht op football-data.co.uk, acht op een
+> eigen meting, en **vier nog op de gepoolde factor** — CZE, SUI, NOR en SWE. Lees de stand dus
+> altijd uit `GapResult.direction`, die zegt zelf "gepoold — ... niet apart gemeten", en neem die
+> tekst over in het runrapport. Zet hier geen nieuwe samenvattende zin neer die morgen weer
+> achterhaald is.
+
+### Roemenië is er op 9 oktober 2026 bij gekomen, Kroatië kan niet
+
+**`Romanian SuperLiga (ROU)` / `Liga II (ROU)` staat sinds die datum in `TIER2` én in
+`MEASURED_TIER2_GAP`: aanval 0.541, verdediging 1.811, n=16.** Op besluit van de gebruiker, nadat
+Run B op 9 oktober de **hele Roemeense speelronde** op `NONE` had moeten zetten — Corvinul
+Hunedoara – FC Voluntari (beide ploegen promovendus) en Sepsi OSK – Dinamo București. Het
+Fotmob-id (9113) komt uit `api/data/allLeagues` onder ccode ROU en is bevestigd doordat Liga II op
+10 en 11 oktober met acht respectievelijk twee duels in de daglijst stond.
+
+**Lees dat aanvalsgetal, want het is het grootste dat tot nu toe is gemeten.** 0.541 tegen 0.614
+(NED) t/m 0.716 (ESP) voor de andere zeven paren, en tegen 0.605 gepoold. Een Roemeense
+promovendus houdt dus ongeveer de helft van zijn aanval over waar de pool tweederde aannam, en
+zijn verdedigingsfactor (1.811) ligt óók fors boven de gepoolde 1.513 — allebei dezelfde kant op.
+Had deze competitie op de gepoolde factor gedraaid, dan was een Roemeense promovendus op beide
+kanten tegelijk te sterk ingeschat. Dat is de echte opbrengst van deze meting en ze is groter dan
+het dichten van het gat zelf.
+
+Twee dingen die erbij horen:
+
+1. **n=16 over zes seizoenen, niet negen.** Id 9113 heeft voor 2016/2017 en 2017/2018 geen
+   bruikbare stand, dus de meting loopt over de promovendi van 2018/2019 t/m 2024/2025. Lees 0.541
+   als "ongeveer waar het ligt", net als bij de andere zeven.
+2. **De factor bond niet met terugwerkende kracht.** Hij is ná de run van 9 oktober gemeten,
+   terwijl het runrapport, het dagrapport en de notificatie van §7 al verstuurd waren. Dezelfde
+   redenering als bij het terugzetten van poort 8 op 30 september: een al gepubliceerde run
+   aanvullen zou een herberekening van die dag een andere uitkomst geven dan de run zelf gaf, en
+   §7 kent één notificatie per run. Nagemeten wat het die dag zou hebben gedaan
+   (`tmp-run/rb_oct09_roucheck.py`): beide duels rekenen door, maar élke selectie sneuvelt op
+   poort 5, dus de dagranglijst was ongewijzigd gebleven. **Meet een nieuwe factor dus liever vóór
+   de analyse van de dag, niet erna** — dan hoeft deze afweging niet.
+
+**Voor Kroatië is er geen factor, en dat is een bronbevinding en geen openstaand werk.** Dezelfde
+opdracht van 9 oktober vroeg hetzelfde voor `Croatian HNL (CRO)`, waar HNK Gorica – Rudeš op
+`NONE` uitkwam. Fotmob heeft de Kroatische tweede divisie **niet**: `api/data/allLeagues` geeft
+onder ccode CRO precies drie competities, en geen daarvan is een divisie — HNL (252), Croatian Cup
+(275) en Super Cup (276). In veertien opeenvolgende daglijsten (9 t/m 22 oktober) komt er ook geen
+tweede Kroatische competitie voorbij behalve de beker. Zonder stand van de Prva NL is er geen
+relatieve invoersterkte en dus niets te meten: **niet "nog niet gemeten" maar niet meetbaar op
+deze bron.** Een gepoolde factor erop zetten zou het gat wél dichten en is precies wat §2 en deze
+paragraaf verbieden. Een Kroatische promovendus blijft daarom `NONE`. Wie dit ooit wil oplossen
+heeft een andere bron voor de Prva NL nodig, geen regel in `promotion.py` — en hoeft dus niet
+opnieuw naar een `fotmob_id` te zoeken.
 
 ### De Spaanse derde divisie is er op 5 oktober 2026 bij gekomen
 

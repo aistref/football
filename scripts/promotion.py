@@ -130,6 +130,46 @@ TIER2: dict[str, Tier2] = {
     # waarin de ploeg werkelijk staat, en `measure_gap` meet per groep tegen diens eigen
     # gemiddelde. Verwijder die twee niet zonder de meting opnieuw te doen.
     "LaLiga2 (ESP)":              Tier2(8968, "Primera Federación (ESP)"),
+
+    # Toegevoegd 9 okt 2026 (Run B), op besluit van de gebruiker, en met een EIGEN METING in
+    # MEASURED_TIER2_GAP — dus geen gepoolde factor (zie daar).
+    #
+    # Waarom dit er moest komen: op 9 okt 2026 kostte het de HELE Roemeense speelronde. Zowel
+    # Corvinul Hunedoara – FC Voluntari (beide ploegen promovendus) als Sepsi OSK – Dinamo
+    # București (Sepsi promovendus) kwam op `data_tier = NONE` uit met de melding "geen divisie
+    # boven of onder 'Romanian SuperLiga (ROU)' bekend" — niet omdat de analyse iets vond, maar
+    # omdat deze tabel geen Roemeense ingang had. Dat is de situatie die §4 van
+    # _shared-rules.md expliciet verbiedt: eerst omrekenen, dan pas NONE.
+    #
+    # Het id is niet geraden. `https://www.fotmob.com/api/data/allLeagues` geeft onder ccode ROU
+    # precies vijf competities — Liga I (189), **Liga II (9113)**, Cupa României (190),
+    # Supercupa (192) en Liga I Qualification (9587) — en Liga II stond op 10 en 11 oktober 2026
+    # ook met acht respectievelijk twee duels in de Fotmob-daglijst, onder diezelfde ccode. De
+    # stand gaat terug tot 2010/2011 en heeft thuis/uit-splits in elk gemeten seizoen.
+    #
+    # LET OP: Liga II heeft een KAMPIOENS-/DEGRADATIESPLITSING ('Promotion Group',
+    # 'Relegation Group A', 'Relegation Group B') náást de volledige stand, net als de Deense
+    # 1. Division. Dat is géén parallelle opdeling: de groepen overlappen met de hele stand.
+    # `_season_tables` gebruikt daarom `fotmob.partitioned_groups` en niet `league_groups` —
+    # zie de docstring daar, want tot 9 okt 2026 stond dat fout en telde het elke ploeg dubbel.
+    "Romanian SuperLiga (ROU)":   Tier2(9113, "Liga II (ROU)"),
+
+    # GEEN REGEL VOOR KROATIË, en dat is een bronbevinding en geen vergeten regel (9 okt 2026).
+    # Het duel HNK Gorica – Rudeš kwam die dag op NONE uit omdat Rudeš promovendus is, en de
+    # opdracht was om er — net als voor Roemenië — een gemeten factor voor te maken. Dat kan
+    # niet: **Fotmob heeft de Kroatische tweede divisie niet.** `api/data/allLeagues` geeft onder
+    # ccode CRO precies drie competities, en geen daarvan is een divisie: HNL (252), Croatian Cup
+    # (275) en Super Cup (276). Ook in veertien opeenvolgende daglijsten (9 t/m 22 okt 2026) komt
+    # er geen tweede Kroatische competitie voorbij behalve de beker.
+    #
+    # Er is dus geen stand van de Prva NL om een relatieve sterkte uit te halen, en zonder die
+    # invoer is er niets te meten — niet "nog niet gemeten" maar "niet meetbaar op deze bron".
+    # Een gepoolde factor erop zetten zou het gat wél dichten en is precies wat §2 en §4
+    # verbieden: dan draait een Kroatische promovendus op een getal dat uit zes andere landen
+    # komt, en §4 zegt sinds 31 aug 2026 dat geen enkele competitie uit de runlijst nog op een
+    # gepoolde factor draait. Een Kroatische promovendus blijft daarom NONE, en dat is de
+    # eerlijke uitkomst. Wie dit ooit wil oplossen heeft een andere bron voor de Prva NL nodig,
+    # geen regel hier.
 }
 
 
@@ -192,7 +232,55 @@ MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, floa
     "Ekstraklasa (POL)":        (0.680, 1.743, 24, 1.069, 1.516, 0.505, 0.929),
     # Gemeten 5 okt 2026, niet 31 aug — zie `MEASURED_GAP_DATE` hieronder.
     "LaLiga2 (ESP)":            (0.716, 1.581, 28, 1.019, 1.905, 0.498, 0.925),
+    # Gemeten 9 okt 2026 (Run B), op besluit van de gebruiker — zie de toelichting hieronder.
+    "Romanian SuperLiga (ROU)": (0.541, 1.811, 16, 0.888, 1.740, 0.285, 1.250),
 }
+
+#: **Romanian SuperLiga (ROU) / Liga II is er op 9 okt 2026 bij gekomen, op besluit van de
+#: gebruiker.** Zelfde methode en dezelfde `measure_gap` als de zeven paren hierboven, maar er
+#: zijn drie dingen die erbij horen voordat iemand dit getal gebruikt of eraan sleutelt.
+#:
+#: 1. **Het gat is op de AANVALSKANT het grootste dat tot nu toe is gemeten: 0.541.** Alle zeven
+#:    andere paren liggen tussen 0.614 (NED) en 0.716 (ESP), en de gepoolde factor staat op
+#:    0.605. Een Roemeense promovendus houdt dus mínder van zijn aanval over dan waar ook —
+#:    ruwweg de helft in plaats van tweederde. De verdedigingskant (1.811) ligt vlak bij
+#:    Denemarken (1.807) en duidelijk boven de gepoolde 1.513. Had deze competitie op de
+#:    gepoolde factor gedraaid, dan was een Roemeense promovendus systematisch te sterk
+#:    ingeschat op beide kanten tegelijk — precies de fout die op 30 aug 2026 ADO Den Haag
+#:    +23.6 pp schijnedge gaf. Dat is de opbrengst van deze meting, en ze is groter dan het
+#:    dichten van het gat zelf.
+#:
+#: 2. **n=16 over zes seizoenen en niet negen, en dat is een echte beperking.** Fotmob-id 9113
+#:    heeft voor 2016/2017 en 2017/2018 geen bruikbare stand; de meting loopt daarom over de
+#:    promovendi van 2018/2019 t/m 2024/2025. Zestien is het tweede kleinste aantal van de acht
+#:    paren (alleen BEL is kleiner met 13). Het is een mediaan over zestien, dus één ingestorte
+#:    promovendus verschuift hem niet — maar lees hem als "ongeveer waar het ligt" en niet als
+#:    een scherp getal, net als bij de andere zeven.
+#:
+#: 3. **Liga II heeft een kampioens-/degradatiesplitsing, en die telde mee tot vandaag.** Zie de
+#:    docstring van `_season_tables`: die functie vroeg `league_groups` in plaats van
+#:    `partitioned_groups` en behandelde de 'Promotion Group' en de twee 'Relegation Groups' als
+#:    parallelle groepen. Daardoor kwam elke ploeg twee keer in de meting en werd de helft van de
+#:    rijen genormaliseerd op het gemiddelde van zes of zeven ploegen in plaats van op dat van de
+#:    competitie. Dat is op 9 okt 2026 gerepareerd vóórdat deze meting is gedaan, en de reparatie
+#:    is getoetst door alle zeven bestaande paren opnieuw te meten: ze reproduceren alle zeven
+#:    exact de waarde in deze tabel.
+#:
+#: De zestien gemeten promovendi, voor wie het wil narekenen: FC Argeș Pitesti en UTA Arad
+#: (2019), CS Mioveni, Rapid București en U Craiova 1948 (2020), Hermannstadt, Petrolul Ploiești
+#: en Universitatea Cluj (2021), CSM Politehnica Iași, Dinamo București en Oțelul Galați (2022),
+#: FC Gloria Buzău en FC Unirea Slobozia (2023), Csikszereda Miercurea Ciuc, FC Argeș Pitesti en
+#: FC Metaloglobus București (2024).
+#:
+#: Narekenen:
+#:     PYTHONPATH=. python3 -c "from scripts import promotion as P; \
+#:         print(P.measure_gap('Romanian SuperLiga (ROU)', 189, range(2016, 2025)).summary())"
+#:
+#: **En er is met opzet GEEN Kroatische ingang bijgekomen**, hoewel die op 9 oktober in dezelfde
+#: opdracht zat. Fotmob heeft de Kroatische tweede divisie niet — `api/data/allLeagues` geeft
+#: onder ccode CRO alleen HNL, beker en supercup. Zonder stand van de Prva NL is er geen
+#: invoersterkte en dus niets te meten: niet "nog niet gemeten" maar niet meetbaar op deze bron.
+#: Zie de opmerking bij `TIER2` hierboven.
 
 #: Wanneer elk paar hierboven is gemeten. Stond tot 5 okt 2026 als "31 aug 2026" hard in de
 #: notitie van `gap_and_range`, en dat zou met de eerste latere meting een onwaarheid zijn
@@ -202,6 +290,7 @@ MEASURED_GAP_DATE: dict[str, str] = {
     "Primeira Liga (POR)": "31 aug 2026", "Belgian Pro League (BEL)": "31 aug 2026",
     "Süper Lig (TUR)": "31 aug 2026", "Ekstraklasa (POL)": "31 aug 2026",
     "LaLiga2 (ESP)": "5 okt 2026",
+    "Romanian SuperLiga (ROU)": "9 okt 2026",
 }
 
 
@@ -785,6 +874,37 @@ def _season_tables(league_id: int, season: str) -> list[tuple[str | None, dict]]
     groep te worden afgezet en niet tegen die van de andere.
 
     Zonder groepen geeft dit precies wat er altijd al gebeurde: één tabel, groepsnaam None.
+
+    **PARTITIONED_GROUPS EN NIET LEAGUE_GROUPS, en dat was hier tot 9 okt 2026 fout** (Run B).
+    Deze functie vroeg `fotmob.league_groups`, en die geeft élke groep in het `tables`-veld terug
+    — ook de kampioens-/degradatiesplitsing van een competitie die gewoon één stand heeft.
+    `fotmob.partitioned_groups` is op diezelfde 5 oktober geschreven om precies dat onderscheid te
+    maken, en zegt in zijn eigen docstring waarvoor: *"zodat een aanroeper die op groepen wil
+    werken de splitsingscompetities ongemoeid laat."* Deze functie is die aanroeper, en ze riep de
+    verkeerde aan.
+
+    Wat dat kostte, gemeten op 9 okt 2026 bij Liga II (ROU) en 1. Division (DEN) — twee divisies
+    met zo'n splitsing:
+
+    * **Elke ploeg werd dubbel geteld.** Liga II 2024/2025 gaf 'Promotion Group' (6),
+      'Relegation Group A' (7), 'Relegation Group B' (7) EN 'Liga II' (20): veertig rijen voor
+      twintig ploegen. De groepen OVERLAPPEN met de volledige stand, dus iedere ploeg kwam twee
+      keer in de meting.
+    * **En de helft van die rijen werd tegen het verkeerde gemiddelde genormaliseerd** — een
+      ploeg uit de 'Promotion Group' tegen het gemiddelde van zes kopploegen in plaats van tegen
+      dat van de competitie. Dat is de fout die `_rel` juist moet voorkomen.
+
+    Narekenbaar aan Denemarken, want dat paar is op 31 aug 2026 gemeten toen deze functie nog niet
+    bestond: `measure_gap('Danish Superliga (DEN)', 46, range(2016, 2025))` gaf met de kapotte
+    versie **0.634 / 1.883 over n=28** tegen de vastgelegde **0.624 / 1.807 over n=18**. De
+    opgeslagen waarde is dus de goede en `MEASURED_TIER2_GAP` hoeft niet te worden aangeraakt —
+    maar wie de meting na 5 oktober had herhaald, had stil een andere factor gekregen dan er in de
+    tabel staat, zonder één foutmelding. Precies de faalstand van het Serie B-id en van
+    `calibration.py settle`: een stap die anders uitvalt zonder dat iets klaagt.
+
+    Dit raakt de meting van de Primera Federación (ESP) van 5 oktober NIET: daar zijn 'Group 1' en
+    'Group 2' disjunct, dus `partitioned_groups` geeft dezelfde twee namen als `league_groups` en
+    de uitkomst is ongewijzigd. Nagerekend op 9 okt: 0.716 / 1.581 over n=28, gelijk aan de tabel.
     """
     try:
         raw = fotmob.fetch_league_stats(league_id, season)
@@ -796,7 +916,8 @@ def _season_tables(league_id: int, season: str) -> list[tuple[str | None, dict]]
         enc = urllib.parse.quote(season, safe="")
         meta = fotmob._get_json(
             f"https://www.fotmob.com/api/data/leagues?id={league_id}&season={enc}")
-        groups = fotmob.league_groups(meta.get("table", []))
+        # `partitioned_groups` en niet `league_groups` — zie de docstring hierboven.
+        groups = fotmob.partitioned_groups(meta.get("table", []))
     except Exception:
         groups = []
     if not groups:
@@ -811,7 +932,7 @@ def _season_tables(league_id: int, season: str) -> list[tuple[str | None, dict]]
 
 
 def measure_gap(top_competition: str, top_id: int, years: range, *, direction: str = "up",
-                min_played: int = 10) -> "fd.GapResult":
+                min_played: int = 10, calendar_year: bool = False) -> "fd.GapResult":
     """Meet het gat tussen een competitie en de divisie eronder, aan ploegen die verhuisden.
 
     Zelfde definitie als `footballdata.division_gap()`, maar op Fotmob-standen, zodat ook de
@@ -821,12 +942,37 @@ def measure_gap(top_competition: str, top_id: int, years: range, *, direction: s
     `_season_tables`. Elke groep wordt apart tegen zijn eigen gemiddelde genormaliseerd; de
     gemeten verhoudingen gaan daarna op één hoop, want de vraag is wat een promovendus overhoudt
     en niet uit welke groep hij kwam.
+
+    `calendar_year=True` voor een competitie die op het KALENDERJAAR loopt — Eliteserien (NOR),
+    Allsvenskan (SWE), MLS (USA), Série A (BRA). Dan is het seizoen `"2025"` en niet
+    `"2025/2026"`.
+
+    **Beide toevoegingen zijn van 9 okt 2026 (Run B) en ze repareren samen één stille val.** Deze
+    functie bouwde het seizoen altijd als `f"{y}/{y+1}"`, en bij nul waarnemingen gaf ze
+    `GapResult(1.0, 1.0, 0, direction)` terug. Voor een kalenderjaarcompetitie bestaat dat seizoen
+    niet, dus `fetch_league_stats` wierp bij élk jaar een uitzondering, de lus sloeg elk jaar over
+    en het antwoord was **factor 1.000 / 1.000 over n=0** — zonder één foutmelding. Een factor van
+    1.0 betekent "er is geen divisiegat", oftewel een promovendus is in de divisie erboven precies
+    zo sterk als eronder. Dat is het gevaarlijkste getal dat deze functie kan opleveren en het zag
+    eruit als een geldige meting.
+
+    Dat was geen hypothetisch risico: de notitie bij `Eliteserien (NOR)` en `Allsvenskan (SWE)` in
+    `TIER2` draagt een volgende run letterlijk op *"`measure_gap` over 2016/2017-2024/2025 doet
+    voor NOR en SWE wat de meting van 31 aug voor NED/DEN/POR/BEL/TUR/POL deed"*, en noemt de
+    kalenderjaarnotatie wél als valkuil — maar deze functie had er geen knop voor. Wie die
+    opdracht uitvoerde kreeg 1.000/1.000 en een aanmoediging om het in de tabel te zetten.
+
+    Daarom weigert ze nu luidruchtig in plaats van een factor van 1.0 te verzinnen: bij nul
+    waarnemingen volgt een `PromotionError` die de twee waarschijnlijke oorzaken noemt.
     """
     import statistics
     t2 = TIER2[top_competition]
     att, dfn, samples = [], [], []
     for y in years:
-        s_from, s_to = f"{y}/{y + 1}", f"{y + 1}/{y + 2}"
+        if calendar_year:
+            s_from, s_to = str(y), str(y + 1)
+        else:
+            s_from, s_to = f"{y}/{y + 1}", f"{y + 1}/{y + 2}"
         lo, hi = (t2.fotmob_id, top_id) if direction == "up" else (top_id, t2.fotmob_id)
         tabellen = _season_tables(lo, s_from)
         try:
@@ -839,7 +985,15 @@ def measure_gap(top_competition: str, top_id: int, years: range, *, direction: s
             dfn += dfn_n
             samples += samples_n
     if not att:
-        return fd.GapResult(1.0, 1.0, 0, direction)
+        raise PromotionError(
+            f"geen enkele verhuisde ploeg gevonden voor {top_competition} / {t2.name} over "
+            f"{years.start}-{years.stop - 1}"
+            + (" (kalenderjaarnotatie)" if calendar_year else " (seizoensnotatie JJJJ/JJJJ)")
+            + ". Twee waarschijnlijke oorzaken: de seizoensnotatie klopt niet voor deze "
+              "competitie — probeer calendar_year=True voor NOR, SWE, USA en BRA — of Fotmob "
+              "heeft op dit id geen standen voor deze jaren. Dit is met opzet een fout en geen "
+              "factor 1.0: dat laatste betekent 'geen divisiegat' en zag er tot 9 okt 2026 uit "
+              "als een geldige meting.")
 
     def spread(xs):
         xs = sorted(xs)
