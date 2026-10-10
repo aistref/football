@@ -37,9 +37,12 @@ def koers(v):
 # ---------------------------------------------------------------- kop
 w(f"# Run B — {DAG}")
 w()
-w("**Gestart:** 05:06 CEST · **Bets gepubliceerd:** 5 · "
+w("**Gestart:** 05:04 CEST · **Afgerond:** 05:40 CEST · **Looptijd:** 36,6 minuten · "
+  "**Bets gepubliceerd:** 5 · "
   "**Wedstrijden diep geanalyseerd:** 55 van 77 in het inzetvenster "
   "(48 met een kansbron, 22 afgekapt door `MAX_DEEP_ANALYSES` = 55)")
+w()
+w("**Dagrapport (§6c):** https://claude.ai/artifact/KRXbnv1jDEnnrCU1PBFKmG")
 w()
 w("**Branches:** deze run staat op `main`. Stage -2 is volledig gedraaid vóór het lezen van de "
   "regels: `git fetch origin` gaf 60 remote branches, waarvan 47 met commits die `main` niet "
@@ -58,6 +61,24 @@ w("**Branches:** deze run staat op `main`. Stage -2 is volledig gedraaid vóór 
 w()
 
 # ---------------------------------------------------------------- dekking
+w("**Looptijd, en hetzelfde administratieve punt als Run A vanmorgen.** 36,6 minuten voor 77 "
+  "duels over zestien competities, op een deadline van 06:30 (§0) — ruim binnen de grens, met "
+  "vijftig minuten over. Naast Run A van vanmorgen (56 duels in 25,6 minuten) is dat bijna recht "
+  "proportioneel: 38% meer wedstrijden kostte 43% meer tijd. Dat is het vermelden waard omdat §3 "
+  "Stage 4 juist zegt dat de kosten per **competitie** liggen en niet per wedstrijd — met zestien "
+  "competities tegen twaalf bij Run A gaat die vlieger vandaag dus maar deels op, en de 24 "
+  "Engelse en 14 MLS-duels die één competitiedossier delen maken het verschil niet goedkoper dan "
+  "lineair. Bij deze looptijden is dat academisch; het wordt het pas als een dag richting de "
+  "honderd duels gaat. `duur.gestart` stond eerst op 03:21 UTC in plaats van op 03:04, omdat "
+  "`progress.load_or_start` dat veld op het moment van de **eerste save** zet en die deze run "
+  "pas in Stage 6 kwam — de looptijd viel daardoor ruim zeventien minuten te kort uit en is "
+  "gecorrigeerd, met de reden in `duur.note`. Run A maakte vanmorgen dezelfde correctie en op "
+  "2 oktober ook al, dus het is een eigenschap van `progress.py` en geen incident. Het is ook "
+  "geen onschuldig punt: §0 zegt dat de cap een **tijds**grens is en dat elke run zijn looptijd "
+  "vastlegt zodat te zien is of 55 duels vóór 06:30 passen. Een looptijd die structureel te kort "
+  "wordt opgeschreven, maakt juist die meting onbruikbaar — en vandaag is de eerste dag waarop "
+  "de cap bij Run B echt bindt.")
+w()
 w("## Dekkingsrapportage")
 w()
 w("| Competitie | Status | Toelichting |")
@@ -241,7 +262,7 @@ for comp in RUNLIJST:
                   f"{pp(nm.get('edge_xg'))}, 2e methode {pp(nm.get('edge_split'))}, zwakste "
                   f"stand {pp(nm.get('edge_robust_min'))}; viel af op "
                   f"`{nm.get('failed_gate')}`")
-        pn = m.get("promo_notes") or {}
+        pn = m.get("promovendi") or {}
         for kant, note in pn.items():
             w(f"- **Omrekening ({kant}):** {note}")
         v = (m.get("context") or {}).get("venue") or {}
@@ -822,6 +843,22 @@ w("5. **Van jou is hier niets nodig — de stadioncontrole normaliseert geen nam
 w()
 
 # ---------------------------------------------------------------- slot
+w("6. **Van jou is hier niets nodig — `progress.load_or_start` zet `duur.gestart` op de eerste "
+  "save in plaats van op de start van de run.** Dat heeft vandaag bij Run A en bij Run B tot een "
+  "te korte looptijd geleid (12,7 in plaats van 25,6 en 18,9 in plaats van 36,6 minuten) en op "
+  "2 oktober ook al. Het raakt de enige meting waarmee §0 kan controleren of de cap van 55 duels "
+  "vóór 06:30 past, en vandaag bindt die cap voor het eerst bij Run B — dus het is geen "
+  "cosmetisch punt. **Ik pak de reparatie op in de eerstvolgende run die aan `progress.py` komt: "
+  "`gestart` hoort in Stage -1 te worden gezet en bij een hervatting onveranderd te blijven.**")
+w("7. **Van jou is hier niets nodig — dit runrapport miste in zijn eerste versie alle vijftien "
+  "omrekennotities.** De wedstrijdblokken lazen `promo_notes` terwijl het veld in "
+  "`data/run-state/` `promovendi` heet, dus bij elk van de vijftien omgerekende duels viel de "
+  "regel *Omrekening (thuis/uit)* stil weg — inclusief de precieze reden waarom zes duels op "
+  "`conversion_in_range` zijn geweigerd. Gevonden doordat de gebruiker naar twee van die duels "
+  "vroeg. Hersteld in deze versie; de onderliggende data in `data/run-state/` was altijd "
+  "volledig, alleen de weergave niet. **Dit is dezelfde soort stille weergavefout als "
+  "`settled_note` op 27 september, en het is het derde voorbeeld vandaag van een stap die "
+  "overgeslagen kan worden zonder dat iets klaagt.**")
 w("---")
 w()
 w("> Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de "
