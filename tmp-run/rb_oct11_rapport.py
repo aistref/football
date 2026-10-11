@@ -28,7 +28,7 @@ def koers(v): return "—" if v is None else f"{round(float(v), 4):g}"
 # ---------------------------------------------------------------- kop
 w(f"# Run B — {DAG}")
 w()
-w("**Gestart:** 05:06 CEST · **Afgerond:** 05:40 CEST · **Looptijd:** 35 minuten · "
+w("**Gestart:** 05:06 CEST · **Afgerond:** 05:35 CEST · **Looptijd:** 29,4 minuten (`duur` in het voortgangsbestand; het dagrapport en de notificatie volgden erna) · "
   "**Bets gepubliceerd:** 5 · "
   "**Wedstrijden diep geanalyseerd:** 42 van 42 in het inzetvenster "
   "(39 met een kansbron, 0 afgekapt door `MAX_DEEP_ANALYSES` = 55)")
