@@ -1959,6 +1959,76 @@ paragraaf verbieden. Een Kroatische promovendus blijft daarom `NONE`. Wie dit oo
 heeft een andere bron voor de Prva NL nodig, geen regel in `promotion.py` — en hoeft dus niet
 opnieuw naar een `fotmob_id` te zoeken.
 
+### Griekenland en Oostenrijk zijn er op 11 oktober 2026 bij gekomen, Hongarije kan niet
+
+**`Greek Super League (GRE)` / `Super League 2 (GRE)` en `Austrian Bundesliga (AUT)` /
+`2. Liga (AUT)` staan sinds die datum in `TIER2` én in `MEASURED_TIER2_GAP`**, op besluit van de
+gebruiker, gemeten met dezelfde `measure_gap` over de promovendi van 2016/2017 t/m 2024/2025:
+
+| Paar | Aanval | Verdediging | n | tegen gepoold 0.605 / 1.513 |
+|---|---|---|---|---|
+| Greek Super League (GRE) / Super League 2 | **0.482** | **2.712** | 11 | op **beide** kanten veruit het ongunstigst dat tot nu toe is gemeten |
+| Austrian Bundesliga (AUT) / 2. Liga | 0.615 | **2.009** | 10 | aanval als de rest, verdediging fors erboven |
+
+Aanleiding: drie van de 42 duels van Run B op 11 oktober kwamen op `NONE` uit omdat deze tabel
+geen ingang had voor de hoogste divisie van Griekenland, Hongarije en Oostenrijk — Iraklis,
+Kispest Honvéd en Austria Lustenau zijn alle drie promovendus.
+
+**Lees het Griekse verdedigingsgetal, want het is het grootste dat voor welk paar dan ook is
+gemeten.** 2.712 tegen 1.434 (SUI) t/m 1.835 (CZE) voor de andere elf paren, en tegen 1.513
+gepoold: een Griekse promovendus incasseert bijna tweemaal zoveel als de pool aannam, en houdt
+tegelijk nog geen helft van zijn aanval over (0.482 tegen 0.605 gepoold). Beide kanten dezelfde
+richting op, net als bij Roemenië, maar forser. Het is geen uitschieter van één seizoen: negen
+van de elf waarnemingen liggen boven 1.6 en de reeks loopt van 2016 tot 2024.
+
+**En let op n.** Elf en tien waarnemingen is het kleinste van alle veertien paren (CZE en SUI
+stonden met 12 op de vorige ondergrens). Lees deze twee met navenant meer terughoudendheid, en
+onthoud dat `conversion_in_range` ze ook smal maakt: het gemeten invoerbereik is GRE
+1.282–1.949 aanval / 0.259–0.905 verdediging en AUT 1.183–1.508 / 0.519–0.814.
+
+**Wat het op de dag zelf zou hebben gedaan, nagerekend en niet toegepast** (§4 hierboven: meet
+een nieuwe factor liever vóór de analyse dan erna, en een al gepubliceerde run aanvullen zou een
+herberekening een andere uitkomst geven dan de run zelf gaf). Van de drie duels:
+
+- **Iraklis – Levadiakos** rekent door op `LIGHT`: relatieve aanval 1.627 valt binnen
+  1.282–1.949, verdediging 0.622 binnen 0.259–0.905.
+- **Hartberg – Austria Lustenau** blijft `NONE`, maar nu om een **gemeten** reden in plaats van
+  bij gebrek aan een tabel: de relatieve aanval van Austria Lustenau is 1.077 en dat ligt ónder
+  het gemeten bereik van 1.183. Dat is `conversion_in_range` die precies doet waarvoor hij
+  bestaat (de Coventry-val), en het is een beter antwoord dan het oude, ook al verandert de
+  uitkomst niet.
+- **Kispest Honvéd – Újpest** blijft `NONE`, zie hieronder.
+
+#### Voor Hongarije is er geen factor, en het is een derde soort bevinding
+
+Niet Griekenland (meetbaar) en niet Kroatië (de divisie bestaat niet bij de bron), maar iets
+daartussen — en het is de gevaarlijkste van de drie. **De NB II bestaat wél bij Fotmob**
+(`api/data/allLeagues` geeft onder ccode HUN het id 9117), maar **dat id negeert de
+seizoensparameter**: `fetch_league_stats(9117, <seizoen>)` geeft voor elk opgevraagd seizoen
+exact dezelfde stand terug — zestien ploegen met `played = 9`, oftewel de lopende, half
+gespeelde competitie van 2026/2027. Nagemeten over vijf ver uit elkaar liggende seizoenen: vijf
+verzoeken, één stand. Bij Liga II (9113), Super League 2 (8815) en 2. Liga (119) geeft diezelfde
+controle vier à vijf verschillende standen met `played` 18 tot 36.
+
+**Dit is dezelfde stille faalstand die deze repo al twee keer heeft gekost, in een derde
+gedaante.** `prompts/run-b.md` beschrijft hem voor de seizoensnotatie van
+kalenderjaarcompetities (*"Fotmob geeft op een onbekende seizoensnotatie geen fout maar valt
+stil terug op het lopende seizoen"*) en `measure_gap` kreeg er op 9 oktober een rem voor bij nul
+waarnemingen. Hier komt hij terug op een id dat de parameter volledig negeert, en de uitkomst
+zou **geen foutmelding** zijn geweest maar een factor uit één halve tabel, vergeleken met negen
+verschillende NB I-seizoenen. Dat het op 11 oktober toch een fout gaf is toeval: de lopende NB II
+stond op negen speeldagen en `min_played` is tien. Eén speeldag later was er een getal uitgekomen.
+
+**`measure_gap` weigert zo'n meting sinds 11 okt 2026 luidruchtig** (`_tier2_heeft_historie`):
+twee ver uit elkaar liggende seizoenen opvragen en vergelijken, en bij een identiek antwoord een
+`PromotionError` met de reden erbij. Dat kost twee Fotmob-verzoeken en geen credits. Wat die
+controle **niet** vangt is een bron die per seizoen wel iets anders geeft maar het verkeerde;
+daar is geen goedkope controle voor.
+
+Een Hongaarse promovendus blijft daarom `NONE`. Wie dit ooit wil oplossen heeft een andere bron
+voor de NB II nodig, niet een regel in `promotion.py` — en hoeft niet opnieuw naar een
+`fotmob_id` te zoeken, want 9117 is het juiste id en het probleem zit niet in het id.
+
 ### De Spaanse derde divisie is er op 5 oktober 2026 bij gekomen
 
 **`LaLiga2 (ESP)` / `Primera Federación (ESP)` staat sinds die datum in `TIER2` én in
@@ -2517,6 +2587,13 @@ Elke run, ook een run met nul bets:
    `--since 2026-09-20`. Zie 6f; neem beide op in het runrapport. Dit is de enige controle die
    ziet of het scoregrid de vórm van een uitslag goed heeft en niet alleen de winnaar, en het is
    de reden dat handicapbets op de underdog met argwaan gelezen moeten worden.
+5g. **Doelpuntenlogboek** → `python3 scripts/margins.py goalbias`, **elke run**, en neem de
+   uitvoer op in het runrapport naast 5f. Toegevoegd 11 okt 2026 op verzoek van de gebruiker; zie
+   6g voor de meting die eronder ligt. Dit is de enige controle die de doelpuntenkant **per
+   gespeelde kant** uitsplitst, en dat onderscheid is precies wat 5f niet maakt: `stats` meet de
+   hele populatie en ziet daardoor niets, terwijl de Under-kant van de picks er meetbaar naast
+   zit. Lees de twee regels nooit als één getal — de bovenste meet het model, de onderste de
+   selectie.
 5e. **De dagelijkse top-N, twee keer** → `python3 scripts/toplist.py --run <a|b> --date <datum>`.
    Zie §5a. Neem beide lijsten op in het runrapport; op de HTML-pagina zet `report.py` ze er zelf
    in. Draai dit **na** `shadow.py collect`, zodat de regels die alleen op de herijking sneuvelden
@@ -2791,6 +2868,76 @@ nog geen enkele afgewikkelde wedstrijd met lambdas van ná de overstap. Neem `ma
 elke run op in het runrapport, en beantwoord de vraag opnieuw zodra `--since 2026-09-20` op ~150
 duels met een favoriet staat. Blijft het gat dan bestaan, dan is het grid zelf aan de beurt en niet
 een parameter erop.
+
+### 6g. Het doelpuntenlogboek — de Under-kant staat scheef en 6f ziet dat niet
+
+```bash
+python3 scripts/margins.py goalbias
+```
+
+**Aanleiding (11 okt 2026, op verzoek van de gebruiker).** Run B publiceerde op 10 oktober
+AIK – Brommapojkarna, Under 3,5 @1,55, en het werd **5–6**. De gebruiker noemde dat extreem en
+wees erop dat er diezelfde dag opnieuw vier Unders op de lijst stonden. Dat is nagerekend, en
+het is geen uitschieter: er staan **twee fouten op elkaar**, en ze moeten uit elkaar worden
+gehouden omdat er twee verschillende antwoorden bij horen.
+
+**Laag 1 — een vormfout in het scoregrid, aanwezig in de hele populatie.** Over 1076
+doorgerekende duels klopt het **gemiddelde** aantal doelpunten (voorspeld 3,061 / werkelijk
+3,040, z = −0,40) maar de **verdeling** niet:
+
+| totaal | voorspeld | werkelijk | |
+|---|---|---|---|
+| 2 doelpunten | 22,2% | 20,2% | −2,0 pp |
+| 3 doelpunten | 21,6% | 22,3% | +0,7 pp |
+| **4 doelpunten** | **16,5%** | **19,4%** | **+2,9 pp** (boven twee standaardfouten) |
+| 5 doelpunten | 10,3% | 11,4% | +1,1 pp |
+| 7 doelpunten | 2,6% | 1,6% | −1,0 pp |
+
+Er is massa verschoven van 2 naar 4 en 5, en uit de extreme staart weg. Gevolg: **P(Under 2.5)
+staat structureel 2,4 pp te hoog en P(Under 3/3.5) 1,6 pp** — bij élk duel, vóór er iets is
+gekozen. Dit is een eigenschap van de aanname in `score_grid` (twee onafhankelijke
+Poisson-verdelingen met een Dixon-Coles-correctie die alleen de lage standen bijstelt), en het is
+dezelfde familie als de margefout van 6f.
+
+**6f ziet dit niet, en dat is geen slordigheid maar een blinde vlek in de bakken.** `stats`
+toetst "0 of 1 doelpunt", "4 of meer" en "6 of meer"; de verschuiving zit tussen die bakken in en
+middelt er precies uit. Dat is de les van 6e in een nieuwe vorm: *een controle kan groen staan
+omdat hij de verkeerde grootheid meet.*
+
+**Laag 2 — het selectie-effect eroverheen.** In de duels waarin de routine werkelijk een Under
+speelde vallen er **+0,68 doelpunt per duel méér** dan haar eigen lambda zei: n = 49, z = **+2,91**,
+en z = +1,96 zonder de twee grootste uitschieters — dus niet door AIK gedragen. Op de Over-kant
+gebeurt dat niet: n = 38, z = −0,54. De routine speelt Under juist dáár waar haar lambda te laag
+staat, en dat is dezelfde winner's curse die 1g voor kansen beschrijft, nu zichtbaar op de
+doelpuntenas.
+
+**Wat de twee lagen samen kosten**, over het hele logboek:
+
+| | picks | trefkans | geclaimd | rendement |
+|---|---|---|---|---|
+| Over/Under — **Under** | 76 | 44,7% | 63,0% | **−16,5%** |
+| Over/Under — **Over** | 62 | 58,1% | 62,8% | **+10,6%** |
+
+**Lees die twee regels samen, want ze verklaren elkaar.** Dezelfde vormfout die de Under-kant
+geld kost, betaalt de Over-kant: te weinig massa op 4–5 doelpunten maakt elke Over goedkoper dan
+hij is. Dit is dus **geen** algemene winner's curse — die zou beide kanten raken — maar een
+gerichte fout plus een selectie die er precies op gaat staan. Over is na 1X2 (−17,4%) en Asian
+Handicap (−18,4%) de enige markt met een positief rendement waar ook aantallen onder zitten.
+
+**Wat hier NIET uit volgt.** Geen drempel verzetten, geen poort erbij en geen correctie op
+eigen initiatief — ook niet nu de aantallen boven de ~30 van 6d liggen. Er zijn twee denkbare
+ingrepen en ze horen bij de gebruiker omdat ze over risicobereidheid gaan, net als bij
+`selection_score` (1a) en bij poort 8 (1e):
+
+1. **De vormfout corrigeren.** Dat mag: hij is gemeten tegen **uitkomsten** en niet tegen de
+   markt, dus 2 staat het toe. Het is wel een ingreep in `score_grid` zelf en raakt élke markt,
+   niet alleen Unders — reken dus eerst door wat het met de andere vijf doet.
+2. **De Under-kant een eigen lat geven**, zoals poort 8 dat voor de underdog-kant doet. Dat is
+   een rem op een symptoom en geen reparatie, met hetzelfde bezwaar dat 1e bij poort 8 noemt.
+
+Tot een van die twee is besloten blijft dit een **meting** die elke run wordt afgedrukt (6b-5g)
+en in het runrapport komt. Noem bij een gepubliceerde Under in het dagrapport dat deze kant
+meetbaar scheef staat; dat is geen slag om de arm maar de stand van zaken.
 
 ### 6c. Het leesbare dagrapport — verplicht, elke run
 

@@ -207,6 +207,124 @@ def report(rows: list[dict], min_ratio: float) -> None:
     print("meting op de nieuwe instelling, en lees die pas vanaf ~150 duels met een favoriet.")
 
 
+# ---------------------------------------------------------------------------------------------
+# `goalbias` — de doelpuntenkant, GESELECTEERD tegen ONGESELECTEERD (toegevoegd 11 okt 2026)
+# ---------------------------------------------------------------------------------------------
+# Aanleiding: de gebruiker vroeg op 11 oktober 2026 waarom AIK - Brommapojkarna (Under 3,5 @1,55)
+# op 5-6 uitkwam en waarom er diezelfde dag opnieuw vier Unders op de lijst stonden. Dat is
+# nagerekend en het bleek geen uitschieter maar twee fouten die op elkaar stapelen:
+#
+# 1. EEN VORMFOUT IN HET GRID, aanwezig in de HELE populatie. Over 1076 doorgerekende duels
+#    klopt het GEMIDDELDE aantal doelpunten (voorspeld 3,061 / werkelijk 3,040, z=-0,40) maar de
+#    VERDELING niet: bij 2 doelpunten zit 2,0 pp te veel massa en bij 4 en 5 samen 4,0 pp te
+#    weinig, met 4 doelpunten boven twee standaardfouten. Gevolg: P(Under 2.5) staat structureel
+#    2,4 pp te hoog en P(Under 3/3.5) 1,6 pp. Dat is geen selectie-effect - het geldt voor elk
+#    duel, voordat er iets gekozen is. `report()` hierboven ziet dit NIET, want die toetst "4 of
+#    meer" en "6 of meer" en de verschuiving zit tussen die twee bakken in.
+#
+# 2. HET SELECTIE-EFFECT ER BOVENOP. In de duels waarin de routine werkelijk een Under speelde
+#    vallen er +0,68 doelpunt per duel meer dan haar eigen lambda zei: 49 duels, z=+2,91 (en
+#    z=+1,96 zonder de twee grootste uitschieters, dus niet door AIK - Brommapojkarna gedragen).
+#    Op de Over-kant gebeurt dat niet: n=38, z=-0,54.
+#
+# Samen verklaren die twee het rendement: Under -16,5% over 76 afgerekende picks tegen Over
+# +10,6% over 62, en in kansen 63,0% geclaimd tegen 44,7% werkelijk. DEZELFDE vormfout die de
+# Under-kant geld kost, betaalt de Over-kant - dat is waarom het verschil tussen de twee kanten
+# zo groot is en waarom dit geen algemene winner's curse is (die zou beide kanten raken).
+#
+# Deze functie meet beide lagen apart, want dat onderscheid bepaalt wat je eraan zou doen: laag 1
+# is een modelfout die je op UITKOMSTEN mag corrigeren (6e staat dat toe, 2 verbiedt alleen
+# corrigeren tegen de MARKT), laag 2 is een selectie-effect waar alleen een strengere lat of een
+# andere weging tegen helpt. Welke van de twee je aanpakt is een keuze van de gebruiker en niet
+# van een run.
+#
+# REPORT-ONLY: deze functie verandert niets aan een kans, een poort of een lat.
+
+
+def _published_sides() -> dict[tuple[str, str], str]:
+    """{(rundag, wedstrijd): 'Under'|'Over'} voor elke gepubliceerde Over/Under-pick."""
+    uit: dict[tuple[str, str], str] = {}
+    pad = ROOT / "data" / "picks.jsonl"
+    if not pad.exists():
+        return uit
+    for regel in pad.read_text().splitlines():
+        if not regel.strip():
+            continue
+        try:
+            d = json.loads(regel)
+        except Exception:
+            continue
+        if d.get("market") != "Over/Under":
+            continue
+        naam = "{} - {}".format(d.get("home"), d.get("away")).replace(" - ", " – ", 1)
+        kant = "Under" if str(d.get("selection", "")).startswith("Under") else "Over"
+        uit[(d.get("run_date"), naam)] = kant
+    return uit
+
+
+def goalbias(rows: list[dict]) -> None:
+    """Voorspelde tegen werkelijke doelpunten, apart voor de hele populatie en voor de picks."""
+    if not rows:
+        print("Geen wedstrijden met zowel een lambdapaar als een uitslag.")
+        return
+    kant = _published_sides()
+    groepen: dict[str, list[dict]] = {"ALLE DOORGEREKENDE DUELS": rows,
+                                      "Under gespeeld": [], "Over gespeeld": []}
+    for r in rows:
+        k = kant.get((r["date"], r["match"]))
+        if k == "Under":
+            groepen["Under gespeeld"].append(r)
+        elif k == "Over":
+            groepen["Over gespeeld"].append(r)
+
+    dagen = sorted({r["date"] for r in rows})
+    print("DOELPUNTENKALIBRATIE - {} wedstrijden, van {} t/m {}".format(
+        len(rows), dagen[0], dagen[-1]))
+    print("Verwacht = de som van het opgeslagen lambdapaar; z is de Poisson-toets op het totaal.")
+    print()
+    print("  {:26s} {:>5s} {:>14s} {:>15s} {:>9s} {:>7s}".format(
+        "groep", "n", "verwacht/duel", "werkelijk/duel", "verschil", "z"))
+    for naam, sel in groepen.items():
+        if not sel:
+            continue
+        S = sum(sum(r["lam"]) for r in sel)
+        A = sum(r["hg"] + r["ag"] for r in sel)
+        z = (A - S) / math.sqrt(S) if S > 0 else 0.0
+        print("  {:26s} {:5d} {:13.3f}  {:14.3f} {:+9.3f} {:+7.2f}".format(
+            naam, len(sel), S / len(sel), A / len(sel), (A - S) / len(sel), z))
+
+    print()
+    print("DE VORM VAN DE VERDELING, over alle doorgerekende duels")
+    print("(het gemiddelde kan kloppen terwijl de verdeling dat niet doet - dat is hier zo)")
+    n = len(rows)
+    pred: collections.Counter = collections.Counter()
+    act: collections.Counter = collections.Counter()
+    for r in rows:
+        _, tt = margin_and_total(r["lam"])
+        for k, v in tt.items():
+            pred[min(k, 9)] += v
+        act[min(r["hg"] + r["ag"], 9)] += 1
+    for t in range(0, 10):
+        label = "9 of meer" if t == 9 else "{} doelpunt{}".format(t, "" if t == 1 else "en")
+        print(_line(label, pred[t] / n, act[t] / n, n))
+
+    print()
+    print("WAT DAT MET DE GANGBARE UNDER-LIJNEN DOET")
+    for lijn, k in ((2.5, 2), (3.0, 3), (3.5, 3)):
+        pp_ = sum(v for kk, v in pred.items() if kk <= k) / n
+        aa = sum(v for kk, v in act.items() if kk <= k) / n
+        print(_line("P(Under {})".format(lijn), pp_, aa, n))
+
+    print()
+    print("LEESWIJZER. De bovenste tabel scheidt twee fouten die je NIET mag optellen: de regel")
+    print("'ALLE DOORGEREKENDE DUELS' meet het MODEL (een z rond nul betekent dat de lambdas")
+    print("kloppen), de regels eronder meten de SELECTIE (een positieve z op 'Under gespeeld'")
+    print("betekent dat de routine juist daar Under speelt waar haar lambda te laag staat). De")
+    print("tweede tabel meet de VORM: schuift er massa van 2 naar 4-5 doelpunten, dan staat elke")
+    print("Under structureel te hoog, ook zonder selectie. Lees geen van beide onder ~30 gevallen")
+    print("per groep (6d), en verzet nooit een lat op een enkele dag.")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -214,13 +332,19 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--since")
     s.add_argument("--until")
     s.add_argument("--min-ratio", type=float, default=DEFAULT_MIN_RATIO)
+    g = sub.add_parser("goalbias", help="doelpuntenkalibratie: geselecteerd tegen ongeselecteerd")
+    g.add_argument("--since")
+    g.add_argument("--until")
     args = ap.parse_args(argv)
 
     rows = load_matches(args.since, args.until)
     rows, miss = attach_results(rows)
     if miss:
         print(f"({miss} wedstrijd(en) zonder bruikbare eindstand overgeslagen)\n")
-    report(rows, args.min_ratio)
+    if args.cmd == "goalbias":
+        goalbias(rows)
+    else:
+        report(rows, args.min_ratio)
     return 0
 
 

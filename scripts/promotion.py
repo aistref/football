@@ -159,6 +159,50 @@ TIER2: dict[str, Tier2] = {
     # zie de docstring daar, want tot 9 okt 2026 stond dat fout en telde het elke ploeg dubbel.
     "Romanian SuperLiga (ROU)":   Tier2(9113, "Liga II (ROU)"),
 
+    # Toegevoegd 11 okt 2026 (Run B), op besluit van de gebruiker. Aanleiding: DRIE van de 42
+    # duels van de run van 11 oktober kwamen op `data_tier = NONE` uit omdat deze tabel geen
+    # ingang had voor de hoogste divisie van Griekenland, Hongarije en Oostenrijk — Iraklis,
+    # Kispest Honvéd en Austria Lustenau zijn alle drie promovendus. Zelfde situatie als
+    # Roemenië op 9 oktober en de Primera Federación op 5 oktober.
+    #
+    # De id's komen uit `https://www.fotmob.com/api/data/allLeagues` en zijn op ccode én naam
+    # gecontroleerd: onder GRE staat **Super League 2 (8815)** naast Super League 1 (135),
+    # Greece Cup (145) en Super Cup (8816); onder AUT staat **2. Liga (119)** naast Bundesliga
+    # (38), Austrian Cup (278) en Landesliga (285).
+    #
+    # Beide met een EIGEN METING in `MEASURED_TIER2_GAP` — zie daar, en lees vooral het Griekse
+    # verdedigingsgetal (2.712), het hoogste dat tot nu toe voor welk paar dan ook is gemeten.
+    "Greek Super League (GRE)":    Tier2(8815, "Super League 2 (GRE)"),
+    "Austrian Bundesliga (AUT)":   Tier2(119, "2. Liga (AUT)"),
+
+    # GEEN REGEL VOOR HONGARIJE, en dat is een DERDE soort bevinding — niet Griekenland en niet
+    # Kroatië (11 okt 2026). Kispest Honvéd – Újpest kwam die dag op `NONE` uit en dezelfde
+    # opdracht vroeg ook voor Hongarije een gemeten factor. Dat kan niet, maar om een andere
+    # reden dan bij Kroatië, en die reden is gevaarlijker.
+    #
+    # **De divisie BESTAAT wél bij Fotmob**: `api/data/allLeagues` geeft onder ccode HUN drie
+    # competities, waaronder `NB II` met id 9117. Het probleem zit in de HISTORIE:
+    # `fetch_league_stats(9117, <seizoen>)` geeft voor ELK seizoen exact dezelfde stand terug —
+    # 16 ploegen, `played = 9` — oftewel de **lopende, half gespeelde** competitie van 2026/2027,
+    # ongeacht wat je vraagt. Nagemeten over 2017/2018, 2019/2020, 2021/2022, 2023/2024 en
+    # 2024/2025: vijf verzoeken, één stand. Bij Liga II (9113), Super League 2 (8815) en
+    # 2. Liga (119) levert diezelfde controle vier à vijf verschillende standen op, met
+    # `played` 18 tot 36 — dus die hebben wél historie.
+    #
+    # DIT IS PRECIES DE STILLE FAALSTAND DIE DEZE REPO AL TWEE KEER HEEFT GEKOST, nu voor de
+    # derde keer in een nieuwe gedaante: `prompts/run-b.md` beschrijft hem voor de
+    # seizoensnotatie van kalenderjaarcompetities ("Fotmob geeft op een onbekende seizoensnotatie
+    # geen fout maar valt stil terug op het lopende seizoen") en `measure_gap` kreeg er op
+    # 9 oktober een rem voor bij nul waarnemingen. Hier komt hij terug op een id dat de
+    # seizoensparameter volledig negeert. `measure_gap` weigert deze meting sinds 11 okt 2026
+    # luidruchtig — zie `_tier2_heeft_historie` — want zonder die rem was de uitkomst een factor
+    # uit ÉÉN half gespeelde tabel, vergeleken met negen verschillende NB I-seizoenen. Dat zou
+    # geen foutmelding hebben gegeven maar een getal.
+    #
+    # Een Hongaarse promovendus blijft dus `NONE`. Wie dit ooit wil oplossen heeft een andere
+    # bron voor de NB II nodig, niet een regel in dit bestand — en hoeft niet opnieuw naar een
+    # `fotmob_id` te zoeken, want 9117 is het juiste id en het probleem zit niet in het id.
+
     # GEEN REGEL VOOR KROATIË, en dat is een bronbevinding en geen vergeten regel (9 okt 2026).
     # Het duel HNK Gorica – Rudeš kwam die dag op NONE uit omdat Rudeš promovendus is, en de
     # opdracht was om er — net als voor Roemenië — een gemeten factor voor te maken. Dat kan
@@ -246,6 +290,11 @@ MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, floa
     "Swiss Super League (SUI)":  (0.625, 1.434, 12, 1.028, 1.720, 0.445, 0.940),
     "Eliteserien (NOR)":         (0.600, 1.592, 22, 1.004, 1.926, 0.324, 0.967),
     "Allsvenskan (SWE)":         (0.551, 1.723, 22, 0.925, 1.583, 0.370, 0.918),
+    # Gemeten 11 okt 2026 (Run B), op besluit van de gebruiker — zie "Griekenland en Oostenrijk"
+    # hieronder. Hongarije hoort in dit rijtje en staat er NIET: de NB II heeft bij Fotmob geen
+    # historie (zie de toelichting bij `TIER2`).
+    "Greek Super League (GRE)":  (0.482, 2.712, 11, 1.282, 1.949, 0.259, 0.905),
+    "Austrian Bundesliga (AUT)": (0.615, 2.009, 10, 1.183, 1.508, 0.519, 0.814),
 }
 
 #: **De laatste vier gepoolde paren, gemeten 9 okt 2026 (Run B), op besluit van de gebruiker.**
@@ -352,6 +401,8 @@ MEASURED_GAP_DATE: dict[str, str] = {
     "Süper Lig (TUR)": "31 aug 2026", "Ekstraklasa (POL)": "31 aug 2026",
     "LaLiga2 (ESP)": "5 okt 2026",
     "Romanian SuperLiga (ROU)": "9 okt 2026",
+    "Greek Super League (GRE)": "11 okt 2026",
+    "Austrian Bundesliga (AUT)": "11 okt 2026",
     "Czech First League (CZE)": "9 okt 2026", "Swiss Super League (SUI)": "9 okt 2026",
     "Eliteserien (NOR)": "9 okt 2026", "Allsvenskan (SWE)": "9 okt 2026",
 }
@@ -994,6 +1045,48 @@ def _season_tables(league_id: int, season: str) -> list[tuple[str | None, dict]]
     return out
 
 
+def _tier2_heeft_historie(lower_id: int, years: range, calendar_year: bool) -> str | None:
+    """Geeft een reden terug als dit id de seizoensparameter negeert, anders None.
+
+    **Waarom deze rem er is (11 okt 2026, Run B).** `measure_gap` kreeg op 9 oktober al een rem
+    voor nul waarnemingen, omdat ze daarvoor stil `factor 1.000 / 1.000` teruggaf — het getal dat
+    zegt dat er geen divisiegat is. Op 11 oktober kwam dezelfde faalstand terug in een vorm die
+    die rem niet vangt: `fotmob.fetch_league_stats(9117, <seizoen>)` — de Hongaarse NB II —
+    levert voor ELK seizoen dezelfde stand, namelijk de lopende, half gespeelde competitie.
+
+    Zonder deze controle hangt het van `min_played` af wat er gebeurt. Vandaag redde die drempel
+    het toevallig (de lopende NB II stond op negen speeldagen, onder de tien), en dan krijg je de
+    rem van 9 oktober. Maar één speeldag later is `played = 10` en dan matcht de huidige tabel
+    tegen negen verschillende NB I-seizoenen, en komt er een factor uit die op precies één
+    halve tabel rust. Dat geeft geen foutmelding maar een getal, en een getal gaat de tabel in.
+
+    De controle is met opzet grof: twee ver uit elkaar liggende seizoenen opvragen en kijken of
+    het antwoord verschilt. Dat kost twee verzoeken (geen credits, Fotmob) en vangt het geval
+    waarin de bron de parameter volledig negeert. Ze vangt NIET een bron die per seizoen wel iets
+    anders geeft maar het verkeerde — daar is geen goedkope controle voor.
+    """
+    jaren = list(years)
+    if len(jaren) < 2:
+        return None
+    def seizoen(y: int) -> str:
+        return str(y) if calendar_year else f"{y}/{y + 1}"
+    standen = []
+    for y in (jaren[0], jaren[-1]):
+        try:
+            t = fotmob.fetch_league_stats(lower_id, seizoen(y))["teams"]
+        except Exception:
+            return None            # geen stand is iets anders dan een genegeerde parameter
+        standen.append((tuple(sorted(t)), tuple(sorted(
+            (naam, (v.get("gf"), v.get("ga"), v.get("played"))) for naam, v in t.items()))))
+    if standen[0] == standen[1]:
+        return (f"id {lower_id} geeft voor {seizoen(jaren[0])} en {seizoen(jaren[-1])} EXACT "
+                f"dezelfde stand terug, dus deze bron negeert de seizoensparameter en levert "
+                f"alleen de lopende competitie. Dan is er geen historie om een divisiegat uit te "
+                f"meten en zou de uitkomst op één (mogelijk half gespeelde) tabel rusten. Zie de "
+                f"toelichting bij `TIER2` over de Hongaarse NB II.")
+    return None
+
+
 def measure_gap(top_competition: str, top_id: int, years: range, *, direction: str = "up",
                 min_played: int = 10, calendar_year: bool = False) -> "fd.GapResult":
     """Meet het gat tussen een competitie en de divisie eronder, aan ploegen die verhuisden.
@@ -1030,6 +1123,10 @@ def measure_gap(top_competition: str, top_id: int, years: range, *, direction: s
     """
     import statistics
     t2 = TIER2[top_competition]
+    if direction == "up":
+        reden = _tier2_heeft_historie(t2.fotmob_id, years, calendar_year)
+        if reden:
+            raise PromotionError(f"{top_competition} / {t2.name}: {reden}")
     att, dfn, samples = [], [], []
     for y in years:
         if calendar_year:
