@@ -19,7 +19,7 @@ Poort 8 bindt (lichte vorm, ondergrens `sides.UNDERDOG_FLOOR` = 0,35; §1e) en w
 import json, sys
 from datetime import date, datetime, timezone, timedelta
 sys.path.insert(0, "tmp-run")
-from scripts import (fotmob, model, calibration, oddsapi, promotion, understat, sides,
+from scripts import (fotmob, model, calibration, oddsapi, promotion, understat, sides, unders,
                      recalibrate, interleague)
 from scripts.model import (TeamStats, LeagueContext, analyze_match, analyze_match_from_splits,
                            edge_pp, asian_prob, dnb_prob, totals_prob, robustness_check,
@@ -697,7 +697,15 @@ for c in cands:
     # `edge`-reeks in `shadow.py stats` is een mengsel van twee conventies. Dat is niet weg te
     # poetsen zonder de oude run-states te herlabelen, en dát is werk voor een dag met meer tijd
     # dan een run. Wat het oplevert is dat de reeksen vanaf vandaag zeggen wat hun naam belooft.
-    ORDER = ("odds", "tweede_methode", "robuustheid", "context", "underdog", "edge")
+    # `doelpunten_onder` is poort 9 (§1, 11 okt 2026) en staat VOOR `edge`: hij is een poort en
+    # geen afkapping, dus een Under die de verzwaarde lat niet haalt moet dat label krijgen en
+    # niet het vagere `edge`. Zie `scripts/unders.py`.
+    # `doelpunten_onder` is poort 9 (§1h, 11 okt 2026) en staat NA `edge`: de poort bindt alleen
+    # in de band tussen de gewone drempel (8,0) en de verzwaarde lat (10,0). Wie de gewone
+    # drempel al niet haalt, wordt door `edge` tegengehouden — anders loopt de reeks
+    # `doelpunten_onder` vol met kandidaten die nooit een bet konden worden (§1h).
+    ORDER = ("odds", "tweede_methode", "robuustheid", "context", "underdog",
+             "edge", "doelpunten_onder")
     thresh = THRESH[tier]
     near = NEAR[tier]
     evaluated = []
@@ -726,6 +734,15 @@ for c in cands:
                 "tweede_methode": (px > 1 / o) and (ps > 1 / o),
                 "context": bool(g7["passed"]), "underdog": g8.passed}
 
+        # Poort 9 (§1, 11 okt 2026) — een Under op FULL-data moet `UNDER_EXTRA` procentpunt
+        # bovenop de drempel van §0 halen, omdat die kant meetbaar scheef staat (§6g). De poort
+        # hangt aan de EDGE en wordt dus per schaal getoetst, net als `edge` zelf. `today=DAY`
+        # meegeven is om dezelfde reden geen formaliteit als bij poort 8: de poort bindt vanaf
+        # `unders.BINDS_FROM` (12 okt 2026) en een herberekening van 11 oktober of eerder moet
+        # hetzelfde antwoord geven als die dag zelf gaf.
+        g9 = unders.check(markt, oms, e_pp, tier, today=DAY)
+        g9_raw = unders.check(markt, oms, e_raw, tier, today=DAY)
+
         # `robustness_check` varieert alleen `analyze_match` en weet van de herijking niets af,
         # dus één aanroep bedient beide schalen — de uitkomst is dezelfde.
         rb = None
@@ -747,14 +764,19 @@ for c in cands:
         # Athletic Club - Alavés op het punt gepubliceerd te worden terwijl poort 7 dicht was.)
         poorten = dict(base)
         poorten["robuustheid"] = (rb.min_edge > 0) if rb is not None else None
+        # Poort 9 hoort in de kaart die `toplist._poorten_open` afloopt: die eist dat élke poort
+        # behalve `edge` True is voordat een selectie onder §5b mag meedingen. Zonder deze regel
+        # zou de rangorde een Under publiceren die de verzwaarde lat niet haalde.
+        poorten["doelpunten_onder"] = g9.passed
 
-        def _fail(edge_value, _base=base, _rb=rb):
+        def _fail(edge_value, _g9, _base=base, _rb=rb):
             g = dict(_base)
             g["edge"] = edge_value >= thresh
+            g["doelpunten_onder"] = _g9.passed
             g["robuustheid"] = (_rb.min_edge > 0) if _rb is not None else None
             return next((k for k in ORDER if g.get(k) is False), None)
 
-        fail, fail_raw = _fail(e_pp), _fail(e_raw)
+        fail, fail_raw = _fail(e_pp, g9), _fail(e_raw, g9_raw)
         # Een selectie die alleen op de herijking sneuvelt krijgt dat label in plaats van het
         # vagere `edge`: "genoeg edge, maar niet nadat mijn eigen optimisme eraf ging" is een
         # andere bevinding dan "sowieso te weinig edge", en §6d moet die twee kunnen scheiden.
@@ -768,6 +790,8 @@ for c in cands:
                           "edge_xg": round(e_xg, 2), "edge_split": round(e_sp, 2),
                           "edge_robust_min": (round(rb.min_edge, 2) if rb else None),
                           "failed_gate": fail, "failed_gate_ruw": fail_raw, "poorten": poorten,
+                          "poort9_lat": g9.required, "poort9_reden": g9.reason,
+                          "poort9_zou_blokkeren": g9.would_block,
                           "bet_ruw": fail_raw is None,
                           # "haalt beide modellen" — de voorwaarde waaronder gepubliceerd wordt.
                           # De herijking verlaagt een kans in dit bereik altijd, dus dit is

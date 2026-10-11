@@ -163,6 +163,13 @@ Een bet mag alleen gepubliceerd worden als **alle** voorwaarden gelden:
    `sides.check(side, odds_1x2, today=DAY).passed`. Deze poort heeft van 25 t/m 30 sep 2026
    stilgestaan en **bindt weer vanaf 1 okt 2026**; geef `today` mee met de rundag, zodat een
    herberekening van die zes dagen niet stil over een andere poort gaat dan er toen stond.
+9. **een Under op `FULL`-data haalt de verzwaarde lat** (§1h):
+   `unders.check(market, selection, edge_pp, tier, today=DAY).passed`. Een Over/Under op de
+   **Under**-kant met `data_tier = FULL` moet `unders.UNDER_EXTRA` = 2,0 procentpunt bovenop de
+   drempel van §0 halen, dus 10,0 in plaats van 8,0. Toegevoegd 11 okt 2026 omdat die kant
+   meetbaar scheef staat (§6g); hij **bindt vanaf 12 okt 2026** (`unders.BINDS_FROM`), geef
+   `today` mee met de rundag. Raakt `LIGHT` niet, raakt BTTS niet en raakt de Over-kant niet —
+   zie §1h voor waarom dat drie afzonderlijke besluiten zijn en geen vergeetachtigheid.
 
 ### Poort 7 — contextfactoren (toegevoegd 23 aug 2026, op aanwijzing van de gebruiker)
 
@@ -581,6 +588,79 @@ antwoord komt pas als deze reeks is afgewikkeld. Lees hem niet eerder dan bij ~3
 > `poort8_vervallen` heeft in het venster van zes dagen precies één geval opgeleverd (Run C,
 > 30 september, Seychelles – Sri Lanka).
 > De twee reeksen staan op 20 en 17 afgewikkelde gevallen; ze blijven twee populaties.
+
+### Poort 9 — de Under-kant vraagt meer marge (toegevoegd 11 okt 2026, op besluit van de gebruiker)
+
+```python
+from scripts import unders
+gate = unders.check(market, selection, edge_pp, tier, today=DAY)
+```
+
+**Aanleiding.** De gebruiker wees op AIK – Brommapojkarna (10 okt 2026, Under 3,5 @1,55, uitslag
+**5–6**) en op het feit dat er op 11 oktober opnieuw vier Unders op de lijst stonden. De meting
+staat in §6g: er staan twee fouten op elkaar — een **vormfout in het scoregrid** die P(Under) bij
+élk duel 1,6 tot 2,4 pp te hoog zet, en een **selectie-effect** dat daar bovenop komt (+0,68
+doelpunt per duel in de duels waar werkelijk een Under is gespeeld, z = +2,91). Resultaat over het
+logboek: **Under 76 picks, −16,5%** tegen **Over 62 picks, +10,6%**.
+
+De gebruiker kreeg vier mogelijkheden voorgelegd — (a) de vormfout repareren, (b) deze rem, (c)
+beide, (d) niets — en koos **c**: eerst de rem, daarna de reparatie. Deze poort is (b). De
+oorzaak is er dus nog.
+
+**Waar de +2,0 pp vandaan komt, en lees meteen de fout die daarbij eerst is gemaakt.** De eerste
+onderbouwing mat alle 76 Under-picks samen en vond "het teken draait om bij 10,0" (−12,8% →
++3,6%). Dat was de val van §6e in zijn zuiverste vorm: **een sterk ogend verband dat alleen
+bestaat doordat je de verkeerde populatie neemt.** Uitgesplitst staat Under op `FULL` op −28,2%
+(n=66) en Under op `LIGHT` op +60,6% (n=10), en die tien trokken de gepoolde reeks in de plus. Op
+`FULL` alleen draait **geen enkele lat** het teken om: 8,0 → −24,4%, 10,0 → −10,4%, 12,0 → −8,4%.
+Dat is dezelfde conclusie als §1g over het hele logboek.
+
+Wat de 10,0 wél doet, is de slechtste band weghalen. FULL-Unders per band, niet cumulatief:
+
+| edge | n | trefkans | rendement |
+|---|---|---|---|
+| 0–8 pp | 26 | 34,6% | −34,1% |
+| **8–10 pp** | **15** | **26,7%** | **−47,7%** |
+| 10–12 pp | 9 | 44,4% | −14,0% |
+| 12–14 pp | 9 | 55,6% | +4,9% |
+| 14+ pp | 7 | 42,9% | −25,4% |
+
+De band 8–10 pp is **de slechtste van de hele reeks** — slechter dan wat de drempel van §0 al
+wegvangt — met vier winnaars op vijftien, en AIK staat er met +9,28 pp precies in. De lat van 10,0
+haalt die vijftien weg en brengt de reeks van −24,4% naar −10,4%. Daarboven is de curve vlak
+(−8,7% bij 11, −8,4% bij 12) en vanaf 14 stort hij in op n = 7, 4 en 1 — de niet-monotone staart
+die §0 bij de 8,0 ook als ruis aanmerkt.
+
+**Behandel 2,0 dus als "de grens van de slechtste band", niet als een optimum en niet als een
+belofte van winst.** Hij is in-sample gekozen, hetzelfde bezwaar dat §0 bij de 8,0 maakt; wat het
+meer maakt dan één anekdote is dat er een onafhankelijk gemeten mechanisme onder ligt.
+
+**Drie dingen die deze poort NIET doet, en alle drie met opzet:**
+
+1. **`LIGHT` blijft op 16,0.** Tien afgewikkelde LIGHT-Unders, samen +60,6% — te weinig om iets te
+   zeggen (§6d eist ~30) en het wijst de andere kant op. Een gemeten rem uitbreiden naar een
+   populatie waar de meting hem niet steunt is wat §1c en §4 verbieden. Gevolg: Lillestrøm – Molde
+   van 11 oktober (+17,66 pp op LIGHT) zou **niet** zijn tegengehouden en LASK – Rapid Wien
+   (+9,12 pp op FULL) wél.
+2. **BTTS "nee" blijft erbuiten.** Zelfde richting, vermoedelijk dezelfde oorzaak, maar 15
+   afgewikkelde BTTS-picks in beide richtingen samen is geen meting. Dit is het eerste wat
+   opnieuw bekeken hoort te worden zodra die reeks ~30 haalt.
+3. **De Over-kant blijft erbuiten.** Die staat op +10,6% over 62 gevallen, en volgens §6g betáált
+   ze juist mee aan dezelfde vormfout.
+
+**`EDGE_THRESHOLD_FULL`/`_LIGHT` en `model.DATA_WEIGHT` blijven ongemoeid.** De 8,0/16,0 en hun
+2:1-verhouding staan er nog, dus `selection_score` weegt ongewijzigd (§0). Poort 9 is een extra
+eis bovenop die drempel voor één markt-en-kant, geen nieuwe drempel.
+
+**Hij werkt als poort 7 en 8:** alleen tegenhouden, `my_prob` niet bijstellen, nooit iets extra
+doorlaten. Elke tegengehouden kandidaat gaat met `failed_gate = "doelpunten_onder"` naar
+`data/shadow.jsonl` en wordt daar net zo afgerekend als elke andere (§6d). Lees die reeks niet
+onder ~30 afgewikkelde gevallen.
+
+**En hij is bedoeld om te verdwijnen.** Zodra de vormfout is gerepareerd (keuze **a**, nog te
+doen) hoort deze poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt — net als bij poort 8,
+waar de herijking van §1g de rem deels overbodig maakte. Een rem op een symptoom die blijft staan
+nadat de oorzaak weg is, kost alleen nog bets.
 
 ### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
 
@@ -2935,9 +3015,22 @@ ingrepen en ze horen bij de gebruiker omdat ze over risicobereidheid gaan, net a
 2. **De Under-kant een eigen lat geven**, zoals poort 8 dat voor de underdog-kant doet. Dat is
    een rem op een symptoom en geen reparatie, met hetzelfde bezwaar dat 1e bij poort 8 noemt.
 
-Tot een van die twee is besloten blijft dit een **meting** die elke run wordt afgedrukt (6b-5g)
-en in het runrapport komt. Noem bij een gepubliceerde Under in het dagrapport dat deze kant
-meetbaar scheef staat; dat is geen slag om de arm maar de stand van zaken.
+**BESLOTEN OP 11 OKTOBER 2026: de gebruiker koos (c) — eerst (2), daarna (1).** Poort 9 staat
+sinds die dag in §1h en `scripts/unders.py` en **bindt vanaf 12 oktober 2026**: een Under op
+`FULL`-data moet 10,0 pp halen in plaats van 8,0. `LIGHT` blijft op 16,0, BTTS en de Over-kant
+blijven ongemoeid — zie §1h voor waarom dat drie afzonderlijke besluiten zijn.
+
+**De reparatie van de vormfout (1) staat dus nog open, en dat is de kern.** Poort 9 is een rem op
+een symptoom; `score_grid` zet nog steeds te weinig massa op 4 en 5 doelpunten, en die fout werkt
+ook door in de markten die poort 9 niet raakt (BTTS, en in de andere richting de Over-kant, die er
+juist aan verdíent). Zodra ze gerepareerd is hoort poort 9 opnieuw gemeten en vermoedelijk
+verlaagd of geschrapt — net als bij poort 8, waar de herijking van §1g de rem deels overbodig
+maakte. Een rem op een symptoom die blijft staan nadat de oorzaak weg is, kost alleen nog bets.
+
+Deze meting blijft daarnaast elke run afgedrukt (6b-5g) en in het runrapport staan, want ze is nu
+óók de controle op poort 9 zelf: blijft de regel "Under gespeeld" positief afwijken, dan doet de
+rem zijn werk niet en is de oorzaak aan de beurt. Noem bij een gepubliceerde Under in het
+dagrapport dat deze kant meetbaar scheef staat; dat is geen slag om de arm maar de stand van zaken.
 
 ### 6c. Het leesbare dagrapport — verplicht, elke run
 

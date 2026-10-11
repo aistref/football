@@ -77,6 +77,7 @@ GATE_LABEL = {
     "robuustheid": "edge draait om in het (shrink, rho)-grid",
     "context": "context spreekt de bet tegen (poort 7)",
     "underdog": "underdog-kant onder de ondergrens (poort 8)",
+    "doelpunten_onder": "Under onder de verzwaarde lat van 10,0 pp (poort 9)",
 }
 
 
