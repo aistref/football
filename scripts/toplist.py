@@ -305,7 +305,17 @@ def main() -> None:
     print(_fmt(res["ruw"], f"ZONDER de herijking — wat de routine vóór 5 sep 2026 zou hebben gezien"))
     n_bet = sum(r["is_bet"] for r in res["herijkt"])
     n_raw = sum(r["zou_bet_zijn_ruw"] and not r["is_bet"] for r in res["ruw"])
-    print(f"Gepubliceerd: {n_bet} bet(s) — die haalden beide modellen. In deze top {res['n']} "
+    # "die haalden beide modellen" stond hier tot 12 okt 2026 onvoorwaardelijk, en dat was sinds
+    # §5b niet meer waar: de herijkte lijst publiceert op RANGORDE, dus een regel kan zijn lat op
+    # de ruwe schaal missen (of op geen van beide halen) en toch gepubliceerd zijn. Op 12 oktober
+    # gold dat voor twee van de drie regels, terwijl deze regel beweerde dat alle drie beide
+    # modellen haalden. §5a zegt met zoveel woorden: vertrouw de redenering niet meer, vertrouw de
+    # vlag — en dat geldt ook voor de samenvattingsregel eronder.
+    n_beide = sum(1 for r in res["herijkt"] if r["is_bet"] and r["zou_bet_zijn_ruw"])
+    beide = ("die haalden beide modellen" if n_beide == n_bet else
+             f"waarvan {n_beide} van de {n_bet} ook de lat op de ruwe schaal haalt — de rest staat "
+             f"in de lijst op rangorde (§5b) of haalt de lat alleen herijkt (§5a)")
+    print(f"Gepubliceerd: {n_bet} bet(s) — {beide}. In deze top {res['n']} "
           f"zou{'' if n_raw == 1 else 'den'} er {n_raw} zonder de herijking wél door zijn gegaan; "
           f"over de hele run {res['alleen_herijking']} selectie(s) die alleen op §1g sneuvelden.")
     print("De ruwe lijst is een meting, geen tip: elke selectie die alleen door de herijking is")

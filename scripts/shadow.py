@@ -116,9 +116,16 @@ def cmd_collect(args: argparse.Namespace) -> int:
             # detail. Zie §1e, punt 2: "Nooit dezelfde selectie twee keer".
             _p8r = [b for b in (match.get("poort8_ruw") or []) if isinstance(b, dict)]
             _p8g = [b for b in (match.get("poort8_geblokkeerd") or []) if isinstance(b, dict)]
+            # Sinds 12 okt 2026 geldt diezelfde vergelijking ook tegen `poort9_geblokkeerd`
+            # (§1h). Poort 9 bindt vanaf die dag, en een `near_miss` die zélf op poort 9
+            # sneuvelde beschrijft dezelfde selectie als dat blok — dus zonder deze regel krijgt
+            # één wedstrijd twee rijen in de categorie `doelpunten_onder` en telt haar opbrengst
+            # dubbel. Dezelfde fout als op 3 okt bij `underdog`, nu een categorie verderop.
+            _p9g = [b for b in (match.get("poort9_geblokkeerd") or []) if isinstance(b, dict)]
             _dubbel = (isinstance(nm0, dict)
                        and any(b.get("market") == nm0.get("market")
-                               and b.get("odds") == nm0.get("odds") for b in _p8r + _p8g))
+                               and b.get("odds") == nm0.get("odds")
+                               for b in _p8r + _p8g + _p9g))
             if isinstance(nm0, dict) and nm0.get("failed_gate") != "herijking" and not _dubbel:
                 kandidaten.append(("", nm0))
             for i, blk in enumerate(match.get("poort8_geblokkeerd") or []):
@@ -135,6 +142,16 @@ def cmd_collect(args: argparse.Namespace) -> int:
             for i, blk in enumerate(match.get("poort8_ruw") or []):
                 if isinstance(blk, dict):
                     kandidaten.append((f"-p8ruw-{i}", blk))
+            # `poort9_geblokkeerd` (sinds 12 okt 2026, §1h): een Over/Under op de Under-kant met
+            # `data_tier = FULL` die de gewone drempel van 8,0 pp haalde maar niet de verzwaarde
+            # lat van 10,0. Alle andere poorten stonden open, dus dit is precies de selectie die
+            # zonder poort 9 gepubliceerd zou zijn. Eigen categorie `doelpunten_onder`, net als
+            # bij poort 8 nooit opgeteld bij `edge`: `edge` betekent "te weinig voordeel" en deze
+            # rij betekent "genoeg voordeel voor de gewone lat, te weinig voor deze kant". Lees
+            # de reeks niet onder ~30 afgewikkelde gevallen (§6d).
+            for i, blk in enumerate(match.get("poort9_geblokkeerd") or []):
+                if isinstance(blk, dict):
+                    kandidaten.append((f"-p9-{i}", blk))
             # `zonder_herijking` (sinds 6 sep 2026, op verzoek van de gebruiker): selecties die
             # alle acht poorten halen op de RUWE kans maar niet op de herijkte van §1g. Dat is
             # exact het verschil dat de correctie maakt, en zonder deze rijen is dat verschil

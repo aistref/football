@@ -23,6 +23,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import re
 from zoneinfo import ZoneInfo
 from datetime import date, datetime
 from pathlib import Path
@@ -765,8 +766,16 @@ def auto_settled(all_picks: list[dict], day: date) -> list[dict]:
         if p.get("result") not in ("won", "lost", "void"):
             continue
         score = (p.get("settled_score") or "–").replace("-", "–")
-        out.append({"label": f'{p["home"]} – {p["away"]} · {p["market"]}: {p["selection"]} '
-                             f'({p["odds"]:.2f}) · Run {p["run"]}'.replace(".", ","),
+        # De komma hoort ALLEEN bij de koers. `.replace(".", ",")` over het hele label maakte
+        # van "1. FC Köln" een "1, FC Köln" en van "Union St.Gilloise" een "Union St,Gilloise"
+        # (gezien 12 okt 2026 op de pagina van Run A); een punt in een clubnaam is geen
+        # decimaalteken. Zelfde soort fout als de handicapregex die een jaartal in "US Catanzaro
+        # 1929" voor de lijn aanzag.
+        label = (f'{p["home"]} – {p["away"]} · {p["market"]}: {p["selection"]} '
+                 f'({p["odds"]:.2f}) · Run {p["run"]}')
+        # Alleen een punt TUSSEN TWEE CIJFERS is een decimaalteken: "3.5" -> "3,5" en
+        # "1.88" -> "1,88", maar "1. FC Köln" en "Union St.Gilloise" blijven heel.
+        out.append({"label": re.sub(r"(?<=\d)\.(?=\d)", ",", label),
                     "score": score, "result": p["result"]})
     return out
 
