@@ -780,7 +780,23 @@ def auto_settled(all_picks: list[dict], day: date) -> list[dict]:
     return out
 
 
-def render_settled(entries: list[dict], stats: dict) -> str:
+def render_settled(entries: list[dict], stats: dict, note: str = "") -> str:
+    """De afrekening van gisteren, met de reflectie eronder.
+
+    `note` is `prose["settled_note"]` (§6c, 12 okt 2026): twee tot vier zinnen over hoe de dag
+    afliep — lagen de uitslagen in de buurt van wat er was voorgerekend, wat deden de poorten,
+    zat er een patroon in. De tabel zegt gewonnen/verloren/void en de uitslag; de vraag die de
+    gebruiker op 12 oktober stelde is of de wedstrijd líep zoals voorgerekend, en dat staat niet
+    in een tabel.
+
+    **Deze parameter sluit de derde stille prosesleutel.** `settled_note` stond op 26 september
+    netjes in het prosebestand en werd door deze module NOOIT gelezen; de tekst kwam die dag
+    alleen op de pagina omdat dezelfde alinea's ook in `verdict` stonden. De docstring van
+    `render_todo` noemt dat als de les waarom een ontbrekende `action` luidruchtig wordt gemeld —
+    en liet de sleutel zelf ondertussen stil weg. Nu wordt hij gerenderd, en een ontbrekende
+    `note` op een dag MET afgewikkelde bets wordt zichtbaar gemeld in plaats van stil
+    overgeslagen, net als bij `action`.
+    """
     # Een push (inzet terug) is geen verlies. Tot 31 aug 2026 rendeerde elke uitkomst die niet
     # 'won' was als "verloren", en dat maakte van een teruggegeven inzet stilzwijgend een nederlaag.
     chip = {"won": ("ok", "gewonnen"), "lost": ("gap", "verloren"), "void": ("", "inzet terug")}
@@ -820,6 +836,16 @@ def render_settled(entries: list[dict], stats: dict) -> str:
                        f'van de bookmaker beter ({market:.3f} tegen mijn {own:.3f} — lager is beter). '
                        f'Bij {stats["settled"]} wedstrijden is dat ruis, maar het is de goede meter, '
                        f'en hij staat nu in het rood.</p></div>')
+    note = (note or "").strip()
+    if note:
+        reflectie = f'<div class="callout"><p class="prose">{inline(note)}</p></div>'
+    elif entries:
+        reflectie = ('<span class="act act-missing"><strong>Reflectie ontbreekt</strong> — er zijn '
+                     'bets afgewikkeld, dus hier hoort <code>settled_note</code> in het '
+                     'prosebestand te staan: liepen die wedstrijden zoals voorgerekend, wat deden '
+                     'de poorten, zat er een patroon in (§3 Stage 0).</span>')
+    else:
+        reflectie = ""
     return f'''
 <section>
   <div class="sectionhead">
@@ -827,6 +853,7 @@ def render_settled(entries: list[dict], stats: dict) -> str:
     <h2>Hoe het tot nu toe gaat</h2>
   </div>{table}
   <div class="stack g16 measure">
+    {reflectie}
     {verdict}
   </div>
 </section>'''
@@ -915,7 +942,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
   </div>
   {trunc_line}
 </section>
-{render_settled(prose.get("settled") or auto_settled(all_picks, day), stats)}
+{render_settled(prose.get("settled") or auto_settled(all_picks, day), stats, prose.get("settled_note") or "")}
 <section>
   <div class="sectionhead">
     <span class="eyebrow">De termen</span>

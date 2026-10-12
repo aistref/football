@@ -662,6 +662,40 @@ doen) hoort deze poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt —
 waar de herijking van §1g de rem deels overbodig maakte. Een rem op een symptoom die blijft staan
 nadat de oorzaak weg is, kost alleen nog bets.
 
+#### `LIGHT` blijft erbuiten — gevraagd en beantwoord op 12 oktober 2026
+
+**De vraag is gesteld en het antwoord is nee: eerst meten wat deze rem doet.** Stel hem dus niet
+opnieuw.
+
+De aanleiding was de eerste bindende dag van de poort. Run A publiceerde op 12 oktober
+Atalanta – Venezia, Under 3.5 @1.6958 op `LIGHT` (+11,24 pp, op rangorde onder de LIGHT-lat van
+16,0) — precies de markt-en-kant waar §6g de schade meet, en door geen enkele rem getoetst, omdat
+punt 1 hierboven `LIGHT` met opzet buiten de poort houdt. Diezelfde dag hield de poort nul
+selecties tegen: alle twintig FULL-Unders stonden op een negatieve edge en de vier Unders boven
+8 pp waren allemaal die ene LIGHT-wedstrijd. De vraag of de poort dan ook op `LIGHT` moest gelden
+is aan de gebruiker voorgelegd. Zijn antwoord:
+
+> *"Twee hoeft nog niet op de zwakke data; eerst kijken wat deze rem doet."*
+
+**Wat daarmee vastligt:**
+
+1. **De poort blijft op `FULL` alleen,** met `unders.TIERS = ("FULL",)` en `UNDER_EXTRA` = 2,0
+   procentpunt, onveranderd. Een LIGHT-Under die de rangorde van §5b haalt wordt gepubliceerd,
+   ook als hij zijn eigen lat van 16,0 niet haalt — dat is geen omissie maar deze keuze.
+2. **De reeks `doelpunten_onder` is de meting die dit moet beantwoorden,** en die begon op
+   12 oktober op nul. Lees hem niet onder ~30 afgewikkelde gevallen (§6d), en reken op ongeveer
+   één rij per paar dagen: de poort bindt alleen in de band 8–10 pp op `FULL`. Dat is dus eerder
+   een vraag voor december dan voor deze week.
+3. **Noem de stand van die reeks gewoon in het runrapport** onder "Stand van het logboek", zoals
+   elke andere reeks. Leg de vraag pas opnieuw voor als er iets wezenlijk verandert — de reeks
+   draait van teken bij voldoende gevallen, of de vormfout van §6g is gerepareerd en de rem is
+   daarmee overbodig geworden. Dezelfde terughoudendheid als §1e voorschrijft voor poort 8: een
+   aanleiding om de vraag te stellen is geen automatisme dat een run zelf mag uitvoeren.
+4. **Dit zegt niets over de vormfout zelf.** Keuze **a** van 11 oktober staat nog open en blijft
+   het echte werk; `LIGHT` buiten de poort houden is een besluit over de rem, niet over de
+   oorzaak. Zolang die fout er is, staat `P(Under 2.5)` bij élk duel ongeveer 2 procentpunt te
+   hoog, op élk datatier.
+
 ### 1f. De twee methodes wegen 80/20, niet 50/50 (gewijzigd 5 sep 2026)
 
 ```python
@@ -1341,6 +1375,42 @@ statusregel van §0 voor is gemaakt.
 Reken 1X2, Double Chance, Draw No Bet, O/U en BTTS af op de stand **na 90 minuten inclusief
 blessuretijd** (§6d), ook al meldt de bron een latere eindstand. Blessuretijd telt dus gewoon mee —
 een doelpunt in de 90+4' is een doelpunt; wat niet meetelt is verlenging en strafschoppen. Zonder deze stap is de kwaliteit van de routine niet meetbaar.
+
+#### Kijk ook naar de uitslagen, niet alleen naar won/lost (toegevoegd 12 okt 2026, op verzoek van de gebruiker)
+
+**Afwikkelen is tot deze datum een boekhoudkundige stap geweest: koers, uitslag, vinkje, door.**
+De uitslagen van gisteren zijn het enige harde signaal dat deze routine krijgt, en ze werden
+alleen als rij in een tabel gebruikt. De gebruiker:
+
+> *"En voortaan: iets meer reflectie bij uitslagen die je doorrekend van de vorige dag."*
+
+Loop daarom bij elke afgewikkelde pick — en bij de schaduwrijen als groep — deze vier vragen na,
+en schrijf het antwoord op waar het thuishoort: **feitelijk in het runrapport onder "Afwikkeling",
+in gewone taal in het dagrapport van §6c.**
+
+1. **Klopte de redenering, of klopte alleen de uitkomst?** Een Under die wint op 0–0 terwijl het
+   model 2,9 doelpunten verwachtte, is gewonnen **en** verkeerd ingeschat. Een 1X2 die verliest
+   terwijl de ploeg driemaal de lat raakte, is verloren en níet verkeerd ingeschat. Noem dus naast
+   het resultaat de werkelijke uitslag tegen de eigen `lambdas`: zat de wedstrijd in de buurt van
+   wat er was voorspeld, of niet? Dit is de kern van de vraag, want de routine selecteert op haar
+   eigen schatting en niet op haar eigen winst.
+2. **Deed de poort die hem tegenhield zijn werk, in dít geval?** De schaduwrijen van gisteren
+   zeggen dat per rij, en dat is vaak leerzamer dan de gespeelde bets: een poort die een winnaar
+   tegenhield op een wedstrijd die precies liep zoals voorspeld, is een andere waarneming dan een
+   poort die een winnaar tegenhield op een wedstrijd die volledig uit de hand liep.
+3. **Zat er een patroon in de dag dat geen toeval kan zijn?** Vijf van de vijf Unders die wonnen,
+   of alle verliezers in dezelfde competitie, of drie keer een uitslag met vier doelpunten meer
+   dan voorspeld. Noem het, met het aantal erbij.
+4. **En dan de rem erop: wat betekent dit NIET?** Eén dag is geen reeks. §6d eist ~30 gevallen
+   voordat een reeks gelezen mag worden en dat geldt hier onverkort — deze reflectie is er om te
+   zien wát er gebeurde, niet om een drempel, een gewicht of een poort te verzetten. Schrijf dus
+   bij elk patroon van vraag 3 hoe groot het is en waar het in de lopende reeks past. Een run die
+   op grond van gisteren een parameter aanraakt, maakt precies de fout die §6d en §1g beschrijven.
+
+**Wat dit niet is.** Geen aparte sectie met een eigen kopje per pick, en geen verhandeling bij een
+dag waarop er niets te zeggen valt — "zes van de tien gewonnen, alle zes op wedstrijden die binnen
+een halve goal van de voorspelling bleven" is een volledige reflectie. Het verschil met de oude
+situatie is dat de uitslag zelf wordt gelezen in plaats van alleen geteld.
 
 ### Stage 1 — Fixtures van vandaag
 Bepaal zelf de actuele datum. Haal fixtures op; probeer meerdere bronnen (zie
@@ -3133,6 +3203,15 @@ prose invulde; Run B en C vonden niets meer open en toonden niets. `report.py` v
 zelf uit `data/picks.jsonl` (picks van vóór de rundag, afgewikkeld op de rundag) wanneer `settled`
 leeg is. Laat het veld dus leeg of vul het met nettere labels, maar schrijf nooit "geen pick open"
 als reden om de afrekening weg te laten.
+
+**En zet er sinds 12 okt 2026 de reflectie bij, niet alleen de tabel** (§3 Stage 0, "Kijk ook naar
+de uitslagen"). De tabel die `report.py` rendert zegt gewonnen/verloren/void en de uitslag; wat ze
+niet zegt is of de wedstrijd liep zoals was voorgerekend. Schrijf dat in gewone taal in de prose —
+`settled_note`, dat `report.py` sinds 27 september onder de tabel rendert — in twee tot vier
+zinnen: hoe de dag afliep, of de uitslagen in de buurt van de eigen verwachting lagen, wat de
+poorten deden, en of er een patroon in zat. Noem daarbij hoe groot dat patroon is, zodat het niet
+leest als een conclusie: één dag is geen reeks (§6d). Geen jargon — geen `lambda`, geen
+procentpunten zonder uitleg; schrijf "er vielen vier doelpunten waar ik er tweeënhalf verwachtte".
 
 Schrijf de prose voor iemand die de repo niet kent en het jargon niet spreekt. Geen `edge_pp`,
 geen "de-viggen", geen ρ of shrink: die staan in de woordenlijst onderaan de pagina en horen niet
