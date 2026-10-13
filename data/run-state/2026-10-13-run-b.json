@@ -1,7 +1,7 @@
 {
  "run": "B",
  "date": "2026-10-13",
- "resumed_count": 0,
+ "resumed_count": 1,
  "competitions": {
   "Czech First League (CZE)": {
    "status": "GEEN WEDSTRIJD",
@@ -120,11 +120,13 @@
    }
   }
  },
- "completed": false,
+ "completed": true,
  "duur": {
-  "gestart": "2026-10-13T03:08:58.861918+00:00",
-  "afgerond": null,
-  "minuten": null
+  "gestart": "2026-10-13T03:04:41+00:00",
+  "geeindigd": "2026-10-13T03:18:31.040418+00:00",
+  "afgerond": "2026-10-13T03:18:31.040454+00:00",
+  "minuten": 13.8,
+  "toelichting": "`gestart` is hier met de hand gezet op het tijdstip van de eerste opdracht van de run (03:04:41Z = 05:04:41 NL, de `git fetch` van Stage -2). Het veld dat `progress.start()` bij het aanmaken zette, is tijdens het afsluiten per ongeluk overschreven met None omdat het afsluitscript de verkeerde sleutel uitlas (`started_at` in plaats van `duur.gestart`). De looptijd hieronder is dus correct maar niet automatisch gemeten."
  },
  "parameters": {
   "MAX_DEEP_ANALYSES": 40,
@@ -171,5 +173,10 @@
   "afgekapt": 0,
   "toelichting": "MAX_DEEP_ANALYSES = 40 (di) heeft niet gebonden: er waren nul kandidaten. Geen stille truncatie."
  },
- "dagrapport": "https://claude.ai/artifact/J87EGVJWybLTCZ3i9Sstzi"
+ "dagrapport": "https://claude.ai/artifact/J87EGVJWybLTCZ3i9Sstzi",
+ "hervatting": {
+  "resumed_count": 1,
+  "echte_onderbreking": false,
+  "toelichting": "`resumed_count` staat op 1, maar dit is **geen** hervatting na een onderbreking: de sessie liep ononderbroken door. De teller loopt op omdat `load_or_start` deze run twee keer in twee losse processen is aangeroepen — eenmaal door het schrijfscript van `data/run-state/` en eenmaal door het afsluitscript. Vermeld dit niet als onderbreking in het runrapport."
+ }
 }
