@@ -1,0 +1,119 @@
+"""Run B, 13 okt 2026 — data/run-state/ schrijven. Nul wedstrijden in het inzetvenster."""
+import json
+from datetime import date
+from scripts.progress import load_or_start, mark, save
+from scripts import ranking
+
+DAY = date(2026, 10, 13)
+st3 = json.load(open("tmp-run/rb_oct13_stage3.json"))
+
+TOEL = (
+    "Geen duel in het inzetvenster [08:00 NL 13 okt, 08:00 NL 14 okt) = [06:00Z 13 okt, 06:00Z "
+    "14 okt). Van de zeventien competities op de runlijst staan er drie met een wedstrijd op de "
+    "Fotmob-daglijsten van 13 of 14 okt; alle drie vallen buiten dit venster (zie "
+    "`aangrenzend_venster`). De overige veertien staan op geen van beide daglijsten: "
+    "interlandvenster."
+)
+
+RAND = {
+    "Série A (BRA)": {
+        "match": "RB Bragantino – Cruzeiro",
+        "kickoff_utc": "2026-10-13T00:00:00Z",
+        "kickoff_nl": "2026-10-13 02:00",
+        "source_day": "2026-10-13",
+        "hoort_bij": "de run van 12 oktober",
+        "toelichting":
+            "Aftrap 02:00 NL op 13 okt valt in de band [00:00, 08:00) NL van de rundag en dus in "
+            "het venster van 12 oktober. Run B van 12 okt heeft hem doorgerekend en als "
+            "`near_miss` vastgelegd (Under 2.5 @2.1956, +4,26 pp, viel af op edge); hij stond daar "
+            "ook als eerstvolgende onder de dagranglijst (Under 2.75 @1,93, score 3,849). Deze run "
+            "mag hem dus niet nóg eens tellen — dat zou dezelfde wedstrijd in twee runrapporten "
+            "zetten, precies wat `include_carry_over` eenmalig moest voorkomen.",
+    },
+    "Czech First League (CZE)": {
+        "match": "Bohemians 1905 – Mladá Boleslav",
+        "kickoff_utc": "2026-10-14T16:00:00Z",
+        "kickoff_nl": "2026-10-14 18:00",
+        "source_day": "2026-10-14",
+        "hoort_bij": "de run van 14 oktober",
+        "toelichting":
+            "Aftrap 18:00 NL op 14 okt ligt ná 08:00 NL op 14 okt en valt dus in het venster van "
+            "morgen. Het duel staat op de daglijst van 14 okt die deze run toch al ophaalt "
+            "(`days_needed` geeft DAY en DAY+1); dat het hier zichtbaar is, is geen gemiste kans.",
+    },
+    "MLS (USA)": {
+        "matches": [
+            "CF Montréal – Atlanta United", "Columbus Crew – Charlotte FC",
+            "DC United – Red Bull New York", "FC Cincinnati – New England Revolution",
+            "Inter Miami CF – New York City FC", "Toronto FC – Orlando City",
+        ],
+        "kickoff_utc": "2026-10-14T23:30:00Z",
+        "kickoff_nl": "2026-10-15 01:30",
+        "source_day": "2026-10-14",
+        "hoort_bij": "de run van 14 oktober",
+        "toelichting":
+            "Zes duels, alle zes om 23:30Z op 14 okt, oftewel 01:30 NL op 15 okt. Dat ligt in de "
+            "band [00:00, 08:00) NL van 15 okt en hoort daarmee bij het venster van 14 oktober — "
+            "niet bij vandaag en niet bij 15 oktober. Dit is exact het geval waarvoor "
+            "`runwindow.py` op 24 sep 2026 is gebouwd (`prompts/run-b.md`, 'Let op de aftraptijden "
+            "van deze twee'): onder de oude UTC-dagregel waren deze zes aan de run van 14 oktober "
+            "toegewezen op grond van de UTC-datum — hier toevallig dezelfde uitkomst — maar een "
+            "MLS-duel om 20:00 lokaal op een avond vóór de rundag viel er structureel verkeerd. "
+            "Een volle speelronde van zes duels is precies de omvang waarop die fout de hele ronde "
+            "zou kosten.",
+    },
+}
+
+comps = {}
+for name, v in st3["fixtures"].items():
+    rec = {"status": "GEEN WEDSTRIJD", "matches": [], "toelichting": TOEL}
+    if name in RAND:
+        rec["aangrenzend_venster"] = RAND[name]
+        rec["toelichting"] = (
+            TOEL + " Deze competitie heeft wél een duel op een daglijst, maar in een aangrenzend "
+            "venster — zie `aangrenzend_venster`."
+        )
+    comps[name] = rec
+
+state = load_or_start("b", DAY)
+for name, rec in comps.items():
+    mark(state, name, rec)
+
+state["parameters"] = {
+    "MAX_DEEP_ANALYSES": ranking.max_deep_analyses(DAY),
+    "MAX_SHORTLIST": 3,
+    "MAX_LIGHT_IN_SHORTLIST": 2,
+    "EDGE_THRESHOLD_FULL": 8.0,
+    "EDGE_THRESHOLD_LIGHT": 16.0,
+    "MIN_ODDS": 1.30, "MAX_ODDS": 6.00,
+    "XG_WEIGHT": 0.80, "CREDIBILITY_K": 8, "SHRINK": 1.00,
+    "UNDERDOG_FLOOR": 0.35,
+    "poort8": "bindt (vanaf 1 okt 2026)",
+    "poort9": "bindt (vanaf 12 okt 2026) — Under op FULL: 10,0 pp",
+    "toelichting": "Geen enkele parameter heeft deze run gebonden: er was geen wedstrijd om door "
+                   "te rekenen. Ze staan hier zodat een hermeting van 13 oktober dezelfde "
+                   "instellingen gebruikt als deze run.",
+}
+state["venster"] = {
+    "van_utc": "2026-10-13T06:00:00Z", "tot_utc": "2026-10-14T06:00:00Z",
+    "van_nl": "2026-10-13 08:00", "tot_nl": "2026-10-14 08:00",
+    "daglijsten": ["2026-10-13", "2026-10-14"],
+    "include_carry_over": False,
+}
+state["credits"] = {
+    "cap": 0, "gebruikt": 0,
+    "markten_gekocht": {"h2h": 0, "spreads": 0, "totals": 0, "btts": 0},
+    "toelichting": "Geen inkoop: nul wedstrijden in het inzetvenster, dus geen competitie om "
+                   "prijzen voor op te vragen. Quota bij The Odds API: 19487 over van 20000, "
+                   "513 gebruikt deze maand (api_check.py).",
+    "marktbalans": "niet van toepassing — er is geen markt gekocht omdat er niets te analyseren "
+                   "was. Dit is geen te krap plafond: `suggest_cap` is niet eens aangeroepen.",
+}
+state["afkapping"] = {
+    "kandidaten": 0, "doorgerekend": 0, "afgekapt": 0,
+    "toelichting": "MAX_DEEP_ANALYSES = %d (di) heeft niet gebonden: er waren nul kandidaten. "
+                   "Geen stille truncatie." % ranking.max_deep_analyses(DAY),
+}
+save(state)
+print("run-state geschreven:", f"data/run-state/{DAY}-run-b.json")
+print("competities:", len(state["competitions"]))
