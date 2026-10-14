@@ -3122,6 +3122,49 @@ levert elke run **ook** een HTML-pagina op:
    stand van het logboek komen automatisch uit `picks.jsonl` en `data/run-state/` — niet
    overtypen, want dan gaan de twee rapporten uiteenlopen.
 3. Publiceer het bestand als Artifact en **zet die link in de notificatie** (§7).
+4. **Draai `report.py` met `--markdown` en commit het `.dagrapport.md` dat eruit komt.** Dat is een
+   tweede route naar dezelfde pagina, en sinds 14 okt 2026 verplicht — zie
+   "De Artifact is één route en dat bleek er één te weinig" hieronder. Zet die link **naast** de
+   Artifact-link in de notificatie.
+
+#### De Artifact is één route en dat bleek er één te weinig (toegevoegd 14 okt 2026)
+
+**Het dagrapport van Run A van 14 oktober was voor de gebruiker niet te openen, en opnieuw
+publiceren hielp niet.** De pagina wordt niet op claude.ai zelf gerenderd maar in een sandbox op
+een eigen subdomein per pagina onder `claudeusercontent.com`, en dat subdomein was in zijn browser
+niet te resolven: `DNS_PROBE_FINISHED_NXDOMAIN`. Wat de diagnose lastig maakte en uiteindelijk
+beslist heeft:
+
+- Het was **niet** de DNS van de gebruiker. Het dagrapport van **Run B van diezelfde dag** opende
+  wel, op hetzelfde netwerk, hetzelfde account en hetzelfde bovendomein.
+- Het was **niet** de pagina. De HTML is teruggelezen en was compleet en structureel gesloten
+  (63.996 bytes, 89/89 `div`'s, 11/11 `section`'s, 6/6 tabellen), en van dezelfde vorm en omvang
+  als het rapport van 13 oktober, dat wél opende.
+- Het was **niet** op te lossen met opnieuw publiceren. De sandbox-host volgt uit het interne
+  artifact-id en is dus vast per pagina. Een tweede, verse Artifact met een nieuw id
+  (`754f4252-…` naast de eerste `c5a89513-…`) gaf exact dezelfde fout.
+- De werkende pagina van Run B had intern id `368cdaeb-…` — **dezelfde vorm** van hostnaam. Er is
+  dus geen verschil in de naam te vinden dat verklaart waarom de een resolved en de ander niet.
+
+**De oorzaak is van binnen de repo niet vast te stellen en dat is precies waarom dit een tweede
+route moet hebben.** Het dagrapport is het enige dat de gebruiker werkelijk leest (§6c) en de
+notificatie is de enige manier waarop een run hem bereikt (§7). Een route die alleen werkt zolang
+een host buiten onze invloed resolved, is één route te weinig — en het faalt stil: `report.py`
+slaagt, de Artifact wordt netjes gepubliceerd, een `read` van die Artifact slaagt óók, en tóch
+komt er geen pagina. Dezelfde stille faalstand als `calibration.py settle` (§6b-5c) en het
+Serie B-id: een stap die kan wegvallen zonder dat iets klaagt.
+
+**Wat `--markdown` wel en niet is.** Het is géén tweede renderer: `report.to_markdown()` zet de
+**al gerenderde HTML** om, dus er is één bron van inhoud en het verschil tussen de twee bestanden
+kan nooit meer zijn dan opmaak. Dat is met opzet, want §6c verbiedt het dagrapport over te typen
+en een tweede renderer die zijn eigen Markdown uit `picks.jsonl` en `data/run-state/` bouwt is
+precies dat: twee paden die los van elkaar bijgewerkt moeten worden en dus uiteen gaan lopen.
+GitHub rendert het resultaat op `github.com` zelf, dus die route raakt `claudeusercontent.com`
+niet aan.
+
+**Blijf de Artifact publiceren.** De HTML-pagina is het origineel en leest beter; de Markdown is de
+terugval. Werkt de Artifact, dan is er niets aan de hand en kost dit één extra commando.
+
 
 #### Elk actiepunt zegt wat de gebruiker moet doen (toegevoegd 27 sep 2026, op verzoek van de gebruiker)
 

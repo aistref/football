@@ -1116,11 +1116,221 @@ a{color:var(--accent-ink)}
 """
 
 
+# ---------------------------------------------------------------------------
+# Markdown-uitvoer (toegevoegd 14 okt 2026, na een onbereikbare Artifact)
+# ---------------------------------------------------------------------------
+#
+# WAAROM DIT BESTAAT. Het dagrapport van §6c wordt als Artifact gepubliceerd, en die pagina wordt
+# niet op claude.ai zelf gerenderd maar in een sandbox op een eigen subdomein per pagina onder
+# `claudeusercontent.com`. Op 14 oktober 2026 bleek dat subdomein voor Run A tweemaal niet te
+# resolven in de browser van de gebruiker (`DNS_PROBE_FINISHED_NXDOMAIN`), terwijl het dagrapport
+# van Run B van diezelfde dag — zelfde account, zelfde bovendomein, zelfde vorm van hostnaam — wél
+# opende. Een tweede, verse Artifact met een nieuw intern id gaf dezelfde fout, dus "opnieuw
+# publiceren" is geen oplossing en de oorzaak is van buiten de repo niet vast te stellen.
+#
+# Het dagrapport is het enige dat de gebruiker werkelijk leest (§6c), dus een route die alleen
+# werkt zolang die sandbox-host resolved is één route te weinig. Deze functie zet de ál gerenderde
+# HTML om naar Markdown, zodat GitHub hem op github.com kan weergeven — geen sandbox, geen extra
+# host, en bereikbaar met niets meer dan een gewone browser.
+#
+# DE OMZETTING GAAT OPZETTELIJK VIA DE HTML EN NIET VIA DE DATA. §6c verbiedt het dagrapport over
+# te typen, omdat twee rapporten van dezelfde run dan uiteen gaan lopen. Een tweede renderer die
+# uit `picks.jsonl` en `data/run-state/` zijn eigen Markdown bouwt is precies dat: twee paden die
+# los van elkaar bijgewerkt moeten worden. Door `render()` te nemen en die uitvoer te vertalen is
+# er één bron van inhoud en kan het verschil tussen de twee bestanden nooit meer zijn dan opmaak.
+# Het HTML is bovendien ons eigen, gegenereerde HTML met een vaste vorm, dus een kleine, op die
+# vorm toegesneden omzetter is hier betrouwbaar waar een algemene converter dat niet zou zijn.
+
+import html as _html
+from html.parser import HTMLParser as _HTMLParser
+
+
+class _MarkdownWriter(_HTMLParser):
+    """Zet de HTML van `render()` om naar Markdown. Alleen de tags die daarin voorkomen."""
+
+    SKIP = {"style", "script", "title"}
+    HEADING = {"h1": "# ", "h2": "## ", "h3": "### ", "h4": "#### "}
+    #: spans die in de HTML elk op hun eigen regel of in hun eigen vakje staan (een cijfer met
+    #: zijn label, de kop van een bet, een regel uit de topselectie). Zonder scheiding plakken ze
+    #: in Markdown aan elkaar: "3bets gepubliceerd" in plaats van "3 bets gepubliceerd".
+    BLOCK_SPANS = {"v", "l", "odds", "book", "bet-meta", "bet-match", "bet-pick",
+                   "sl-match", "sl-pick", "date", "risk", "t", "d", "when", "tick"}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.out: list[str] = []
+        self.buf: list[str] = []
+        self.skip_depth = 0
+        self.classes: list[set[str]] = []
+        # tabelstaat: rijen verzamelen tot </table>, dan in één keer uitschrijven
+        self.table: list[list[str]] | None = None
+        self.row: list[str] | None = None
+        self.in_header_row = False
+        self.header_len = 0
+        # definitielijsten (de contextblokken onder elke bet)
+        self.dl_depth = 0
+        self.dt_text = ""
+        self.in_dt = False
+
+    # -- hulpjes ----------------------------------------------------------
+    def _flush(self, prefix: str = "") -> None:
+        text = "".join(self.buf).strip()
+        self.buf = []
+        if not text:
+            return
+        # losse witruimte binnen een alinea platslaan, maar expliciete regeleindes behouden
+        parts = [" ".join(seg.split()) for seg in text.split("\n")]
+        text = "\n".join(p for p in parts)
+        self.out.append(prefix + text)
+
+    def _cell(self, text: str) -> str:
+        # een pipe in een cel breekt de Markdown-tabel; een regeleinde ook
+        return " ".join(text.split()).replace("|", "\\|")
+
+    # -- tags -------------------------------------------------------------
+    def handle_starttag(self, tag, attrs):
+        if self.skip_depth:
+            self.skip_depth += 1
+            return
+        if tag in self.SKIP:
+            self.skip_depth = 1
+            return
+        attr = dict(attrs)
+        cls = set((attr.get("class") or "").split())
+        self.classes.append(cls)
+
+        if tag == "br":
+            self.buf.append("\n")
+        elif tag in ("b", "strong"):
+            self.buf.append("**")
+        elif tag in ("i", "em"):
+            self.buf.append("*")
+        elif tag == "table":
+            self._flush()
+            self.table = []
+        elif tag == "tr":
+            self.row = []
+        elif tag in ("th", "td"):
+            self.buf = []
+            self.in_header_row = self.in_header_row or tag == "th"
+        elif tag == "dl":
+            self._flush()
+            self.dl_depth += 1
+        elif tag == "dt":
+            self.buf = []
+            self.in_dt = True
+        elif tag == "dd":
+            self.buf = []
+        elif tag in self.HEADING or tag in ("p", "section", "header", "footer", "div", "span"):
+            if tag in self.HEADING or tag in ("p", "section", "header", "footer"):
+                self._flush()
+
+    def handle_endtag(self, tag):
+        if self.skip_depth:
+            self.skip_depth -= 1
+            return
+        cls = self.classes.pop() if self.classes else set()
+
+        if tag in ("b", "strong"):
+            self.buf.append("**")
+        elif tag in ("i", "em"):
+            self.buf.append("*")
+        elif tag in ("th", "td"):
+            if self.row is not None:
+                self.row.append(self._cell("".join(self.buf)))
+            self.buf = []
+        elif tag == "tr":
+            if self.table is not None and self.row:
+                self.table.append(self.row)
+                if self.in_header_row and self.header_len == 0:
+                    self.header_len = len(self.row)
+            self.row = None
+            self.in_header_row = False
+        elif tag == "table":
+            self._write_table()
+        elif tag == "dt":
+            self.dt_text = self._cell("".join(self.buf))
+            self.buf = []
+            self.in_dt = False
+        elif tag == "dd":
+            body = " ".join("".join(self.buf).split())
+            self.buf = []
+            if self.dt_text or body:
+                self.out.append(f"- **{self.dt_text}** — {body}" if self.dt_text else f"- {body}")
+            self.dt_text = ""
+        elif tag == "dl":
+            self.dl_depth = max(0, self.dl_depth - 1)
+        elif tag in self.HEADING:
+            # een `eyebrow`-span is een bovenkopje; die is al als losse regel weggeschreven
+            self._flush(self.HEADING[tag])
+        elif tag in ("p", "section", "header", "footer"):
+            self._flush("> " if "disc" in cls else "")
+        elif tag == "div" and "task" in cls:
+            self._flush()
+        elif tag == "span":
+            if "eyebrow" in cls:
+                # bovenkopje boven een sectiekop: als cursieve regel, niet als kale tekst
+                self._flush()
+                if self.out and not self.out[-1].startswith("*"):
+                    self.out[-1] = f"*{self.out[-1]}*"
+            elif cls & self.BLOCK_SPANS:
+                self.buf.append(" ")
+
+    def handle_data(self, data):
+        if self.skip_depth:
+            return
+        if self.table is not None and self.row is None:
+            return                      # witruimte tussen de rijen van een tabel
+        self.buf.append(data)
+
+    # -- tabellen ---------------------------------------------------------
+    def _write_table(self):
+        rows, self.table = self.table or [], None
+        n = max((len(r) for r in rows), default=0)
+        if not rows or not n:
+            self.header_len = 0
+            return
+        head = rows[0] if self.header_len else [""] * n
+        body = rows[1:] if self.header_len else rows
+        pad = lambda r: r + [""] * (n - len(r))
+        lines = ["| " + " | ".join(pad(head)) + " |",
+                 "| " + " | ".join(["---"] * n) + " |"]
+        lines += ["| " + " | ".join(pad(r)) + " |" for r in body]
+        self.out.append("\n".join(lines))
+        self.header_len = 0
+
+    def result(self) -> str:
+        self._flush()
+        blocks, prev = [], None
+        for block in self.out:
+            if not block or block == prev:
+                continue
+            blocks.append(block)
+            prev = block
+        return "\n\n".join(blocks) + "\n"
+
+
+def to_markdown(page: str, *, bron: str = "") -> str:
+    """De HTML van `render()` als Markdown, voor weergave op github.com.
+
+    `bron` komt bovenaan als regel met de herkomst, zodat een lezer die dit bestand los
+    tegenkomt weet dat de HTML-pagina het origineel is en dit de omzetting ervan.
+    """
+    writer = _MarkdownWriter()
+    writer.feed(page)
+    body = writer.result()
+    kop = f"<!-- Automatisch omgezet uit {bron} door scripts/report.py --markdown. Niet met de hand bijwerken. -->\n\n" if bron else ""
+    return kop + body
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("-o", "--output", help="standaard runs/<datum>-run-<id>.html")
+    parser.add_argument("--markdown", action="store_true",
+                        help="schrijf ook runs/<datum>-run-<id>.dagrapport.md, omgezet uit "
+                             "dezelfde HTML, voor weergave op github.com (zie to_markdown)")
     args = parser.parse_args()
 
     run_id = args.run.lower()
@@ -1148,9 +1358,16 @@ def main() -> int:
         print(f"Let op: geen {prose_path.name} — de pagina komt zonder de verhalende stukken.")
 
     out = Path(args.output) if args.output else RUNS_DIR / f"{day.isoformat()}-run-{run_id}.html"
-    out.write_text(render(run_id, day, picks, all_picks, state, prose))
+    page = render(run_id, day, picks, all_picks, state, prose)
+    out.write_text(page)
     print(f"{out} geschreven — {len(picks)} bet(s), "
           f"{len(state.get('competitions', {}))} competities.")
+    if args.markdown:
+        md = out.with_suffix("").with_suffix(".dagrapport.md") \
+            if out.suffix == ".html" else Path(str(out) + ".dagrapport.md")
+        md = RUNS_DIR / f"{day.isoformat()}-run-{run_id}.dagrapport.md"
+        md.write_text(to_markdown(page, bron=out.name))
+        print(f"{md} geschreven — zelfde inhoud, omgezet uit de HTML (§6c: niet overtypen).")
     print("Publiceer hem daarna als Artifact en zet de link in de notificatie.")
     return 0
 
