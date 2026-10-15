@@ -3165,6 +3165,52 @@ niet aan.
 **Blijf de Artifact publiceren.** De HTML-pagina is het origineel en leest beter; de Markdown is de
 terugval. Werkt de Artifact, dan is er niets aan de hand en kost dit één extra commando.
 
+##### Tweede voorval op 15 oktober 2026 — en nu met een bewijs dat de pagina niet de oorzaak is
+
+**Het dagrapport van Run A van 15 oktober was opnieuw onbereikbaar, nu als een WIT SCHERM in
+plaats van `DNS_PROBE_FINISHED_NXDOMAIN`.** Twee voorvallen op twee opeenvolgende dagen, op twee
+verschillende artifact-id's, met twee verschillende symptomen.
+
+Wat deze keer wél kon worden vastgesteld en op 14 oktober niet: **de pagina is in een echte
+browser gerenderd en is aantoonbaar in orde.** Chromium staat in de container voorgeïnstalleerd
+(`/opt/pw-browsers`, `PLAYWRIGHT_BROWSERS_PATH`), dus `report.py`-uitvoer is lokaal te openen:
+
+| meting | uitkomst |
+|---|---|
+| `scrollHeight` van `body` | 17.028 px (geen lege pagina) |
+| zichtbare tekst | 34.083 tekens |
+| zichtbare blokken (`h1,h2,p,table,div.bet`) | 53 |
+| console- en pagefouten | **0** |
+| licht én donker (`prefers-color-scheme`) | beide correct, juiste achtergrond en tekstkleur |
+
+Daarnaast: de HTML is geldige UTF-8 zonder stuurtekens, zonder onbekende tagnamen, zonder losse
+`<` in de tekst, met alle tags in balans en met precies één `<style>` en één `<title>`; het
+CSS-blok is **byte-identiek** aan dat van 13 oktober, een pagina die wél opende; en een `read` van
+de Artifact gaf de volledige 60.893 bytes terug, dus de server hééft de pagina.
+
+**Daarmee is de oorzaak voor het eerst met cijfers buiten de repo gelegd.** Op 14 oktober stond
+hier "van binnen de repo niet vast te stellen"; dat is nu scherper: het ligt niet aan de HTML, niet
+aan `report.py` en niet aan de inhoud, maar aan het serveren van de sandbox-host. Een volgende run
+hoeft die diagnose niet over te doen — **draai bij een melding over een onbereikbaar dagrapport
+eerst de rendercontrole hierboven** (een kort Playwright-script tegen `file:///…`), en meld de
+uitkomst. Bevestigt die dat de pagina rendert, dan is opnieuw publiceren zinloos en is de
+Markdown-route het antwoord.
+
+**Wat dit betekent voor de rangorde van de twee routes.** De Markdown-terugval heeft nu twee keer
+op twee dagen gewerkt waar de Artifact faalde; de Artifact heeft twee keer gefaald op een manier
+die de routine niet kan voorzien of herstellen. Dat is een aanleiding om de vraag te stellen of de
+Markdown de **eerste** route moet worden en de Artifact de tweede — maar dat is een keuze over hoe
+de gebruiker zijn rapport wil lezen, en die hoort bij hem (dezelfde redenering als bij
+`selection_score` in §1a en bij poort 8 in §1e). **Een run verandert die volgorde niet op eigen
+initiatief.** Leg de vraag één keer voor, in het dagrapport onder "Wat er nog moet gebeuren" met
+`owner = "besluit"`, en herhaal hem daarna niet.
+
+**Zet bij een onbereikbare Artifact altijd de directe GitHub-link in de notificatie**, niet alleen
+het bestandspad: `https://github.com/aistref/football/blob/main/runs/<datum>-run-<a|b|c>.dagrapport.md`.
+GitHub rendert Markdown op `github.com` zelf, dus die route raakt `claudeusercontent.com` niet aan.
+Een pad zonder link dwingt de gebruiker zelf te gaan zoeken op het moment dat hij juist niets kan
+openen.
+
 
 #### Elk actiepunt zegt wat de gebruiker moet doen (toegevoegd 27 sep 2026, op verzoek van de gebruiker)
 
