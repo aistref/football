@@ -181,6 +181,15 @@ def _parse_form(entries: list, kickoff: datetime | None) -> tuple[str, int, int,
     return "".join(letters), points, len(letters), rest, congested
 
 
+# Het generieke woord voor "stadion" verschilt per taal en Fotmob gebruikt op de wedstrijdpagina
+# niet altijd dezelfde vorm als op de teampagina. Zie `_norm_ground`.
+# Het generieke woord voor "stadion" verschilt per taal, Fotmob gebruikt op de wedstrijdpagina
+# niet altijd dezelfde vorm als op de teampagina, en het staat niet altijd achteraan: het Roemeens
+# zet het ervóór ("Stadionul Steaua"). Daarom wordt het weggelaten in plaats van gelijkgetrokken.
+# Langste vorm eerst, anders eet "stadion" de "ul" van "stadionul" niet mee.
+_GENERIEK = ("stadionului", "stadionul", "stadioni", "stadium", "stadion", "stadio", "stadien")
+
+
 def _norm_ground(s: str) -> str:
     """Stadionnaam op vergelijkbare vorm: kleine letters, alleen alfanumeriek, zónder accenten.
 
@@ -193,10 +202,24 @@ def _norm_ground(s: str) -> str:
     verplaatsing in het runrapport wordt genoemd, en een controle die bij elke taal met accenten
     afgaat, leert de lezer haar te negeren. Talen met accenten in stadionnamen zijn geen randgeval
     op de Run B-lijst (HUN, CZE, ROU, ALB, HRV).
+
+    **Uitgebreid op 16 okt 2026 (Run B) met het generieke woord zelf, want dat is dezelfde fout
+    één laag dieper.** Diezelfde dag gaf MTK Budapest - Vasas Budapest opnieuw een vals alarm:
+    de wedstrijdpagina schrijft "Hidegkuti Nandor Stadium" en de teampagina "Hidegkuti Nandor
+    Stadion". Na het weghalen van de accenten blijft er dus nog een verschil staan, en wel in het
+    woord dat in elke taal anders luidt voor hetzelfde ding (stadium/stadion/stadio/stadionul).
+    Dat woord onderscheidt geen twee stadions - twee verschillende velden met dezelfde naam op
+    precies dat woord na bestaan niet - dus het achtervoegsel wordt op een vaste vorm gezet.
+    Dezelfde dag stond er ook een ECHTE verplaatsing in dezelfde run (Rudes - Rijeka, gespeeld in
+    SRC Velika Gorica en niet op Igraliste NK Rudes), en die blijft staan: dat is precies het
+    onderscheid dat deze controle moet kunnen maken.
     """
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    return "".join(ch for ch in s.lower() if ch.isalnum())
+    s = "".join(ch for ch in s.lower() if ch.isalnum())
+    for woord in _GENERIEK:          # langste eerst: "stadionul" vóór "stadion"
+        s = s.replace(woord, "")
+    return s
 
 
 def team_ground(team_id: int) -> tuple[str, str]:
