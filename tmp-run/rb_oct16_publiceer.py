@@ -331,23 +331,31 @@ def wegschrijven():
                 "teamsterktes (blend_seasons, k=8)."
             ),
             "BEURSKOERS": (
-                "GEEN VAN DE VIER GEPUBLICEERDE REGELS STAAT OP EEN BEURS, dus de commissieregel van §5 bindt "
-                "vandaag nergens op de bet zelf. De gepubliceerde koersen: Rapid Wien – Hartberg Under 3,5 "
-                "@1,90 bij Tipico, Oțelul Galați 1X2 @1,63, Mirassol – Internacional Over 2,5 @1,9996 en "
-                "Holstein Kiel – Hertha BSC Under 3,25 @1,99, alle vier van The Odds API op de beste prijs "
-                "per uitkomst. WAAR DE BEURZEN WEL IN BEELD KWAMEN: in de 1X2-respons van Rapid Wien – "
-                "Hartberg stond Betfair met de beste prijs aan beide kanten (1 @1,31 bruto / 1,3038 netto en "
-                "2 @10,00 bruto / 9,82 netto) en Pinnacle op de X (@6,46); net_price is daar toegepast, maar "
-                "geen van die selecties haalde de poorten. DE WINST VAN DE BESTE PRIJS boven het "
-                "BetExplorer-marktgemiddelde was op dat duel +9,07% — ruim boven de +7,78% die §1a op 5 "
-                "september mat, en het is gratis edge die niets aan het model verandert. DRIE VAN DE TIEN "
-                "SPELENDE COMPETITIES HEBBEN GEEN SPORTKEY EN DRAAIEN OP HET GRATIS "
-                "BETEXPLORER-MARKTGEMIDDELDE als enige 1X2-bron: Croatian HNL, Hungarian NB I en Keuken "
-                "Kampioen Divisie, plus Romanian SuperLiga — daar is de bookmaker niet herleidbaar en valt "
-                "de edge systematisch te laag uit (conservatief, dus geen risico op te veel bets, maar niet "
-                "vergelijkbaar met een duel waar de beste prijs wél bekend is). ÉÉN VAN DE VIER "
-                "GEPUBLICEERDE REGELS KOMT UIT DIE GROEP: Oțelul Galați – Csikszereda, 1X2 @1,63 op het "
-                "marktgemiddelde."
+                "ÉÉN van de vier gepubliceerde regels staat op een BEURS — Matchbook — en §5 eist dan beide "
+                "getallen, want de gebruiker ziet op de site de koers vóór commissie: Mirassol – "
+                "Internacional Over 2,5 @2,02 BRUTO / 1,9996 NETTO na 2% commissie. edge_pp en "
+                "selection_score rekenen met de NETTO koers (oddsapi.net_price); zonder die twee naast "
+                "elkaar klopt het rapport niet met wat er op zijn scherm staat. Let op dat de netto koers "
+                "daar net ONDER de 2,00 valt terwijl de genoteerde koers erboven ligt — dat is precies het "
+                "gat dat §1a bedoelt met 'wie dat overslaat overschat zijn edge structureel'. DE ANDERE DRIE "
+                "STAAN NIET OP EEN BEURS: Rapid Wien – Hartberg Under 3,5 @1,90 bij TIPICO, Holstein Kiel – "
+                "Hertha BSC Under 3,25 @1,99 bij PINNACLE en Oțelul Galați 1X2 @1,63 op het "
+                "BETEXPLORER-MARKTGEMIDDELDE over 17 boeken. DIE LAATSTE TWEE VERDIENEN EEN AANTEKENING VAN "
+                "TEGENGESTELD TEKEN. Holstein Kiel staat bij Pinnacle, en §5 (Stage 5, stap 2) noemt Pinnacle "
+                "het scherpste publieke expertoordeel dat er is — een edge tegen Pinnacle is dus een "
+                "STERKERE claim dan dezelfde edge tegen een ruimere aanbieder, al is die edge hier maar "
+                "+4,89 pp en haalt hij geen enkele lat. Oțelul Galați staat op een marktGEMIDDELDE omdat "
+                "Romanian SuperLiga geen sportkey heeft: daar is de bookmaker niet herleidbaar en valt de "
+                "edge systematisch TE LAAG uit (conservatief, dus geen risico op te veel bets, maar niet "
+                "vergelijkbaar met een duel waar de beste prijs wél bekend is). WAT DE BESTE PRIJS OPLEVERDE "
+                "waar hij wél bekend is, per duel tegen het BetExplorer-gemiddelde: +14,87% bij "
+                "Brommapojkarna, +9,07% bij Rapid Wien, +8,71% bij Leganés, +6,75% bij Hellas Verona, "
+                "+5,05% bij Holstein Kiel en +4,40% bij Mirassol. Dat is gemiddeld ruim boven de +7,78% die "
+                "§1a op 5 september mat, en het is gratis edge die niets aan het model verandert. VIER van "
+                "de tien spelende competities hebben GEEN sportkey en draaien volledig op het gratis "
+                "BetExplorer-marktgemiddelde als enige 1X2-bron: Croatian HNL, Hungarian NB I, Romanian "
+                "SuperLiga en Keuken Kampioen Divisie. Die vier hebben dus ook geen handicap-, "
+                "doelpunten- of BTTS-markt, en dat staat per duel met die reden in markets_checked."
             ),
             "afgekapt": res["afkapping"]["afgekapt"], "afkapping": res["afkapping"],
             "inkoop": (
@@ -474,10 +482,17 @@ def wegschrijven():
             f.write(json.dumps(r, ensure_ascii=False) + "\n")
     print(f"{weg} schaduwrij(en) verwijderd die nu een echte bet zijn")
 
+    # IDEMPOTENT (16 okt 2026). Een correctie in de `parameters`-tekst is een reden om dit script
+    # nog een keer te draaien, en dan mogen de picks niet dubbel in het logboek komen: `ledger.py`
+    # telt per regel en een dubbele pick verschuift hit rate en ROI zonder dat iets klaagt.
+    # Dezelfde stille faalstand als de rest van deze ochtend, dus hier een harde controle.
+    bestaand = {json.loads(l)["id"] for l in open("data/picks.jsonl") if l.strip()}
+    nieuw = [p for p in alle_picks if p["id"] not in bestaand]
     with open("data/picks.jsonl", "a") as f:
-        for p in alle_picks:
+        for p in nieuw:
             f.write(json.dumps(p, ensure_ascii=False) + "\n")
-    print(f"{len(alle_picks)} picks toegevoegd aan data/picks.jsonl")
+    print(f"{len(nieuw)} picks toegevoegd aan data/picks.jsonl "
+          f"({len(alle_picks) - len(nieuw)} stonden er al in en zijn overgeslagen)")
 
 
 if __name__ == "__main__":
