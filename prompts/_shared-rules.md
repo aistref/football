@@ -1348,6 +1348,41 @@ state = load_or_start(RUN_ID, date.today())
 - `state["resumed_count"] > 0` → dit is een hervatting. Meld dat bovenaan het runrapport in één
   zin ("hervat om HH:MM na onderbreking, N competities al gedaan"). Geen drama, geen aparte
   sectie — gewoon vermelden.
+
+  **Dat getal was tot 16 oktober 2026 niet te vertrouwen, en de bestanden van vóór die datum zijn
+  dat nog steeds niet.** `load_or_start` verhoogde de teller bij **elke aanroep** op een bestaand
+  voortgangsbestand, en één run roept hem meerdere keren aan: hier in Stage -1, daarna elk script
+  dat de state nodig heeft (het publiceren, het afsluiten). De teller mat dus het aantal
+  **aanroepen** en niet het aantal **hervattingen**. Op 16 oktober stond hij aan het eind van een
+  ononderbroken Run B op 3, en over `data/run-state/` staan **88 bestanden met een waarde boven
+  nul** terwijl vrijwel geen van die runs werkelijk is hervat.
+
+  Waarom dat meer is dan een onzuiver cijfer: de regel hierboven zegt dat je bij `> 0` bovenaan het
+  runrapport een hervatting meldt. Dat is dan een **onware mededeling**, en een teller die te hoog
+  staat klaagt niet — dezelfde stille faalvorm als het Serie B-id (§run-b.md), `calibration.py
+  settle` (§6b-5c) en de verhuisde BetExplorer-slug van Série A (16 okt).
+
+  **Gerepareerd op 16 oktober 2026.** `progress.resumed_count` is nu **afgeleid** in plaats van
+  opgeteld: `progress.session_id()` bepaalt in welke sessie je draait (de container-id, met de
+  sessie-id en de kernel-identiteit als terugval), `state["sessies"]` houdt die id's bij, en
+  `resumed_count = len(sessies) - 1`. Tien aanroepen binnen dezelfde sessie veranderen niets; een
+  nieuwe sessie die hetzelfde bestand oppakt is een hervatting. Dat maakt `load_or_start` ook
+  idempotent, wat een eis van zichzelf is. De tien gevallen staan in een zelftest:
+
+  ```bash
+  python3 scripts/progress.py selftest     # geen netwerk, geen repo nodig
+  ```
+
+  Twee dingen vallen daarbij bewust de **onderschattende** kant op, en dat is de juiste richting:
+  is de sessie niet te bepalen, dan vallen alle aanroepen samen en blijft de telling op 0; en een
+  voortgangsbestand van vóór de fix begint op 0 met zijn oude getal bewaard onder
+  `resumed_count_voor_de_fix`. Liever geen melding dan een onware, en `competitions` laat hoe dan
+  ook zien wat er al gedaan was.
+
+  **Lees een `resumed_count` van vóór 16 oktober 2026 dus als een aantal aanroepen**, niet als
+  hervattingen. `progress.py show` zegt dat er zelf bij: een bestand zonder `sessies` wordt met die
+  waarschuwing afgedrukt. De oude getallen zijn niet herschreven — ze staan in tientallen oude
+  runrapporten en zijn daarmee historie, geen meting.
 - Loop je vervolgens door de runlijst (Stage 4/5): sla een competitie over met `is_done(state,
   naam)` als hij al in het voortgangsbestand staat, en verwerk alleen wat nog ontbreekt.
 - **Commit en push het voortgangsbestand na elke afgeronde competitie** (`mark(...)` gevolgd door

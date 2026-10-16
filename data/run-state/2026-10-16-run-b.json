@@ -7683,5 +7683,10 @@
   },
   "conclusie": "de pagina rendert in beide schema's correct en zonder fouten; valt hij alsnog weg, dan ligt het aan het serveren van de sandbox-host en is de Markdown-route het antwoord"
  },
- "resumed_count_correctie": "Stond op 3 en is met de hand op 0 gezet, want deze run is NIET onderbroken. progress.load_or_start() verhoogt de teller bij elke aanroep op een bestaand voortgangsbestand, en één run roept hem meerdere keren aan (Stage -1 aan het begin, daarna elk script dat de state nodig heeft: rb_oct16_publiceer.py en het afsluiten). De teller meet dus het aantal AANROEPEN en niet het aantal HERVATTINGEN. Dat is dezelfde soort stille fout als de rest van deze ochtend: §3 Stage -1 eist dat een run bij resumed_count > 0 bovenaan het rapport 'hervat om HH:MM na onderbreking' meldt, en dat zou hier onwaar zijn geweest. Opgeschreven als openstaand punt; de fix hoort in progress.py (alleen verhogen als de vorige aanroep van een ANDERE sessie kwam), niet in een los runscript."
+ "sessies": [
+  "container_01Uj74tkYrBya2NrMY2VYZXj--claude_code_remote--07cd79"
+ ],
+ "sessie_bron": "omgevingsvariabele CLAUDE_CODE_CONTAINER_ID",
+ "resumed_count_voor_de_fix": 3,
+ "resumed_count_noot": "Stond aan het eind van deze run op 3 terwijl er niets is onderbroken. Oorzaak: progress.load_or_start verhoogde de teller bij ELKE aanroep op een bestaand bestand, en een run roept hem meerdere keren aan (Stage -1, rb_oct16_publiceer.py, het afsluiten). De teller mat dus aanroepen en geen hervattingen. GEREPAREERD op 16 okt 2026 in scripts/progress.py: de telling is nu afgeleid uit `sessies` (resumed_count = len(sessies) - 1) in plaats van opgeteld, met een zelftest onder `python3 scripts/progress.py selftest`. Dit bestand is daarna met de hand in de nieuwe vorm gezet; het oude getal staat hierboven onder resumed_count_voor_de_fix."
 }

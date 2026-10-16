@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -41,16 +42,112 @@ def _path(run_id: str, day: date) -> Path:
     return STATE_DIR / f"{day.isoformat()}-run-{run_id.lower()}.json"
 
 
+# Welke omgevingsvariabelen de SESSIE identificeren, grofste eenheid eerst. De eenheid die telt is
+# "wat er omvalt als de gebruikslimiet toeslaat": de container. Een subagent draait in dezelfde
+# container maar kan een eigen sessie-id hebben, dus de container staat bewust vóór de sessie.
+_SESSIE_VARIABELEN = (
+    "CLAUDE_CODE_CONTAINER_ID",
+    "CLAUDE_CODE_REMOTE_SESSION_ID",
+    "CLAUDE_CODE_SESSION_ID",
+)
+
+
+def session_id() -> tuple[str, str]:
+    """(id, bron) van de sessie waarin deze aanroep draait.
+
+    Stabiel over álle processen binnen één run — en elke run bestaat uit losse processen, want
+    Stage 1, de analyse, het publiceren en het afsluiten zijn aparte scripts. Verandert alleen als
+    de sessie zelf verandert, en dát is precies wat een hervatting is.
+
+    Lukt het niet, dan is de uitkomst `("onbekend", ...)` en **niet** een waarde per proces. Dat is
+    met opzet de onderschattende kant: alle aanroepen vallen dan samen tot één sessie, dus een
+    echte hervatting wordt gemist in plaats van dat er een verzonnen hervatting bij komt. Zie
+    `_registreer_sessie` voor waarom die richting de juiste is.
+    """
+    for naam in _SESSIE_VARIABELEN:
+        waarde = (os.environ.get(naam) or "").strip()
+        if waarde:
+            return waarde, f"omgevingsvariabele {naam}"
+    # Terugval zonder die variabelen: de identiteit van de draaiende kernel. Let op dat een
+    # container de boot_id van de HOST kan zien; dan zijn twee sessies op dezelfde host niet te
+    # onderscheiden en wordt een hervatting gemist — weer de onderschattende kant.
+    if not os.environ.get("_PROGRESS_GEEN_KERNEL"):
+        # `_PROGRESS_GEEN_KERNEL` bestaat alleen voor `selftest`, om het geval "sessie niet te
+        # bepalen" na te maken op een machine waar /proc er wél is.
+        try:
+            waarde = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            if waarde:
+                return waarde, "kernel boot_id (terugval)"
+        except OSError:
+            pass
+        try:
+            for regel in Path("/proc/stat").read_text().splitlines():
+                if regel.startswith("btime "):
+                    return regel.split()[1], "kernel btime (terugval)"
+        except OSError:
+            pass
+    return "onbekend", "niet te bepalen"
+
+
+def _registreer_sessie(state: dict) -> dict:
+    """Zet de huidige sessie in `state["sessies"]` en leid `resumed_count` daaruit af.
+
+    **Dit verving op 16 okt 2026 een teller die het verkeerde mat.** `load_or_start` deed
+    `state["resumed_count"] += 1` bij elke aanroep op een bestaand bestand, en één run roept hem
+    meerdere keren aan: Stage -1 aan het begin, daarna elk script dat de state nodig heeft. De
+    teller mat dus het aantal AANROEPEN en niet het aantal HERVATTINGEN. Op 16 oktober stond hij
+    aan het eind van een ononderbroken Run B op 3; over `data/run-state/` staan 88 bestanden met
+    een waarde boven nul en vrijwel geen van die runs is werkelijk hervat.
+
+    Waarom dat meer is dan een onzuiver cijfer: §3 Stage -1 van `prompts/_shared-rules.md` eist dat
+    een run bij `resumed_count > 0` bovenaan het runrapport *"hervat om HH:MM na onderbreking, N
+    competities al gedaan"* meldt. Dat is dan een onware mededeling, en een teller die te hoog
+    staat klaagt niet — dezelfde stille faalvorm als het Serie B-id (29 sep),
+    `calibration.py settle` (30 sep) en de verhuisde BetExplorer-slug (16 okt).
+
+    De telling is nu **afgeleid in plaats van opgeteld**: `resumed_count = len(sessies) - 1`. Tien
+    aanroepen binnen dezelfde sessie voegen niets toe, want het id staat er al in; een nieuwe
+    sessie die hetzelfde bestand oppakt voegt één id toe en dát is een hervatting. Daarmee is de
+    functie ook idempotent, wat een losse eis van zichzelf is: een runscript mag de state zo vaak
+    openen als het wil.
+
+    Twee dingen die bewust de onderschattende kant op vallen:
+
+    1. **Is de sessie niet te bepalen** (`session_id()` geeft `"onbekend"`), dan vallen alle
+       aanroepen samen tot één sessie en blijft de telling op 0. Een echte hervatting wordt dan
+       gemist. Dat is de juiste richting: §3 Stage -1 heeft liever geen melding dan een onware, en
+       het bestand zelf laat via `competitions` nog altijd zien wat er al gedaan was.
+    2. **Bij een bestand van vóór deze fix** begint de lijst leeg en wordt de oude waarde bewaard
+       onder `resumed_count_voor_de_fix`. Een zo'n bestand dat werkelijk hervat werd leest daarna
+       eenmalig 0. Dat is de prijs van de overgang, in dezelfde richting, en het oude getal is niet
+       weggegooid — de bestanden van vóór 16 okt 2026 blijven dus na te lezen als wat ze waren:
+       een telling van aanroepen.
+    """
+    sid, bron = session_id()
+    sessies = state.get("sessies")
+    if sessies is None:
+        sessies = []
+        if state.get("resumed_count"):
+            state["resumed_count_voor_de_fix"] = state["resumed_count"]
+    if sid not in sessies:
+        sessies.append(sid)
+    state["sessies"] = sessies
+    state["sessie_bron"] = bron
+    state["resumed_count"] = max(0, len(sessies) - 1)
+    return state
+
+
 def new_state(run_id: str, day: date) -> dict:
-    return {
+    return _registreer_sessie({
         "run": run_id.upper(),
         "date": day.isoformat(),
         "resumed_count": 0,
+        "sessies": [],       # zie `_registreer_sessie`: hieruit volgt resumed_count
         "competitions": {},  # naam -> {"status": ..., "matches": [...]}
         "completed": False,
         "duur": {"gestart": datetime.now(timezone.utc).isoformat(), "afgerond": None,
                  "minuten": None},
-    }
+    })
 
 
 def load(run_id: str, day: date) -> dict | None:
@@ -63,14 +160,20 @@ def load(run_id: str, day: date) -> dict | None:
 def load_or_start(run_id: str, day: date) -> dict:
     """Geeft het bestaande voortgangsbestand van vandaag terug, of maakt een nieuwe aan.
 
-    Bestond het al (dus dit is een hervatting na onderbreking)? Tel dat en meld het in het
-    runrapport — een hervatte run is geen storing, maar wel iets om te vermelden.
+    Is het bestand door een ANDERE sessie aangelegd (dus is dit een hervatting na onderbreking)?
+    Dan telt dat en hoort het in het runrapport — een hervatte run is geen storing, maar wel iets
+    om te vermelden (§3 Stage -1).
+
+    **Deze functie is idempotent en dat is sinds 16 okt 2026 ook waar.** Tot die datum verhoogde
+    ze `resumed_count` bij elke aanroep, waardoor één ononderbroken run op 3 uitkwam; de telling
+    loopt nu via `_registreer_sessie`, dat de sessie-id in een lijst zet. Lees daar waarom dat
+    nodig was en waar de grenzen van de nieuwe telling liggen.
     """
     state = load(run_id, day)
     if state is None:
         return new_state(run_id, day)
-    if not state["completed"]:
-        state["resumed_count"] += 1
+    if not state.get("completed"):
+        _registreer_sessie(state)
     return state
 
 
@@ -123,7 +226,15 @@ def _cmd_show(args: argparse.Namespace) -> int:
         return 0
     done = [n for n, r in state["competitions"].items() if r.get("status") == "GEANALYSEERD"]
     print(f"Run {state['run']} — {state['date']}")
-    print(f"  compleet: {state['completed']}   hervat: {state['resumed_count']}x")
+    if "sessies" in state:
+        print(f"  compleet: {state['completed']}   hervat: {state['resumed_count']}x "
+              f"({len(state['sessies'])} sessie(s), bron: {state.get('sessie_bron', '?')})")
+    else:
+        # Bestand van vóór 16 okt 2026: de teller gaf toen het aantal AANROEPEN en niet het aantal
+        # hervattingen, dus hij hoort niet als hervattingen gelezen te worden.
+        print(f"  compleet: {state['completed']}   "
+              f"aanroepen (NIET hervattingen): {state['resumed_count']}x — bestand van vóór de "
+              f"fix van 16 okt 2026, zie progress._registreer_sessie")
     print(f"  competities verwerkt: {len(state['competitions'])}  (waarvan geanalyseerd: {len(done)})")
     for name, result in state["competitions"].items():
         n_matches = len(result.get("matches", []))
@@ -198,6 +309,111 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_selftest(args: argparse.Namespace) -> int:
+    """Bewijst de drie gevallen waar de fix van 16 okt 2026 over gaat. Geen netwerk, geen repo.
+
+    Zonder deze test is "de teller telt nu sessies" een bewering: de oude fout gaf namelijk geen
+    foutmelding en viel pas op doordat iemand het getal nalas. Precies de faalvorm die een
+    controle verdient in plaats van een goede bedoeling.
+    """
+    import tempfile
+
+    global STATE_DIR
+    echte_dir, echte_env = STATE_DIR, dict(os.environ)
+    mislukt: list[str] = []
+
+    def eis(voorwaarde: bool, wat: str) -> None:
+        print(f"  {'OK  ' if voorwaarde else 'FOUT'} {wat}")
+        if not voorwaarde:
+            mislukt.append(wat)
+
+    def zet_sessie(waarde: str | None) -> None:
+        for naam in _SESSIE_VARIABELEN:
+            os.environ.pop(naam, None)
+        if waarde is not None:
+            os.environ["CLAUDE_CODE_CONTAINER_ID"] = waarde
+
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            STATE_DIR = Path(tmp)
+            dag = date(2026, 10, 16)
+
+            # 1. Eén sessie, vier aanroepen — dit is het geval dat op 16 okt 3 opleverde.
+            zet_sessie("sessie-1")
+            state = load_or_start("b", dag)
+            save(state)
+            for _ in range(3):
+                state = load_or_start("b", dag)
+                save(state)
+            eis(state["resumed_count"] == 0,
+                f"vier aanroepen in één sessie -> resumed_count 0 (kreeg {state['resumed_count']})")
+            eis(state["sessies"] == ["sessie-1"], f"één sessie-id vastgelegd ({state['sessies']})")
+
+            # 2. Een tweede sessie pakt hetzelfde bestand op: DAT is een hervatting.
+            zet_sessie("sessie-2")
+            state = load_or_start("b", dag)
+            save(state)
+            eis(state["resumed_count"] == 1,
+                f"tweede sessie -> resumed_count 1 (kreeg {state['resumed_count']})")
+            state = load_or_start("b", dag)
+            save(state)
+            eis(state["resumed_count"] == 1,
+                "nog een aanroep binnen die tweede sessie verhoogt niets "
+                f"(kreeg {state['resumed_count']})")
+            zet_sessie("sessie-3")
+            state = load_or_start("b", dag)
+            save(state)
+            eis(state["resumed_count"] == 2,
+                f"derde sessie -> resumed_count 2 (kreeg {state['resumed_count']})")
+
+            # 3. Een afgeronde run wordt niet meer geteld (de run stopt dan toch meteen).
+            mark_completed(state)
+            save(state)
+            zet_sessie("sessie-4")
+            state = load_or_start("b", dag)
+            eis(state["resumed_count"] == 2,
+                f"afgeronde run telt geen nieuwe sessie (kreeg {state['resumed_count']})")
+
+            # 4. Niet te bepalen sessie: alles valt samen, de telling blijft 0 (onderschattend).
+            zet_sessie(None)
+            os.environ["_PROGRESS_GEEN_KERNEL"] = "1"
+            dag2 = date(2026, 10, 17)
+            onbekend_sid, _ = session_id()
+            state = load_or_start("b", dag2)
+            save(state)
+            state = load_or_start("b", dag2)
+            save(state)
+            eis(state["resumed_count"] == 0,
+                "zonder sessie-id vallen aanroepen samen in plaats van op te tellen "
+                f"(kreeg {state['resumed_count']})")
+            eis(state["sessies"] == [onbekend_sid],
+                f"één id, niet één per proces ({state['sessies']})")
+
+            # 5. Migratie: een bestand van vóór de fix houdt zijn oude getal apart.
+            dag3 = date(2026, 10, 18)
+            oud = new_state("b", dag3)
+            oud["resumed_count"] = 3
+            oud.pop("sessies")
+            oud.pop("sessie_bron", None)
+            save(oud)
+            zet_sessie("sessie-na-migratie")
+            state = load_or_start("b", dag3)
+            eis(state["resumed_count"] == 0,
+                f"bestand van vóór de fix start op 0 (kreeg {state['resumed_count']})")
+            eis(state.get("resumed_count_voor_de_fix") == 3,
+                f"het oude getal is bewaard ({state.get('resumed_count_voor_de_fix')})")
+    finally:
+        STATE_DIR = echte_dir
+        os.environ.clear()
+        os.environ.update(echte_env)
+
+    if mislukt:
+        print(f"\n{len(mislukt)} controle(s) mislukt.")
+        return 1
+    print("\nAlle controles geslaagd.")
+    return 0
+
+
 def _cmd_reset(args: argparse.Namespace) -> int:
     p = _path(args.run, date.fromisoformat(args.date))
     if p.exists():
@@ -221,6 +437,9 @@ def main() -> int:
     verify.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     verify.add_argument("--date", required=True, help="YYYY-MM-DD")
     verify.set_defaults(func=_cmd_verify)
+
+    selftest = sub.add_parser("selftest", help="controleer de hervattingstelling (geen netwerk)")
+    selftest.set_defaults(func=_cmd_selftest)
 
     reset = sub.add_parser("reset", help="verwijder het voortgangsbestand, forceer een verse start")
     reset.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
