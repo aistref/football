@@ -174,6 +174,16 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "mk dons": "milton keynes dons",
     "tottenham": "tottenham hotspur",
     "koln": "1 fc koln",
+    # 16 okt 2026 — UNDERSTAT noemt deze club in het Engels: "FC Cologne". Dat is geen variant
+    # die de tokenregel kan halen ({fc, cologne} tegen {1, fc, koln}: wel een gedeeld token,
+    # maar geen deelverzameling in beide richtingen), en de aliastabel kende alleen de
+    # Duitse korte vorm. Gevolg op Eintracht Frankfurt - 1. FC Köln (Run A, 16 okt 2026):
+    # `understat_pair` gaf None, dus het kalibratieblok van dat duel miste `p_xg_understat` en
+    # §4 kon zijn tweede, onafhankelijke xG-bron niet meten — zonder foutmelding, want
+    # `understat_pair` geeft bij een niet-gevonden naam gewoon None terug. Dezelfde stille
+    # faalstand als "Sheff Wed" hierboven, nu aan de kant van de tweede xG-bron.
+    "fc cologne": "1 fc koln",
+    "cologne": "1 fc koln",
 }
 
 
