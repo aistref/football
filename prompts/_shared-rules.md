@@ -1986,6 +1986,82 @@ Dat is het materiaal voor een spelersvergelijking — welke vleugel werd bespeel
 duels, waar kwamen de schoten vandaan. Op 20 sep 2026 is eerst geschreven dat zoiets met de
 beschikbare bronnen niet te bouwen was; dat klopte niet en is diezelfde dag rechtgezet.
 
+### Hoe vaak ging deze markt eerder op? (toegevoegd 17 okt 2026, op verzoek van de gebruiker)
+
+```python
+from scripts import marketform
+blok = marketform.match_block(league_id, season_cur, season_prev, home, away)
+```
+
+**Aanleiding.** De gebruiker merkte op dat de onderbouwing van een Over/Under- of BTTS-bet nooit
+noemt hóe vaak het eerder gebeurde:
+
+> *"Wat mij opvalt is dat je nooit in de beschrijving van de bets meeneemt hoevaak een ploeg
+> bijvoorbeeld o/u 2,5 of BTS heeft gehad (in de laatste 5 wedstrijden bijvoorbeeld, of over een
+> heel seizoen) als je dat tipt. Je zet alleen wedstrijdvorm (WWVDW) volgens mij. Bekijk je dat
+> soort statistieken niet? of bekijk je het wel maar geef je het niet aan. Indien niet, wil ik wel
+> dat je dat soort waardevolle informatie meeneemt."*
+
+**Het antwoord was "niet bekeken", niet "bekeken maar niet gemeld".** Er stond nergens in
+`scripts/` een telling van dit soort frequenties; `context.py` las uit `teamForm` alleen de
+`resultString` (de `WWDLW`-reeks) en gooide de uitslagen die er in datzelfde veld staan weg. Het
+model rekent met team-xG en met thuis/uit-doelpuntensplits, dus met **gemiddelden**, en een
+gemiddelde zegt niets over de verdeling.
+
+**Waarom dit meer is dan een leesbaarheidswens.** De verdeling is precies de grootheid waarvan
+§6g heeft gemeten dat het model haar fout heeft: te weinig massa op 4 en 5 doelpunten, waardoor
+`P(Under)` bij élk duel ruim twee procentpunt te hoog staat. Een telling van wat er werkelijk
+gebeurde is dus geen versiering naast de modelkans maar de waarneming waartegen de zwakste
+aanname van het model te toetsen is — en bij een gepubliceerde Under is dat de eerste vraag die
+een lezer hoort te kunnen stellen.
+
+Per doorgerekende wedstrijd (dus niet bij `tier = NONE`, daar valt niets te tellen) legt de run
+een `marktvorm`-blok in `data/run-state/`, met per ploeg vier reeksen:
+
+| reeks | wat erin zit |
+|---|---|
+| `lopend_recent` | de laatste `marketform.RECENT` (= 5) competitieduels van dit seizoen |
+| `lopend` | het hele lopende seizoen |
+| `lopend_kant` | alleen de thuisduels (thuisploeg) of alleen de uitduels (uitploeg) |
+| `vorig` | het hele vorige seizoen |
+
+en per reeks het aantal duels boven elk van `marketform.LINES` (1.5, 2.5, 3.5), het aantal duels
+waarin beide ploegen scoorden, doelpunten voor en tegen, clean sheets, keren niet gescoord en de
+uitslagen zelf. `scripts/report.py` rendert daar onder elke bet het blok **"Hoe vaak dit eerder
+gebeurde"** uit — automatisch, uit de run-state en niet uit de prose, zodat het er ook staat als
+de prose het vergeet (dezelfde constructie als het contextblok van §6c).
+
+**Vier dingen die hierbij vastliggen:**
+
+1. **Het gaat NIET in `my_prob`.** Een frequentie met een gewicht in de kansschatting stoppen zou
+   een getal verzinnen waarvoor geen meting bestaat, en dat is wat §2 en §4 verbieden — dezelfde
+   reden dat poort 7 een rem is en geen bijstelling (§1c). De telling staat ernaast, in de lezing
+   en in de onderbouwing. Wie haar ooit wél wil meewegen: meet eerst op **uitkomsten** of ze de
+   Brier-score verbetert, zoals §1f voor de 80/20-weging heeft gedaan, en niet op een redenering.
+2. **Noem haar ook als ze de bet tegenspreekt, en noem dat dan expliciet.** Dat is de hele reden
+   dat de gebruiker erom vroeg. Op 17 oktober stond Union Berlin – Borussia Dortmund als Under 3,5
+   op de lijst met een modelkans van 65,8%, terwijl Union Berlin dit seizoen in **vier van de vijf**
+   duels boven 3,5 doelpunt uitkwam en gemiddeld op 4,40 stond. Zo'n tegenspraak hoort vóóraan in
+   de `why`-tekst en niet in een voetnoot.
+3. **Het kost geen extra verzoek en geen credit.** `fotmob.fetch_league_stats` haalt
+   `api/data/leagues?id=..&season=..` al op voor de stand en laat `fixtures.allMatches` liggen —
+   daar staan alle duels van het seizoen in met `status.scoreStr`. `marketform.season_results`
+   haalt diezelfde URL met een eigen dagcache in `data/cache/marketform/`.
+4. **Twee valkuilen zijn in de module afgedekt en moeten afgedekt blijven.** Een promovendus staat
+   niet in de stand van vorig seizoen, dus `team_form` geeft daar `found = False` in plaats van een
+   nul die als gemeten nul leest (zeventien van de 47 duels van 17 oktober hadden een omgerekende
+   ploeg). En de namen worden gekoppeld met `teamnames.norm` en **niet** met `fotmob._fold`: die
+   tweede laat de Poolse **ł** staan, waardoor "Śląsk Wrocław" en "Slask Wroclaw" naar twee
+   sleutels vouwen — dezelfde stille faalvorm als de æ-ligatuur van 13 september, en hij zou op
+   17 oktober een gepubliceerde bet hebben geraakt. `python3 scripts/marketform.py selftest` dekt
+   beide gevallen af (14 controles, geen netwerk nodig).
+
+**De `WWDLW`-reeks blijft erbij staan en betekent iets anders.** Die komt uit `teamForm` en bevat
+óók beker- en Europese duels; `marketform` telt uitsluitend competitieduels, zodat de frequenties
+op dezelfde populatie staan als het model, dat op het competitiegemiddelde is genormaliseerd.
+Lopen de twee uiteen, dan is dat geen fout maar dit verschil — en de pagina zegt dat zelf onder de
+telling.
+
 #### De harde grens: wat mag in `my_prob` en wat niet
 
 Het dossier voedt **de lezing**, niet de kansschatting. Dat is §2 en het is geen smaakkwestie:
@@ -2779,6 +2855,11 @@ Elke run, ook een run met nul bets:
    hele populatie en ziet daardoor niets, terwijl de Under-kant van de picks er meetbaar naast
    zit. Lees de twee regels nooit als één getal — de bovenste meet het model, de onderste de
    selectie.
+5h. **Marktvormlogboek** → een `marktvorm`-blok per doorgerekende wedstrijd in
+   `data/run-state/`, via `marketform.match_block(...)`. Zie §4, "Hoe vaak ging deze markt eerder
+   op?". `report.py` rendert het zelf onder elke bet; het hoeft dus niet in de prose, maar de
+   `why`-tekst moet de telling wél noemen zodra ze de bet **tegenspreekt**. Geen extra verzoek en
+   geen credit: de uitslagen zitten in de competitierespons die de run toch al ophaalt.
 5e. **De dagelijkse top-N, twee keer** → `python3 scripts/toplist.py --run <a|b> --date <datum>`.
    Zie §5a. Neem beide lijsten op in het runrapport; op de HTML-pagina zet `report.py` ze er zelf
    in. Draai dit **na** `shadow.py collect`, zodat de regels die alleen op de herijking sneuvelden

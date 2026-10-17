@@ -313,6 +313,83 @@ def render_context(match: dict | None, pick: dict) -> str:
     return f'<h4>Context die is meegewogen</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
 
 
+def render_marketform(match: dict | None, pick: dict) -> str:
+    """Hoe vaak deze markt eerder opging, uit het `marktvorm`-blok in data/run-state/.
+
+    Toegevoegd 17 okt 2026 op verzoek van de gebruiker: de bets noemden de doelverwachting van
+    het model en de vorm als `WWDLW`, maar nooit hoe vaak er werkelijk boven een lijn werd
+    gescoord of hoe vaak beide ploegen scoorden. Het model rekent met gemiddelden en een
+    gemiddelde zegt niets over de verdeling — juist de grootheid waarvan §6g heeft gemeten dat
+    het model haar fout heeft.
+
+    Deze telling gaat NIET in `my_prob` (§2, §4: geen verzonnen gewicht). Ze staat ernaast, en
+    waar ze de bet tegenspreekt hoort dat zichtbaar te zijn in plaats van weggelaten.
+    """
+    if not match:
+        return ""
+    mv = match.get("marktvorm") or {}
+    teams = mv.get("teams") or {}
+    if not teams:
+        return ""
+
+    # Op welke lijn tellen we? Die van de bet zelf, zodat de telling de bet beantwoordt en niet
+    # een naburige markt. Een hele lijn (Over 3) vraagt "4 of meer", en dat is dezelfde telling
+    # als 3.5, want marketform telt strikt groter dan de lijn.
+    lijn, onder = None, False
+    if pick.get("market") == "Over/Under":
+        m = re.search(r"(\d+(?:[.,]\d+)?)", pick.get("selection") or "")
+        if m:
+            ruw = float(m.group(1).replace(",", "."))
+            lijn = 3.5 if ruw == 3.0 else ruw
+        onder = (pick.get("selection") or "").lower().startswith("under")
+    beschikbaar = {float(x) for x in (mv.get("lines") or [])}
+    if lijn is not None and lijn not in beschikbaar:
+        lijn = min(beschikbaar, key=lambda x: abs(x - lijn)) if beschikbaar else None
+    btts_markt = pick.get("market") == "BTTS"
+
+    SCOPES = (("lopend_recent", "laatste 5"), ("lopend", "dit seizoen"),
+              ("lopend_kant", None), ("vorig", "vorig seizoen"))
+    rows = []
+    for side in ("home", "away"):
+        t = teams.get(side) or {}
+        naam = t.get("team") or side
+        parts = []
+        for sleutel, label in SCOPES:
+            d = t.get(sleutel) or {}
+            if label is None:
+                label = "thuis dit seizoen" if side == "home" else "uit dit seizoen"
+            if not d.get("found", True):
+                parts.append(f"{label}: speelde deze divisie niet")
+                continue
+            n = d.get("n") or 0
+            if not n:
+                continue
+            stuk = []
+            if lijn is not None:
+                boven = (d.get("over") or {}).get(str(lijn))
+                if boven is not None:
+                    aantal = n - boven if onder else boven
+                    lijn_nl = f"{lijn:g}".replace(".", ",")
+                    woord = f"onder {lijn_nl}" if onder else f"boven {lijn_nl}"
+                    stuk.append(f"{woord} in {aantal}/{n}")
+            if btts_markt or lijn is None:
+                stuk.append(f"beide scoorden {d.get('btts', 0)}/{n}")
+            gpm = d.get("goals_per_match")
+            if gpm is not None:
+                stuk.append("gem. " + f"{gpm:.2f}".replace(".", ","))
+            if stuk:
+                parts.append(f"{label}: " + ", ".join(stuk))
+        rows.append(f'<div class="ctx-row"><dt>{esc(naam)}</dt>'
+                    f'<dd>{esc(" · ".join(parts)) or "niets te tellen"}</dd></div>')
+
+    kop = "Hoe vaak dit eerder gebeurde"
+    noot = ("Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden "
+            "— daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn "
+            "berekening en zitten er niet in verwerkt.")
+    return (f'<h4>{kop}</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
+            f'\n      <p class="prose micro">{noot}</p>')
+
+
 def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None = None) -> str:
     if not picks:
         return ('<div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> '
@@ -346,6 +423,7 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
       <h4>Waarom</h4>
       <p class="prose">{inline(why)}</p>
       {render_context(find_match(state or {}, pick), pick)}
+      {render_marketform(find_match(state or {}, pick), pick)}
       <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
   </div>''')
@@ -1052,6 +1130,9 @@ header{padding:44px 0 0}
 .ctx dt{font-weight:650; color:var(--ink-2)}
 .ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
 @media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+/* De voetnoot onder de marktvorm-telling (17 okt 2026): kleiner dan de telling zelf, want ze
+   zegt wat de cijfers NIET zijn en hoort de telling niet te overschreeuwen. */
+.prose.micro{font-size:.78rem; color:var(--muted); margin:2px 0 0}
 .risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
 .dot{width:8px; height:8px; border-radius:50%; flex:none}
 .dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
