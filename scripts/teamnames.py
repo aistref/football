@@ -54,6 +54,17 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # spoor na. MLS speelt in deze runlijst elke paar dagen.
     "new york red bulls": "red bull new york",
     "red bull new york": "new york red bulls",
+    # 17 okt 2026 (Run B): een AFKORTING van een plaatsnaam, en daarmee dezelfde stille
+    # faalstand als "Red Bull New York" hierboven. Fotmob schrijft "LA Galaxy", BetExplorer
+    # "Los Angeles Galaxy" — na _DROP blijft {la, galaxy} tegen {los, angeles, galaxy} over en
+    # dat is in geen van beide richtingen een deelverzameling. Wat het kostte: LA Galaxy – San
+    # Diego FC was de enige van de veertien MLS-duels zonder marktgemiddelde, dus zonder
+    # kalibratieblok (§6e) EN met poort 8 op "geen 1X2-prijzen, geen marktoordeel over wie de
+    # mindere is" — de poort stond open zonder te zijn getoetst, op een duel dat een
+    # GEPUBLICEERDE regel opleverde. Met de prijzen erbij is de de-vigde marktkans van San Diego
+    # 0,322, onder sides.UNDERDOG_FLOOR (0,35), dus de poort hoorde dicht te staan.
+    "la galaxy": "los angeles galaxy",
+    "los angeles galaxy": "la galaxy",
     # 1 sep 2026: de Engelse daglijst kort af tot een deel dat na _DROP niets overhoudt dat
     # met de tabelnaam overlapt. Zonder deze drie leest een ploeg die gewoon in de stand
     # staat als "geen historie in deze divisie" en gaat hij ten onrechte de omrekening in.

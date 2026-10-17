@@ -524,7 +524,7 @@ def render_toplists(state: dict, labels: dict, day: date) -> str:
   <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
   {tabel(res["ruw"], True)}
   <p class="prose measure" style="margin-top:14px">{
-    f"Hiervan zou{'' if n_raw == 1 else 'en'} er <strong>{n_raw}</strong> zonder de correctie "
+    f"Hiervan zou{'' if n_raw == 1 else 'den'} er <strong>{n_raw}</strong> zonder de correctie "
     f"een weddenschap zijn geweest." if n_raw else
     "Geen van deze zou ook zonder de correctie een weddenschap zijn geweest."} Over de hele run
   gaat het om <strong>{res["alleen_herijking"]}</strong> mogelijkheden die alleen op de correctie
