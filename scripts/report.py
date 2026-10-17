@@ -335,13 +335,24 @@ def render_marketform(match: dict | None, pick: dict) -> str:
     # Op welke lijn tellen we? Die van de bet zelf, zodat de telling de bet beantwoordt en niet
     # een naburige markt. Een hele lijn (Over 3) vraagt "4 of meer", en dat is dezelfde telling
     # als 3.5, want marketform telt strikt groter dan de lijn.
-    lijn, onder = None, False
+    # Op welke lijn tellen we? Die van de bet zelf. Een KWARTLIJN (2.75, 3.25) is in werkelijkheid
+    # twee halve bets op de twee omliggende lijnen, dus daar telt de helft die VOLLEDIG moet
+    # winnen — bij Under 2.75 is dat "onder 2.5", want op precies 3 doelpunten gaat de ene helft
+    # verloren en komt de andere terug. Uitwijken naar de naaste lijn zou een andere bet
+    # beschrijven dan er gespeeld wordt, en dat is precies de fout die dit blok moet voorkomen.
+    lijn, onder, kwart = None, False, False
     if pick.get("market") == "Over/Under":
         m = re.search(r"(\d+(?:[.,]\d+)?)", pick.get("selection") or "")
+        onder = (pick.get("selection") or "").lower().startswith("under")
         if m:
             ruw = float(m.group(1).replace(",", "."))
-            lijn = 3.5 if ruw == 3.0 else ruw
-        onder = (pick.get("selection") or "").lower().startswith("under")
+            rest = round(ruw % 1, 2)
+            kwart = rest in (0.25, 0.75)
+            if kwart:
+                # de strengste helft: bij Under naar beneden, bij Over naar boven
+                lijn = ruw - 0.25 if onder else ruw + 0.25
+            else:
+                lijn = ruw
     beschikbaar = {float(x) for x in (mv.get("lines") or [])}
     if lijn is not None and lijn not in beschikbaar:
         lijn = min(beschikbaar, key=lambda x: abs(x - lijn)) if beschikbaar else None
@@ -366,12 +377,20 @@ def render_marketform(match: dict | None, pick: dict) -> str:
                 continue
             stuk = []
             if lijn is not None:
-                boven = (d.get("over") or {}).get(str(lijn))
-                if boven is not None:
-                    aantal = n - boven if onder else boven
+                kant = (d.get("under") if onder else d.get("over")) or {}
+                aantal = kant.get(str(lijn))
+                if aantal is None:
+                    # Een blok van vóór 17 okt 2026 heeft alleen `over`; dan is "onder" niet
+                    # exact te geven (de push zou meetellen), dus liever niets dan bijna goed.
+                    boven = (d.get("over") or {}).get(str(lijn))
+                    aantal = None if (onder or boven is None) else boven
+                if aantal is not None:
                     lijn_nl = f"{lijn:g}".replace(".", ",")
                     woord = f"onder {lijn_nl}" if onder else f"boven {lijn_nl}"
                     stuk.append(f"{woord} in {aantal}/{n}")
+                    p_push = (d.get("push") or {}).get(str(lijn)) or 0
+                    if p_push:
+                        stuk.append(f"precies {lijn_nl} in {p_push} (inzet terug)")
             if btts_markt or lijn is None:
                 stuk.append(f"beide scoorden {d.get('btts', 0)}/{n}")
             gpm = d.get("goals_per_match")
@@ -386,6 +405,10 @@ def render_marketform(match: dict | None, pick: dict) -> str:
     noot = ("Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden "
             "— daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn "
             "berekening en zitten er niet in verwerkt.")
+    if kwart and lijn is not None:
+        noot += (f" Deze weddenschap staat op een kwartlijn, die in twee halve weddenschappen "
+                 f"splitst; geteld is de helft die vólledig moet winnen "
+                 f"({'onder' if onder else 'boven'} {f'{lijn:g}'.replace('.', ',')}).")
     return (f'<h4>{kop}</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
             f'\n      <p class="prose micro">{noot}</p>')
 

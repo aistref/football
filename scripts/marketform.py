@@ -60,9 +60,11 @@ from scripts import fotmob, teamnames
 ROOT = Path(__file__).resolve().parent.parent
 CACHE_DIR = ROOT / "data" / "cache" / "marketform"
 
-#: De lijnen waarop geteld wordt. 2.5 is de markt waar de gebruiker naar vroeg; 1.5 en 3.5 staan
-#: erbij omdat de routine ook op die lijnen publiceert (17 okt: drie van de vijf regels op 3.5).
-LINES = (1.5, 2.5, 3.5)
+#: De lijnen waarop geteld wordt. 2.5 is de markt waar de gebruiker naar vroeg; de rest staat
+#: erbij omdat de routine er werkelijk op publiceert. Ook de HELE lijnen (2.0, 3.0) horen erin:
+#: een kwartlijn als Under 2.75 splitst in 2.5 en 3.0, en zonder 3.0 zou de telling moeten
+#: uitwijken naar de naaste lijn — dan beschrijft ze een andere bet dan er gespeeld wordt.
+LINES = (1.5, 2.0, 2.5, 3.0, 3.5, 4.5)
 
 #: Hoeveel recente duels "recent" is. Vijf is wat de gebruiker noemde en wat Fotmob zelf toont.
 RECENT = 5
@@ -136,7 +138,9 @@ class MarketForm:
     found: bool = True                      #: False = deze ploeg speelde niet in deze divisie
     goals_for: int = 0
     goals_against: int = 0
-    over: dict = field(default_factory=dict)   #: lijn (als str) -> aantal duels erboven
+    over: dict = field(default_factory=dict)   #: lijn (als str) -> aantal duels STRIKT erboven
+    under: dict = field(default_factory=dict)  #: lijn (als str) -> aantal duels STRIKT eronder
+    push: dict = field(default_factory=dict)   #: lijn (als str) -> aantal duels precies erop
     btts: int = 0
     clean_sheets: int = 0
     failed_to_score: int = 0
@@ -152,6 +156,9 @@ class MarketForm:
 
     def over_pct(self, line: float) -> float | None:
         return 100.0 * self.over[str(line)] / self.n if self.n else None
+
+    def under_pct(self, line: float) -> float | None:
+        return 100.0 * self.under[str(line)] / self.n if self.n else None
 
     def as_dict(self) -> dict:
         d = asdict(self)
@@ -175,8 +182,9 @@ def team_form(results: list[dict], team: str, season: str, *, last: int | None =
     scope = "seizoen" if last is None and venue is None else (
         venue if venue else f"laatste {last}")
     if not eigen:
+        leeg = {str(l): 0 for l in LINES}
         return MarketForm(team=team, season=season, scope=scope, n=0, found=False,
-                          over={str(l): 0 for l in LINES})
+                          over=dict(leeg), under=dict(leeg), push=dict(leeg))
 
     if venue == "home":
         eigen = [r for r in eigen if teamnames.norm(r["home"]) == naam]
@@ -186,7 +194,8 @@ def team_form(results: list[dict], team: str, season: str, *, last: int | None =
         eigen = eigen[-last:]
 
     mf = MarketForm(team=team, season=season, scope=scope, n=len(eigen),
-                    over={str(l): 0 for l in LINES})
+                    over={str(l): 0 for l in LINES}, under={str(l): 0 for l in LINES},
+                    push={str(l): 0 for l in LINES})
     for r in eigen:
         thuis = teamnames.norm(r["home"]) == naam
         gf, ga = (r["hg"], r["ag"]) if thuis else (r["ag"], r["hg"])
@@ -196,6 +205,10 @@ def team_form(results: list[dict], team: str, season: str, *, last: int | None =
         for l in LINES:
             if totaal > l:
                 mf.over[str(l)] += 1
+            elif totaal == l:
+                mf.push[str(l)] += 1
+            else:
+                mf.under[str(l)] += 1
         if r["hg"] > 0 and r["ag"] > 0:
             mf.btts += 1
         if ga == 0:
@@ -224,6 +237,9 @@ def describe(mf: MarketForm, line: float | None = None, *, market: str = "OU") -
         kern.append(f"beide ploegen scoorden in {_tel(mf.btts, mf.n)} duels")
     if line is not None:
         kern.append(f"meer dan {line:g} doelpunten in {_tel(mf.over[str(line)], mf.n)} duels")
+        p = mf.push.get(str(line), 0)
+        if p:
+            kern.append(f"precies {line:g} in {p} duels (inzet terug)")
     kern.append(f"gemiddeld {mf.goals_per_match:.2f} doelpunten per duel")
     return f"{mf.team} ({mf.scope}, {mf.season}): " + "; ".join(kern) + "."
 
@@ -277,6 +293,13 @@ def _selftest() -> int:
     eis("alfa doelpunten tegen", a.goals_against, 1 + 0 + 2 + 1 + 0 + 2)
     eis("alfa over 2.5", a.over["2.5"], 4)          # 3, 6, 3, 4
     eis("alfa over 3.5", a.over["3.5"], 2)          # 6, 4
+    # Een HELE lijn geeft een push, en die mag niet bij "onder" belanden. Totalen: 3, 0, 6, 1, 3, 4
+    eis("alfa over 3.0", a.over["3.0"], 2)          # 6, 4
+    eis("alfa push 3.0", a.push["3.0"], 2)          # 3, 3
+    eis("alfa onder 3.0", a.under["3.0"], 2)        # 0, 1
+    eis("alfa drieluik telt op", a.over["3.0"] + a.push["3.0"] + a.under["3.0"], a.n)
+    eis("alfa onder 2.5", a.under["2.5"], 2)        # 0, 1
+    eis("alfa push 2.5", a.push["2.5"], 0)          # halve lijn: nooit een push
     eis("alfa btts", a.btts, 3)
     eis("alfa clean sheets", a.clean_sheets, 2)     # 0-0 en 3-0
     eis("alfa niet gescoord", a.failed_to_score, 2) # 0-0 en 0-1
@@ -315,7 +338,7 @@ def _selftest() -> int:
 
     for f in fouten:
         print("FOUT:", f)
-    print(f"{14 - len(fouten)} van 14 controles goed.")
+    print(f"{20 - len(fouten)} van 20 controles goed.")
     return 1 if fouten else 0
 
 
