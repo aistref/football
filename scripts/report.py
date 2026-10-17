@@ -413,6 +413,93 @@ def render_marketform(match: dict | None, pick: dict) -> str:
             f'\n      <p class="prose micro">{noot}</p>')
 
 
+def _dag_nl(iso: str, *, jaar: bool = False) -> str:
+    """"zaterdag 17 oktober" uit "2026-10-17", voor een leesbare agendaregel.
+
+    `jaar=True` zet het jaartal erbij, en dat is bij de onderlinge duels VERPLICHT: zonder jaar
+    leest "vrijdag 17 oktober" als deze week, terwijl het de ontmoeting van 2025 was — pal naast
+    het blok "De week eromheen", waar de data wél van deze week zijn. Precies het soort
+    verwarring dat een voorbeschouwing onbetrouwbaar maakt zonder dat er iets fout staat.
+    """
+    DAGEN = ("maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag")
+    MAAND = ("januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus",
+             "september", "oktober", "november", "december")
+    try:
+        d = date.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return iso or ""
+    staart = f" {d.year}" if jaar else ""
+    return f"{DAGEN[d.weekday()]} {d.day} {MAAND[d.month - 1]}{staart}"
+
+
+def render_h2h(match: dict | None) -> str:
+    """De onderlinge duels met uitslag, uit het `voorbeschouwing`-blok in data/run-state/.
+
+    Toegevoegd 17 okt 2026: de voorbeschouwing van §6c leunt hierop, en een blok dat `report.py`
+    zelf rendert staat er ook als de prose het vergeet — dezelfde constructie als het contextblok
+    (24 sep) en de marktvorm-telling (17 okt).
+    """
+    vb = (match or {}).get("voorbeschouwing") or {}
+    h = vb.get("h2h") or {}
+    duels = h.get("duels") or []
+    if not duels:
+        return ""
+    rijen = []
+    for d in duels[:5]:
+        tot = d.get("total")
+        extra = f" · {tot} doelp." if tot is not None else ""
+        btts = " · beide scoorden" if d.get("btts") else ""
+        rijen.append(f'<div class="ctx-row"><dt>{esc(_dag_nl(d.get("date", ""), jaar=True))}</dt>'
+                     f'<dd>{esc(d.get("home", ""))} <strong>{esc(d.get("score", ""))}</strong> '
+                     f'{esc(d.get("away", ""))}{esc(extra)}{esc(btts)}</dd></div>')
+    sam = h.get("samenvatting") or {}
+    staart = ""
+    if sam:
+        staart = (f'<p class="prose micro">Over deze {sam["n"]} duels: gemiddeld '
+                  f'{str(sam["doelpunten_per_duel"]).replace(".", ",")} doelpunten, en in '
+                  f'{sam["btts"]} van de {sam["n"]} scoorden beide ploegen.</p>')
+    return f'<h4>Onderling</h4>\n      <dl class="ctx">{"".join(rijen)}</dl>\n      {staart}'
+
+
+def render_week(match: dict | None) -> str:
+    """Wat beide ploegen vóór en ná dit duel spelen, met de Europese duels gemarkeerd.
+
+    Dit is de "randzaak" waar een voorbeschouwing op draait en die uit rustdagen alleen niet te
+    zien is: dat een ploeg woensdag in Manchester stond en dinsdag Barcelona ontvangt, maakt een
+    zaterdagmiddag om kwart over vijf een andere wedstrijd.
+    """
+    vb = (match or {}).get("voorbeschouwing") or {}
+    week = vb.get("week") or {}
+    rijen = []
+    for side in ("home", "away"):
+        blok = week.get(side) or {}
+        naam = (((match or {}).get("context") or {}).get(side) or {}).get("name") \
+            or (match or {}).get(side) or side
+        stukken = []
+        for r in (blok.get("ervoor") or [])[-2:]:
+            tegen = r["away"] if r.get("thuis") else r["home"]
+            waar = "thuis" if r.get("thuis") else "uit"
+            uitslag = (f" ({r['score'].replace(' ', '').replace('-', '–')})"
+                       if r.get("score") else "")
+            vlag = " 🇪🇺" if r.get("europees") else ""
+            stukken.append(f"{_dag_nl(r['date'])} {waar} tegen {esc(tegen)}{esc(uitslag)}"
+                           f"{vlag} — {esc(r.get('competition', ''))}")
+        for r in (blok.get("erna") or [])[:2]:
+            tegen = r["away"] if r.get("thuis") else r["home"]
+            waar = "thuis" if r.get("thuis") else "uit"
+            vlag = " 🇪🇺" if r.get("europees") else ""
+            stukken.append(f"dan {_dag_nl(r['date'])} {waar} tegen {esc(tegen)}{vlag} — "
+                           f"{esc(r.get('competition', ''))}")
+        if stukken:
+            rijen.append(f'<div class="ctx-row"><dt>{esc(naam)}</dt>'
+                         f'<dd>{" · ".join(stukken)}</dd></div>')
+    if not rijen:
+        return ""
+    return (f'<h4>De week eromheen</h4>\n      <dl class="ctx">{"".join(rijen)}</dl>'
+            f'\n      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee '
+            f'erna, voor zover de kalender ze geeft.</p>')
+
+
 def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None = None) -> str:
     if not picks:
         return ('<div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> '
@@ -423,8 +510,12 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
     for pick in picks:
         text = prose.get(pick["id"], {})
         level, sentence = risk_class(pick, text)
-        why = text.get("why") or ("Onderbouwing niet in het prosebestand gezet; de technische "
-                                  "redenering staat in het markdown-runrapport.")
+        # 17 okt 2026: `why` is sinds die datum een VOORBESCHOUWING en geen rekenverslag (§6c).
+        # `preview` mag als eigen sleutel worden geschreven; `why` blijft werken, want tientallen
+        # oudere prosebestanden gebruiken hem en die pagina's moeten blijven renderen.
+        why = text.get("preview") or text.get("why") or (
+            "Voorbeschouwing niet in het prosebestand gezet; de feiten over dit duel staan in de "
+            "blokken hieronder en de rekenkundige verantwoording in het markdown-runrapport.")
         blocks.append(f'''<div class="bet">
     <div class="bet-top">
       <div class="bet-id">
@@ -443,10 +534,12 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
       <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">{signed(pick["edge_pp"])}</span></div>
     </div>
     <div class="why">
-      <h4>Waarom</h4>
+      <h4>Voorbeschouwing</h4>
       <p class="prose">{inline(why)}</p>
-      {render_context(find_match(state or {}, pick), pick)}
+      {render_h2h(find_match(state or {}, pick))}
       {render_marketform(find_match(state or {}, pick), pick)}
+      {render_week(find_match(state or {}, pick))}
+      {render_context(find_match(state or {}, pick), pick)}
       <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
   </div>''')

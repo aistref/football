@@ -1707,8 +1707,9 @@ komt.
 
 #### Wat er in het dagrapport hoort (§6c)
 
-Vaste kopjes, in deze volgorde: **Bets vandaag** (de top `MAX_SHORTLIST`) · per wedstrijd de vier
-stappen hierboven · **Wat in beeld was maar het niet haalde** · **Dekkingsrapportage** · **De
+Vaste kopjes, in deze volgorde: **Bets vandaag** (de top `MAX_SHORTLIST`, elk met een
+VOORBESCHOUWING — zie §6c, "Elke gepubliceerde bet krijgt een VOORBESCHOUWING") · per wedstrijd de
+vier stappen hierboven · **Wat in beeld was maar het niet haalde** · **Dekkingsrapportage** · **De
 eerlijke stand** (`ledger.py stats`) · **Bevinding** · **Wat ik nog moet doen** · **De termen** ·
 en onderaan de disclaimer van §5, letterlijk.
 
@@ -2855,6 +2856,11 @@ Elke run, ook een run met nul bets:
    hele populatie en ziet daardoor niets, terwijl de Under-kant van de picks er meetbaar naast
    zit. Lees de twee regels nooit als één getal — de bovenste meet het model, de onderste de
    selectie.
+5i. **Voorbeschouwingsblok** → `preview.match_block(...)` per GEPUBLICEERDE bet in
+   `data/run-state/` onder `voorbeschouwing`: onderlinge historie met uitslagen, Fotmob's
+   waarnemingen per ploeg, topspelers, weer en het weekoverzicht vóór en ná de rundag (met de
+   Europese duels apart). Draai dit **na** `toplist.py` — pas dan is bekend wélke duels een bet
+   zijn. Zie §6c, "Elke gepubliceerde bet krijgt een VOORBESCHOUWING". Geen credits.
 5h. **Marktvormlogboek** → een `marktvorm`-blok per doorgerekende wedstrijd in
    `data/run-state/`, via `marketform.match_block(...)`. Zie §4, "Hoe vaak ging deze markt eerder
    op?". `report.py` rendert het zelf onder elke bet; het hoeft dus niet in de prose, maar de
@@ -3327,6 +3333,81 @@ GitHub rendert Markdown op `github.com` zelf, dus die route raakt `claudeusercon
 Een pad zonder link dwingt de gebruiker zelf te gaan zoeken op het moment dat hij juist niets kan
 openen.
 
+
+#### Elke gepubliceerde bet krijgt een VOORBESCHOUWING, geen rekenverslag (17 okt 2026, op verzoek van de gebruiker)
+
+**Dit is de belangrijkste regel over de `why`-tekst en hij vervangt hoe die tot 17 oktober werd
+geschreven.** De gebruiker:
+
+> *"Ik vind de verslagen echt niet te lezen. Kun je vanaf morgen mooie, goed leesbare
+> voorspellingen schrijven van de bets die je eruit haalt in de top 3 en top 5 in het weekend? Nu
+> is het allemaal over 'sterkste regel', 'drempels', 'procentpunten', extra uitleg over drempels en
+> andere rekeningen en toetsen, scheefstand en dan een klein beetje context. Ik wil in de ochtend
+> gewoon een leuke voorbeschouwing lezen op basis van wat je hebt gevonden. En de berekeningen en
+> dergelijke kun je echt heel minimaal melden. (...) Maak er een mooie voorbeschouwing van; beloon
+> de valuebets (die immers beter zijn dan alle andere berekende bets) met een fijn leesbaar
+> verslag."*
+
+Het verwijt is na te rekenen en het klopte. In de `why`-teksten van 17 oktober ging het grootste
+deel over de drempel, de twee rekenmethodes, de robuustheidstoets, `bet_beide`, de scheefstand van
+§6g en de niet-monotonie van poort 9 — en kwam de wedstrijd zelf aan het eind als één alinea
+"Context." Dat is de verhouding omgekeerd: de verantwoording hoort in het **markdown-runrapport**
+(dat is voor de repo) en de wedstrijd hoort in het **dagrapport** (dat is voor de gebruiker).
+
+**De norm.** Schrijf per gepubliceerde bet een voorbeschouwing van **300 tot 600 woorden** die een
+voetballiefhebber met plezier leest bij het ontbijt, en die hij ook had willen lezen als er geen
+weddenschap aan hing. Niet een samenvatting van de rekensom met wat voetbal eromheen, maar een
+stuk over de wedstrijd waarin de weddenschap de conclusie is. Zie
+`runs/voorbeschouwingen/2026-10-17-strasbourg-psg.md` als maatstaf; die is op verzoek van de
+gebruiker als proef geschreven en goedgekeurd.
+
+**Wat erin hoort, ongeveer in deze volgorde — maar schrijf een verhaal en geen lijstje:**
+
+1. **De wedstrijd en de week eromheen.** Wat voor duel is dit, en wat staat er in de agenda vóór
+   en ná? Een ploeg die woensdag in Manchester stond en dinsdag Barcelona ontvangt, speelt
+   zaterdag om kwart over vijf een andere wedstrijd dan het schema suggereert. `preview.week`
+   levert dit, met de Europese duels apart gemarkeerd.
+2. **Teamnieuws.** Vorm in woorden en niet als `WWDLL`, blessures en schorsingen **bij naam** met
+   hoe lang ze eruit liggen, rust en of de ploeg uit een midweekse wedstrijd komt, en het stadion
+   als er iets bijzonders is. Een uitvallerslijst van 43 procent van de selectiewaarde is een
+   verhaal, geen percentage.
+3. **De onderlinge historie, met de uitslagen.** `preview.h2h` geeft de laatste duels met score,
+   doelpuntentotaal en of beide ploegen scoorden. Bij een doelpuntenmarkt is dat vaak de kern:
+   *"1–2, 3–3, 2–1, 4–2, 1–2 — drie van de vijf op exact drie doelpunten, en in alle vijf scoorden
+   beide ploegen."*
+4. **De frequenties die bij DEZE markt horen** (§4, "Hoe vaak ging deze markt eerder op?"). Niet
+   alle vier de reeksen opsommen maar de twee of drie die iets zeggen, in gewone taal, met de
+   richting erbij. Spreken ze de bet tegen, dan hoort dat **vooraan** en niet in een voetnoot.
+5. **Wat de weddenschap kan slopen.** Eén alinea, eerlijk en concreet. Dit is het verschil tussen
+   een voorbeschouwing en een verkooppraatje.
+6. **Pas aan het eind, in cursief en in maximaal twee of drie regels: waarom hij op de lijst
+   staat.** Daar — en alleen daar — mag een getal over de drempel of de scheefstand staan.
+
+**Wat eruit moet, en dit is de harde kant van de regel.** Deze woorden horen niet in een
+voorbeschouwing: *procentpunt, drempel, lat, edge, scheefstand, rangorde, `selection_score`,
+robuustheidstoets, poort 7/8/9, `bet_beide`, herijking, kalibratie, Brier, shrink, rho.* Staat er
+toch een getal, dan is het een voetbalgetal (uitslagen, doelpunten per duel, aantal duels boven een
+lijn, dagen rust, marktwaarde) en geen rekengetal. De kans en de koers staan al in de kop van het
+blok dat `report.py` rendert; die hoeven niet nog eens in de tekst.
+
+**Hoeveel voorbeschouwingen.** Precies zoveel als er bets zijn, dus `MAX_SHORTLIST`: **drie op
+ma–do en vijf op vr–zo** (`ranking.max_shortlist`). Bij nul bets is er niets voor te beschouwen en
+blijft het dagrapport zoals §6c het al beschrijft. Voor de wedstrijden die géén bet werden
+verandert niets: die blijven één regel in de dekkingstabel en in "Net niet".
+
+**Waar het materiaal vandaan komt.** `scripts/preview.py` legt per gepubliceerde bet een
+`voorbeschouwing`-blok in `data/run-state/` met de onderlinge historie, Fotmob's eigen
+waarnemingen (per ploeg gesplitst op `teamId`, niet op volgorde), de topspelers, het weer en het
+weekoverzicht vóór en ná de rundag. Dat kost geen credits. Draai het **na** `toplist.py`, want pas
+dan is bekend wélke wedstrijden een bet zijn geworden:
+
+```bash
+python3 scripts/preview.py selftest      # 27 controles, geen netwerk nodig
+```
+
+**En de harde grens van §2 geldt onverkort.** Niets uit dit blok gaat in `my_prob` of in
+`prob_sources`. `insights` is per ontwerp een selectie van feiten die Fotmob interessant vindt —
+andermans redactie — en de h2h is historie. Een voorbeschouwing beschrijft; ze rekent niet.
 
 #### Elk actiepunt zegt wat de gebruiker moet doen (toegevoegd 27 sep 2026, op verzoek van de gebruiker)
 
