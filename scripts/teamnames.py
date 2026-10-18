@@ -195,6 +195,17 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # faalstand als "Sheff Wed" hierboven, nu aan de kant van de tweede xG-bron.
     "fc cologne": "1 fc koln",
     "cologne": "1 fc koln",
+    # 18 okt 2026 — UNDERSTAT kort deze club af tot "Borussia M.Gladbach", en na `norm` is dat
+    # {borussia, m, gladbach} tegen {borussia, monchengladbach} bij Fotmob: één gedeeld token,
+    # geen deelverzameling in beide richtingen, dus de tokenregel haalt hem niet. Gevolg op
+    # Borussia Mönchengladbach - Hoffenheim (Run A, 18 okt 2026): `understat_pair` gaf None,
+    # dus het kalibratieblok van dat duel miste `p_xg_understat` en §4 kon zijn tweede,
+    # onafhankelijke xG-bron daar niet meten — zonder foutmelding. Exact dezelfde stille
+    # faalstand als "FC Cologne" twee dagen eerder, en in dezelfde competitie.
+    # Beide kanten, want `resolve` leest de tabel sinds 9 okt in twee richtingen:
+    "borussia m gladbach": "borussia monchengladbach",
+    "m gladbach": "borussia monchengladbach",
+    "monchengladbach": "borussia monchengladbach",
 }
 
 
