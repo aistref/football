@@ -19,7 +19,7 @@ from scripts.ranking import max_shortlist
 
 DAG = "2026-10-18"
 NL = timezone(timedelta(hours=2))
-CAPTURED = "2026-10-18T04:52:00+02:00"      # uitleestijd van de prijzen (bulk + BetExplorer)
+CAPTURED = "2026-10-18T04:13:00+02:00"      # uitleestijd van de prijzen (bulk + BetExplorer)
 
 
 def slug(t):
@@ -344,7 +344,7 @@ def wegschrijven():
                 "ook bij een open poort wordt gemeld (§1c)."),
             "OPSTELLINGEN": (
                 "lineup_type: 28 duels op 'predicted' en 7 op 'lastStarting11'. Bevestigde "
-                "elftallen (lineupType 'confirmed') zijn er om 05:00 NL bij geen enkel duel. "
+                "elftallen (lineupType 'confirmed') zijn er om 04:10 NL bij geen enkel duel. "
                 "Dat zit in de datarijkdom (§3 Stage 4) en niet in my_prob."),
             "VROEG_SEIZOEN_EN_DE_DEENSE_ROUTE": (
                 "early_season_uplift geeft factor 1.1128, gepoold 1.1252 over 73 speeldagen in "
