@@ -18,7 +18,7 @@ from scripts.ranking import max_shortlist
 
 DAG = "2026-10-19"
 NL = timezone(timedelta(hours=2))
-CAPTURED = "2026-10-19T04:34:00+02:00"      # uitleestijd van de prijzen (bulk + BetExplorer)
+CAPTURED = "2026-10-19T04:10:43+02:00"      # uitleestijd van de prijzen (bulk + BetExplorer), werkelijke klok
 
 
 def slug(t):
@@ -351,7 +351,8 @@ def wegschrijven():
             "OPSTELLINGEN": (
                 "lineup_type: 6 duels op 'predicted' en 2 op 'lastStarting11' (Trabzonspor – "
                 "Beşiktaş en Wisła Płock – Radomiak Radom). Bevestigde elftallen (lineupType "
-                "'confirmed') zijn er om 04:30 NL bij geen enkel duel. Dat zit in de "
+                "'confirmed') zijn er om 04:09 NL — het moment van de contextophaling — bij geen enkel "
+                "duel. Dat zit in de "
                 "datarijkdom (§3 Stage 4) en niet in my_prob."),
             "VROEG_SEIZOEN_EN_DE_DEENSE_ROUTE": (
                 "early_season_uplift geeft factor 1.0940, gepoold 1.1091 over 50 speeldagen in "
