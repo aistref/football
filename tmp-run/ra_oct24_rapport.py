@@ -65,19 +65,20 @@ for comp, v in cups.items():
                f"(UK-tijd), buiten het venster; {v.get('teamparen')} teamparen op de "
                f"fixturepagina, dus de slug is goed en de bron heeft niet gefaald |")
 out.append("")
-out.append("**Afgekapt door `MAX_DEEP_ANALYSES`:** 0 van 55 (vrijdag, vr-zo). 13 duels in "
-           "het venster en alle dertien doorgerekend: er is vandaag geen enkel duel op "
-           "`NONE`, en dat is voor Run A in weken niet voorgekomen. De marge op de cap is "
-           "dus 42 duels — de ruimste in weken, waar het gisteren nog vier duels scheelde. "
-           "Zeven duels zijn `FULL`; de zes andere hebben een ploeg die niet in de stand van "
-           "2025/2026 staat en zijn via `scripts/promotion.py` omgerekend, wat per definitie "
-           "`LIGHT` geeft (Ipswich Town, Monza, Málaga, Bolton Wanderers, Marítimo en "
-           "Kortrijk — alle zes binnen `conversion_in_range`, dus geen van de zes strandt op "
-           "de Coventry-val). Geen enkel duel is kruis-grens, dus `scripts/interleague.py` "
-           "komt deze run niet aan de orde. Datarijkdom liep van 4.50 (Kortrijk – KV "
-           "Mechelen, geen opstelling en geen selectiewaarde bij Fotmob) tot 7.50 (VfB "
-           "Stuttgart – Borussia Mönchengladbach); er viel niets af door de cap, dus er is "
-           "geen 'laagste die het haalde' en geen 'hoogste die afviel'.\n")
+out.append("**Afgekapt door `MAX_DEEP_ANALYSES`:** 0 van 55 (zaterdag, vr-zo). 51 duels in "
+           "het venster — de grootste Run A-lijst in weken — en 50 ervan doorgerekend. De "
+           "marge op de cap is dus VIER duels, de krapste sinds de cap op 40/55 staat: een "
+           "volle Championship-speelronde meer en hij had gebonden. 33 duels zijn `FULL`; "
+           "17 hebben een ploeg die niet in de stand van 2025/2026 staat en zijn via "
+           "`scripts/promotion.py` omgerekend, wat per definitie `LIGHT` geeft. PRECIES ÉÉN "
+           "duel komt op `NONE` uit: Gaziantep FK – Erzurumspor FK, waar Erzurumspor FK "
+           "buiten `conversion_in_range` valt — de Coventry-val, en de juiste uitkomst, want "
+           "buiten het gemeten bereik is doorrekenen raden. Geen enkel duel is kruis-grens, "
+           "dus `scripts/interleague.py` komt deze run niet aan de orde. Datarijkdom liep van "
+           "4.50 (de vier Belgische duels) tot 8.00 (Valencia – Villarreal); er viel niets af "
+           "door de cap, dus er is geen 'laagste die het haalde' en geen 'hoogste die "
+           "afviel'. De context is voor alle 51 duels opgehaald zoals §1c eist, met nul "
+           "fouten.\n")
 
 # ---------------------------------------------------------------- topselectie
 out.append("## Topselectie (§5b — rangorde over de hele runlijst)\n")
@@ -89,26 +90,33 @@ for i, r in enumerate(top["herijkt"], 1):
                f"{r['prob']*100:.1f}% | {r['edge_pp']:+.2f} pp | {r['score']:.3f} | "
                f"`{r['tier']}` | {RISK[r['tier']]} | {r['status']} |")
 out.append("")
-out.append("**Vier regels, en de lijst is niet door een grens afgekapt maar door een gebrek "
-           "aan kandidaten.** `MAX_SHORTLIST` = 5 (vrijdag) en er zijn precies vier "
-           "publiceerbare selecties — vier duels waarbij alle acht de andere poorten "
-           "openstonden. `MAX_LIGHT_IN_SHORTLIST` = 2 raakt zijn bovengrens exact (twee "
-           "`LIGHT`-regels van maximaal twee) maar heeft niets uitgesloten, want er was geen "
-           "derde `LIGHT`-kandidaat; de reeks `lijstlengte` groeit vandaag dus niet. **Twee "
-           "van de vier halen hun eigen lat**, en bij die twee staat `bet_beide` op TRUE: "
-           "Randers FC – Brøndby IF, Under 3, +15,58 pp op `FULL` (ruw +15,56; lat 8,0, met "
-           "poort 9 erbij 10,0) en Brest – Nice, Brest wint, +16,29 pp op `FULL` (ruw "
-           "+16,27). **De andere twee staan onder hun lat van 16,0 pp en zijn op rangorde "
-           "gepubliceerd** (§5b): Deportivo Alavés – Málaga, Over 2.5, +10,07 pp op `LIGHT`, "
-           "en Ipswich Town – Nottingham Forest, Over 2.5, +8,41 pp op `LIGHT`. Dat hun lat "
-           "op 16,0 staat en niet op 8,0 is geen willekeur maar de prijs van de omrekening: "
-           "beide duels hebben een promovendus. Lees die twee dus als 'het beste van vandaag' "
-           "en niet als een gevonden voordeel — §1g heeft op 552 afgerekende gevallen gemeten "
-           "dat er GEEN drempel op de herijkte edge bestaat die geld oplevert, en dat het "
-           "rendement het slechtst is bij de hóógste geclaimde edge. **En dat laatste is "
-           "vandaag geen abstractie:** de twee regels die hun lat wél halen zijn precies de "
-           "twee duels waar het model het verst van het Pinnacle-oordeel af staat (Brest "
-           "+17,5 pp op de thuiszege, Randers +17,4 pp op P(Under 3)) — zie de bevindingen.\n")
+out.append("**Vijf regels, en voor het eerst in weken bindt de LIJSTLENGTE in plaats van "
+           "het aantal kandidaten.** `MAX_SHORTLIST` = 5 (zaterdag) en er zijn VEERTIEN duels "
+           "met een publiceerbare selectie — veertien duels waarbij alle acht de andere "
+           "poorten openstonden en de edge boven de NEAR-ondergrens bleef. Er passen vijf "
+           "regels in, dus negen vallen af op rangorde. `MAX_LIGHT_IN_SHORTLIST` = 2 raakt "
+           "zijn bovengrens exact (twee `LIGHT`-regels van maximaal twee) maar heeft niets "
+           "uitgesloten, want er is geen derde `LIGHT`-kandidaat binnen de eerste vijf "
+           "plekken. **DRIE van de vijf halen hun eigen lat van 8,0 pp op `FULL`**, en bij "
+           "alle vijf staat `bet_beide` op TRUE: Lazio – Parma Under 2.5 (+14,13 pp, ruw "
+           "+14,53), Como – Sassuolo Under 3.5 (+11,58 pp, ruw +12,01) en Alverca – Arouca "
+           "Over 2.5 (+8,74 pp, ruw +9,11). **De twee andere staan onder hun lat van 16,0 pp "
+           "en zijn op rangorde gepubliceerd** (§5b): Racing Santander – Espanyol Over 2.5 "
+           "(+12,84 pp op `LIGHT`) en Lincoln City – Burnley Over 2.5 (+12,82 pp op `LIGHT`). "
+           "Dat hun lat op 16,0 staat en niet op 8,0 is geen willekeur maar de prijs van de "
+           "omrekening: beide duels hebben een promovendus (Racing Santander, Lincoln City) "
+           "en Lincoln – Burnley zelfs ook een degradant. Lees die twee dus als 'het beste "
+           "van vandaag' en niet als een gevonden voordeel — §1g heeft op 552 afgerekende "
+           "gevallen gemeten dat er GEEN drempel op de herijkte edge bestaat die geld "
+           "oplevert, en dat het rendement het slechtst is bij de hóógste geclaimde edge. "
+           "**En één gekwalificeerde selectie valt af op lijstlengte, wat op het eerste "
+           "gezicht als een fout leest:** Chelsea – Tottenham Hotspur, BTTS 'nee' @2.6856, "
+           "+8,38 pp op `FULL` — boven zijn lat — staat op rang 6 en haalt de lijst niet, "
+           "terwijl de twee `LIGHT`-regels die hun lat NIET halen er wél in staan. Dat volgt "
+           "uit §5b plus `selection_score`: de drempel bindt alleen als er MEER selecties "
+           "boven hun lat staan dan er plekken zijn (dat zijn er vier op vijf, dus de "
+           "rangorde beslist), en in `selection_score` verslaat +12,84 pp op `LIGHT` × 0,5 "
+           "een +8,38 pp op `FULL`. Zie bevinding 1.\n")
 
 out.append("### De ruwe dagranglijst (§5a) — een meting, geen tip\n")
 out.append("| # | Bet | Koers | Kans | Ruwe edge | Score | Viel af op |")
@@ -128,13 +136,19 @@ for m in res["matches"]:
 bet_mk = {}
 for p in picks.values():
     bet_mk[p["market"]] = bet_mk.get(p["market"], 0) + 1
-BRON = {"1X2": "12 van 12 (allemaal beste prijs uit de bulk-`h2h`; alle twaalf spelende "
-                "competities hebben een sportkey bij The Odds API)",
-        "Asian Handicap": "12 van 12 (bulk `spreads`)",
-        "Draw No Bet": "12 van 12 (de 0.0-lijn uit diezelfde `spreads`, gratis)",
-        "Double Chance": "12 van 12 (de ±0.5-lijn uit diezelfde `spreads`, gratis)",
-        "Over/Under": "12 van 12 (bulk `totals`)",
-        "BTTS": "10 van de 13 duels, namelijk alle duels met een kandidaat-edge (2 credits per duel); de drie zonder — Vitória de Guimarães – Marítimo, Kortrijk – KV Mechelen en Motor Lublin – Zagłębie Lubin — staan als ‘niet opgevraagd, geen kandidaat-edge’ in markets_checked en niet als gat"}
+BRON = {"1X2": "12 van 12 — 11 op de beste prijs uit de bulk-`h2h`, en de Scottish "
+                "Premiership (4 duels) op het gratis BetExplorer-MARKTGEMIDDELDE, want die "
+                "competitie heeft geen sportkey bij The Odds API; daar is de bookmaker niet "
+                "herleidbaar en valt de edge systematisch te laag uit (§1a)",
+        "Asian Handicap": "11 van 12 (bulk `spreads`; geen spreads voor de Scottish Premiership)",
+        "Draw No Bet": "11 van 12 (de 0.0-lijn uit diezelfde `spreads`, gratis)",
+        "Double Chance": "11 van 12 (de ±0.5-lijn uit diezelfde `spreads`, gratis)",
+        "Over/Under": "11 van 12 (bulk `totals`; geen totals voor de Scottish Premiership)",
+        "BTTS": "28 van de 30 duels met een kandidaat-edge (2 credits per duel). De twee die "
+                "afvielen zijn Dundee United – Aberdeen en Falkirk – Kilmarnock: geen "
+                "sportkey, dus geen event-id om de markt op op te vragen. De 21 duels zonder "
+                "kandidaat-edge staan als 'niet opgevraagd — geen kandidaat-edge in dit duel' "
+                "in `markets_checked` en niet als gat"}
 out.append("| Markt | Competities met prijzen | Selecties doorgerekend | Bets |")
 out.append("|---|---|---|---|")
 for markt in ("1X2", "Asian Handicap", "Draw No Bet", "Double Chance", "Over/Under", "BTTS"):
@@ -162,27 +176,24 @@ for m in res["matches"]:
 out.append("")
 GEEN_NM = len([m for m in res["matches"]
                if not (m.get("near_miss") or m.get("near_miss_gepubliceerd"))])
-out.append(f"{rows} regels over 13 duels, en de rest telt als volgt op. TWEE duels hebben "
-           f"een `near_miss` die NIET in deze tabel staat omdat de sterkste afgewezen kandidaat "
-           f"daar de gepubliceerde bet zelf is geworden (Deportivo Alavés – Málaga en Ipswich "
-           f"Town – Nottingham Forest; die staan in de run-state als `near_miss_gepubliceerd`, "
-           f"want een andere selectie van een duel waarop is gepubliceerd is dezelfde mening en "
-           f"geen afgewezen kandidaat — §1a, §6d). En {GEEN_NM} duels hebben er helemaal geen: "
-           f"bij Vitória de Guimarães – Marítimo, Kortrijk – KV Mechelen en Motor Lublin – "
-           f"Zagłębie Lubin bleef de sterkste kandidaat onder de NEAR-ondergrens (6,0 pp op "
-           f"`LIGHT`, 3,0 pp op `FULL`) — precies de drie duels die ook geen BTTS kregen, want "
-           f"geen kandidaat-edge — en bij Randers FC – Brøndby IF en Brest – Nice stonden alle "
-           f"negen poorten open, dus daar is niets afgewezen om te melden. De ene poort-8-rij "
-           f"(Go Ahead Eagles – Telstar, Telstar wint @5.508, marktkans 18,3%) staat niet in "
-           f"deze tabel maar als eigen categorie `underdog` in het schaduwlogboek; de Over 3.25 "
-           f"van datzelfde duel, die op de tweede methode afviel, staat hier wel. Er is vandaag "
-           f"geen enkel duel op `NONE`, dus er is ook geen regel die ontbreekt omdat er niets "
-           f"is doorgerekend.\n")
+out.append(f"{rows} regels over 51 duels, en de rest telt als volgt op. VIJF duels hebben "
+           f"een `near_miss` die NIET in deze tabel staat omdat de sterkste afgewezen "
+           f"kandidaat daar de gepubliceerde bet zelf is geworden (de vijf duels van de "
+           f"topselectie; die staan in de run-state als `near_miss_gepubliceerd`, want een "
+           f"andere selectie van een duel waarop is gepubliceerd is dezelfde mening en geen "
+           f"afgewezen kandidaat — §1a, §6d). En {GEEN_NM} duels hebben er helemaal geen: daar "
+           f"bleef de sterkste kandidaat onder de NEAR-ondergrens (6,0 pp op `LIGHT`, 3,0 pp "
+           f"op `FULL`), op één na — Gaziantep FK – Erzurumspor FK staat op `NONE` en heeft "
+           f"niets doorgerekend om af te wijzen. De ELF poort-8-rijen en de TWEE poort-9-rijen "
+           f"staan niet in deze tabel maar als eigen categorie (`underdog`, "
+           f"`doelpunten_onder`) in het schaduwlogboek, en de ene `lijstlengte`-rij (Chelsea – "
+           f"Tottenham, BTTS nee) net zo — die drie categorieën zijn drie aparte populaties en "
+           f"mogen nooit bij `edge` worden opgeteld (§1e, §1h, §5b).\n")
 
 # ---------------------------------------------------------------- per wedstrijd
 out.append("## Wedstrijden\n")
-out.append("De 13 duels in het inzetvenster, op aftraptijd. De vier gepubliceerde regels "
-           "staan in het volledige format van §5; bij de andere negen staat de reden in één "
+out.append("De 51 duels in het inzetvenster, op aftraptijd. De vijf gepubliceerde regels "
+           "staan in het volledige format van §5; bij de andere 46 staat de reden in één "
            "regel, met de cijfers per poort in de tabel \"Net niet\" hierboven.\n")
 for m in sorted(res["matches"], key=lambda m: (m["kickoff_utc"], m["match"])):
     naam = m["home"] + " – " + m["away"]
