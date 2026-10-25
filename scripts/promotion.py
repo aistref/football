@@ -293,7 +293,28 @@ MEASURED_TIER2_GAP: dict[str, tuple[float, float, int, float, float, float, floa
     # Gemeten 11 okt 2026 (Run B), op besluit van de gebruiker — zie "Griekenland en Oostenrijk"
     # hieronder. Hongarije hoort in dit rijtje en staat er NIET: de NB II heeft bij Fotmob geen
     # historie (zie de toelichting bij `TIER2`).
-    "Greek Super League (GRE)":  (0.482, 2.712, 11, 1.282, 1.949, 0.259, 0.905),
+    # HERMETEN 25 okt 2026 (Run B). Stond hier tot vandaag als (0.482, 2.712, 11, 1.282, 1.949,
+    # 0.259, 0.905), en dat getal was het product van een FOUT en niet van een keuze: de
+    # Super League 2 (GRE) speelt in twee parallelle groepen én heeft bínnen elke groep een
+    # promotie-/degradatiesplitsing, en `fotmob.partitioned_groups` gaf bij die combinatie `[]`
+    # terug (zie daar, herzien op diezelfde datum). `_season_tables` zag daardoor één groep in
+    # plaats van twee, dus de meting van 11 okt 2026 liep over de helft van de competitie.
+    #
+    # Na de reparatie komen er twee waarnemingen bij, beide uit Grp. B — precies de groep die
+    # wegviel: Athens Kallithea FC (2023) en Kifisia FC (2024). Wat dat verandert:
+    #
+    #   aanval       0.482 -> 0.484   (onveranderd; het blijft het laagste van de veertien paren)
+    #   verdediging  2.712 -> 2.484   (-8,4%: de oude waarde overschatte wat een Griekse
+    #                                  promovendus incasseert, en bleef wél de hoogste van alle
+    #                                  paren — 2.484 tegen 1.434 (SUI) t/m 2.009 (AUT))
+    #   n            11 -> 13
+    #   bereik       aanval 1.248-1.951 (was 1.282-1.949), verdediging onveranderd 0.259-0.905
+    #
+    # Dezelfde `measure_gap` over 2016/2017-2024/2025, dus alleen de invoer is gerepareerd, niet
+    # de methode. Narekenen:
+    #     PYTHONPATH=. python3 -c "from scripts import promotion as P; \
+    #         print(P.measure_gap('Greek Super League (GRE)', 135, range(2016, 2025)).summary())"
+    "Greek Super League (GRE)":  (0.484, 2.484, 13, 1.248, 1.951, 0.259, 0.905),
     "Austrian Bundesliga (AUT)": (0.615, 2.009, 10, 1.183, 1.508, 0.519, 0.814),
 }
 
@@ -401,7 +422,8 @@ MEASURED_GAP_DATE: dict[str, str] = {
     "Süper Lig (TUR)": "31 aug 2026", "Ekstraklasa (POL)": "31 aug 2026",
     "LaLiga2 (ESP)": "5 okt 2026",
     "Romanian SuperLiga (ROU)": "9 okt 2026",
-    "Greek Super League (GRE)": "11 okt 2026",
+    # 11 okt 2026 gemeten, 25 okt 2026 HERMETEN na de groepsreparatie — zie MEASURED_TIER2_GAP.
+    "Greek Super League (GRE)": "25 okt 2026 (hermeten; eerste meting 11 okt 2026)",
     "Austrian Bundesliga (AUT)": "11 okt 2026",
     "Czech First League (CZE)": "9 okt 2026", "Swiss Super League (SUI)": "9 okt 2026",
     "Eliteserien (NOR)": "9 okt 2026", "Allsvenskan (SWE)": "9 okt 2026",

@@ -222,6 +222,81 @@ def _norm_ground(s: str) -> str:
     return s
 
 
+#: Woorden die een stadion niet onderscheiden en dus niet als "betekenisvol" meetellen bij de
+#: deelverzamelingsregel van `same_ground`. Het generieke woord voor stadion zelf zit al in
+#: `_GENERIEK`; dit zijn de andere dragers die in tientallen namen voorkomen.
+_ZWAK = {"arena", "park", "centrum", "center", "centre", "city", "sportpark", "complex"}
+
+
+def _ground_woorden(s: str) -> set[str]:
+    """De betekenisvolle woorden van een stadionnaam, los van volgorde en spelling.
+
+    Toegevoegd 25 okt 2026 (Run B), en het is de derde reparatie van ditzelfde valse alarm — na
+    de accenten (6 sep) en het generieke woord "stadion" zelf (16 okt). Beide eerdere fixes
+    vergeleken de naam als één blok tekens, en daardoor bleven twee vormen van hetzelfde
+    verschil staan. Vandaag gaf dat twee onware meldingen op één run, beide Hongaars:
+
+    * **Vasas Budapest – Paksi SE.** Wedstrijdpagina "Stadion Illovsky Rudolf", teampagina
+      "Illovszky Rudolf Stadion". Twee verschillen tegelijk: het generieke woord staat hier
+      vóóraan in plaats van achteraan (dus de WOORDVOLGORDE verschilt, niet alleen het woord),
+      en Fotmob transliterert de Hongaarse digraaf `sz` op de ene pagina wel en op de andere niet.
+    * **Puskás FC Academy – Nyíregyháza Spartacus FC.** Wedstrijdpagina "Pancho Arena",
+      teampagina "Puskás Akadémia Pancho Aréna" — dezelfde mat, met de clubnaam ervoor.
+
+    §1c eist dat een verplaatsing in het runrapport wordt genoemd ook als de poort opengaat, dus
+    een vals alarm is hier geen schoonheidsfoutje maar een **onware mededeling** in het rapport —
+    en, zoals de docstring van 6 september al zei: een controle die bij elke taal met accenten
+    afgaat, leert de lezer haar te negeren. Twee op 36 duels is genoeg om dat te doen.
+
+    Daarom woorden in plaats van één blok, met twee toleranties:
+
+    * **De Hongaarse digraven** `sz`, `zs` en `cz` worden op hun enkele letter gezet. Hongaars
+      schrijft /s/ als `sz`, en Fotmob is daar inconsistent in. Twee werkelijk verschillende
+      velden die alléén op zo'n digraaf verschillen bestaan niet.
+    * **Zwakke dragers** (`arena`, `park`, …) tellen niet mee als betekenisvol woord, zodat de
+      deelverzamelingsregel in `same_ground` niet op "Arena" alleen kan matchen.
+
+    Wat dit NIET mag wegvagen zijn de echte verplaatsingen, en die blijven staan omdat hun
+    woorden niets gemeen hebben: Rudes – Rijeka van 16 oktober (gespeeld in "SRC Velika Gorica",
+    eigen mat "Igraliste NK Rudes") en Rennes – PSG van 23 augustus ("Roazhon Park" tegen "Parc
+    des Princes"). De zelftest onderaan dit bestand houdt beide gevallen vast.
+    """
+    s = unicodedata.normalize("NFKD", s or "")
+    s = "".join(ch for ch in s if not unicodedata.combining(ch)).lower()
+    s = "".join(ch if ch.isalnum() else " " for ch in s)
+    woorden = set()
+    for w in s.split():
+        for woord in _GENERIEK:      # ook als het aan een woord vastgeplakt zit
+            w = w.replace(woord, "")
+        w = w.replace("sz", "s").replace("zs", "z").replace("cz", "c")
+        if len(w) >= 2:
+            woorden.add(w)
+    return woorden
+
+
+def same_ground(a: str, b: str) -> bool:
+    """Zijn dit twee namen voor hetzelfde stadion? Zie `_ground_woorden` voor het waarom.
+
+    Gelijk als de blokvorm gelijk is (het oude gedrag, en dus de snelle weg), of als de
+    woordverzamelingen gelijk zijn, of als de ene een deelverzameling van de andere is én die
+    overlap minstens één betekenisvol woord bevat — dat laatste is het geval "Pancho Arena"
+    binnen "Puskas Akademia Pancho Arena".
+    """
+    if not a or not b:
+        return False
+    if _norm_ground(a) == _norm_ground(b):
+        return True
+    wa, wb = _ground_woorden(a), _ground_woorden(b)
+    if not wa or not wb:
+        return False
+    if wa == wb:
+        return True
+    klein, groot = (wa, wb) if len(wa) <= len(wb) else (wb, wa)
+    if not klein <= groot:
+        return False
+    return any(w not in _ZWAK and len(w) >= 4 for w in klein)
+
+
 def team_ground(team_id: int) -> tuple[str, str]:
     """(stadionnaam, plaats) van één ploeg, uit de JSON-LD op de Fotmob-teampagina."""
     try:
@@ -242,13 +317,13 @@ def check_venue(stadium: str, city: str, home_id: int | None, away_id: int | Non
     if not v.home_ground:
         v.note = "eigen stadion van de thuisploeg niet gevonden"
         return v
-    if _norm_ground(v.home_ground) == _norm_ground(stadium):
+    if same_ground(v.home_ground, stadium):
         v.note = f"{stadium} — het eigen stadion van de thuisploeg"
         return v
     v.relocated = True
     if away_id:
         v.away_ground, _ = team_ground(away_id)
-        if v.away_ground and _norm_ground(v.away_ground) == _norm_ground(stadium):
+        if v.away_ground and same_ground(v.away_ground, stadium):
             v.at_away_ground = True
     v.note = (f"VERPLAATST: gespeeld in {stadium}"
               + (f" ({city})" if city else "")
@@ -360,12 +435,55 @@ def check(ctx: MatchContext, side: str | None) -> ContextGate:
     return ContextGate(True, "geen materieel nadeel gemeten", detail)
 
 
+def _selftest_ground() -> int:
+    """De stadionvergelijking, zonder netwerk. Zie `_ground_woorden`.
+
+    Elke regel is een geval dat deze controle werkelijk heeft gehad: de vijf valse alarmen van
+    6 sep, 16 okt en 25 okt die hij moet laten passeren, en de twee ECHTE verplaatsingen die hij
+    moet blijven melden. Die laatste twee zijn het punt van de zelftest — een vergelijking die
+    ruimer wordt gemaakt om valse alarmen te doven, kan de echte gevallen meenemen.
+    """
+    gevallen = [
+        # (wedstrijdpagina, teampagina, zelfde mat?, waar het geval vandaan komt)
+        ("Stadion Illovsky Rudolf", "Illovszky Rudolf Stadion", True,
+         "Vasas Budapest - Paksi SE, 25 okt 2026: woordvolgorde + Hongaarse sz/s"),
+        ("Pancho Arena", "Puskas Akademia Pancho Arena", True,
+         "Puskas FC Academy - Nyiregyhaza, 25 okt 2026: clubnaam ervoor"),
+        ("ZTE Arena", "ZTE Arena", True, "6 sep 2026: accenten"),
+        ("Groupama Arena", "Groupama Arena", True, "6 sep 2026: accenten"),
+        ("Hidegkuti Nandor Stadium", "Hidegkuti Nandor Stadion", True,
+         "MTK - Vasas, 16 okt 2026: stadium/stadion"),
+        ("Stadionul Steaua", "Steaua Stadion", True, "Roemeens: generiek woord vooraan"),
+        ("SRC Velika Gorica", "Igraliste NK Rudes", False,
+         "Rudes - Rijeka, 16 okt 2026: ECHTE verplaatsing"),
+        ("Roazhon Park", "Parc des Princes", False,
+         "Rennes - PSG, 23 aug 2026: ECHTE verplaatsing"),
+        ("Arena", "Allianz Arena", False, "zwakke drager alleen mag niet matchen"),
+        ("Anfield", "Goodison Park", False, "twee echte, verschillende stadions"),
+        ("", "Anfield", False, "lege naam is geen match"),
+    ]
+    fouten = 0
+    for a, b, verwacht, waar in gevallen:
+        got = same_ground(a, b)
+        if got != verwacht:
+            fouten += 1
+            print(f"  FOUT {waar}: {a!r} vs {b!r} -> {got}, verwacht {verwacht}")
+        else:
+            print(f"  ok   {waar}")
+    print(f"{'stadionvergelijking OK' if not fouten else str(fouten) + ' FOUT(EN)'} "
+          f"({len(gevallen)} gevallen)")
+    return fouten
+
+
 if __name__ == "__main__":
     # Zelftest tegen echte, actuele data: één duel van vandaag met een voorspelde opstelling.
     import sys
     from datetime import date
     sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
     from scripts import fotmob
+
+    if "--ground" in sys.argv:         # geen netwerk nodig
+        raise SystemExit(1 if _selftest_ground() else 0)
 
     fixtures = fotmob.fetch_fixtures(date.today())
     probe = None

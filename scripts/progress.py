@@ -268,7 +268,25 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     gedekt = 0
     overgeslagen = {"NONE": 0, "afgekapt": 0}
     for comp, block in state["competitions"].items():
-        if not isinstance(block, dict) or block.get("status") != "GEANALYSEERD":
+        if not isinstance(block, dict):
+            continue
+        if block.get("status") != "GEANALYSEERD":
+            # 25 okt 2026 (Run B) — EEN COMPETITIE DIE NIET `GEANALYSEERD` IS WERD HIER VOLLEDIG
+            # OVERGESLAGEN, OOK IN DE TELLING ERONDER. Er valt bij zo'n competitie niets te
+            # controleren (geen kansbron of door de cap afgekapt, dus geen markt om te bekijken),
+            # maar de staart van deze uitvoer zegt hoeveel duels zijn overgeslagen en die telling
+            # klopte dan niet: vandaag staan vier duels op tier NONE en meldde hij er drie, omdat
+            # het vierde (Osijek – Rudes) in een competitie zat die als geheel buiten de dekking
+            # viel. Dat is precies de soort administratie die deze controle zelf wil voorkomen —
+            # een getal dat niet optelt tot de dag. De duels worden daarom geteld en niet
+            # bekeken; `gaten` blijft leeg voor deze competities.
+            for match in block.get("matches", []):
+                if not isinstance(match, dict):
+                    continue
+                if match.get("tier") == "NONE":
+                    overgeslagen["NONE"] += 1
+                else:
+                    overgeslagen["afgekapt"] += 1
             continue
         for match in block.get("matches", []):
             if not isinstance(match, dict):

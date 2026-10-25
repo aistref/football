@@ -289,25 +289,58 @@ def partitioned_groups(table_field: list) -> list[str]:
       DISJUNCT en zonder volledige stand. Er is hier geen hoofdcompetitie om te kiezen: elke groep
       heeft zijn eigen competitiegemiddelde, en "de grootste" is een greep uit twee gelijke.
 
-    Het verschil is dus niet het aantal groepen of hun grootte maar of een ploeg in meer dan één
-    groep voorkomt. Deze functie geeft de namen alleen in het tweede geval, en anders `[]` — zodat
-    een aanroeper die op groepen wil werken de splitsingscompetities ongemoeid laat.
+    Het verschil is dus niet het aantal groepen of hun grootte maar of er een stand bestaat die
+    de héle competitie bevat. Deze functie geeft de namen alleen in het tweede geval, en anders
+    `[]` — zodat een aanroeper die op groepen wil werken de splitsingscompetities ongemoeid laat.
+
+    **Herzien 25 okt 2026 (Run B), want de eerste versie viel om zodra een competitie BEIDE
+    vormen tegelijk heeft.** De Super League 2 (GRE, id 8815) geeft in 2025/2026 zes tabellen:
+    "2 Grp. A" (10) en "2 Grp. B" (10) — de echte opdeling — en bínnen elke groep nog een
+    "Promotion Group" (4) en een "Relegation Group" (6). De oude lus liep de tabellen op
+    volgorde langs en zag "2 Grp. A Promotion Group" overlappen met "2 Grp. A", concludeerde
+    "splitsing" en gaf `[]` terug. Daarmee viel de hele groepsafhandeling weg: `_pick_table`
+    koos zonder `group` de eerste van de twee gelijke groepen (Grp. A), en een promovendus uit
+    Grp. B "stond niet in de stand".
+
+    Dat kostte vandaag Olympiacos – Kalamata, en het is dezelfde stille faalstand als het
+    Serie B-id: een fout id of een fout gekozen groep geeft geen foutmelding maar **nul
+    waarnemingen**, en nul waarnemingen leest als "deze ploeg heeft geen historie". Het raakte
+    ook de meting zelf — `promotion._season_tables` is de andere aanroeper, dus de factor voor
+    `Greek Super League (GRE)` in `MEASURED_TIER2_GAP` is op 11 okt 2026 over één van de twee
+    groepen gemeten (zie daar).
+
+    De regel die beide vormen scheidt is niet "overlapt er iets" maar: **bestaat er een tabel
+    die alle ploegen bevat?** Zo ja, dan is dát de hoofdcompetitie en zijn de rest subgroepen
+    (Denemarken: "1. Division" (12) naast twee groepen van 6; België; Schotland). Zo nee, dan is
+    er geen hoofdcompetitie en zijn de grofste disjuncte tabellen die samen alles dekken de
+    echte opdeling (Griekenland: Grp. A + Grp. B; Spanje: Group 1 + Group 2).
     """
     if not table_field:
         return []
     data = table_field[0]["data"]
-    tabs = [t for t in data.get("tables", []) or []
+    tabs = [(str(t.get("leagueName") or t.get("name") or ""),
+             {str(r.get("name")) for r in t["table"]["all"]})
+            for t in data.get("tables", []) or []
             if isinstance(t.get("table"), dict) and "all" in t["table"]]
+    tabs = [(naam, leden) for naam, leden in tabs if leden]
     if len(tabs) < 2:
         return []
+
+    alle = set().union(*(leden for _, leden in tabs))
+    # Bestaat er één tabel met de hele competitie erin? Dan is dit een kampioens-/
+    # degradatiesplitsing en hoort `_pick_table` zonder `group` het antwoord te geven.
+    if any(leden >= alle for _, leden in tabs):
+        return []
+
+    # Geen volledige stand: de grofste disjuncte dekking is de opdeling. Grootste eerst, zodat
+    # "2 Grp. A" (10) wordt gekozen boven zijn eigen "Promotion Group" (4).
     namen, gezien = [], set()
-    for t in tabs:
-        leden = {str(r.get("name")) for r in t["table"]["all"]}
+    for naam, leden in sorted(tabs, key=lambda p: -len(p[1])):
         if leden & gezien:
-            return []                      # overlap -> splitsing, geen opdeling
+            continue                       # subgroep van een al gekozen groep
         gezien |= leden
-        namen.append(str(t.get("leagueName") or t.get("name") or ""))
-    return namen
+        namen.append(naam)
+    return namen if len(namen) >= 2 and gezien == alle else []
 
 
 def _pick_table(table_field: list, group: str | None = None) -> dict | None:
