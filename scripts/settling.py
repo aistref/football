@@ -69,6 +69,22 @@ def norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s)
 
 
+def _prefix_pair(a: str, b: str) -> bool:
+    """Is één van twee genormaliseerde clubnamen een voorvoegsel van de andere?
+
+    Vervangt op 25 okt 2026 de vergelijking van alleen de eerste zes letters in
+    `DayIndex.lookup`. Zie de toelichting daar: zes letters koppelde Portland Timbers
+    aan Portland Hearts of Pine en Charlotte FC aan Charlotte Independence.
+
+    De regel is met opzet asymmetrisch in lengte en niet in inhoud: een langere naam mag
+    extra woorden hebben ("Swansea" → "Swansea City"), maar hij mag na het gedeelde begin
+    niet iets ánders gaan zeggen.
+    """
+    if not a or not b:
+        return False
+    return a.startswith(b) or b.startswith(a)
+
+
 class DayIndex:
     """De wedstrijden van één of meer dagen bij Fotmob, opzoekbaar op (thuis, uit).
 
@@ -131,8 +147,28 @@ class DayIndex:
         # Zelfde voorvoegselkoppeling als de losse settle-scripts van 1 en 2 sep, en met
         # dezelfde voorwaarde: alleen accepteren als er precies één kandidaat is. Liever
         # geen uitslag dan de verkeerde.
-        nh, na = norm(home)[:6], norm(away)[:6]
-        cand = [v for k, v in index.items() if k[0].startswith(nh) and k[1].startswith(na)]
+        #
+        # DE ZES LETTERS ZIJN OP 25 OKTOBER 2026 AANGESCHERPT, en het is geen opruimklus.
+        # "precies één kandidaat" is geen bescherming als die ene kandidaat een andere club
+        # is: op de daglijst van 24 oktober koppelde deze stap de MLS-wedstrijd
+        # Portland Timbers – Charlotte FC — op dat moment nog niet begonnen — aan
+        # Portland Hearts of Pine – Charlotte Independence uit de USL League One, die
+        # 4-1 was geëindigd. Beide kanten halen het voorvoegsel van zes letters
+        # ("portla", "charlo"), er was precies één zo'n wedstrijd op die daglijst, en dus
+        # meldde `shadow.py open` de schaduwrij als afwikkelbaar met een uitslag uit een
+        # heel andere competitie. Dat is de stille faalstand van §6d in zijn ergste vorm:
+        # één verkeerd afgerekende regel weegt bij die aantallen zwaarder dan alles wat
+        # deze stap goed doet, en er klaagt niets.
+        #
+        # Wat deze stap moet zijn, is een VOORWAARDELIJKE voorvoegselregel: de ene naam is
+        # een voorvoegsel van de andere ("Swansea" in "Swansea City", "Grazer AK" in
+        # "Grazer AK 1902"). Zes letters was daar een grove benadering van. Spellingvarianten
+        # die ná het gedeelde begin uiteenlopen ("Bayern München" / "Bayern Munich") horen
+        # niet hier maar in de aliastabel van `scripts/teamnames.py` — dat is stap 3
+        # hieronder, en die is er precies voor.
+        nh, na = norm(home), norm(away)
+        cand = [v for k, v in index.items()
+                if _prefix_pair(nh, k[0]) and _prefix_pair(na, k[1])]
         if len(cand) == 1:
             return cand[0]
         # Laatste stap, toegevoegd 5 okt 2026 (Run B) — de aliastabel van
