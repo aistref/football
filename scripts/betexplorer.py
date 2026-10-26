@@ -264,7 +264,13 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # een fout. Zonder narekenen leest dat als "geen wedstrijden vandaag" in plaats van als een
     # verkeerde slug. BetExplorer noemt de competitie bij haar sponsornaam.
     "MLS (USA)": "https://www.betexplorer.com/football/usa/mls/",
-    "Série A (BRA)": "https://www.betexplorer.com/football/brazil/serie-a-betano/",
+    # 26 okt 2026 (Run B): de slug is TERUGVERHUISD. 'brazil/serie-a-betano' — op 16 okt nog de
+    # werkende vorm — geeft sinds vandaag de stille faalmodus (HTTP 200, 0 rijen), en
+    # 'brazil/serie-a' (dat op 20 sep juist leeg was) geeft er weer 22. Dat is de tweede
+    # verhuizing van dezelfde competitie in tien dagen, en allebei stil: de bron wisselt tussen
+    # de sponsornaam en de kale naam zonder ooit een 404 te geven. Blijf hem daarom elke run
+    # narekenen op een niet-lege lijst in plaats van op de HTTP-status.
+    "Série A (BRA)": "https://www.betexplorer.com/football/brazil/serie-a/",
     # Toegevoegd 23 sep 2026 (Run C, eerste run met echte interlandwedstrijden). Geen van deze
     # drie stond hier al, want Run C had tot dan alleen lege dagen gedraaid. Alle drie de eerste
     # gok fout: 'world/friendlies', 'world/friendly-internationals' en 'world/international-
