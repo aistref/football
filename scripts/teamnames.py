@@ -112,6 +112,24 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # PRIJZEN: OB – FC København stond op FULL en kreeg toch nul selecties doorgerekend, omdat
     # `find_event` de wedstrijd bij geen enkele bron kon terugvinden.
     "fc kobenhavn": "fc copenhagen",
+    # 26 okt 2026 (Run A): initiaalwoord tegen plaatsnaam, dezelfde soort als "agf" en "qpr",
+    # en opnieuw aan de PRIJSkant. Fotmob schrijft de Deense clubafkorting "OB" (Odense
+    # Boldklub) en BetExplorer de plaatsnaam "Odense"; na `norm` blijft {ob} tegen {odense}
+    # over, geen gedeeld token, en de naamgelijkenis over het paar is 0.25 — ruim onder de
+    # vloer van 0.62 van `best_pair`. The Odds API schrijft "OB Odense BK" en kwam wél door,
+    # want {ob} is een deelverzameling van {ob, odense, bk}: de wedstrijd kreeg dus gewoon
+    # spreads, totals en BTTS, en alleen het gratis BetExplorer-MARKTGEMIDDELDE viel weg.
+    #
+    # Precies dat marktgemiddelde is waar poort 8 op draait, en daarom kostte dit vandaag meer
+    # dan een cijfer in een tabel. FC København - OB kwam uit op `underdog_reason = "geen
+    # 1X2-prijzen - geen marktoordeel over wie de mindere is"`, dus poort 8 stond OPEN zonder
+    # te zijn getoetst, en de selectie die daardoor doorliep - Asian Handicap OB Odense BK +1 -
+    # stond op het punt gepubliceerd te worden. Uit de beste prijzen van The Odds API gede-vigd
+    # zet de markt OB op ongeveer 14%, ver onder `sides.UNDERDOG_FLOOR` = 0,35, dus poort 8 had
+    # hem moeten tegenhouden. Daarnaast bleef het kalibratieblok van deze wedstrijd leeg (3 van
+    # de 21 waarnemingen van de dag). Dezelfde stille faalstand als "qpr" op 9 oktober en als
+    # de `is_today`-filter op 7 oktober: niets klaagt, de run ziet er compleet uit.
+    "ob": "odense",
     # 6 sep 2026 (Run B), dezelfde soort als "fc kobenhavn": het raakt de PRIJZEN en niet de tier.
     # Fotmob schrijft "NK Lokomotiva" (en zo staat de ploeg ook in de HNL-stand, dus daar valt
     # niets te koppelen), maar BetExplorer kort af tot "Lok. Zagreb". Na _DROP blijft {nk,
