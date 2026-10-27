@@ -12,7 +12,8 @@ het logboek waaruit de herijking van §1g wordt gefit. Zie de kop van dat bestan
 de functies staan die alleen de runscripts gebruiken (`resolve`, `best_pair`, `side_of`), zodat
 er één aliastabel is en niet twee die uiteenlopen.
 """
-from scripts.teamnames import ALIASES, _DROP, norm, tokens  # noqa: F401  (hier doorgegeven)
+from scripts.teamnames import (ALIASES, _DROP, norm, tokens,  # noqa: F401  (doorgegeven)
+                               is_abbreviation, ordered_tokens)
 
 
 def resolve(name: str, table: dict) -> str | None:
@@ -43,8 +44,11 @@ def resolve(name: str, table: dict) -> str | None:
         by_alias.setdefault(ALIASES.get(norm(k), norm(k)), k)
     if n in by_alias:
         return by_alias[n]
-    tn = tokens(name)
-    hits = [k for k in table if tokens(k) <= tn or tn <= tokens(k)]
+    # 27 okt 2026 — hier stond `tokens(k) <= tn or tn <= tokens(k)`, een DEELVERZAMELING, en die
+    # koppelde FC Eindhoven aan PSV Eindhoven (zie `teamnames.is_abbreviation` voor het geval en
+    # wat het kostte). Een afkorting laat de staart weg en niet de kop, dus de eis is nu een
+    # voorvoegsel op woordniveau — dezelfde eis die §4 al aan `promotion.find_team` stelt.
+    hits = [k for k in table if is_abbreviation(name, k)]
     if len(hits) == 1:
         return hits[0]
     return None

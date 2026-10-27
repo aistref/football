@@ -247,3 +247,36 @@ def norm(s: str) -> str:
 def tokens(s: str) -> frozenset:
     return frozenset(t for t in norm(s).split() if t not in _DROP) or frozenset(norm(s).split())
 
+
+def ordered_tokens(s: str) -> list:
+    """Als `tokens`, maar met de woordvolgorde erin — nodig voor `is_abbreviation`."""
+    parts = [t for t in norm(s).split() if t not in _DROP]
+    return parts or norm(s).split()
+
+
+def is_abbreviation(a: str, b: str) -> bool:
+    """Is de ene naam een AFKORTING van de andere, dus een voorvoegsel op WOORDNIVEAU?
+
+    Dit vervangt de regel `tokens(a) <= tokens(b) or tokens(b) <= tokens(a)`, en het is
+    dezelfde eis die §4 al aan `promotion.find_team` stelt: *"accepteert een afkorting alleen
+    als voorvoegsel (`Ipswich` op `Ipswich Town` wel, `Ajax` op `Jong Ajax` niet)"*.
+
+    **Waarom dit moest, gevonden op 27 okt 2026 in de KNVB Beker.** Een deelverzameling zegt
+    alleen dat alle woorden van de korte naam in de lange voorkomen, en niet WAAR. `fc` staat in
+    `_DROP`, dus `FC Eindhoven` houdt het ene token `eindhoven` over, en dat is een
+    deelverzameling van `{psv, eindhoven}`: de Eerste-Divisieclub FC Eindhoven koppelde aan **PSV
+    Eindhoven** in de Eredivisie-stand. Precies één treffer, dus de veiligheidsregel "alleen bij
+    één kandidaat" ving het niet, en het duel kwam op `FULL` uit met de xG van PSV achter de
+    thuisploeg — een schijnedge op de kant van een amateurclub tegen een kampioen, en geen enkele
+    poort die dat kan zien. Dezelfde faalvorm als de `Jong Ajax`-koppeling waarop
+    `promotion.measure_gap` op 31 aug een factor van 1.010 vond.
+
+    Een afkorting laat de staart weg (`Ipswich` voor `Ipswich Town`), nooit de kop: wat vooraan
+    staat is juist het onderscheidende deel (`PSV`, `Jong`, `Sporting`).
+    """
+    ta, tb = ordered_tokens(a), ordered_tokens(b)
+    if not ta or not tb:
+        return False
+    short, long = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    return long[:len(short)] == short
+
