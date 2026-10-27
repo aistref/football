@@ -11,11 +11,16 @@ from ra_names import resolve
 
 MOET_NIET = [("FC Eindhoven", "PSV Eindhoven"), ("Ajax", "Jong Ajax"),
              ("FC Utrecht", "Jong FC Utrecht"), ("Eindhoven", "PSV"),
-             ("Madrid", "Real Madrid")]
+             ("Madrid", "Real Madrid"),
+             # Toegevoegd nadat de EERSTE reparatie van vanmorgen (een voorvoegselregel) dit geval
+             # wel doorliet: Excelsior '31 uit Rijssen is niet Excelsior uit Rotterdam, en het
+             # onderscheidende deel staat hier in de STAART. Zelfde eis, andere kant van de naam.
+             ("Excelsior '31", "Excelsior"), ("Roda JC", "Roda JC Kerkrade"),
+             ("Sporting", "Sporting Gijon"), ("1. FC Koln", "Koln")]
 MOET_WEL = [("Ipswich", "Ipswich Town"), ("Wigan", "Wigan Athletic"),
-            ("Bradford City", "Bradford City"), ("Roda JC", "Roda JC Kerkrade"),
+            ("Bradford City", "Bradford City"),
             ("Borussia Dortmund", "Borussia Dortmund"), ("Hamburger SV", "Hamburger"),
-            ("Plymouth", "Plymouth Argyle"),
+            ("Plymouth", "Plymouth Argyle"), ("Hamburger SV", "Hamburger SV"),
             # Deze twee stonden bij de eerste opzet van deze zelftest onder MOET_NIET, en dat
             # was een verkeerde verwachting van mij en geen fout in de regel. "Athletic" staat
             # in `_DROP`, dus `Athletic Bilbao` houdt `bilbao` over en de twee namen zijn na
@@ -23,7 +28,7 @@ MOET_WEL = [("Ipswich", "Ipswich Town"), ("Wigan", "Wigan Athletic"),
             # KOPnaam is juist het geldige afkortingsgeval (`Ipswich` op `Ipswich Town`); dat
             # `Sporting` meerdere clubs kan zijn, vangt de eis van precies één treffer in de
             # tabel en niet deze regel.
-            ("Bilbao", "Athletic Bilbao"), ("Sporting", "Sporting Gijon")]
+            ("Bilbao", "Athletic Bilbao")]
 fout = 0
 for a, b in MOET_NIET:
     if is_abbreviation(a, b):
