@@ -79,6 +79,29 @@ SPORT_KEYS: dict[str, str] = {
     "Swiss Super League (SUI)": "soccer_switzerland_superleague",
     "Austrian Bundesliga (AUT)": "soccer_austria_bundesliga",
     "Greek Super League (GRE)": "soccer_greece_super_league",
+    # Toegevoegd 28 okt 2026 (Run B), als vervolg op punt 3 van "Openstaand" in
+    # `runs/2026-10-28-run-a.md`: Run A vond deze sleutels actief-maar-onbekend en liet ze liggen
+    # omdat ze niet op zijn runlijst staan ("een run raakt geen runlijst aan die niet de zijne
+    # is"). Ze staan alle drie op de Run B-runlijst, en MLS en Série A speelden vandaag samen 19
+    # van de 26 duels in het inzetvenster. Alle drie bevestigd actief via /sports/ (0 credits).
+    #
+    # Let op wat hier wél en niet is misgegaan, want het verschilt van de Scottish Premiership
+    # hierboven. De runscripts van Run B gaven deze sleutels al sinds 29 aug 2026 **zelf** mee,
+    # dus de beste prijs is wél opgehaald en er is geen koers gemist. Wat eraan vastzat is het
+    # tweede deel van diezelfde fout: een sleutel die alleen in een script van één dag staat, kan
+    # `api_check.py` niet controleren — en een run die op de registratie vertrouwt in plaats van
+    # op zijn eigen tabel valt stil terug op het BetExplorer-marktgemiddelde zonder dat iets
+    # klaagt. Dat is precies hoe Schotland zeven weken is weggezakt.
+    "Eliteserien (NOR)": "soccer_norway_eliteserien",
+    "MLS (USA)": "soccer_usa_mls",
+    "Série A (BRA)": "soccer_brazil_campeonato",
+    # Dezelfde sleutels als `League One (ENG)` / `League Two (ENG)` hierboven, onder de naam
+    # waarmee `prompts/run-b.md` en `data/coverage.json` deze twee competities aanduiden. Een
+    # opzoeking op de runlijstnaam gaf hier `None` terwijl de sleutel al sinds augustus in deze
+    # tabel stond: geen ontbrekende sleutel maar een ontbrekende naam, met hetzelfde gevolg.
+    # De oude namen blijven staan — `scripts/promotion.py` gebruikt ze intern in `TIER1`/`TIER2`.
+    "English League One (ENG)": "soccer_england_league1",
+    "English League Two (ENG)": "soccer_england_league2",
 }
 
 # Markten die alleen via de per-wedstrijd-endpoint gaan (bevestigd met HTTP 422 op de bulk-call).

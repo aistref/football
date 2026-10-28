@@ -98,10 +98,24 @@ def check_odds_api() -> bool:
     # (Scottish Premiership; "scot" staat alleen in de titel) en `soccer_england_efl_cup`
     # (League Cup; de sleutel bevat "england" en dat woord stond niet in de zoeklijst). De
     # Scottish Premiership heeft daardoor zeven weken op het marktgemiddelde gedraaid.
+    # **En de lijst dekt alle landen van alle drie de runlijsten, niet alleen Europa** — dat is de
+    # correctie van 28 okt 2026 (Run B). Run A repareerde hierboven het veld waarop wordt gefilterd
+    # (sleutel -> sleutel + titel + beschrijving) maar liet de woordenlijst zelf Europees: er stond
+    # geen "usa", geen "brazil" en geen "hungar" in. Gevolg: `soccer_usa_mls` en
+    # `soccer_brazil_campeonato` stonden actief bij de bron, ontbraken in `SPORT_KEYS`, en waren
+    # voor deze controle **onzichtbaar** — terwijl MLS en Série A samen vier van de zeventien
+    # competities van `run-b.md` zijn en op 28 okt 2026 19 van de 26 duels leverden.
+    #
+    # Dat is dezelfde stille faalstand als het Serie B-id en als `soccer_spl`, nu in een derde
+    # gedaante: niet een verkeerd veld maar een te korte woordenlijst. Een controle die groen staat
+    # omdat ze de verkeerde grootheid meet (§6g) — en bij een onvolledige lijst klaagt niets.
     landen = ("england", "scot", "italy", "italian", "spain", "spanish", "germany", "german",
               "france", "french", "netherl", "dutch", "portug", "belgi", "poland", "polish",
               "denmark", "danish", "turk", "uefa", "europa", "champions", "conference",
-              "sweden", "norway", "swiss", "austria", "greece", "czech", "romania", "croatia")
+              "sweden", "swedish", "norway", "norwegian", "swiss", "switzerl", "austria",
+              "greece", "greek", "czech", "romania", "croatia",
+              # buiten Europa, en daarom tot 28 okt 2026 niet gezien
+              "usa", "mls", "major league", "brazil", "brasil", "hungar", "concacaf")
     bekend = set(SPORT_KEYS.values())
     extra = sorted(f'{s["key"]}  ({s.get("title")} / {s.get("description")})' for s in soccer
                    if s["key"] not in bekend
