@@ -1,0 +1,60 @@
+POPULATIE: 914 duels, 2026-09-20 t/m 2026-10-27  (alleen lambdas van ná 2026-09-20 (homogeen))
+
+DE DIAGNOSE VAN §6g OP DEZE POPULATIE
+  gemiddeld totaal : voorspeld 3.004  werkelijk 3.102  +0.098  z = +1.67
+  P(Under 2.5)     : voorspeld 43.07%  werkelijk 40.59%  -2.48 pp  z = -1.53
+  P(Under 3.5)     : voorspeld 64.66%  werkelijk 63.68%  -0.99 pp  z = -0.62
+
+GEPAARDE TOETS per wedstrijd (log loss van het werkelijke totaal)
+  huidig grid: 1.95232
+
+  variant                     winst       t   beter in    P(U2.5) fout  P(U3.5) fout
+  ----------------------------------------------------------------------------------
+  rho = -0.025             +0.00111   +1.89      17.9%          -2.48        -0.99
+  rho =  0.000             +0.00191   +1.62      16.0%          -2.48        -0.99
+  narrow b = -0.005        -0.00083   -1.05      65.6%          -2.47        -1.28
+  narrow b = -0.010        -0.00214   -1.37      65.1%          -2.45        -1.55
+  narrow b = -0.015        -0.00391   -1.66      64.7%          -2.41        -1.80
+  shift a = +0.032         +0.00158   +0.84      46.8%          -0.41        +1.12
+  scale = 1.032            +0.00146   +0.79      46.8%          -0.44        +1.08
+
+  LEESWIJZER. 'winst' is hoeveel log loss de variant van het huidige grid afhaalt; positief is
+  beter. Let vooral op de kolom 'beter in': een variant die in tweederde van de wedstrijden wint
+  en toch gemiddeld verliest, wint vaak en klein en verliest zelden en groot. Dat is géén
+  verbetering, en het is precies de val waar §6e bij `shrink` voor waarschuwt.
+
+  De `narrow`-varianten zijn de letterlijke uitvoering van wat §6g voorschrijft (massa uit de
+  staarten naar het midden). Kijk wat ze met de twee rechterkolommen doen: op Under 2.5 bijna
+  niets en op Under 3.5 de verkeerde kant op. Het gemiddelde totaal ligt rond 3,0, dus knijpen
+  schuift massa naar 3 — van twee kanten tegelijk — en laat P(totaal <= 2) staan. Alleen een
+  NIVEAU-knop (`scale`, `shift`) beweegt de Under-lijnen echt, en die haalt zijn eigen lat niet.
+
+VASTE WAARDEN OP TWEE PARTITIES VAN DEZELFDE DUELS
+  (geen fit, dus geen overfit; de vraag is alleen of het teken standhoudt)
+
+  variant                   op tijd (eerste helft     om en om (even / oneve
+  ----------------------------------------------------------------------------
+  rho = -0.025                   +0.00178/+0.00044         +0.00028/+0.00195
+  rho =  0.000                   +0.00324/+0.00057         +0.00029/+0.00352
+  narrow b = -0.005              -0.00014/-0.00151         -0.00084/-0.00082
+  narrow b = -0.010              -0.00078/-0.00351         -0.00216/-0.00213
+  narrow b = -0.015              -0.00188/-0.00595         -0.00392/-0.00391
+  shift a = +0.032               +0.00101/+0.00215         +0.00423/-0.00107
+  scale = 1.032                  +0.00086/+0.00206         +0.00409/-0.00118
+
+  Twee getallen per partitie: de twee helften apart.
+
+  DE ENIGE ONAFHANKELIJKE CONTROLE — 803 duels met lambdas van
+  vóór 2026-09-20, die bij het kijken naar de 914 geen rol speelden:
+    rho = -0.025           -0.00042  t = -0.62   <-- TEKEN DRAAIT OM
+    rho =  0.000           -0.00120  t = -0.89   <-- TEKEN DRAAIT OM
+    narrow b = -0.005      +0.00113  t = +1.71
+    narrow b = -0.010      +0.00175  t = +1.33
+    narrow b = -0.015      +0.00191  t = +0.96
+    shift a = +0.032       -0.00213  t = -1.13   <-- TEKEN DRAAIT OM
+    scale = 1.032          -0.00201  t = -1.09   <-- TEKEN DRAAIT OM
+
+  Lees die laatste tabel naast de twee partities erboven. `rho` staat op alle VIER de helften
+  positief en lijkt daarmee de robuuste kandidaat — maar die vier zijn twee knipbeurten van
+  dezelfde duels, en op de enige steekproef die er echt buiten staat draait zijn teken om. Vier
+  keer hetzelfde getal uit één zak is één waarneming, niet vier.

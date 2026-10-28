@@ -657,10 +657,21 @@ doorlaten. Elke tegengehouden kandidaat gaat met `failed_gate = "doelpunten_onde
 `data/shadow.jsonl` en wordt daar net zo afgerekend als elke andere (§6d). Lees die reeks niet
 onder ~30 afgewikkelde gevallen.
 
-**En hij is bedoeld om te verdwijnen.** Zodra de vormfout is gerepareerd (keuze **a**, nog te
-doen) hoort deze poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt — net als bij poort 8,
-waar de herijking van §1g de rem deels overbodig maakte. Een rem op een symptoom die blijft staan
-nadat de oorzaak weg is, kost alleen nog bets.
+**En hij is bedoeld om te verdwijnen.** Zodra de vormfout is gerepareerd (keuze **a**) hoort deze
+poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt — net als bij poort 8, waar de
+herijking van §1g de rem deels overbodig maakte. Een rem op een symptoom die blijft staan nadat de
+oorzaak weg is, kost alleen nog bets.
+
+> **Die voorwaarde is op 28 oktober 2026 NIET ingetreden, en poort 9 blijft dus staan.** Keuze
+> **a** is die dag op opdracht van de gebruiker uitgevoerd én gemeten, en elke kandidaat is
+> afgewezen: de voorgeschreven vormcorrectie verergert het symptoom (ze verlaagt het verwachte
+> totaal en duwt `P(Under)` dus omhoog), is op een gepaarde toets meetbaar slechter, en élke
+> kandidaat draait van teken tussen de twee `shrink`-populaties. De vormfout blijkt grotendeels
+> een nalatenschap van `shrink = 0.80` en is op 19 september al door die wijziging opgelost. Zie
+> §6g, "Keuze (1) is op 28 oktober 2026 uitgevoerd, gemeten en AFGEWEZEN", en
+> `scripts/gridfit.py`. **Lees het uitblijven van deze trigger niet als een openstaande taak:**
+> er is niets gerepareerd omdat er niets te repareren viel, en poort 9 hoort pas opnieuw ter
+> discussie als `gridfit.py measure` op een grotere homogene reeks iets anders zegt.
 
 #### `LIGHT` blijft erbuiten — gevraagd en beantwoord op 12 oktober 2026
 
@@ -3211,6 +3222,98 @@ ingrepen en ze horen bij de gebruiker omdat ze over risicobereidheid gaan, net a
 sinds die dag in §1h en `scripts/unders.py` en **bindt vanaf 12 oktober 2026**: een Under op
 `FULL`-data moet 10,0 pp halen in plaats van 8,0. `LIGHT` blijft op 16,0, BTTS en de Over-kant
 blijven ongemoeid — zie §1h voor waarom dat drie afzonderlijke besluiten zijn.
+
+#### Keuze (1) is op 28 oktober 2026 uitgevoerd, gemeten en AFGEWEZEN — niet uit terughoudendheid
+
+> **Lees deze paragraaf vóór de alinea's hieronder; die beschrijven de stand van 11 oktober en
+> niet meer de huidige.** De gebruiker gaf op 28 oktober opdracht keuze (1) — de vormfout
+> repareren — en de doorrekening die §6g er zelf bij eist, wijst elke kandidaat af. De volledige
+> meting staat in `scripts/gridfit.py` en is daar met één commando te herhalen:
+>
+> ```bash
+> python3 scripts/gridfit.py measure      # geen credits; de meting beweegt mee met de steekproef
+> python3 scripts/gridfit.py selftest     # 12 rekencontroles, geen netwerk
+> ```
+>
+> **1. De tabel hierboven is gemeten op twee `shrink`-instellingen door elkaar**, en dat is de
+> fout waar `margins.py` in zijn eigen kop voor waarschuwt: 803 van de 1717 duels komen van vóór
+> 19 sep 2026 en dragen `shrink = 0.80`. Op alleen de 914 homogene duels verschuift de diagnose:
+>
+> | | gemengd (1717) | homogeen (914) |
+> |---|---|---|
+> | gemiddeld totaal, werkelijk − voorspeld | +0,044 (z = +1,05) | **+0,098 (z = +1,67)** |
+> | `P(Under 2.5)` | −2,24 pp (z = −1,89) | −2,48 pp (z = −1,53) |
+> | `P(Under 3.5)` | −1,70 pp (z = −1,46) | −0,99 pp (z = −0,62) |
+>
+> **Daarmee valt de kern anders uit dan hierboven staat.** "Het gemiddelde klopt wél en de
+> verdeling niet" houdt geen stand: op de homogene populatie is het **gemiddelde juist het
+> grootste signaal** (het model verwacht ~0,1 doelpunt per duel te weinig) en haalt van de hele
+> histogram maar één cel de twee standaardfouten — `totaal = 0` staat te dik (z = −2,67). Dat is
+> geen **vorm**fout maar een **niveau**fout, en die hoort niet in `score_grid` maar in de
+> lambdaketen (`league_level`, `blend_seasons`, de vroeg-seizoenscorrectie).
+>
+> **2. De voorgeschreven reparatie verergert het symptoom waarvoor ze is voorgeschreven.** Massa
+> uit de staarten naar het midden halen is wat §6g beschrijft, en het beweegt `P(Under 2.5)` 0,03
+> tot 0,35 pp van een fout van 2,48 — en duwt `P(Under 3.5)` de **verkeerde** kant op
+> (−0,99 → −2,87 pp). Dat is rekenkunde en geen pech: de totaalverdeling is **rechtsscheef**, dus
+> knijpen rond het gemiddelde haalt meer van de lange rechterstaart dan van de korte linkerkant
+> en **verlaagt het verwachte totaal** met 0,02 tot 0,08 doelpunt. Een lager verwacht totaal geeft
+> een **hogere** `P(Under)` — precies de verkeerde kant voor een model dat die al te hoog zet.
+>
+> **3. Op een eerlijke scoringsregel is ze meetbaar slechter, en erger naarmate ze groter wordt.**
+> Gepaarde toets per wedstrijd op de log loss van het werkelijke totaal: b = −0,005 geeft
+> −0,00083 (t = −1,05), b = −0,010 geeft −0,00214 (t = −1,37), b = −0,015 geeft −0,00391
+> (t = −1,66). **En let op het leerzaamste cijfer van deze hele meting:** de correctie is beter in
+> **65% van de wedstrijden** en verliest tóch gemiddeld. Ze wint vaak en klein en verliest zelden
+> en groot — het spiegelbeeld van wat §6e bij `shrink` beschrijft. Wie op "beter in tweederde van
+> de gevallen" had gekozen, had een verslechtering ingevoerd.
+>
+> **4. En de beslissende waarneming: élke kandidaat draait van teken tussen de twee populaties.**
+> De 803 duels van vóór de overstap zijn de enige gegevens die bij het kijken naar de 914 geen rol
+> speelden:
+>
+> | variant | op de 914 (ná de overstap) | op de 803 (vóór de overstap) |
+> |---|---|---|
+> | `narrow b = −0,005` | −0,00083 (t = −1,05) | **+0,00113 (t = +1,71)** |
+> | `rho = −0,025` | +0,00111 (t = +1,89) | **−0,00042 (t = −0,62)** |
+> | `scale = 1,032` | +0,00146 (t = +0,79) | **−0,00201 (t = −1,09)** |
+>
+> De vormcorrectie **hélpt** op de oude lambdas en **schaadt** op de nieuwe. Dat is geen ruis maar
+> precies wat te verwachten was: `shrink = 0.80` drukte de teamsterktes naar elkaar toe en maakte
+> de totaalverdeling te breed, en `shrink = 1.00` heeft dat per 19 september rechtgetrokken — deze
+> paragraaf schreef zelf al op dat die wijziging *"op zichzelf al ongeveer tweederde van het gat
+> sluit"*. **De vormfout is dus grotendeels een nalatenschap van de oude instelling en is op 19
+> september al gerepareerd, door een andere ingreep dan deze.** Dezelfde conclusie die
+> `margins.py stats --since 2026-09-20` op 28 oktober voor de MARGE-kant trok (§6f: het gat is
+> dicht en op één bak omgeslagen), nu voor de TOTAAL-kant.
+>
+> **5. `rho` is de enige kandidaat met een hypothese vóóraf, en haalt de lat net niet.** De enige
+> significante cel (`totaal = 0` te dik) is precies de cel die Dixon-Coles regelt, dus "rho minder
+> negatief" staat vóór het kijken vast. Hij komt op t = +1,89 (totaal) en +1,86 (exacte uitslag)
+> en staat op alle vier de helften van de twee partities positief. Drie redenen om hem tóch niet
+> in te voeren: die vier helften zijn **twee knipbeurten van dezelfde duels** en dus één
+> waarneming, op de onafhankelijke 803 draait zijn teken om, en hij **repareert zijn eigen cel
+> niet** — zelfs met `rho = 0` blijft 0-0 te dik (5,53% tegen 3,94% werkelijk), want die
+> scheefstand komt uit de Poisson-aanname en niet uit rho. De lat van deze repo ligt hoger:
+> `CREDIBILITY_K` is ingevoerd op t = +2,11 / +1,71 en rollende xG is afgewezen op t = +0,05 /
+> +1,06 (§4).
+>
+> **Wat er dus NIET is gewijzigd: `score_grid`, `DEFAULT_RHO`, de lambdas en poort 9.** Geen enkele
+> regel code in het model. Dit is een meetuitkomst en geen uitstel — en het is precies waarom §6g
+> eiste dat het eerst werd doorgerekend.
+>
+> **Wat er nog wél open is, en het is een andere vraag dan die van 11 oktober.** Het signaal dat
+> standhoudt is een **niveau**fout van ongeveer +0,1 doelpunt per duel (z = +1,67), en de knop
+> daarvoor zit in de lambdaketen en niet in het grid: `scale = 1.032` brengt de fout op
+> `P(Under 2.5)` van −2,48 naar −0,44 pp. Hij haalt zijn lat nu niet (t = +0,79, teken wisselt),
+> maar hij is de kandidaat die bij de meting past. Leg die vraag opnieuw voor zodra de homogene
+> reeks ruim boven de 914 staat — niet eerder, en met `gridfit.py measure` in plaats van met een
+> nieuwe redenering.
+>
+> **En wat dit voor poort 9 betekent:** §1h schrijft *"zodra de vormfout is gerepareerd hoort deze
+> poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt"*. Die voorwaarde is **niet**
+> ingetreden — er is niets gerepareerd, omdat er niets te repareren viel. **Poort 9 blijft staan,
+> onveranderd.** Dat is geen apart besluit maar het uitblijven van de trigger.
 
 **De reparatie van de vormfout (1) staat dus nog open, en dat is de kern.** Poort 9 is een rem op
 een symptoom; `score_grid` zet nog steeds te weinig massa op 4 en 5 doelpunten, en die fout werkt

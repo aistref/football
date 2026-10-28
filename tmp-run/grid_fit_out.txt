@@ -1,0 +1,89 @@
+1717 wedstrijden met lambdapaar en uitslag, 2026-08-25 t/m 2026-10-27
+voorbereiden (één grid per wedstrijd)...
+
+==============================================================================
+BASISLIJN — het huidige grid (rho = -0.05)
+==============================================================================
+  log loss op het totaal : 1.93503
+  log loss exacte uitslag: 3.06556
+  totaal   voorspeld   werkelijk   verschil
+       0       5.90%       5.01%    -0.89 pp
+       1      14.15%      14.27%    +0.12 pp
+       2      22.43%      20.97%    -1.46 pp
+       3      21.60%      22.13%    +0.53 pp
+       4      16.35%      17.36%    +1.01 pp
+       5      10.13%      11.53%    +1.40 pp
+       6       5.35%       4.95%    -0.40 pp
+       7       2.48%       2.62%    +0.14 pp
+       8       1.03%       0.82%    -0.21 pp
+       9       0.39%       0.29%    -0.10 pp
+  P(Under 2.5) voorspeld 42.48%  werkelijk 40.24%  -2.24 pp
+  P(Under 3.0) voorspeld 42.48%  werkelijk 40.24%  -2.24 pp
+  P(Under 3.5) voorspeld 64.08%  werkelijk 62.38%  -1.70 pp
+
+==============================================================================
+KANDIDAAT 1 — rho opnieuw fitten (raakt alleen 0-0, 0-1, 1-0, 1-1)
+==============================================================================
+  rho = -0.15  log loss totaal 1.94010  (-0.00507)
+  rho = -0.10  log loss totaal 1.93685  (-0.00182)
+  rho = -0.05  log loss totaal 1.93503  (+0.00000)
+  rho = +0.00  log loss totaal 1.93458  (+0.00045)
+  rho = +0.05  log loss totaal 1.93550  (-0.00047)
+  rho = +0.10  log loss totaal 1.93788  (-0.00285)
+  rho = +0.15  log loss totaal 1.94193  (-0.00690)
+  -> beste rho -0.01 met 1.93456, winst +0.00047
+
+==============================================================================
+KANDIDAAT 2 — exponentiële tilt op de anti-diagonalen (= op het totaal)
+==============================================================================
+  vrij (a, b)        : a = +0.0208  b = -0.00610  log loss 1.93435 (+0.00068)
+  a vastgezet op 0   : b = -0.00340  log loss 1.93491 (+0.00012)
+  a draagt dus -0.00056 bij — §6g meet dat het GEMIDDELDE klopt, dus a hoort
+  dicht bij 0 te liggen. Dat is hier een CONTROLE op de fit, geen aanname.
+
+==============================================================================
+UIT-STEEKPROEF — fit op de eerste helft, toets op de tweede
+==============================================================================
+  fit  : 858 duels, 2026-08-25 t/m 2026-09-20
+  toets: 859 duels, 2026-09-20 t/m 2026-10-27
+  gefit op de eerste helft: tilt a=+0.0042 b=-0.01493 | tilt(a=0) b=-0.01442 | rho=-0.06
+
+  op de TOETSHELFT (log loss totaal, lager is beter):
+    huidig grid         1.95498
+    rho hergefit        1.95550  (-0.00051)
+    tilt (a, b)         1.95869  (-0.00370)
+    tilt (a = 0)        1.95908  (-0.00410)
+
+  idem op de EXACTE UITSLAG (raakt elke markt, niet alleen de totalen):
+    huidig grid         3.08887
+    tilt (a = 0)        3.09296  (-0.00410)
+
+  vormfout op de toetshelft, HUIDIG grid:
+  totaal   voorspeld   werkelijk   verschil
+       0       6.12%       4.07%    -2.05 pp
+       1      14.55%      15.02%    +0.47 pp
+       2      22.73%      21.77%    -0.96 pp
+       3      21.61%      22.58%    +0.98 pp
+       4      16.14%      15.25%    -0.89 pp
+       5       9.86%      11.41%    +1.54 pp
+       6       5.14%       5.24%    +0.10 pp
+       7       2.35%       3.49%    +1.14 pp
+       8       0.96%       0.81%    -0.15 pp
+       9       0.36%       0.23%    -0.12 pp
+
+  vormfout op de toetshelft, TILT (a = 0, b = -0.01442):
+  totaal   voorspeld   werkelijk   verschil
+       0       5.67%       4.07%    -1.60 pp
+       1      14.37%      15.02%    +0.65 pp
+       2      23.32%      21.77%    -1.55 pp
+       3      22.45%      22.58%    +0.13 pp
+       4      16.57%      15.25%    -1.32 pp
+       5       9.76%      11.41%    +1.64 pp
+       6       4.79%       5.24%    +0.45 pp
+       7       2.01%       3.49%    +1.49 pp
+       8       0.73%       0.81%    +0.08 pp
+       9       0.24%       0.23%    -0.01 pp
+
+  P(Under 2.5) op de toetshelft: huidig 43.41% -> tilt 43.36%  (werkelijk 40.86%)
+  P(Under 3.0) op de toetshelft: huidig 43.41% -> tilt 43.36%  (werkelijk 40.86%)
+  P(Under 3.5) op de toetshelft: huidig 65.01% -> tilt 65.81%  (werkelijk 63.45%)

@@ -1,0 +1,57 @@
+POPULATIE: 914 duels met lambdas van ná de shrink-overstap
+
+====================================================================================
+1. WAT §6g CLAIMT, EN HOE HARD DAT IS
+====================================================================================
+
+  alle duels (twee shrink-instellingen door elkaar)  (n = 1717)
+    gemiddeld totaal : voorspeld 3.031  werkelijk 3.075  +0.044  z = +1.05
+    P(Under 2.5)     : voorspeld 42.48%  werkelijk 40.24%  -2.24 pp  z = -1.89
+    P(Under 3.5)     : voorspeld 64.08%  werkelijk 62.38%  -1.70 pp  z = -1.46
+
+  alleen lambdas van ná 2026-09-20 (homogeen)  (n = 914)
+    gemiddeld totaal : voorspeld 3.004  werkelijk 3.102  +0.098  z = +1.67
+    P(Under 2.5)     : voorspeld 43.07%  werkelijk 40.59%  -2.48 pp  z = -1.53
+    P(Under 3.5)     : voorspeld 64.66%  werkelijk 63.68%  -0.99 pp  z = -0.62
+
+====================================================================================
+2. GEPAARDE TOETS PER WEDSTRIJD op de homogene populatie (geen fit, geen splitsing)
+====================================================================================
+  huidig grid: gemiddelde log loss 1.95232
+
+  vooraf vastgelegde rho-waarden (hypothese: 0-0 staat te dik, dus rho minder negatief):
+  rho = -0.100                       winst -0.00319  t = -2.67  beter in 238/914 (26.0%)
+  rho = -0.025                       winst +0.00111  t = +1.89  beter in 164/914 (17.9%)
+  rho = +0.000                       winst +0.00191  t = +1.62  beter in 146/914 (16.0%)
+  rho = +0.025                       winst +0.00239  t = +1.36  beter in 154/914 (16.8%)
+  rho = +0.050                       winst +0.00255  t = +1.08  beter in 156/914 (17.1%)
+
+  overige kandidaten, op hun IN-STEEKPROEF beste waarde (dus optimistisch):
+  scale = 1.032 (meer doelpunten)    winst +0.00146  t = +0.79  beter in 428/914 (46.8%)
+  shift a = +0.032                   winst +0.00158  t = +0.84  beter in 428/914 (46.8%)
+  narrow b = +0.005                  winst +0.00028  t = +0.36  beter in 306/914 (33.5%)
+  both a=+0.032 b=+0.0005            winst +0.00158  t = +0.83  beter in 418/914 (45.7%)
+
+  en de variant die de vormfout van §6g LETTERLIJK implementeert
+  (massa van de staarten naar het midden = b < 0):
+  narrow b = -0.005                  winst -0.00083  t = -1.05  beter in 600/914 (65.6%)
+  narrow b = -0.010                  winst -0.00214  t = -1.37  beter in 595/914 (65.1%)
+  narrow b = -0.015                  winst -0.00391  t = -1.66  beter in 591/914 (64.7%)
+
+====================================================================================
+3. DE TWEE SPLITSINGEN NAAST ELKAAR — elke kandidaat draait van teken
+====================================================================================
+
+  kandidaat   gefit op tijd -> toets    gefit om en om -> toets
+  rho              -0.00201 (slechter)        +0.00294 (beter)
+  scale            +0.00183 (beter)           -0.00193 (slechter)
+  shift            +0.00199 (beter)           -0.00430 (slechter)
+  narrow           -0.00026 (niets)           +0.00027 (niets)
+  both             +0.00100 (beter)           -0.00182 (slechter)
+
+  En de gefitte waarden zelf lopen even hard uiteen:
+  rho   +0.10 tegen -0.01   |   scale 1.024 tegen 1.040   |   shift +0.026 tegen +0.058
+
+  Twee splitsingen van DEZELFDE 914 duels. Een parameter die op de ene helft +0.002 oplevert en
+  op de andere -0.004 kost, met een gefitte waarde die een factor twee verschilt, meet de ruis
+  van de steekproef en niet een eigenschap van het model.
