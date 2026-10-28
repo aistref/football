@@ -75,13 +75,42 @@ def check_odds_api() -> bool:
         except ValueError:
             pass
 
-    # Welke van onze competities zitten erin? Handig voor coverage.json.
-    wanted = ("eredivisie", "portugal", "belgium", "poland", "scot", "epl", "italy",
-              "spain", "germany", "france", "efl_champ", "denmark", "turkey", "uefa")
-    hits = sorted(s["key"] for s in soccer if any(w in s["key"] for w in wanted))
-    if hits:
-        print("  Relevante sportkeys:")
-        for k in hits:
+    # Welke van de sleutels die de repo kent, leeft er vandaag? Dit is de controle die telt:
+    # een sleutel die uit de lijst verdwijnt levert geen foutmelding maar een competitie zonder
+    # beste prijs, en dat is van buitenaf niet te zien (§1a).
+    live = {s["key"] for s in soccer}
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        from scripts.oddsapi import SPORT_KEYS
+    except Exception as exc:                                      # pragma: no cover
+        print(f"  (sportkeys van de repo niet te lezen: {exc})")
+        SPORT_KEYS = {}
+    if SPORT_KEYS:
+        ontbreekt = sorted(n for n, k in SPORT_KEYS.items() if k not in live)
+        print(f"  Sportkeys van de repo: {len(SPORT_KEYS) - len(ontbreekt)} van "
+              f"{len(SPORT_KEYS)} actief vandaag.")
+        for naam in ontbreekt:
+            print(f"    NIET ACTIEF  {naam:30s} {SPORT_KEYS[naam]}")
+
+    # En welke actieve sleutels horen bij een land uit de runlijsten zonder dat de repo ze kent?
+    # **Filter op `title` en `description` en niet alleen op de sleutel** — dat laatste deed deze
+    # controle tot 28 okt 2026 en het verborg twee sleutels die er wél waren: `soccer_spl`
+    # (Scottish Premiership; "scot" staat alleen in de titel) en `soccer_england_efl_cup`
+    # (League Cup; de sleutel bevat "england" en dat woord stond niet in de zoeklijst). De
+    # Scottish Premiership heeft daardoor zeven weken op het marktgemiddelde gedraaid.
+    landen = ("england", "scot", "italy", "italian", "spain", "spanish", "germany", "german",
+              "france", "french", "netherl", "dutch", "portug", "belgi", "poland", "polish",
+              "denmark", "danish", "turk", "uefa", "europa", "champions", "conference",
+              "sweden", "norway", "swiss", "austria", "greece", "czech", "romania", "croatia")
+    bekend = set(SPORT_KEYS.values())
+    extra = sorted(f'{s["key"]}  ({s.get("title")} / {s.get("description")})' for s in soccer
+                   if s["key"] not in bekend
+                   and any(w in " ".join(str(s.get(f, "")) for f in
+                                         ("key", "title", "description")).lower()
+                           for w in landen))
+    if extra:
+        print("  Actieve sportkeys die de repo NIET kent (mogelijk een gat in SPORT_KEYS):")
+        for k in extra:
             print(f"    {k}")
     return True
 

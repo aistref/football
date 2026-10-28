@@ -44,6 +44,17 @@ SPORT_KEYS: dict[str, str] = {
     "Süper Lig (TUR)": "soccer_turkey_super_league",
     "Danish Superliga (DEN)": "soccer_denmark_superliga",
     "Ekstraklasa (POL)": "soccer_poland_ekstraklasa",
+    # Toegevoegd 28 okt 2026 (Run A). De sleutel heet `soccer_spl` en niet `soccer_scotland_*`;
+    # alleen `title` ("Premiership - Scotland") en `description` ("Scottish Premiership") noemen
+    # het land. `data/coverage.json` noteert bij deze competitie al sinds **9 september 2026**
+    # dat soccer_spl werkte ("5 events op h2h+spreads+totals"), maar die bevinding is nooit in
+    # deze tabel geland — en omdat `api_check.py` zijn lijst op de **sleutel** filterde en daar
+    # "scot" in zocht, kwam de sleutel ook nooit in de uitvoer van die controle voorbij. Gevolg:
+    # de Scottish Premiership heeft van 9 september t/m 27 oktober uitsluitend op het gratis
+    # BetExplorer-marktgemiddelde gedraaid, terwijl de beste prijs te koop was (§1a: +1,84 pp
+    # edge per selectie). Dezelfde stille faalvorm als het Serie B-id: niets klaagt, er staat
+    # alleen een minder gunstige koers in het rapport.
+    "Scottish Premiership (SCO)": "soccer_spl",
     "DFB Pokal (GER)": "soccer_germany_dfb_pokal",
     "League Cup (ENG)": "soccer_england_efl_cup",  # bevestigd 10 aug 2026
     "League One (ENG)": "soccer_england_league1",
@@ -53,6 +64,13 @@ SPORT_KEYS: dict[str, str] = {
     "Segunda División (ESP)": "soccer_spain_segunda_division",
     "Ligue 2 (FRA)": "soccer_france_ligue_two",
     "Coppa Italia (ITA)": "soccer_italy_coppa_italia",  # bevestigd 14 aug 2026 via api_check.py
+    # De drie Europese toernooien stonden hier niet, terwijl ze in de runlijst van `run-a.md`
+    # staan en elke dag in de /sports/-lijst. Ze kostten niets, omdat de runscripts hun sleutel
+    # zelf meegaven — maar dan staat de sleutel in een script van één dag in plaats van op de
+    # plek waar `api_check.py` hem kan controleren. Bevestigd 28 okt 2026 (alle drie actief).
+    "UEFA Champions League": "soccer_uefa_champs_league",
+    "UEFA Europa League": "soccer_uefa_europa_league",
+    "UEFA Conference League": "soccer_uefa_europa_conference_league",
     # Bevestigd 29 aug 2026 (Run B). Deze vier stonden hier nog niet, terwijl ze wel in de
     # /sports/-lijst staan — vier competities van de Run B-runlijst hadden daardoor elke run
     # alleen 1X2 van BetExplorer, zonder dat er een reden voor was. De /sports/-lijst opvragen
