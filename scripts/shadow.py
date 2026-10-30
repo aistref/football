@@ -83,6 +83,35 @@ def cmd_collect(args: argparse.Namespace) -> int:
     seen = {r["id"] for r in existing}
     new: list[dict] = []
 
+    # Een selectie die deze run GEPUBLICEERD heeft, is geen afgewezen kandidaat (§5a punt 2,
+    # §1e punt 2, §6d). Dat was vanzelf waar zolang `EDGE_THRESHOLD_FULL` een poort was: een
+    # blok als `zonder_herijking` beschreef per definitie een selectie die de drempel niet
+    # haalde en dus niet gepubliceerd kon worden. Sinds §5b op 20 sep 2026 de drempel in een
+    # AFKAPPING heeft veranderd, kan dezelfde selectie wél op rangorde worden gepubliceerd — en
+    # dan stond ze tot vandaag zowel in `picks.jsonl` als in het schaduwlogboek, met
+    # `failed_gate = herijking` erbij, terwijl geen enkele poort haar had tegengehouden.
+    # Gemeten op 30 okt 2026: Lille – Lens, Over 2.5 @1.94 (ruw +8,37 pp, herijkt +7,99915 pp)
+    # werd als tweede regel van de dag gepubliceerd én als `herijking`-rij geboekt. Bij een
+    # reeks van 68 gevallen is dat geen detail, en het telt twee kanten op: de bet staat in de
+    # opbrengst van het logboek én in die van de poort die hem niet heeft tegengehouden.
+    # Vergelijking op markt EN koers, net als bij `_dubbel` hieronder — dat is wat een selectie
+    # identificeert.
+    gepubliceerd: set[tuple[str, str, float]] = set()
+    picks_path = SHADOW.parent / "picks.jsonl"
+    if picks_path.exists():
+        for line in picks_path.read_text().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                pk = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if pk.get("run_date") != args.date or str(pk.get("run", "")).lower() != args.run.lower():
+                continue
+            gepubliceerd.add((f'{pk.get("home")} – {pk.get("away")}',
+                              f'{pk.get("market")} — {pk.get("selection")}', pk.get("odds")))
+
     for comp, block in state.get("competitions", {}).items():
         if not isinstance(block, dict):
             continue
@@ -166,6 +195,8 @@ def cmd_collect(args: argparse.Namespace) -> int:
                 odds = nm.get("odds")
                 if not isinstance(odds, (int, float)) or odds <= 1:
                     continue
+                if (match.get("match"), nm.get("market"), odds) in gepubliceerd:
+                    continue    # gepubliceerd, dus geen afgewezen kandidaat (zie hierboven)
                 e_xg, e_split = nm.get("edge_xg"), nm.get("edge_split")
                 edges = [v for v in (e_xg, e_split) if isinstance(v, (int, float))]
                 if not edges:
