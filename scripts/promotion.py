@@ -477,6 +477,51 @@ class Converted:
         return "LIGHT" if self.in_range else "NONE"
 
 
+def match_tier(*tiers: str) -> str:
+    """De `data_tier` van een DUEL uit de tiers van zijn twee kanten: de zwakste wint.
+
+    Toegevoegd 31 okt 2026, nadat het ontbreken ervan een bet had opgeleverd die niet mocht.
+    `Converted.tier` hierboven beschrijft EEN ploeg, en elk runscript rekende de tier van het
+    duel er zelf uit — met deze regel, twee keer achter elkaar:
+
+        tier_box[0] = "NONE" if not conv.in_range else "LIGHT"      # thuis, dan uit
+
+    Dat is een kale toewijzing en geen samenvoeging, dus de tweede aanroep overschreef de
+    eerste. Stond de ploeg BUITEN het gemeten bereik THUIS en de andere erbinnen, dan kwam het
+    duel op `LIGHT` uit in plaats van op `NONE` en was het gewoon speelbaar. Stond hij UIT, dan
+    ging het goed — wat de fout zijn halve zichtbaarheid gaf.
+
+    Waarom de zwakste kant het duel bepaalt: beide sterktes gaan in dezelfde `lambda`, dus een
+    onbetrouwbare omrekening aan één kant maakt de doelverwachting van het hele duel
+    onbetrouwbaar. §4 ("Promovendi: eerst omrekenen, dan pas NONE") zegt dat ook, maar per
+    ploeg, en die stap van ploeg naar duel stond nergens in code.
+
+    Op 31 okt 2026 raakte dit twee van de 53 duels van Run A, beide met de buitenbereik-ploeg
+    thuis: Hull City - Ipswich Town (Hull City verdediging 1.102 buiten 0.284-1.022) en
+    Erzurumspor FK - Corum FK (Erzurumspor verdediging 0.483 buiten 0.497-1.124). Het eerste
+    duel leverde met +17,13 pp de hoogste edge van de dag op en zou zijn gepubliceerd.
+
+    Een scan over `data/run-state/` vond acht eerdere duels waar de twee kanten hierover van
+    mening konden verschillen; bij drie stond de buitenbereik-ploeg thuis, en twee daarvan zijn
+    een gepubliceerde bet geworden: Exeter City - Rotherham United (3 okt, DNB @1.882) en
+    Girona - Mallorca (4 okt, Under 2.5 @2.0192). Beide zijn gewonnen, dus er is geen geld mee
+    verloren; ze hadden niet mogen worden gespeeld. Die rijen zijn NIET herschreven — ze staan
+    in oude runrapporten en zijn daarmee historie, net als de `resumed_count` van voor 16 okt.
+
+    >>> match_tier("LIGHT", "NONE")
+    'NONE'
+    >>> match_tier("FULL", "LIGHT")
+    'LIGHT'
+    >>> match_tier("FULL", "FULL")
+    'FULL'
+    """
+    rang = {"NONE": 0, "LIGHT": 1, "FULL": 2}
+    bekend = [t for t in tiers if t in rang]
+    if not bekend:
+        return "NONE"
+    return min(bekend, key=lambda t: rang[t])
+
+
 def _rates(table: dict) -> tuple[float, float]:
     """(thuisdoelpunten, uitdoelpunten) per ploeg per duel in deze divisie."""
     hg = sum(t["home"]["gf"] for t in table.values() if "home" in t)
