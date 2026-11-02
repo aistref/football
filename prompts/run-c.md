@@ -320,7 +320,7 @@ uit één kalenderjaar.
    `rating`, `goals` en `assists` staan in de selectie-endpoint vrijwel overal leeg, en het zijn
    bovendien interlandcijfers en geen clubvorm. De clubvorm zelf is in principe te halen via
    `primaryTeamId` uit het `lineup`-blok, maar dat blok is er pas vlak voor de aftrap terwijl
-   Run C om 05:15 draait. Dat blijft dus openstaan.
+   Run C om 05:17 NL draait (sinds 2 nov 2026; daarvoor 05:15). Dat blijft dus openstaan.
 
 5. **81 van de 213 landen hebben geen bruikbare selectiedata** (gemeten 21 sep 2026; Guyana gaf
    nul spelers terug). Voor die landen draait alleen de uitslagenrating en kan poort 5 niet

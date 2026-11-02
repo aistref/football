@@ -11,8 +11,11 @@ Wat er op 24 september gebeurde, en waarom het geen randgeval is:
 
 - De daglijst van 24 sep gaf precies één duel uit de Run B-runlijst: **Seattle Sounders FC – Real
   Salt Lake**, aftrap `2026-09-24T01:40Z`, oftewel **03:40 NL-tijd**.
-- Run B begint om ~05:15 en moet om 06:30 klaar zijn, want de gebruiker zet tussen 07:00 en 08:00
-  in (§0). Het duel stond bij het eerste verzoek van die run al op **89'** met 2–0.
+- Run B begon toen om ~05:15 en moet om 06:30 klaar zijn, want de gebruiker zet tussen 07:00 en
+  08:00 in (§0). Het duel stond bij het eerste verzoek van die run al op **89'** met 2–0.
+  *(Sinds 2 nov 2026 begint Run B om 03:47 NL — zie prompts/SCHEDULER-RUN-B.txt. Dat maakt dit
+  geval kleiner en niet groter: er zijn dan minder duels al onderweg bij aankomst. De deadline
+  van 06:30 en de regel hieronder veranderen er niet door.)*
 - Het duel was dus onspeelbaar bij aankomst — en de run van 23 september had het zien komen en
   opgeschreven als "hoort bij de run van morgen". Dat was precies verkeerd om: het hoorde bij de
   run van 23 september, niet bij die van de 24e.

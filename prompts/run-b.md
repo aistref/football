@@ -110,7 +110,8 @@ Run-specifieke waarden:
   **Dit was tot 24 sep 2026 een gat en het is er nu geen meer — maar lees waarom, want het is het
   duurste punt van deze runlijst.** Stage 1 werkte met wedstrijden van **vandaag in UTC**, en een
   MLS-duel dat in UTC op de rundag valt, trapt af tussen 00:00 en 05:00 NL en is dus *altijd* al
-  gespeeld als Run B om 05:15 begint. Op 24 sep stond het enige duel van de hele runlijst — Seattle
+  gespeeld als Run B om 05:15 begint — de starttijd van toen; sinds 2 nov 2026 is dat 03:47 NL,
+  wat dit geval kleiner maakt en niet groter, maar het niet wegneemt. Op 24 sep stond het enige duel van de hele runlijst — Seattle
   Sounders FC – Real Salt Lake — bij het eerste verzoek op 89' met 2-0. De run van 23 sep had het
   gezien en opgeschreven als "hoort bij de run van morgen", precies verkeerd om. Eén duel die dag,
   maar op een volle speelronde (tien tot veertien duels op zaterdag en woensdag) is het de hele ronde,

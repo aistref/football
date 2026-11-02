@@ -6,13 +6,42 @@ Doe hetzelfde voor de andere runs met het bijbehorende SCHEDULER-bestand. Alle d
 wijzen naar DEZELFDE branch; dat is bewust, run: "A"/"B"/"C" in het schema houdt ze uit elkaar.
 Plan ze niet op hetzelfde tijdstip.
 
-AANBEVOLEN TIJD VOOR DEZE RUN: 04:30 CEST.
+SCHEMA VAN DE DRIE RUNS (vastgesteld 2 nov 2026). Zet dit in de geplande taak zelf; de
+tijden hieronder zijn NEDERLANDSE tijd en niet UTC.
 
-De gebruiker zet doordeweeks tussen 07:00 en 08:00 in, onderweg naar werk, dus beide
-rapporten moeten om 06:30 klaar staan. Dat is de reden dat de runs niet vroeger staan
-dan nodig: de koersen in het rapport zijn dan verser en staan er nog als hij inzet.
-Sinds 5 sep 2026 legt elke run zijn looptijd vast in data/run-state/ onder "duur" —
-kijk daar als je wilt weten of deze tijd nog ruim genoeg is.
+  Run A  02:47   Run B  03:47   Run C  05:17      alle drie dagelijks
+
+ZET DE TIJDZONE VAST OP Europe/Amsterdam (CRON_TZ=Europe/Amsterdam). Tot 2 nov 2026 stonden de
+drie taken in UTC, en dat betekent dat ze met elke overgang naar winter- of zomertijd een uur
+verschuiven in de tijd waarin de gebruiker ze leest: de laatste zondag van oktober 2026 schoven
+A en B zo van 04:00 en 05:00 naar 03:00 en 04:00 NL. De deadline van 06:30 staat in NL-tijd, dus
+de planning hoort daar ook in te staan. Met Europe/Amsterdam schuift er niets meer.
+
+EN NIET OP HET HELE UUR. A en B stonden op :00 en liepen daar structureel 5 tot 8 minuten
+vertraging op, omdat iedereen die "om 3 uur" vraagt op precies dezelfde minuut uitkomt. De :47
+hierboven is daarom geen schoonheidsfoutje maar de bedoeling — houd hem weg van :00 en :30.
+
+WAAROM DEZE AFSTANDEN, MET DE GEMETEN LOOPTIJDEN ERBIJ. Elke run legt sinds 5 sep 2026 zijn
+looptijd vast in data/run-state/ onder "duur"; dit is wat daar over oktober en november staat:
+
+  Run A   mediaan 31,5 min   langste normale run 41,7 min   (twee keer een incident van ~11 uur)
+  Run B   mediaan 29,4 min   langste 91,0 min
+  Run C   mediaan  0,3 min   maar 17 tot 43 min op een dag MET interlands (eenmalig 177 min)
+
+A om 02:47 is om ongeveer 03:20 klaar, dus B om 03:47 valt hem niet in de rede. C staat om 05:17
+na een normale B (die rond 04:20 klaar is) en heeft dan ruim een uur tot de deadline — genoeg
+voor de 17 tot 43 minuten die een interlanddag kost. Liep B uit tot 91 minuten, zoals op
+1 nov 2026, dan start C tóch nog tijdens B; dat kost een merge en geen data (stap 0 en §6a
+handelen het af: fetch, merge, push nog een keer, nooit forceren).
+
+Wil je die laatste overlap helemaal weg, dan is C vóór A zetten de robuustere oplossing — 02:17,
+met A om 02:47 — want C duurt op negen van de tien dagen minder dan een minuut en A's staart is
+korter en voorspelbaarder dan die van B. De keerzijde is dat C dan op een interlanddag A kan
+ophouden. Dat is een afweging voor de gebruiker; 05:17 is wat hij op 2 nov 2026 heeft gekozen.
+
+DE DEADLINE IS 06:30 EN DIE IS HARD. De gebruiker zet doordeweeks tussen 07:00 en 08:00 in,
+onderweg naar werk. Dat is ook de reden dat de runs niet vróeger staan dan nodig: de koersen in
+het rapport zijn dan verser en staan er nog als hij inzet.
 
 DE WERKBRANCH IS: main — en die naam verandert nooit meer.
 
@@ -50,6 +79,9 @@ gezet. Zonder die toestemming weigert een sessie dat.
    a. `git fetch origin` en `git branch -r` — bekijk ALLE branches, niet alleen main.
    b. Bepaal per branch of hij commits bevat die jij nog niet hebt:
       `git rev-list --count HEAD..origin/<andere>`. Is dat 0, dan kun je hem negeren.
+      LET OP: de container levert de repo vaak als ONDIEPE kloon aan. Draai dan eerst
+      `git fetch --unshallow origin`, anders tellen alle commits van vóór de knip mee als
+      "nog niet hier" en zie je tientallen takken die in werkelijkheid allang binnen zijn.
    c. Bevat een andere branch wél eigen commits, merge hem dan. Kies niet tussen takken en
       gooi er geen weg: op 10 aug 2026 hadden beide takken werk dat de ander niet had. Bij
       conflicten in data/picks.jsonl, data/source-health.json en data/coverage.json is de
