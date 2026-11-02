@@ -185,9 +185,24 @@ def build(state: dict, n: int | None = None) -> dict:
             # bij `side = None` per definitie open (§1c), dus dit is geen randgeval: elke keer
             # dat een kantmarkt op de context sneuvelt kan de doelpuntenmarkt van diezelfde
             # wedstrijd er gewoon doorheen.
-            if _publiceerbaar(c, e_h, tier) and (key not in best_h or s > best_h[key]["_score"]):
+            # GEREPAREERD 2 november 2026 — binnen één wedstrijd gaat een selectie die haar
+            # eigen lat HAALT voor op een die dat niet doet, ook als die tweede hoger scoort.
+            # §1a kiest "van alle selecties die alle poorten halen die met de hoogste score", en
+            # een selectie boven de lat haalt ook de drempel; een eronder niet. Deze lus
+            # vergeleek tot vandaag alleen op score, en dat liep uiteen met de analyse zelf: bij
+            # Zagłębie Lubin – Korona Kielce koos de analyse het 1X2 (+8,18 pp, score 3,780, lat
+            # gehaald) en koos deze lus de DNB (+6,50 pp, score 3,968, lat NIET gehaald) — twee
+            # rapporten van dezelfde run die een andere bet noemen. Erger: de wedstrijd ging
+            # daarna met een sub-lat-regel de dagranglijst in en viel daar uit de lijst, zodat
+            # een gekwalificeerde bet stil verdween. Haalt geen enkele selectie van de wedstrijd
+            # haar lat, dan verandert er niets en blijft de hoogste score de vertegenwoordiger —
+            # dat is precies de rangorde-aanvulling die §5b wil.
+            lat_h = THRESH.get(tier, 8.0)
+            sleutel = (1 if e_h >= lat_h else 0, s)
+            if _publiceerbaar(c, e_h, tier) and (key not in best_h
+                                                 or sleutel > best_h[key]["_sleutel"]):
                 best_h[key] = {**c, "_score": s, "_edge": e_h, "_prob": my_h,
-                               "_gate": c.get("failed_gate")}
+                               "_sleutel": sleutel, "_gate": c.get("failed_gate")}
         if isinstance(e_r, (int, float)) and isinstance(my_r, (int, float)):
             s = selection_score(e_r, my_r, tier)
             if key not in best_r or s > best_r[key]["_score"]:
@@ -203,7 +218,32 @@ def build(state: dict, n: int | None = None) -> dict:
         return [r for r in d.values() if _publiceerbaar(r, r.get("_edge"), r["tier"])]
 
     def _cut(rows: list[dict]) -> tuple[list[dict], bool]:
-        """Rangorde eerst, drempel alleen als er méér dan `n` boven staan (§5b stap 4-5)."""
+        """Boven-de-lat eerst, de rest vult op rangorde aan (§5b stap 4-5 + §5 "vul niet aan").
+
+        GEREPAREERD 2 november 2026. Hier stond `if len(boven) > n`, en anders werden ÁLLE
+        kandidaten puur op `selection_score` gerangschikt. Dat laat een selectie die haar eigen
+        lat NIET haalt een selectie verdringen die hem WÉL haalt, en dat is precies wat §5
+        verbiedt ("zijn er minder gekwalificeerde bets dan MAX_SHORTLIST, lever er dan minder —
+        vul niet aan") en wat §5b stap 5 met "dan is de drempel de grens" bedoelt.
+
+        Op 2 november 2026 gebeurde dat: drie selecties stonden boven hun lat (Atalanta – Parma
+        +14,80 tegen 10,0; Radomiak Radom – Śląsk Wrocław +18,22 tegen 16,0; Zagłębie Lubin –
+        Korona Kielce +8,18 tegen 8,0) en `MAX_SHORTLIST` was 3, dus `3 > 3` was onwaar en de
+        lijst werd op score gevuld. Zagłębie (score 3,782) viel daardoor uit de lijst ten gunste
+        van Sassuolo – Fiorentina (Under 3.5, +7,39 pp, score 5,052) — een FULL-Under die zijn
+        lat van 8,0 niet haalt en die poort 9 bij 10,0 zou hebben getoetst als de drempel nog een
+        poort was.
+
+        Het was niet alleen een randgeval op de grens. Ook bij `len(boven) < n` kon een
+        gekwalificeerde selectie volledig uit de lijst vallen zodra er genoeg hoger scorende
+        kandidaten ónder hun lat stonden; dan verdwijnt de gemeten bet en blijft de rangorde over.
+        De reparatie is daarom niet `>` → `>=` maar een ordening: eerst alles boven de lat (op
+        score onderling), daarna de rest om de lijst aan te vullen. Staan er méér dan `n` boven de
+        lat, dan is het resultaat identiek aan de oude regel — de drempel is dan de grens.
+
+        De lijst zelf wordt daarna op `selection_score` gesorteerd, want §5 rangschikt op score;
+        de ordening hierboven bepaalt alleen WIE erin staat, niet in welke volgorde.
+        """
         def _cap_light(xs: list[dict]) -> list[dict]:
             # MAX_LIGHT_IN_SHORTLIST uit §0: hoogstens twee regels op zwakke data, zodat de lijst
             # niet volloopt met omgerekende ploegen.
@@ -217,10 +257,10 @@ def build(state: dict, n: int | None = None) -> dict:
                 if len(uit) == n:
                     break
             return uit
-        boven = [r for r in rows if r["_edge"] >= THRESH.get(r["tier"], 8.0)]
-        if len(boven) > n:
-            return _cap_light(sorted(boven, key=lambda r: -r["_score"])), True
-        return _cap_light(sorted(rows, key=lambda r: -r["_score"])), False
+        boven = {id(r) for r in rows if r["_edge"] >= THRESH.get(r["tier"], 8.0)}
+        gekozen = _cap_light(sorted(rows, key=lambda r: (0 if id(r) in boven else 1,
+                                                         -r["_score"])))
+        return sorted(gekozen, key=lambda r: -r["_score"]), len(boven) >= n
 
     def top(d: dict, schaal: str) -> list[dict]:
         if schaal == "herijkt":
