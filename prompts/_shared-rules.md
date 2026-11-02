@@ -27,6 +27,7 @@ aanpassen zonder de geplande taak aan te raken.
 | `EXCHANGE_COMMISSION` | **2%** | Commissie over de nettowinst bij een beurs (Betfair, Matchbook). Op 5 sep 2026 stond de beste 1X2-prijs in 61% van de gevallen bij een beurs, dus dit is geen randgeval: reken elke koers door `oddsapi.net_price` voordat je er edge op meet. `scripts/oddsapi.EXCHANGE_COMMISSION`. |
 | `MIN_OBSERVATIONS` | **150** | Onder dit aantal afgerekende gevallen wordt `my_prob` niet herijkt en gaat hij ongewijzigd door. Zie §1g. `scripts/recalibrate.MIN_OBSERVATIONS`. |
 | `SHRINK` | **1.00** | Hoeveel de xG-verhouding van een ploeg naar het competitiegemiddelde wordt getrokken; 1.00 is géén regressie. Op 19 sep 2026 van 0.80 hierheen, op **uitkomsten** gemeten over de 782 wedstrijden die de routine zelf heeft doorgerekend. Regressie maakt ploegen onderling gelijker, en dat geeft de zwakkere ploeg meer kans dan hij verdient — de rekenkundige oorzaak onder §1e. Zie §6e, "De `shrink`-vraag". `scripts/model.DEFAULT_SHRINK`. |
+| `LEVEL_SCALE` | **1.032**, bindt vanaf **3 nov 2026** | Met hoeveel de lambdas van de **xG-methode** worden opgeschroefd: 3,2% meer verwachte doelpunten, symmetrisch op beide kanten. Ingevoerd op 2 nov 2026 **op besluit van de gebruiker**, op de meting die §6g zelf voorschreef (`gridfit.py measure` op 1147 homogene duels: het model verwacht +0,100 doelpunt per duel te weinig, z = +1,93, en deze knop brengt de fout op `P(Under 2.5)` van −2,35 naar −0,31 pp). **Hij haalt de lat van deze repo niet** — t = +0,94, beter in 47% van de wedstrijden, en zijn teken draait om op de onafhankelijke 803 duels van vóór de shrink-overstap. Dat staat er met opzet bij: het is een keuze over risicobereidheid en die hoort bij de gebruiker, net als bij `selection_score` (§1a) en poort 8 (§1e). Raakt **alleen** de xG-methode, niet de splitsmethode; werkt dus voor 80% door in `my_prob`. Geef `today` mee met de rundag. Zie §6g, "Het besluit van 2 november", en `scripts/model.level_scale`. |
 
 ### Wanneer een pick afwikkelbaar is (herzien 3 sep 2026, op verzoek van de gebruiker)
 
@@ -662,6 +663,17 @@ poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt — net als bij poor
 herijking van §1g de rem deels overbodig maakte. Een rem op een symptoom die blijft staan nadat de
 oorzaak weg is, kost alleen nog bets.
 
+> **Stand op 2 november 2026, en lees die eerst.** De gebruiker heeft die dag de
+> **niveaucorrectie** `model.LEVEL_SCALE` = 1.032 ingevoerd (§6g, "Het besluit van 2 november
+> 2026"). Dat is de eerste ingreep die aan de **oorzaak**kant van de Under-scheefstand iets doet:
+> ze verhoogt het verwachte totaal met 3,2% en verlaagt `P(Under 2.5)` daarmee ongeveer twee
+> procentpunt bij élk duel. De voorwaarde hieronder — *"zodra de vormfout is gerepareerd"* — is
+> letterlijk gelezen nog steeds niet ingetreden (er was geen vormfout om te repareren), maar de
+> bedoeling van die zin wordt hiermee wél geraakt. **Poort 9 blijft voorlopig onveranderd staan
+> en een run verzet hem niet op eigen initiatief.** Leg de vraag voor zodra de reeks duels van ná
+> 3 november groot genoeg is om te zien wat de correctie met `P(Under)` heeft gedaan — eerder is
+> er niets te beslissen.
+>
 > **Die voorwaarde is op 28 oktober 2026 NIET ingetreden, en poort 9 blijft dus staan.** Keuze
 > **a** is die dag op opdracht van de gebruiker uitgevoerd én gemeten, en elke kandidaat is
 > afgewezen: de voorgeschreven vormcorrectie verergert het symptoom (ze verlaagt het verwachte
@@ -1783,6 +1795,31 @@ Drie dingen die die tweede route oplost en die je moet kennen voordat je eraan s
 Twee valkuilen die de functie nu zelf afdekt en die je dus niet meer per run hoeft over te typen: de
 **seizoenslengte** wordt gemeten aan het vorige seizoen (MLS heeft dertig ploegen en 34 speeldagen, dus
 `2 × (n − 1)` is daar fout), en bij een competitie **zonder xG** is het doelpuntgemiddelde de noemer.
+
+#### De niveaucorrectie van §6g staat in de lambdaketen — geef `today` mee (2 nov 2026)
+
+```python
+p_xg = analyze_match(hs, as_, lg, today=DAY)                 # §6g — model.LEVEL_SCALE
+rob  = robustness_check(hs, as_, lg, select, odds, today=DAY)
+```
+
+`model.LEVEL_SCALE` = 1.032 schroeft de twee lambdas van de **xG-methode** symmetrisch op en bindt
+vanaf **3 november 2026**. Drie dingen die je hier moet doen en laten:
+
+- **Geef `today` mee met de rundag, bij élke aanroep.** Zonder dat argument kijkt `level_scale`
+  naar de systeemklok, en dan krijgt een herberekening van een oudere dag stil de correctie van
+  vandaag in plaats van die van de dag zelf. Exact dezelfde val als bij `sides.check` (§1e), en
+  hier extra vervelend: `margins.py` en `gridfit.py` rekenen op opgeslagen lambdas, dus een
+  verkeerd gerekende herberekening vervuilt juist de meting waarmee deze correctie beoordeeld
+  moet worden.
+- **Raak de splitsmethode niet aan.** `analyze_match_from_splits` kent geen `scale` en hoort die
+  niet te krijgen; zie §6g, "Het besluit van 2 november 2026", punt 1.
+- **Run C geeft `scale=1.0` mee.** De correctie is uitsluitend op clubduels gemeten.
+
+**Verwar hem niet met de correctie hieronder.** `early_season_uplift` / `scale_level` rekent een
+competitieniveau van vórig seizoen om naar dit seizoen en **dooft uit** naarmate het seizoen
+vordert; `LEVEL_SCALE` is een residu dat op uitkomsten is gemeten, geldt voor alle competities en
+dooft niet uit. Ze staan naast elkaar en mogen nooit tot één factor worden samengevoegd.
 
 **Regel de correctie nooit af op de markt.** Ze komt volledig uit xG-waarnemingen; zou je
 `prior_matchdays` of `SEASON_MATURE_SHARE` bijstellen tot de afwijking tegenover de bookmakers nul is,
@@ -3310,10 +3347,107 @@ blijven ongemoeid — zie §1h voor waarom dat drie afzonderlijke besluiten zijn
 > reeks ruim boven de 914 staat — niet eerder, en met `gridfit.py measure` in plaats van met een
 > nieuwe redenering.
 >
+> *(Die vraag is op 2 november 2026 voorgelegd en beantwoord — zie "Het besluit van 2 november
+> 2026" hieronder. De knop staat sindsdien aan. Lees deze alinea dus als de weg erheen en niet
+> als de huidige stand.)*
+>
 > **En wat dit voor poort 9 betekent:** §1h schrijft *"zodra de vormfout is gerepareerd hoort deze
 > poort opnieuw gemeten en vermoedelijk verlaagd of geschrapt"*. Die voorwaarde is **niet**
 > ingetreden — er is niets gerepareerd, omdat er niets te repareren viel. **Poort 9 blijft staan,
 > onveranderd.** Dat is geen apart besluit maar het uitblijven van de trigger.
+
+#### Het besluit van 2 november 2026 — de niveaucorrectie is INGEVOERD, en wel onder de lat
+
+**`model.LEVEL_SCALE` = 1.032 staat sinds die dag in de lambdaketen en bindt vanaf 3 november
+2026.** Dit is de huidige stand; de twee blokken hierboven beschrijven hoe het zover kwam.
+
+De paragraaf van 28 oktober schreef voor de vraag opnieuw voor te leggen *"zodra de homogene reeks
+ruim boven de 914 staat — niet eerder, en met `gridfit.py measure` in plaats van met een nieuwe
+redenering"*. Run B heeft dat op 2 november gedaan. De reeks stond op **1147** duels (+25%) en de
+meting was meegegroeid in plaats van weggezakt:
+
+| | duels | gemiddeld totaal (werkelijk − voorspeld) | z |
+|---|---|---|---|
+| 28 okt 2026 | 914 | +0,098 | +1,67 |
+| **2 nov 2026** | **1147** | **+0,100** | **+1,93** |
+
+De vraag is aan de gebruiker voorgelegd met de bezwaren erbij, en zijn antwoord was **"ja
+bijstellen"**.
+
+**Wat de knop doet**, op diezelfde 1147 duels:
+
+| | fout op `P(Under 2.5)` | fout op `P(Under 3.5)` |
+|---|---|---|
+| huidig grid | −2,35 pp | −1,01 pp |
+| `scale = 1.032` | **−0,31 pp** | +1,06 pp |
+
+**Schrijf de bezwaren niet weg, want ze zijn de reden dat dit een besluit was en geen meting.**
+Alle drie staan ze in `gridfit.py measure` en ze zijn er na het besluit niet anders op geworden:
+
+1. **t = +0,94 op de gepaarde toets.** `CREDIBILITY_K` is ingevoerd op t = +2,11 / +1,71 en
+   rollende xG is **afgewezen** op t = +0,05 / +1,06 (§4). Deze knop zit daartussen, en dus onder
+   de lat die elders in dit bestand is aangehouden.
+2. **Beter in 47,0% van de wedstrijden**, dus in minder dan de helft. Dat is de spiegel van de val
+   die §6e bij `shrink` beschrijft en die de vormcorrectie van 28 oktober onderuit haalde (daar:
+   beter in 65% en gemiddeld tóch slechter). Hier wint hij zelden en groot; dat is de gunstige
+   kant van dezelfde asymmetrie, maar het maakt het effect niet groter.
+3. **Zijn teken draait om op de enige onafhankelijke steekproef** — de 803 duels met lambdas van
+   vóór de shrink-overstap geven −0,00201 (t = −1,09).
+
+Wat ertegenover staat, en waarom het besluit verdedigbaar is: er ligt een **hypothese vooraf** (na
+28 oktober is een niveaufout de enige diagnose die standhoudt, en dit is de enige knop die een
+niveaufout kán raken — de `narrow`-varianten bewegen `P(Under 2.5)` nauwelijks en duwen
+`P(Under 3.5)` de verkeerde kant op), het signaal groeide mee in plaats van weg, en de correctie
+wijst de **voorzichtige** kant op: meer verwachte doelpunten betekent een lagere `P(Under)` en dus
+mínder Under-bets, precies op de kant waar deze paragraaf −14,6% over 146 afgewikkelde picks meet.
+
+**Vier dingen die hierbij vastliggen.**
+
+1. **Alleen op de xG-methode.** `model.match_lambdas` is het enige aangrijpingspunt, en dat is
+   precies waar de meting op staat: `margins.py` en `gridfit.py` lezen `lambdas.xg` uit
+   `data/run-state/`. **`analyze_match_from_splits` blijft ongemoeid** — een gemeten correctie
+   uitbreiden naar een populatie waar de meting hem niet steunt is wat §1h en §4 verbieden, en hier
+   komt een tweede reden bij: de splitsmethode gebruikt `home_goals_per_match` tegelijk als noemer
+   én als niveau, dus een niveauwijziging daar wordt niet weggedeeld maar **omgekeerd** (zie
+   `LeagueContext.level_factor`). Gevolg: in `my_prob` werkt de correctie voor 80% door (§1f).
+2. **Niet met terugwerkende kracht, en geef `today` mee.** Hij bindt vanaf **3 november**
+   (`model.LEVEL_SCALE_BINDS_FROM`), want op 2 november waren het runrapport, het dagrapport en de
+   notificatie van Run A én Run B al verstuurd. Dezelfde redenering als bij het terugzetten van
+   poort 8 (§1e), bij de Roemeense factor (§4) en bij `unders.BINDS_FROM` (§1h). Roep
+   `analyze_match(..., today=DAY)` en `robustness_check(..., today=DAY)` dus mét de rundag aan;
+   zonder dat argument kijkt `level_scale` naar de systeemklok en krijgt een **herberekening** van
+   een oudere dag stil de correctie van vandaag.
+3. **Run C rekent met `scale=1.0`.** De gemeten populatie bestaat uitsluitend uit clubduels — 39
+   competities, geen enkel interlandduel. `scripts/national.py` en `scripts/squadform.py` geven
+   daarom `scale=1.0` mee, en het Run C-runscript hoort dat ook te doen. Dit is dezelfde regel als
+   punt 1, nu over een andere populatie.
+4. **Er is een tweede breuklijn in de meetreeks bij gekomen.** `gridfit.LEVEL_SWITCH` =
+   2026-11-03, naast `gridfit.SHRINK_SWITCH` = 2026-09-20. Lambdas van ná die datum dragen de
+   correctie al in zich, dus de regel `scale = 1.032` toetst daar een **dubbele** correctie, en de
+   vraag "werkt de correctie" hoort op alleen die duels. `gridfit.py measure` zegt dat vanaf nu
+   zelf, luidruchtig, zodra er zulke duels in de reeks zitten. Reken op enkele maanden voordat die
+   nieuwe reeks groot genoeg is om te lezen (§6d).
+
+**Hoe je weet of het heeft geholpen.** Op de duels van ná 3 november hoort de regel "gemiddeld
+totaal" van `gridfit.py measure` naar nul te zakken en de fout op `P(Under 2.5)` klein te blijven.
+Blijft die op +0,1 staan, dan heeft de correctie niet gedaan wat ze moest doen en hoort ze eruit —
+met dezelfde knop en zonder nieuwe redenering.
+
+**En wat dit voor poort 9 betekent.** §1h schrijft dat die rem opnieuw gemeten en vermoedelijk
+verlaagd of geschrapt hoort *"zodra de vormfout is gerepareerd"*. Letterlijk gelezen is die
+voorwaarde nog steeds niet ingetreden: er is geen **vorm**fout gerepareerd, want die bleek er niet
+te zijn (28 oktober). Wat er wél is gebeurd, is dat er voor het eerst aan de **oorzaak**kant van de
+Under-scheefstand is ingegrepen, en dat raakt de bedoeling van die zin. **Poort 9 blijft
+voorlopig onveranderd staan** — een run verzet hem niet op eigen initiatief (§1h, §6g). Leg de
+vraag voor zodra de reeks van ná 3 november groot genoeg is om te zien wat de correctie met
+`P(Under)` heeft gedaan; eerder is er niets te beslissen en hoort de vraag niet gesteld.
+
+> **ACHTERHAALD — dit is de stand van 11 oktober 2026 en niet de huidige.** Ze blijft staan omdat
+> ze de redenering van die dag vastlegt, maar twee dingen erin kloppen niet meer: de "reparatie
+> van de vormfout" is op 28 oktober uitgevoerd, gemeten en **afgewezen** (er viel niets te
+> repareren), en op 2 november is in plaats daarvan de **niveaufout** aangepakt. Lees de twee
+> blokken hierboven voor de huidige stand. Dit is precies het soort samenvattende zin dat §4 bij
+> de gepoolde promotiefactor al eens drie runrapporten lang onwaar is overgenomen.
 
 **De reparatie van de vormfout (1) staat dus nog open, en dat is de kern.** Poort 9 is een rem op
 een symptoom; `score_grid` zet nog steeds te weinig massa op 4 en 5 doelpunten, en die fout werkt

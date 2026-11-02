@@ -194,6 +194,26 @@ vergelijking van twee modellen — dat is bij de eerste poging op 28 okt 2026 ge
 gefitte parameter die vier keer zo groot was als op de homogene populatie.
 """
 
+LEVEL_SWITCH = model.LEVEL_SCALE_BINDS_FROM.isoformat()
+"""Vanaf deze datum dragen de lambdas in `data/run-state/` de niveaucorrectie `model.LEVEL_SCALE`.
+
+**Dit is de tweede breuklijn in deze reeks, naast `SHRINK_SWITCH`, en wie haar negeert meet
+zichzelf.** De correctie van 1.032 is op 2 nov 2026 op besluit van de gebruiker ingevoerd, op
+precies de meting die dit bestand produceert, en ze bindt vanaf 3 november (`level_scale`). De
+lambdas van vóór die datum zijn dus ONGECORRIGEERD en die van erna GECORRIGEERD.
+
+Twee dingen die daaruit volgen:
+
+1. **`scale = 1.032` nog eens bovenop lambdas van ná deze datum is een DUBBELE correctie.** De
+   kandidatenlijst in `VARIANTS` is geschreven toen het model ongecorrigeerd was; op de nieuwe
+   populatie toetst die regel dus 1.032 × 1.032 en niet 1.032. Lees haar daar als "nóg eens drie
+   procent erbij".
+2. **De vraag of de correctie werkt, hoort op de populatie van ná deze datum.** Daar hoort de
+   regel "gemiddeld totaal" naar nul te zakken; blijft ze op +0,1 staan, dan heeft de correctie
+   niet gedaan wat ze moest doen. Dat is een nieuwe homogene reeks die bij nul begint — reken op
+   enkele maanden voordat ze de 914 van 28 oktober haalt, en lees haar niet eerder.
+"""
+
 TMAX = 2 * model.MAX_GOALS
 
 
@@ -492,6 +512,21 @@ def main(argv: list[str] | None = None) -> int:
     label = ("ALLE lambdas, twee shrink-instellingen door elkaar" if args.all
              else f"alleen lambdas van ná {SHRINK_SWITCH} (homogeen)")
     measure(rows, label)
+    # Tweede breuklijn, sinds 2 nov 2026 — zie `LEVEL_SWITCH`. Zolang er lambdas van ná die datum
+    # in de reeks zitten, is de populatie NIET meer homogeen op het niveau, en toetst de regel
+    # `scale = 1.032` daar een DUBBELE correctie. Dit moet luidruchtig zijn: de hele reden dat
+    # `SHRINK_SWITCH` bestaat, is dat die vermenging op 28 oktober een gefitte parameter opleverde
+    # die vier keer zo groot was als op de homogene populatie.
+    na_niveau = [r for r in rows if r["date"] >= LEVEL_SWITCH]
+    if na_niveau:
+        print(f"\n  LET OP — {len(na_niveau)} van de {len(rows)} duels hebben lambdas van ná "
+              f"{LEVEL_SWITCH} en dragen")
+        print(f"  de niveaucorrectie model.LEVEL_SCALE = {model.LEVEL_SCALE} al in zich. De "
+              f"populatie is dus niet")
+        print("  meer homogeen op het NIVEAU, en de regel `scale = 1.032` toetst op die duels een")
+        print("  dubbele correctie. Lees de vraag 'werkt de correctie' op alleen die duels, en "
+              "pas")
+        print("  wanneer het er genoeg zijn (§6d) — niet op deze gemengde reeks.")
     # De duels van vóór de overstap als onafhankelijke controle — ze spelen in de meting zelf
     # geen rol (andere modelinstelling), maar ze zijn de enige gegevens die buiten de 914 staan.
     vooraf = []

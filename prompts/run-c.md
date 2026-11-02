@@ -180,14 +180,24 @@ if not (ok_h and ok_a):
 else:
     # methode 1 — uitslagen
     p_res = analyze_match(national.team(home_id, nf), national.team(away_id, nf),
-                          national.context(nf))
+                          national.context(nf), scale=1.0)
     # methode 2 — selectiewaarde (alleen als bij BEIDE ploegen de selectie bekend is)
     p_val = None
     if sq_h and sq_a:
         p_val = analyze_match(squadform.team(home_id, sf, squads),
                               squadform.team(away_id, sf, squads),
-                              squadform.context(sf))
+                              squadform.context(sf), scale=1.0)
 ```
+
+**`scale=1.0` is hier geen formaliteit (toegevoegd 2 nov 2026).** `model.LEVEL_SCALE` = 1.032
+schroeft sinds 3 november de lambdas van de xG-methode met 3,2% op, en die correctie is gemeten op
+de **clublambdas** uit `data/run-state/` — 39 competities, **geen enkel interlandduel**. Een
+gemeten correctie uitbreiden naar een populatie waar de meting hem niet steunt is precies wat §1h
+en §4 verbieden, en hier komt bij dat `national.py` en `squadform.py` hun eigen niveau al uit hun
+eigen fit halen. Laat je `scale` weg, dan kijkt `level_scale` naar de systeemklok en loopt de
+clubcorrectie er vanaf 3 november **stil** in mee — én faalt `python3 scripts/national.py verify`,
+die toetst of `analyze_match` exact dezelfde lambdas teruggeeft als de fit. Zie
+`_shared-rules.md` §6g, "Het besluit van 2 november 2026", punt 3.
 
 **Wegen: 0,70 op de uitslagenrating, 0,30 op de selectiewaarde.** Dat is gemeten, niet gekozen —
 zie de tabel hieronder. Het is dezelfde constructie als §1f bij clubvoetbal (daar 0,80/0,20).

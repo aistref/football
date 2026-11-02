@@ -311,8 +311,10 @@ def _brier(rows: list[dict], f: dict, squads: dict) -> tuple[float, int]:
         h, a = squads.get(r["home_id"]), squads.get(r["away_id"])
         if not h or not a or not _usable(h) or not _usable(a):
             continue
+        # `scale=1.0`: zie `model.level_scale` — de correctie is op clubduels gemeten en deze
+        # fit draait op interlandselecties, dus de meting steunt hem hier niet.
         p = analyze_match(team(r["home_id"], f, squads), team(r["away_id"], f, squads),
-                          ctx, shrink=1.0)
+                          ctx, shrink=1.0, scale=1.0)
         werk = (1.0, 0.0, 0.0) if r["gh"] > r["ga"] else (
             (0.0, 1.0, 0.0) if r["gh"] == r["ga"] else (0.0, 0.0, 1.0))
         som += sum((q - w) ** 2 for q, w in zip((p.home, p.draw, p.away), werk))
@@ -415,7 +417,9 @@ def main() -> None:
                 va = math.log(squads[aa]["total_value"]) - f["mean_log_value"]
                 lh = math.exp(f["base"] + f["home_adv"] / 2 + f["beta"] * vh - f["delta"] * va)
                 la = math.exp(f["base"] - f["home_adv"] / 2 + f["beta"] * va - f["delta"] * vh)
-                mlh, mla = match_lambdas(team(h, f, squads), team(aa, f, squads), ctx, shrink=1.0)
+                # `scale=1.0`: deze aanroep toetst de identiteit fit <-> match_lambdas.
+                mlh, mla = match_lambdas(team(h, f, squads), team(aa, f, squads), ctx,
+                                         shrink=1.0, scale=1.0)
                 if abs(lh - mlh) > 1e-6 or abs(la - mla) > 1e-6:
                     ok = False
                 print(f"{squads[h]['name'][:16]:17s}-{squads[aa]['name'][:16]:17s}"
