@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from datetime import date
 
 # Hoeveel de xG-verhouding van een ploeg naar het competitiegemiddelde wordt getrokken.
 # Op 19 sep 2026 van 0.80 naar 1.00 (= geen regressie), op UITSLAGEN gemeten over de 782
@@ -28,6 +29,130 @@ DEFAULT_SHRINK = 1.00
 LEGACY_SHRINK = 0.80
 DEFAULT_RHO = -0.05
 MAX_GOALS = 12
+
+# --------------------------------------------------------------------------- niveaucorrectie
+#
+# Met hoeveel het verwachte doelpuntenniveau van de xG-methode wordt opgeschroefd. 1.032 = 3,2%
+# meer doelpunten, symmetrisch op beide lambdas. Zie `level_scale` voor de meting, de bezwaren en
+# de ingangsdatum; ingevoerd op 2 nov 2026 op BESLUIT VAN DE GEBRUIKER.
+LEVEL_SCALE = 1.032
+
+# Vanaf welke rundag `LEVEL_SCALE` bindt. Niet met terugwerkende kracht: op 2 november waren het
+# runrapport, het dagrapport en de notificatie van Run A én Run B al verstuurd toen dit besluit
+# viel, en §4 schrijft voor een nieuwe factor liever vóór de analyse van de dag te meten dan erna
+# ("een al gepubliceerde run aanvullen zou een herberekening van die dag een andere uitkomst geven
+# dan de run zelf gaf"). Zelfde constructie en zelfde reden als `unders.BINDS_FROM` (poort 9) en
+# `sides.LAPSED_FROM`/`LAPSED_UNTIL` (poort 8).
+LEVEL_SCALE_BINDS_FROM = date(2026, 11, 3)
+
+
+def level_scale(today: date | None = None) -> float:
+    """De niveaucorrectie op de lambdas van de xG-methode, voor de rundag `today`.
+
+    **GEEF `today` ALTIJD MEE met de rundag.** Zonder argument kijkt deze functie naar de
+    systeemklok, en dan geeft een HERBEREKENING van een oudere dag stil de correctie van vandaag
+    in plaats van die van de dag zelf. Dat is dezelfde val die `sides.check` beschrijft voor het
+    vervallen van poort 8, en ze is hier even echt: `margins.py` en `gridfit.py` rekenen op
+    opgeslagen lambdas, dus een herberekening met de verkeerde factor vervuilt juist de meting
+    waarmee déze correctie beoordeeld moet worden.
+
+    ## Waarom deze correctie er is
+
+    `_shared-rules.md` §6g beschrijft twee fouten op de doelpuntenas. De eerste — een **vormfout**
+    in `score_grid` — is op 28 okt 2026 op opdracht van de gebruiker onderzocht en elke
+    kandidaat-reparatie is AFGEWEZEN: ze verergerde het symptoom, was op een gepaarde toets
+    meetbaar slechter, en draaide van teken tussen de twee `shrink`-populaties. Zie
+    `scripts/gridfit.py`.
+
+    Wat na die meting overbleef is geen vormfout maar een **niveaufout**: het model verwacht
+    structureel ongeveer een tiende doelpunt per duel te weinig. Die staat niet in het grid maar in
+    de lambdaketen, en dit is de knop ervoor. Gemeten met `gridfit.py measure` op de homogene
+    populatie (alleen lambdas van ná de shrink-overstap van 19 sep 2026):
+
+    | datum | duels | gemiddeld totaal (werkelijk − voorspeld) | z |
+    |---|---|---|---|
+    | 28 okt 2026 | 914 | +0,098 | +1,67 |
+    | **2 nov 2026** | **1147** | **+0,100** | **+1,93** |
+
+    En wat `scale = 1.032` daaraan doet, op diezelfde 1147 duels:
+
+    | | fout op `P(Under 2.5)` | fout op `P(Under 3.5)` |
+    |---|---|---|
+    | huidig grid | −2,35 pp | −1,01 pp |
+    | `scale = 1.032` | **−0,31 pp** | +1,06 pp |
+
+    ## De bezwaren, en ze staan er met opzet in plaats van in een voetnoot
+
+    **Deze correctie haalt de lat van deze repo niet.** Dat is geen slordigheid maar het besluit:
+    de gebruiker heeft hem op 2 nov 2026 ingevoerd mét dit bezwaar erbij. Drie cijfers die je moet
+    kennen voordat je hem aanraakt:
+
+    1. **Gepaarde toets: +0,00153 log loss, t = +0,94.** `CREDIBILITY_K` is ingevoerd op
+       t = +2,11 / +1,71 en rollende xG is AFGEWEZEN op t = +0,05 / +1,06 (§4). Deze zit daartussen
+       en dus onder de lat die elders is aangehouden.
+    2. **Hij is beter in 47,0% van de wedstrijden** — dus in minder dan de helft. Dat is de
+       spiegel van de val die §6e bij `shrink` beschrijft en die de vormcorrectie van 28 oktober
+       onderuit haalde (daar: beter in 65% en gemiddeld tóch slechter). Hier wint hij zelden en
+       groot in plaats van vaak en klein; dat is de gunstige kant van dezelfde asymmetrie, maar
+       het blijft een reden om het effect klein te noemen.
+    3. **Zijn teken draait om op de enige onafhankelijke steekproef.** Op de 803 duels met
+       lambdas van vóór 19 sep 2026, die bij het meten geen rol speelden, geeft hij −0,00201
+       (t = −1,09). `gridfit.py` noemt dat voor élke kandidaat de beslissende waarneming.
+
+    Wat er tegenover staat en waarom het besluit verdedigbaar is: er ligt een **hypothese vooraf**
+    (de enige diagnose die na 28 oktober standhield is een niveaufout, en dit is de enige knop die
+    een niveaufout kan raken — de `narrow`-varianten bewegen `P(Under 2.5)` nauwelijks en duwen
+    `P(Under 3.5)` de verkeerde kant op), het signaal is tussen 28 oktober en 2 november méé
+    gegroeid in plaats van weggezakt (z van +1,67 naar +1,93 bij 25% meer duels), en de correctie
+    wijst de **voorzichtige** kant op: meer verwachte doelpunten betekent een lagere `P(Under)` en
+    dus mínder Under-bets, precies op de kant waar §6g −14,6% over 146 afgewikkelde picks meet.
+
+    ## Waar hij WEL en NIET werkt
+
+    - **Alleen op de xG-methode.** `match_lambdas` is het enige aangrijpingspunt, en dat is waar
+      de meting op staat: `margins.py` en `gridfit.py` lezen `lambdas.xg` uit `data/run-state/`.
+      `analyze_match_from_splits` blijft ONGEMOEID. Een gemeten correctie uitbreiden naar een
+      populatie waar de meting hem niet steunt is wat §1h en §4 verbieden — en hier komt daar een
+      tweede reden bij: de splitsmethode gebruikt `home_goals_per_match` tegelijk als noemer én
+      als niveau, dus een niveauwijziging daar wordt niet alleen weggedeeld maar OMGEKEERD (zie
+      `LeagueContext.level_factor` en `analyze_match_from_splits`). Gevolg: in `my_prob` werkt de
+      correctie voor 80% door, het gewicht van de xG-methode (§1f).
+    - **Op beide lambdas tegelijk, symmetrisch.** Precies zoals `gridfit.totals_vector` hem heeft
+      gemeten: `score_grid(lh * scale, la * scale)`. Hij verschuift dus het verwachte TOTAAL en
+      niet de verhouding tussen de twee ploegen, en hij raakt daarmee de 1X2-kansen nauwelijks.
+    - **Op álle armen van de xG-methode**, dus ook `p_xg_noshrink`, `p_xg_shrink08` en het
+      `(shrink, rho)`-grid van `robustness_check`. Dat is met opzet: die armen bestaan om
+      `shrink`-instellingen te vergelijken (§6e), en een correctie die ze alle drie gelijk raakt
+      laat die vergelijking intact.
+    - **NIET te verwarren met `early_season_uplift` / `scale_level`.** Die correctie rekent een
+      competitieniveau van vórig seizoen om naar dit seizoen en dooft uit naarmate het seizoen
+      vordert. Deze is een residu dat op UITKOMSTEN is gemeten, geldt voor alle competities en
+      dooft niet uit. Ze staan naast elkaar en mogen nooit tot één factor worden samengevoegd.
+
+    ## Hoe hij herzien hoort te worden
+
+    Niet met een nieuwe redenering maar met `gridfit.py measure`, en pas op een reeks van duels
+    die ná de ingangsdatum zijn gerekend — dat is een NIEUWE homogene populatie, net zoals de
+    shrink-overstap van 19 september er een maakte (`gridfit.SHRINK_SWITCH`,
+    `gridfit.LEVEL_SWITCH`). Werkt de correctie, dan hoort de regel "gemiddeld totaal" daar naar
+    nul te zakken en de fout op `P(Under 2.5)` klein te blijven. Werkt ze niet, dan is dat op
+    dezelfde knop te zien en hoort ze eruit.
+
+    En let op het gevolg voor **poort 9**: §1h zegt dat die rem opnieuw gemeten en vermoedelijk
+    verlaagd of geschrapt hoort zodra de oorzaak onder de Under-scheefstand is aangepakt. Dit is
+    de eerste ingreep die daar aan de oorzaakkant iets doet. Dat is een besluit voor de gebruiker
+    en geen automatisme (§1h, §6g); een run verzet poort 9 niet op eigen initiatief.
+
+    >>> level_scale(date(2026, 11, 2))
+    1.0
+    >>> level_scale(date(2026, 11, 3))
+    1.032
+    >>> level_scale(date(2027, 1, 1))
+    1.032
+    """
+    if today is None:
+        today = date.today()
+    return LEVEL_SCALE if today >= LEVEL_SCALE_BINDS_FROM else 1.0
 
 # Hoeveel duels van het lópende seizoen nodig zijn voordat dat seizoen even zwaar weegt als het
 # vorige. Op uitslagen gemeten (zie `blend_seasons`); op 5 sep 2026 op verzoek van de gebruiker
@@ -306,17 +431,29 @@ def team_strength(stats: TeamStats, league: LeagueContext, shrink: float = DEFAU
 
 
 def match_lambdas(home: TeamStats, away: TeamStats, league: LeagueContext,
-                   shrink: float = DEFAULT_SHRINK) -> tuple[float, float]:
+                   shrink: float = DEFAULT_SHRINK, *, scale: float | None = None,
+                   today: date | None = None) -> tuple[float, float]:
+    """De twee doelverwachtingen van de xG-methode, mét de niveaucorrectie van `level_scale`.
+
+    `scale` overschrijft die correctie (geef `1.0` om hem uit te zetten, bijvoorbeeld om een
+    oudere dag na te rekenen zoals hij toen is gerekend); `today` kiest hem op de rundag. Geef
+    één van de twee altijd mee — zie de waarschuwing in `level_scale`.
+    """
+    if scale is None:
+        scale = level_scale(today)
     home_attack, home_defense = team_strength(home, league, shrink)
     away_attack, away_defense = team_strength(away, league, shrink)
-    lambda_home = league.home_goals_per_match * home_attack * away_defense
-    lambda_away = league.away_goals_per_match * away_attack * home_defense
+    lambda_home = league.home_goals_per_match * home_attack * away_defense * scale
+    lambda_away = league.away_goals_per_match * away_attack * home_defense * scale
     return lambda_home, lambda_away
 
 
 def analyze_match(home: TeamStats, away: TeamStats, league: LeagueContext,
-                   shrink: float = DEFAULT_SHRINK, rho: float = DEFAULT_RHO) -> MatchProbabilities:
-    lambda_home, lambda_away = match_lambdas(home, away, league, shrink)
+                   shrink: float = DEFAULT_SHRINK, rho: float = DEFAULT_RHO, *,
+                   scale: float | None = None,
+                   today: date | None = None) -> MatchProbabilities:
+    lambda_home, lambda_away = match_lambdas(home, away, league, shrink,
+                                             scale=scale, today=today)
     grid = score_grid(lambda_home, lambda_away, rho)
     home_p = sum(grid[i][j] for i in range(MAX_GOALS + 1) for j in range(MAX_GOALS + 1) if i > j)
     draw_p = sum(grid[i][i] for i in range(MAX_GOALS + 1))
@@ -518,7 +655,9 @@ class RobustnessResult:
 
 def robustness_check(home: TeamStats, away: TeamStats, league: LeagueContext,
                       select: "callable[[MatchProbabilities], float]", odds: float,
-                      combos: list[tuple[float, float]] | None = None) -> RobustnessResult:
+                      combos: list[tuple[float, float]] | None = None, *,
+                      scale: float | None = None,
+                      today: date | None = None) -> RobustnessResult:
     """Herhaal `analyze_match` over een grid van (shrink, rho) en geef de edge per combinatie.
 
     `select` haalt de relevante kans uit een MatchProbabilities, bv. `lambda r: r.home` voor de
@@ -529,7 +668,7 @@ def robustness_check(home: TeamStats, away: TeamStats, league: LeagueContext,
     """
     result = RobustnessResult()
     for shrink, rho in combos or ROBUSTNESS_COMBOS:
-        probs = analyze_match(home, away, league, shrink, rho)
+        probs = analyze_match(home, away, league, shrink, rho, scale=scale, today=today)
         result.edges[(shrink, rho)] = edge_pp(select(probs), odds)
     return result
 
@@ -1005,8 +1144,13 @@ if __name__ == "__main__":
     # elke topselectie verschuift. Gevonden op 24 sep 2026. Een historisch anker hoort zijn eigen
     # parameters mee te nemen in plaats van de standaard te volgen, want anders meet hij de
     # standaard en niet de wedstrijd.
-    probs08 = analyze_match(standard, cercle, league, shrink=0.80)
-    probs = analyze_match(standard, cercle, league)
+    # `scale=1.0` op alle ankers hieronder, en wel om EXACT de les die in de alinea hierboven
+    # staat. Deze getallen zijn vastgelegd vóór 2 nov 2026 en kennen `model.LEVEL_SCALE` niet;
+    # zouden ze de live standaard volgen, dan vielen ze op 3 nov 2026 om zonder dat er iets aan
+    # deze module was veranderd — en dan draait de hele zelftest eronder weer dagen niet, precies
+    # zoals op 19 sep 2026 is gebeurd. De correctie zelf wordt verderop apart getoetst.
+    probs08 = analyze_match(standard, cercle, league, shrink=0.80, scale=1.0)
+    probs = analyze_match(standard, cercle, league, scale=1.0)
     print(f"Standard {probs.home * 100:.1f}%  Gelijk {probs.draw * 100:.1f}%  Cercle {probs.away * 100:.1f}%"
           f"   (shrink 0.80, het anker van 8 aug: Cercle {probs08.away * 100:.1f}%)")
     assert abs(probs08.away - 0.418) < 0.002, f"verwacht ~41.8% bij shrink 0.80, kreeg {probs08.away * 100:.1f}%"
@@ -1015,6 +1159,38 @@ if __name__ == "__main__":
     assert abs(probs.away - 0.443) < 0.002, f"verwacht ~44.3% bij shrink {DEFAULT_SHRINK}, kreeg {probs.away * 100:.1f}%"
     print(f"Edge op Cercle @2.85: {edge_pp(probs08.away, 2.85):+.1f} pp bij shrink 0.80 "
           f"(verwacht +6.7 pp) · {edge_pp(probs.away, 2.85):+.1f} pp bij de standaard {DEFAULT_SHRINK}")
+
+    # Niveaucorrectie (§6g, 2 nov 2026, besluit van de gebruiker). Zes controles, en ze liggen
+    # hier omdat elk ervan een manier is waarop deze knop stil fout kan gaan.
+    _l0 = match_lambdas(standard, cercle, league, scale=1.0)
+    _l1 = match_lambdas(standard, cercle, league, today=date(2026, 11, 3))
+    # 1. Hij bindt niet vóór de ingangsdatum, en wel erna.
+    assert level_scale(date(2026, 11, 2)) == 1.0, "mag 2 nov niet binden — zie LEVEL_SCALE_BINDS_FROM"
+    assert level_scale(date(2026, 11, 3)) == LEVEL_SCALE
+    assert match_lambdas(standard, cercle, league, today=date(2026, 11, 2)) == _l0
+    # 2. Hij werkt SYMMETRISCH op beide lambdas — hij verschuift het totaal, niet de verhouding.
+    assert abs(_l1[0] / _l0[0] - LEVEL_SCALE) < 1e-12
+    assert abs(_l1[1] / _l0[1] - LEVEL_SCALE) < 1e-12
+    assert abs((_l1[0] / _l1[1]) - (_l0[0] / _l0[1])) < 1e-12, "de verhouding mag niet bewegen"
+    # 3. Hij verlaagt P(Under) en laat de 1X2 vrijwel staan. Dat is de hele bedoeling: §6g meet
+    #    een te hoge P(Under) en §6f meet dat de margekant al klopt.
+    _p0 = analyze_match(standard, cercle, league, scale=1.0)
+    _p1 = analyze_match(standard, cercle, league, today=date(2026, 11, 3))
+    _u0 = totals_prob(_p0.grid, 2.5, "under", 2.0)
+    _u1 = totals_prob(_p1.grid, 2.5, "under", 2.0)
+    assert _u1 < _u0, "de correctie hoort P(Under 2.5) te VERLAGEN"
+    assert abs(_p1.home - _p0.home) < 0.02, "de 1X2-kansen horen nauwelijks te bewegen"
+    # 4. De splitsmethode blijft ONGEMOEID — de meting staat op de xG-lambdas en nergens anders.
+    #    Zonder deze controle kan een latere wijziging de correctie daar stil in laten lopen, waar
+    #    hij volgens `LeagueContext.level_factor` niet opgeteld maar OMGEKEERD wordt.
+    import inspect as _inspect
+    assert "scale" not in _inspect.signature(analyze_match_from_splits).parameters, (
+        "analyze_match_from_splits hoort GEEN niveaucorrectie te kennen — zie model.level_scale")
+    print(f"\nNiveaucorrectie: lambdas {_l0[0]:.3f}/{_l0[1]:.3f} -> {_l1[0]:.3f}/{_l1[1]:.3f} "
+          f"(x{LEVEL_SCALE}, bindt vanaf {LEVEL_SCALE_BINDS_FROM})")
+    print(f"  P(Under 2.5) {_u0 * 100:.1f}% -> {_u1 * 100:.1f}% ({(_u1 - _u0) * 100:+.2f} pp) · "
+          f"thuiszege {_p0.home * 100:.1f}% -> {_p1.home * 100:.1f}% "
+          f"({(_p1.home - _p0.home) * 100:+.2f} pp)")
 
     # Vroeg-seizoenscorrectie, met de zes competitiemetingen van 9 aug 2026 als vaste invoer.
     obs = [(1.579, 1.820, 1), (1.316, 1.350, 1), (1.460, 1.875, 1),
@@ -1032,8 +1208,8 @@ if __name__ == "__main__":
                          avg_xg_per_match=1.579)
     groningen = TeamStats(xg=61.9, xga=49.0, matches_played=34)
     utrecht = TeamStats(xg=52.4, xga=46.6, matches_played=34)
-    voor = analyze_match(groningen, utrecht, ered).over_2_5
-    na = analyze_match(groningen, utrecht, scale_level(ered, factor)).over_2_5
+    voor = analyze_match(groningen, utrecht, ered, scale=1.0).over_2_5
+    na = analyze_match(groningen, utrecht, scale_level(ered, factor), scale=1.0).over_2_5
     print(f"P(Over 2.5) Groningen-Utrecht: {voor * 100:.1f}% -> {na * 100:.1f}% na correctie")
     assert na > voor, "de correctie hoort het doelpuntenniveau omhoog te brengen"
 
@@ -1049,7 +1225,7 @@ if __name__ == "__main__":
     # met push niet zomaar een kans is: bij een push krijg je je inzet terug in plaats van te
     # verliezen, en bij een kwartlijn staat er maar de helft op elke lijn. De ankers hieronder
     # leggen vast dat de nieuwe rekenweg op de bekende gevallen exact samenvalt met de oude.
-    probs = analyze_match(standard, cercle, league)
+    probs = analyze_match(standard, cercle, league, scale=1.0)
     grid = probs.grid
 
     # 1-2. Een halve lijn kent geen push, dus AH -0.5 is exact de thuiszege en AH +0.5 exact 1X.

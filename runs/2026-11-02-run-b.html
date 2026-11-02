@@ -1,0 +1,699 @@
+<title>Run B — maandag 2 november 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+/* De voetnoot onder de marktvorm-telling (17 okt 2026): kleiner dan de telling zelf, want ze
+   zegt wat de cijfers NIET zijn en hoort de telling niet te overschreeuwen. */
+.prose.micro{font-size:.78rem; color:var(--muted); margin:2px 0 0}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run B</h1>
+    <span class="date">maandag 2 november 2026 · gedraaid om 2026-11-02T04:04:00+01:00</span>
+  </div>
+
+  <p class="verdict">Drie weddenschappen vandaag, uit vijftien wedstrijden in zes competities. En ik moet er meteen bij zeggen dat het de meest eenzijdige lijst is die ik je deze maand heb gestuurd: alle drie gokken erop dat er wéinig doelpunten vallen, en dat is precies de kant waarvan ik van mezelf heb gemeten dat ik haar systematisch verkeerd inschat.
+
+Dat is niet nieuw, maar het is vandaag harder dan ooit. In de 117 wedstrijden waarin ik werkelijk op weinig doelpunten heb ingezet, verwachtte ik er gemiddeld 2,75 en vielen er 3,41. Dat is tweederde doelpunt per wedstrijd te weinig verwacht, en het is zo'n groot verschil dat het geen toeval meer kan zijn. In alle 1950 wedstrijden die ik heb doorgerekend zie ik die fout níet — daar verwacht ik 3,03 en vallen er 3,08 — en op de omgekeerde weddenschap, die erop gokt dat er véel doelpunten vallen, ook niet. Het zit dus niet in mijn rekenwerk maar in mijn keuze: ik kies de rustige kant juist in de wedstrijden waarin het drukker wordt dan ik dacht. Over mijn hele logboek kost dat geld: van de weddenschappen op weinig doelpunten is 45,2 procent uitgekomen en staan ze op 14,6 procent verlies; op de kant van véel doelpunten is dat 56,2 procent en 6,8 procent winst.
+
+En vandaag zegt een bron die niets van mijn rekenwerk weet precies hetzelfde. Bij de drie wedstrijden van vandaag waar Pinnacle een doelpuntenlijn noteert zonder gelijkspel-terugbetaling, schat ik de rustige kant gemiddeld zeven procentpunt hoger in dan zij — drie van de drie keer dezelfde kant op, bij een bookmaker die nog maar drie à vier procent marge rekent. Twee van die drie zijn hieronder een weddenschap.
+
+Waarom ik ze dan toch stuur. Mijn afspraak met mezelf is dat ik je elke dag de beste drie wedstrijden van mijn lijst geef, in de volgorde waarin ik ze zelf het sterkst vind, en dat ik er eerlijk bij schrijf wanneer de beste drie niet bijzonder goed zijn. Vandaag is dat het geval: geen van de drie haalt de marge die ik normaal eis voordat ik een weddenschap een vondst durf te noemen. Regels die ik liever niet had gestuurd weglaten zou betekenen dat ik mijn eigen lat halverwege de dag verzet, en dat is precies wat ik niet mag doen. Lees ze dus als 'dit was het beste van een zwakke dag' en niet als 'hier zit voordeel'.
+
+En er is nog een tweede ding dat vandaag goed is gegaan en dat je moet weten, omdat het bijna anders was gelopen. De bet die bovenaan deze lijst had gestaan — en met ruime marge, als enige van de dag — heb ik eruit gehaald omdat ik een fout in mijn eigen rekenwerk heb gevonden. Zie 'Wat ik ontdekte'.
+
+**Naschrift, na het versturen van dit rapport.** Je hebt besluit 2 hieronder beantwoord met 'ja bijstellen', en dat is inmiddels doorgevoerd: vanaf morgen verwacht ik bij elke wedstrijd 3,2 procent meer doelpunten. Dat duwt precies de kant op waar dit rapport over gaat — weddenschappen op weinig doelpunten worden er ongeveer twee procentpunt minder aantrekkelijk van. Op de drie van vandaag verandert het niets meer; die zijn al verstuurd en de correctie gaat met opzet pas morgen in.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">3</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">15</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">6</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">203/447</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 3 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Segunda División · aftrap 16:15</span>
+        <span class="bet-match">Real Oviedo – Las Palmas</span>
+        <span class="bet-pick">Under 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.96</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">51,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">66,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+15,2</span></div>
+    </div>
+    <div class="why">
+      <h4>Voorbeschouwing</h4>
+      <p class="prose">**Twee ploegen die hun spitsen in de ziekenboeg hebben laten liggen, op een zonnige maandagmiddag in Oviedo.** Als er één wedstrijd op deze lijst staat waar je op het eerste gezicht weinig doelpunten van verwacht, is het deze — en de voorgeschiedenis maakt het nog sterker. Maar de laatste weken wijzen precies de andere kant op, en dat hoort hier vooraan.
+
+Real Oviedo is dit seizoen een vreemde ploeg. Thuis in het Carlos Tartiere kwam het in vijf wedstrijden tot vijf doelpunten en hield het er drie keer de nul: 0–0, 0–1, 0–0, 2–0 en 3–1. Dat is anderhalf doelpunt per wedstrijd en vier van de vijf keer onder de drie. Buitenshuis is het een ander elftal — daar vielen er in de laatste vijf wedstrijden achttien doelpunten, en de week voor deze wedstrijd speelde Oviedo in de beker bij tweededivisionist Numancia nog 3–3. Negende staan ze, met achttien punten uit elf wedstrijden en een doelcijfer van 15 voor en 12 tegen; de ploeg is net degradant uit La Liga en zoekt nog waar ze hoort.
+
+**Het teamnieuws is bij allebei grimmig en het raakt vooral de aanval.** Oviedo mist Christopher Ramos voor de rest van het seizoen en Carlos Fernández tot eind november — twee aanvallers — en daarnaast zijn Juan Cruz en Ilyas Chaira twijfelgevallen. Bij elkaar staat daar ruim de helft van de waarde van de basiself aan de kant. Las Palmas is er nog slechter aan toe: negen spelers ontbreken, met samen ruim tien miljoen euro aan marktwaarde. Daartussen zit Sandro Ramírez, de man die bij Las Palmas de meeste schoten op doel voor zijn rekening neemt, en die tot half november uit de roulatie is. Ook Sergio Ruiz (tot eind december), Jeremía Recoba, Enrique Clemente en Viti zijn er niet bij. Las Palmas staat dertiende met veertien punten uit elf wedstrijden.
+
+**De onderlinge historie is bijna komisch doelpuntenarm.** De laatste vijf ontmoetingen leverden 1, 0, 3, 2 en 0 doelpunten op — bij elkaar 1,2 per wedstrijd — en in drie van de vijf viel er nul of één keer iets te vieren. Twee keer eindigde het in Oviedo op 0–0. Over een langere reeks staat het drie keer Oviedo, vijf keer gelijk, twee keer Las Palmas. Dit is een affiche dat zelden ontploft.
+
+**En nu het tegenargument, want dat is er en het is niet klein.** In hun laatste vijf wedstrijden kwamen Oviedo en Las Palmas allebei maar één keer onder de drie doelpunten uit. Oviedo zat daar op 3,6 doelpunt per wedstrijd, Las Palmas op 3,4, en in Las Palmas&#x27; vijf uitwedstrijden van dit seizoen vielen er gemiddeld 3,8. Alleen Oviedo&#x27;s thuisreeks steunt deze weddenschap; de vorm van beide ploegen doet dat niet. Daar komt bij dat Pinnacle — de scherpste prijs in de markt — deze wedstrijd een stuk drukker inschat dan ik: waar ik op zo&#x27;n zes van de tien keer weinig doelpunten uitkom, houdt Pinnacle het op de helft. Van alle wedstrijden van vandaag is dat het grootste verschil van mening.
+
+**Wat hem kan slopen.** Twee ploegen met halve aanvallen hebben ook halve verdedigingen, en Oviedo hield in zijn laatste vijf wedstrijden maar één keer de nul. Valt het eerste doelpunt vroeg, dan is dit een wedstrijd waarin twee elftallen die geen van beide ergens staan, allebei moeten aanvallen. Dan gaat het snel.
+
+*Hij staat bovenaan omdat hij van alle vijftien wedstrijden het grootste verschil tussen mijn eigen schatting en de prijs oplevert. Hij haalt de marge die ik normaal eis niet, en op deze markt-en-kant sta ik aantoonbaar te positief.*</p>
+      <h4>Onderling</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zondag 9 april 2023</dt><dd>Las Palmas <strong>0–1</strong> Real Oviedo · 1 doelp.</dd></div><div class="ctx-row"><dt>dinsdag 6 december 2022</dt><dd>Real Oviedo <strong>0–0</strong> Las Palmas · 0 doelp.</dd></div><div class="ctx-row"><dt>zaterdag 21 mei 2022</dt><dd>Las Palmas <strong>2–1</strong> Real Oviedo · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 6 november 2021</dt><dd>Real Oviedo <strong>1–1</strong> Las Palmas · 2 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 10 april 2021</dt><dd>Real Oviedo <strong>0–0</strong> Las Palmas · 0 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 5 duels: gemiddeld 1,2 doelpunten, en in 2 van de 5 scoorden beide ploegen.</p>
+      <h4>Hoe vaak dit eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Real Oviedo</dt><dd>laatste 5: onder 2,5 in 1/5, gem. 3,60 · dit seizoen: onder 2,5 in 5/11, gem. 2,45 · thuis dit seizoen: onder 2,5 in 4/5, gem. 1,40 · vorig seizoen: speelde deze divisie niet</dd></div><div class="ctx-row"><dt>Las Palmas</dt><dd>laatste 5: onder 2,5 in 1/5, gem. 3,40 · dit seizoen: onder 2,5 in 4/11, gem. 3,00 · uit dit seizoen: onder 2,5 in 2/5, gem. 3,80 · vorig seizoen: onder 2,5 in 25/44, gem. 2,27</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>De week eromheen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Real Oviedo</dt><dd>donderdag 29 oktober uit tegen Numancia (3–3) — Copa del Rey · dan zaterdag 7 november uit tegen Cádiz — LaLiga2</dd></div><div class="ctx-row"><dt>Las Palmas</dt><dd>dinsdag 27 oktober uit tegen RSD Alcalá (1–3) — Copa del Rey · dan zondag 8 november thuis tegen Eldense — LaLiga2</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Real Oviedo</dt><dd>selectiewaarde € 11,1 mln · mist 4 (€ 5,8 mln, 34,4% van de waarde): Juan Cruz (blessure, terug Doubtful); Christopher Ramos (blessure, terug Out for season); Carlos Fernández (blessure, terug Late November 2026); Ilyas Chaira (blessure, terug Back in training) · vorm LWWDD (8 pt uit 5) · 3,9 dagen rust</dd></div><div class="ctx-row"><dt>Las Palmas</dt><dd>mist 9 (€ 10,6 mln): Giovanni Bonfanti (blessure, terug Doubtful); Inaki González (blessure, terug Doubtful); Sandro Ramírez (blessure, terug Mid November 2026); Sergio Ruiz (blessure, terug Late December 2026); Jeremía Recoba (blessure, terug Mid November 2026); Enrique Clemente (blessure, terug Late November 2026); Viti (blessure, terug Early December 2026); Ale García (blessure, terug Back in training); Marvin Park (blessure, terug Back in training) · vorm DLLWW (7 pt uit 5) · 5,8 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Estadio Municipal Carlos Tartiere — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico — kans rond de helft, geen gok op een stunt</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Allsvenskan · aftrap 19:00</span>
+        <span class="bet-match">Mjällby – Kalmar FF</span>
+        <span class="bet-pick">Under 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.95</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">51,3%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">62,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+10,9</span></div>
+    </div>
+    <div class="why">
+      <h4>Voorbeschouwing</h4>
+      <p class="prose">**De kampioen van vorig jaar tegen de ploeg die het minste scoort, allebei vechtend tegen degradatie, in de regen op Strandvallen.** Als je één wedstrijd zou mogen kiezen waarin de Zweedse competitie dit seizoen zichzelf niet meer herkent, is dit hem.
+
+Mjällby werd in 2025 landskampioen. Vijfenzeventig punten, 57 doelpunten voor en achttien tegen, veertien keer de nul gehouden in dertig wedstrijden. Dit seizoen staat diezelfde ploeg twaalfde van de zestien met 26 punten uit 26 wedstrijden, dertig doelpunten voor en 43 tegen. Dat is geen dipje maar een vrije val, en hij is in de laatste weken niet gestopt: uit de laatste vijf competitiewedstrijden kwamen zeven punten, maar met slechts drie doelpunten voor en acht tegen, en drie keer bleef Mjällby helemaal zonder doelpunt. Vorige week won het wél, 1–2 bij Örgryte.
+
+Kalmar FF is dit seizoen gepromoveerd en staat dertiende met 22 punten. Het is de op één na minst scorende ploeg van de competitie: 23 doelpunten in 26 wedstrijden, en in de laatste vijf wedstrijden maakte het er twee terwijl het er elf incasseerde. Vier van die vijf keer kwam Kalmar helemaal niet tot scoren, waaronder een 0–5. Vorige week verloor het thuis met 0–1 van GAIS. Buitenshuis is het nog stiller: in dertien uitwedstrijden kwam Kalmar tot negen doelpunten en bleef het acht keer droog staan.
+
+**Twee ploegen die niet scoren, die allebei iets te verliezen hebben en die elkaar in de laatste weken van een seizoen treffen waarin de rekening wordt opgemaakt.** Mjällby heeft bovendien een reden om de benen te sparen: donderdag komt Borac Banja Luka naar Strandvallen voor een Europese wedstrijd, drie dagen na deze. Kalmar speelt pas volgend weekend weer. Qua rust staan ze gelijk, vier dagen elk.
+
+Het weer helpt het verhaal: negen graden, volledig bewolkt, lichte regen en een briesje uit het noordoosten. Begin november aan de Zweedse zuidkust, op een grasmat die een heel seizoen heeft meegemaakt.
+
+**De cijfers die bij deze weddenschap horen, steunen hem.** Mjällby kwam in acht van zijn dertien thuiswedstrijden onder de drie doelpunten uit, met gemiddeld 2,5; Kalmar in acht van zijn dertien uitwedstrijden, met 2,3. Bij Mjällby thuis scoorden maar vier van de dertien keer beide ploegen, bij Kalmar uit vijf van de dertien. Dat is voor deze markt de gunstigste combinatie van de hele dag.
+
+**De onderlinge historie zegt het tegenovergestelde, en dat hoort er net zo hard bij.** De laatste zes ontmoetingen gaven 3, 2, 4, 3, 5 en 2 doelpunten — gemiddeld 3,2, en dus meestal te veel voor deze weddenschap. Mjällby won er thuis twee met 2–0 en 4–0, wat erop wijst dat als Mjällby wel vlam vat, het ook niet bij één doelpunt blijft.
+
+**Wat hem kan slopen.** Een ploeg die drie wedstrijden lang niet scoort, kan dat ook twee keer in één middag goedmaken — en Mjällby heeft vorig jaar bewezen dat dit elftal het kan. Het grotere risico is dat deze weddenschap vrijwel volledig op mijn tweede, grovere rekenmethode leunt: die ziet hier een veel groter voordeel dan mijn hoofdmethode, en van die tweede weet ik dat ze de schevere van de twee is. Als die twee zo ver uit elkaar liggen, is dat op zichzelf een waarschuwing.
+
+*Hij staat tweede omdat hij het op één na grootste verschil tussen mijn schatting en de prijs oplevert. Hij haalt de marge niet die ik normaal eis, en de twee rekenmethodes zijn het hier opvallend oneens over hóe groot het voordeel is.*</p>
+      <h4>Onderling</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zaterdag 25 juli 2026</dt><dd>Kalmar FF <strong>2–1</strong> Mjällby · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 21 februari 2026</dt><dd>Mjällby <strong>2–0</strong> Kalmar FF · 2 doelp.</dd></div><div class="ctx-row"><dt>zaterdag 17 januari 2026</dt><dd>Mjällby <strong>4–0</strong> Kalmar FF · 4 doelp.</dd></div><div class="ctx-row"><dt>zondag 20 oktober 2024</dt><dd>Kalmar FF <strong>0–3</strong> Mjällby · 3 doelp.</dd></div><div class="ctx-row"><dt>maandag 29 april 2024</dt><dd>Mjällby <strong>3–2</strong> Kalmar FF · 5 doelp. · beide scoorden</dd></div></dl>
+      <p class="prose micro">Over deze 6 duels: gemiddeld 3,17 doelpunten, en in 2 van de 6 scoorden beide ploegen.</p>
+      <h4>Hoe vaak dit eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Mjällby</dt><dd>laatste 5: onder 2,5 in 3/5, gem. 2,20 · dit seizoen: onder 2,5 in 14/26, gem. 2,81 · thuis dit seizoen: onder 2,5 in 8/13, gem. 2,54 · vorig seizoen: onder 2,5 in 17/30, gem. 2,50</dd></div><div class="ctx-row"><dt>Kalmar FF</dt><dd>laatste 5: onder 2,5 in 2/5, gem. 2,60 · dit seizoen: onder 2,5 in 13/26, gem. 2,50 · uit dit seizoen: onder 2,5 in 8/13, gem. 2,31 · vorig seizoen: speelde deze divisie niet</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>De week eromheen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Mjällby</dt><dd>donderdag 29 oktober uit tegen Örgryte (1–2) — Allsvenskan · dan donderdag 5 november thuis tegen Borac Banja Luka 🇪🇺 — Conference League · dan zondag 8 november uit tegen Brommapojkarna — Allsvenskan</dd></div><div class="ctx-row"><dt>Kalmar FF</dt><dd>donderdag 29 oktober thuis tegen GAIS (0–1) — Allsvenskan · dan zondag 8 november thuis tegen Sirius — Allsvenskan</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Mjällby</dt><dd>selectiewaarde € 7,9 mln · mist 3 (€ 0,8 mln, 8,9% van de waarde): Jesper Gustavsson (schorsing, terug Early November 2026); Villum Dalsgaard (blessure, terug Late October 2026); Timo Stavitski (blessure, terug Late October 2026) · vorm WLDLW (7 pt uit 5) · 4,0 dagen rust</dd></div><div class="ctx-row"><dt>Kalmar FF</dt><dd>selectiewaarde € 4,4 mln · mist 2 (€ 0,5 mln, 10,9% van de waarde): Melker Hallberg (blessure, terug Doubtful); Aboubacar Keita (blessure, terug Late October 2026) · vorm DLWLL (4 pt uit 5) · 4,0 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Strandvallen — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico — kans rond de helft, geen gok op een stunt</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Greek Super League · aftrap 17:00</span>
+        <span class="bet-match">Atromitos – NFC Volos</span>
+        <span class="bet-pick">Under 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.85</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">54,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">58,9%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+4,8</span></div>
+    </div>
+    <div class="why">
+      <h4>Voorbeschouwing</h4>
+      <p class="prose">**De nummer dertien tegen de nummer veertien, vier dagen nadat ze elkaar al hadden gespeeld.** Dit is de kelderkraker van de Griekse competitie, en wel een met een directe voorgeschiedenis: vorige donderdag stonden Atromitos en NFC Volos ook tegenover elkaar, in de groepsfase van de Griekse beker, en dat werd 1–3 voor Atromitos in Volos.
+
+De standen zijn somber. Atromitos heeft twee punten uit zeven wedstrijden en staat dertiende van de veertien; zes doelpunten gemaakt, twaalf geïncasseerd. NFC Volos staat laatste met nul punten uit acht wedstrijden — nul — en heeft elf wedstrijden op rij niet gewonnen. Zes doelpunten voor, dertien tegen. Twee ploegen dus die zo laag staan dat deze middag in het Dimotiko Stadio Peristeriou, een voorstad van Athene, er voor allebei een van de belangrijkste van het seizoen is.
+
+**En toch is dit de regel van vandaag waar ik het minst zeker over ben, en dat komt door de cijfers die bij deze markt horen.** Atromitos kwam dit seizoen in drie van zijn zeven wedstrijden onder de drie doelpunten uit, en in zijn drie thuiswedstrijden maar één keer. Erger: in Atromitos&#x27; laatste vijf wedstrijden scoorden béide ploegen vijf van de vijf keer. Die ploeg houdt de nul niet — zeven wedstrijden op een rij niet, om precies te zijn. NFC Volos is iets rustiger: vijf van de acht wedstrijden onder de drie, en in de laatste vijf 2,6 doelpunt per wedstrijd. Maar bij elkaar is dit geen combinatie die om een weddenschap op weinig doelpunten vraagt. De telling spreekt deze regel dus tegen, en dat moet je weten voordat je iets doet.
+
+**Wat er wél voor pleit, is de onderlinge historie.** De laatste vijf keer: 4, 3, 1, 2 en 1 doelpunt — gemiddeld 2,2, en in drie van de vijf bleef het bij twee of minder. Twee van die vijf eindigden op 0–1 en 0–3; het is een affiche waarin het vaak eenzijdig en zuinig gaat. Atromitos won de laatste twee ontmoetingen.
+
+**Het teamnieuws is bijna gelijk.** Atromitos mist Jere Uronen, Gerasimos Mitoglou en Cristopher Núnez — samen ongeveer een achtste van de waarde van de selectie. Bij Volos ontbreken Hamza Mendyl (geschorst tot begin november), Yvan Neyou Noupa en Hatim Essaoubi, en dat is daar een veel groter deel van een veel kleinere selectie. Beide ploegen hebben vier dagen rust gehad, want beide kwamen uit datzelfde bekerduel tegen elkaar. Volos speelt zaterdag thuis tegen Kifisia, Atromitos zondag uit bij OFI Crete.
+
+Achttien graden, half bewolkt en een kans van bijna veertig procent op een bui. Een Atheense najaarsmiddag.
+
+**Wat hem kan slopen.** Twee ploegen die moeten winnen omdat ze nergens meer staan, spelen zelden een gesloten wedstrijd — en twee ploegen die geen van beide kunnen verdedigen al helemaal niet. Atromitos hield zeven wedstrijden lang de nul niet; Volos verloor zijn laatste drie uitwedstrijden met 0–2, 1–3 en 2–3. De eerlijkste lezing is dat dit een wedstrijd is waarin alles kan gebeuren, en dan is &#x27;weinig doelpunten&#x27; geen rustige keuze maar gewoon een van de mogelijkheden.
+
+*Hij staat derde, en hij haalt mijn marge met de grootste afstand van de drie — ruim drie procentpunt te weinig. Hij staat op de lijst omdat hij de enige wedstrijd van vandaag is waarvoor ik volledige cijfers heb, en omdat ik niet meer dan twee regels op zwakke cijfers op één lijst zet.*</p>
+      <h4>Onderling</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>donderdag 29 oktober 2026</dt><dd>NFC Volos <strong>1–3</strong> Atromitos · 4 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>maandag 19 januari 2026</dt><dd>NFC Volos <strong>0–3</strong> Atromitos · 3 doelp.</dd></div><div class="ctx-row"><dt>zondag 9 november 2025</dt><dd>Atromitos <strong>0–1</strong> NFC Volos · 1 doelp.</dd></div><div class="ctx-row"><dt>woensdag 24 september 2025</dt><dd>NFC Volos <strong>1–1</strong> Atromitos · 2 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>vrijdag 24 januari 2025</dt><dd>NFC Volos <strong>0–1</strong> Atromitos · 1 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 5 duels: gemiddeld 2,2 doelpunten, en in 2 van de 5 scoorden beide ploegen.</p>
+      <h4>Hoe vaak dit eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Atromitos</dt><dd>laatste 5: onder 2,5 in 2/5, gem. 2,80 · dit seizoen: onder 2,5 in 3/7, gem. 2,57 · thuis dit seizoen: onder 2,5 in 1/3, gem. 2,67 · vorig seizoen: onder 2,5 in 17/36, gem. 2,53</dd></div><div class="ctx-row"><dt>NFC Volos</dt><dd>laatste 5: onder 2,5 in 2/5, gem. 2,60 · dit seizoen: onder 2,5 in 5/8, gem. 2,38 · uit dit seizoen: onder 2,5 in 2/4, gem. 2,75 · vorig seizoen: onder 2,5 in 15/32, gem. 2,75</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>De week eromheen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Atromitos</dt><dd>donderdag 29 oktober uit tegen NFC Volos (1–3) — Cup Group Stage · dan zondag 8 november uit tegen OFI Crete — Super League</dd></div><div class="ctx-row"><dt>NFC Volos</dt><dd>donderdag 29 oktober thuis tegen Atromitos (1–3) — Cup Group Stage · dan zaterdag 7 november thuis tegen Kifisia FC — Super League</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <h4>Context die is meegewogen</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Atromitos</dt><dd>selectiewaarde € 5,0 mln · mist 3 (€ 0,6 mln, 10,2% van de waarde): Jere Uronen (blessure, terug A few weeks); Gerasimos Mitoglou (blessure, terug About a week); Cristopher Núnez (blessure, terug Late October 2026) · vorm LLLLW (3 pt uit 5) · 4,0 dagen rust</dd></div><div class="ctx-row"><dt>NFC Volos</dt><dd>selectiewaarde € 2,7 mln · mist 3 (€ 1,4 mln, 33,3% van de waarde): Hamza Mendyl (schorsing, terug Early November 2026); Yvan Neyou Noupa (blessure, terug A few weeks); Hatim Essaoubi (blessure, terug A few weeks) · vorm LLDLL (1 pt uit 5) · 4,0 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Dimotiko Stadio Peristeriou — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico — kans rond de helft, geen gok op een stunt</span>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>De beste 3 als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op maandag t/m donderdag houd ik maximaal
+  <strong>3</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Real Oviedo – Las Palmas</span>
+            <span class="sl-pick">Under 2.5 · Segunda División · aftrap 16:15</span>
+          </td>
+          <td class="num">1.96</td>
+          <td class="num">66,2%</td>
+          <td class="num">+15.2</td>
+          <td class="num">5.05</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Mjällby – Kalmar FF</span>
+            <span class="sl-pick">Under 2.5 · Allsvenskan · aftrap 19:00</span>
+          </td>
+          <td class="num">1.95</td>
+          <td class="num">62,2%</td>
+          <td class="num">+10.9</td>
+          <td class="num">3.39</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Atromitos – NFC Volos</span>
+            <span class="sl-pick">Under 2.5 · Greek Super League · aftrap 17:00</span>
+          </td>
+          <td class="num">1.85</td>
+          <td class="num">58,9%</td>
+          <td class="num">+4.8</td>
+          <td class="num">2.84</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top 3</span>
+    <h2>Mijn 3 beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op maandag t/m donderdag laat ik er 3 zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Real Oviedo – Las Palmas</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Segunda División · aftrap 16:15</span>
+          </td>
+          <td class="num">1.96</td>
+          <td class="num">66.2%</td>
+          <td class="num">+15.2</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 16.0 pp (§5b)</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Mjällby – Kalmar FF</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Allsvenskan · aftrap 19:00</span>
+          </td>
+          <td class="num">1.95</td>
+          <td class="num">62.2%</td>
+          <td class="num">+10.9</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 16.0 pp (§5b)</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Atromitos – NFC Volos</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Greek Super League · aftrap 17:00</span>
+          </td>
+          <td class="num">1.85</td>
+          <td class="num">58.9%</td>
+          <td class="num">+4.8</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 8.0 pp (§5b)</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Real Oviedo – Las Palmas</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Segunda División · aftrap 16:15</span>
+          </td>
+          <td class="num">1.96</td>
+          <td class="num">65.7%</td>
+          <td class="num">+14.7</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">edge onder de drempel</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Mjällby – Kalmar FF</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Allsvenskan · aftrap 19:00</span>
+          </td>
+          <td class="num">1.95</td>
+          <td class="num">61.7%</td>
+          <td class="num">+10.4</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">edge onder de drempel</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Universitatea Cluj – FCSB</span>
+            <span class="sl-pick">1X2 — 1 (Universitatea Cluj wint) · Romanian SuperLiga · aftrap 19:30</span>
+          </td>
+          <td class="num">2.49</td>
+          <td class="num">52.3%</td>
+          <td class="num">+12.1</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">edge onder de drempel</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:14px">Geen van deze zou ook zonder de correctie een weddenschap zijn geweest. Over de hele run
+  gaat het om <strong>0</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>
+<div class="wrap-callout"><div class="callout"><p class="prose">De eerstvolgende wedstrijd die net buiten de lijst viel, is Universitatea Cluj – FCSB in Roemenië, half acht 's avonds: een thuiszege tegen 2,49. Op mijn eigen rangorde staat die hóger dan de derde regel hierboven — en hij staat er toch niet in, om een reden die je moet kennen. Ik zet nooit meer dan twee weddenschappen op zwakke cijfers op één lijst, en Real Oviedo en Mjällby zijn er al twee. Roemenië heeft bij mijn bron geen verfijnde aanvalscijfers en ook geen herleidbare bookmakersprijs, dus die wedstrijd valt per definitie in de categorie 'zwakke cijfers'. Daarmee schoof de enige wedstrijd van vandaag met volledige cijfers door naar plek drie, ook al staat die verder onder mijn marge.
+
+Dat is precies waar die grens voor bedoeld is — voorkomen dat je lijst volloopt met slecht onderbouwde weddenschappen — maar het is vandaag óók de reden dat alle drie de regels op dezelfde kant staan. Zonder die grens had je lijst er zo uitgezien: Real Oviedo, Universitatea Cluj en Mjällby, met twee doelpuntenweddenschappen in plaats van drie. Ik verzet die grens niet op eigen gezag; ik schrijf wel op dat ze vandaag heeft meebepaald hoe de lijst eruitziet.</p></div></div>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Selectie</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">FC Voluntari – FCV Farul Constanța<br><span class="note">Romanian SuperLiga</span></td><td><span class="note">1X2 — 2 (FCV Farul Constanța wint)</span><br><span class="note">koers 2.16</span></td><td class="num">+9,6 pp</td><td class="num">+7,0 pp</td><td class="num below">+1,4 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Universitatea Cluj – FCSB<br><span class="note">Romanian SuperLiga</span></td><td><span class="note">1X2 — 1 (Universitatea Cluj wint)</span><br><span class="note">koers 2.49</span></td><td class="num">+13,8 pp</td><td class="num">+5,3 pp</td><td class="num">+10,6 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Tenerife – FC Andorra<br><span class="note">Segunda División</span></td><td><span class="note">1X2 — 2 (Andorra CF wint)</span><br><span class="note">koers 3.50</span></td><td class="num">+6,5 pp</td><td class="num">+5,2 pp</td><td class="num">+5,1 pp</td><td><span class="chip gap">context</span></td></tr>
+<tr><td class="comp">RB Bragantino – Santos<br><span class="note">Série A</span></td><td><span class="note">1X2 — 1 (Bragantino-SP wint)</span><br><span class="note">koers 2.22</span></td><td class="num">+5,0 pp</td><td class="num below">-0,9 pp</td><td class="num">+3,8 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van de 5 punten hieronder zijn er 2 iets voor jou; bij de rest staat erbij dat je niets hoeft te doen.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Moet mijn doelpuntenrem ook gaan gelden voor wedstrijden met zwakke cijfers?</span>
+        <span class="d">In oktober heb je deze vraag al eens gekregen en toen was je antwoord: nog niet, eerst kijken wat de rem doet. De afspraak was dat ik hem pas zou mogen beoordelen bij dertig afgerekende gevallen. Die zijn er nu: vijfendertig tegengehouden weddenschappen, samen dertig procent verlies. De rem bespaart dus geld — op de wedstrijden waar hij werkt.
+
+Hij werkt niet op wedstrijden met zwakke cijfers, en vandaag zijn dat twee van je drie regels (Real Oviedo en Mjällby). Beide halen hun eigen marge niet en worden door geen enkele rem bekeken. Dat is de keuze van oktober, zichtbaar in actie.
+
+Wat ik er niet over kan zeggen: of de rem op zwakke cijfers óók zou helpen. De tien afgerekende gevallen die ik daarover heb, wijzen juist de ándere kant op — die stonden in de plus. Tien is te weinig om iets van te vinden, dus dit is geen rekenvraag maar een vraag over hoeveel risico je op die wedstrijden wil nemen. Die hoort bij jou en niet bij mijn cijfers.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Jouw besluit: laat de rem alleen gelden op wedstrijden met volledige cijfers, of laat hem ook gelden op wedstrijden met zwakke cijfers — en dan met een lat van 18 in plaats van 16.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">BESLOTEN — mijn doelpuntverwachting gaat 3% omhoog, vanaf morgen</span>
+        <span class="d">Dit stond vanochtend als vraag op deze lijst en je hebt hem beantwoord: ja, bijstellen. De correctie staat inmiddels in de code en gaat morgen in.
+
+Wat er verandert: ik verwacht vanaf morgen bij elke wedstrijd 3,2 procent meer doelpunten. Dat klinkt klein en het is het ook, maar het werkt rechtstreeks door op precies de markt waar ik het vaakst de mist in ga: de weddenschappen op weinig doelpunten worden er ongeveer twee procentpunt minder aantrekkelijk van, en die op veel doelpunten evenveel aantrekkelijker. Op de drie weddenschappen van vandaag nagerekend scheelt het ongeveer anderhalve procentpunt per stuk — Real Oviedo zou op 13,7 zijn uitgekomen in plaats van 15,2, Mjällby op 9,3 in plaats van 10,9 en Atromitos op 3,2 in plaats van 4,8. Dezelfde drie wedstrijden dus, maar met minder geclaimd voordeel.
+
+Wat er NIET verandert, en dat is met opzet. Hij gaat pas morgen in en niet vandaag: jouw weddenschappen van vanochtend zijn al verstuurd, en met terugwerkende kracht rekenen zou betekenen dat een narekening van vandaag iets anders oplevert dan wat ik je heb gestuurd. Hij raakt alleen mijn hoofdrekenmethode en niet de tweede, want alleen op de eerste is hij gemeten. En hij geldt niet voor interlandvoetbal, want in de meting zat geen enkele interland.
+
+En het bezwaar dat ik vanochtend noemde staat nog steeds: deze correctie haalt de bewijslat niet die ik bij andere wijzigingen heb aangehouden, en op de ene steekproef die er echt buiten staat werkt hij averechts. Dat is geen reden om hem er niet in te zetten — dat was jouw afweging en die heb je gemaakt — maar het is wel de reden dat ik hem ga nameten in plaats van aannemen dat het goed zit.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Van jou is hier niets meer nodig: de correctie staat erin en gaat morgen in. Ik meld zelf over een paar maanden wat ze heeft gedaan, zodra er genoeg wedstrijden mee zijn doorgerekend om het te kunnen zien.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Een reparatie in één van mijn drie runs is geen reparatie</span>
+        <span class="d">De fout van vanmorgen was twee dagen eerder al gevonden en opgelost, maar in het script van mijn ochtendrun en niet in dat van deze. Ik werk met drie bijna identieke scripts, en dat is met opzet — ik wil mijn metingen over dagen heen kunnen vergelijken — maar het betekent dat een reparatie in het ene script onzichtbaar afwezig kan zijn in de andere twee. Vandaag kostte dat bijna een weddenschap die niet mocht.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Van jou is hier niets nodig: ik vergelijk bij mijn volgende twee runs het rekenscript met dat van de ochtendrun op de plekken waar een gemeten reparatie in zit, en ik meld de uitkomst in mijn rapport.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">4</span>
+      <span class="body">
+        <span class="t">Eén wedstrijd staat twee keer in mijn logboek omdat ze een dag is opgeschoven</span>
+        <span class="d">Tenerife – FC Andorra stond gisteren bij mijn bron op gisteravond negen uur en staat vandaag op vanmiddag twee uur. De wedstrijd is dus een dag verschoven nadat mijn run van gisteren haar al in zijn venster had meegenomen en er een tegengehouden-kandidaat voor had opgeschreven. Vandaag staat ze er opnieuw in, en opnieuw afgewezen om dezelfde reden. Daarmee telt die ene wedstrijd twee keer mee in een reeks van 115 metingen. Beide regels zijn een eerlijke weergave van wat hun run zag, dus ik gooi er geen van de twee weg — een regel van een andere run weghalen is geschiedenis herschrijven.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Van jou is hier niets nodig: ik laat beide regels staan en vermeld bij de volgende lezing van die reeks dat deze ene wedstrijd er twee keer in staat.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">5</span>
+      <span class="body">
+        <span class="t">Voor een Nederlandse degradant gebruik ik nog een geleende omrekening in plaats van een gemeten</span>
+        <span class="d">Twee wedstrijden van vandaag hadden een ploeg die net uit de Eredivisie is gedegradeerd (Heracles en NAC Breda). Om hun cijfers naar de eerste divisie om te rekenen gebruik ik een factor die over twaalf landen samen is gemeten, en niet een die voor Nederland zelf is gemeten. Dat Nederlandse paar is op 9 oktober wél gemeten — en het antwoord was dat een Nederlandse degradant méér van zijn aanval overhoudt dan de geleende factor aanneemt — maar niet toegepast, omdat daarvoor een eigen tabel voor de neerwaartse richting nodig is en dat meer is dan één regel bijschrijven.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Jouw besluit: laat ik die tabel bouwen, of blijft de neerwaartse omrekening op de geleende factor staan?</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>De weddenschap die bovenaan had gestaan, mocht er niet staan — en de reden was een reparatie die ik twee dagen geleden maar op één plek had doorgevoerd</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Vandaag stond er een vierde weddenschap op mijn lijst, en wel helemaal bovenaan. Kalamata – Iraklis in Griekenland, een thuiszege tegen 2,40, en met een voorsprong op de prijs die meer dan twee keer zo groot was als die van elke andere wedstrijd van vandaag. Hij haalde alle controles. Hij haalde ook, als enige van de dag, ruim de marge die ik normaal eis. Hij was de bet van de dag geweest.</p>
+    <p class="prose">Hij had er niet mogen staan, en dat is vanmorgen aan het licht gekomen.</p>
+    <p class="prose">Beide ploegen in die wedstrijd zijn dit jaar gepromoveerd en staan dus niet in de eindstand van vorig seizoen op dit niveau. Om zo'n ploeg toch door te kunnen rekenen, zet ik haar cijfers uit de divisie eronder om naar dit niveau, met een factor die ik zelf heb gemeten. Die omrekening heeft een bereik: ik heb hem gemeten op ploegen die in de tweede divisie tussen 1,25 en 1,95 keer het competitiegemiddelde scoorden, en daarbuiten gebruik ik hem niet. Niet omdat het niet zou kunnen, maar omdat ik buiten dat bereik niets heb gemeten, en dan zou ik iets verzinnen.</p>
+    <p class="prose">Kalamata scoorde in de tweede divisie 2,1 keer het competitiegemiddelde. Dat valt erbuiten. Die wedstrijd had dus van het begin af aan 'geen cijfers, geen weddenschap' moeten zijn.</p>
+    <p class="prose">Waarom hij er toch stond, is een fout met een vervelende vorm. Ik bepaal het cijferniveau van een wedstrijd uit dat van de twee ploegen, en het zwakste van de twee moet winnen — want beide sterktes gaan samen één doelpuntverwachting in, dus als één kant onbetrouwbaar is, is de hele wedstrijd dat. In mijn rekenscript stond dat als twee losse opdrachten achter elkaar: eerst de thuisploeg, dan de uitploeg. De tweede overschreef daarmee de eerste. Stond de ploeg buiten het bereik thuis — zoals Kalamata vandaag — dan werd dat weggegumd door de uitploeg, die er netjes binnen viel.</p>
+    <p class="prose">Deze fout is twee dagen geleden al gevonden en gerepareerd, maar in het script van mijn ochtendrun en niet in dat van deze run. Ze zijn kopieën van elkaar met een andere datum, en dat is met opzet: ik wil dat mijn metingen over dagen heen vergelijkbaar blijven, en een script dat elke ochtend opnieuw wordt getypt is elke ochtend een ander script. Maar het betekent ook dat een reparatie in het ene script twee dagen onzichtbaar afwezig kan zijn in het andere. Op 31 oktober en 1 november heeft het geen kwaad gedaan — toen stond er geen enkele wedstrijd op mijn lijst met de buitenbereik-ploeg thuis. Vandaag wel, en meteen bovenaan.</p>
+    <p class="prose">Het vervelende is vooral hóe stil het faalde. Er kwam geen foutmelding. De wedstrijd stond netjes als doorgerekend in mijn administratie, de regel droeg netjes het label dat hij mijn marge haalde, en mijn eigen controle op volledigheid stond groen. Het enige zichtbare signaal was dat Pinnacle de thuiszege ruim twintig procentpunt lager inschatte dan ik — met afstand de grootste onenigheid van de dag, bij een bookmaker die er maar vier procent marge op zette. Maar dat is een vergelijking, geen controle: ik mag die prijs juist niet in mijn eigen schatting laten meewegen, want dan meet ik alleen nog mijn afstand tot een getal dat uit de markt komt.</p>
+    <p class="prose">Ik heb de reparatie nu ook in dit script gezet. Ik heb daarnaast mijn hele administratie nagelopen op eerdere gevallen: er zijn er drie, alle drie van oktober, en twee ervan zijn een weddenschap geworden — Exeter City – Rotherham United op 3 oktober en Girona – Mallorca op 4 oktober. Beide zijn gewonnen, dus er is geen geld mee verloren. Ze hadden er niet mogen staan. Ik heb die oude regels niet herschreven; ze staan in oude rapporten en dat is geschiedenis.</p>
+    <p class="prose">Wat er niet is veranderd: geen enkele drempel, geen enkele weging, geen enkele controle. Alleen de fout is eruit.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Ook uit deze run</span>
+    <h2>Mijn rem op doelpuntenweddenschappen heeft zijn eerste leesbare cijfer — en hij doet zijn werk, maar niet op de helft van de wedstrijden</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Sinds midden oktober eis ik een grotere marge voordat ik een weddenschap stuur die erop gokt dat er weinig doelpunten vallen. Die rem werkt alleen op wedstrijden waarvoor ik volledige cijfers heb, en dat was in oktober een bewuste keuze van jou: 'twee hoeft nog niet op de zwakke data; eerst kijken wat deze rem doet.' Daar hoorde een afspraak bij: ik lees de uitkomst van die rem niet voordat hij dertig afgerekende gevallen heeft, want daaronder is elk verschil ruis.</p>
+    <p class="prose">Die dertig zijn er. Vijfendertig weddenschappen heeft de rem tegengehouden en afgerekend, en ze staan samen op dertig procent verlies. Met andere woorden: de rem heeft precies de weddenschappen tegengehouden die geld hadden gekost. Hij doet zijn werk, en hij blijft dus staan.</p>
+    <p class="prose">En uitgerekend op de dag waarop dat eindelijk te zeggen valt, staan er twee weddenschappen op je lijst die de rem niet raakt, omdat ze op zwakke cijfers staan: Real Oviedo en Mjällby. Daar komt een derde bij die hem ook niet raakt, om een heel andere reden: Atromitos haalt mijn gewone marge al niet, en dan grijpt de rem niet meer — die werkt alleen op de strook daartussen. Resultaat: alle drie de regels van vandaag staan op de kant waar ik meetbaar scheef sta, en geen van de drie is door de rem bekeken.</p>
+    <p class="prose">Dat is geen fout in de rem; dat is precies hoe hij is afgesproken. Maar het is wel de dag waarop die afspraak zichtbaar iets kost, en daarom leg ik de vraag terug bij jou. Zie 'Wat er nog moet gebeuren'.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 17 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Allsvenskan</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Twee wedstrijden, beide doorgerekend, één werd een weddenschap. De Zweedse competitie loopt op een kalenderjaar en zit op 27 van de 30 speelronden, dus ik reken daar met de cijfers van dit seizoen zelf in plaats van met die van vorig jaar — bij een seizoen dat zo ver is, weten de eigen cijfers meer dan een correctie op die van vorig jaar.</td></tr>
+        <tr><td class="comp">Greek Super League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Twee wedstrijden, waarvan ik er één heb doorgerekend. De andere, Kalamata – Iraklis, heb ik moeten laten staan: beide ploegen zijn dit jaar gepromoveerd en ik moet hun cijfers dus omrekenen van de divisie eronder naar dit niveau. Bij Kalamata lukt dat niet — die ploeg scoorde in de tweede divisie zó veel meer dan het competitiegemiddelde dat zijn cijfers buiten het bereik vallen waarover ik ooit een omrekening heb gemeten. Buiten dat bereik verzin ik niets; dan wordt het geen weddenschap. Zie 'Wat ik ontdekte', want dit is de belangrijkste gebeurtenis van vandaag.</td></tr>
+        <tr><td class="comp">Keuken Kampioen Divisie</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Vier wedstrijden, alle vier doorgerekend, geen weddenschap. Net als in Roemenië heeft mijn bron hier geen verfijnde aanvalscijfers en is er geen herleidbare bookmakersprijs, dus geldt daar dezelfde dubbele lat. En let op iets dat makkelijk fout gaat: Nederland heeft die cijfers wél in de Eredivisie en niet in de eerste divisie. Ik neem dekking dus nooit over van een andere competitie in hetzelfde land, ook niet als het hetzelfde land is.</td></tr>
+        <tr><td class="comp">Romanian SuperLiga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Twee wedstrijden, beide doorgerekend, geen weddenschap. Dit is een van de twee competities waar mijn bron geen verfijnde aanvalscijfers heeft, dus ik reken er met gewone doelpunten. Dat werkt, maar het is grover, en ik eis er daarom het dubbele voordeel voordat ik iets stuur. Er is ook geen herleidbare bookmakersprijs: ik krijg alleen een gemiddelde over elf boeken, wat betekent dat mijn voordeel daar eerder te laag dan te hoog uitvalt.</td></tr>
+        <tr><td class="comp">Segunda División</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Vier wedstrijden, alle vier doorgerekend, één werd een weddenschap. Drie van de vier hadden een ploeg die ik moest omrekenen omdat ze net uit La Liga is gedegradeerd (Tenerife, Real Oviedo en Mallorca); die omrekening lukte bij alle drie. Tenerife – FC Andorra heb ik afgewezen omdat FC Andorra bijna een derde van de waarde van zijn basiself mist en Tenerife niemand — dat is een te groot verschil om te negeren.</td></tr>
+        <tr><td class="comp">Série A</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Eén wedstrijd, doorgerekend, geen weddenschap. RB Bragantino – Santos trapt om middernacht af — Braziliaanse tijd is het dan nog avond — en valt daarmee precies in het venster van déze dag. Ik heb hem afgewezen omdat mijn twee rekenmethodes het hier oneens zijn over wíe er gaat winnen, en als dat gebeurt stuur ik niets.</td></tr>
+        <tr><td class="comp">2. Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Austrian Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Croatian HNL</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Czech First League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Eliteserien</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">English League One</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">English League Two</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Hungarian NB I</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">MLS</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Serie B</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Swiss Super League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 40 per run diep worden bekeken en het waren er 15.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Juventus – Napoli · BTTS: Beide ploegen scoren — nee (2,16) · Run A</td><td class="num">2–0</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Kasımpaşa – Beşiktaş · BTTS: Beide ploegen scoren — nee (2,49) · Run A</td><td class="num">2–2</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Lyon – Angers · Over/Under: Under 3,5 (1,60) · Run A</td><td class="num">2–0</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Getafe – Sevilla · BTTS: Beide ploegen scoren — nee (1,78) · Run A</td><td class="num">3–1</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Liverpool – Arsenal · Draw No Bet: DNB — Arsenal (1,81) · Run A</td><td class="num">0–1</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Atlanta United – Toronto FC · Over/Under: Under 3,5 (1,83) · Run B</td><td class="num">3–1</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Hannover 96 – Dynamo Dresden · 1X2: 1 (Hannover 96 wint) (2,22) · Run B</td><td class="num">2–1</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Panetolikos – OFI Crete · Over/Under: Over 2,25 (1,88) · Run B</td><td class="num">0–1</td><td><span class="chip gap">verloren</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout"><p class="prose">Vandaag was er niets af te rekenen, en dat is een keer geen verzuim. Mijn ochtendrun heeft om half vier &#x27;s nachts alles van gisteren al afgerekend: acht weddenschappen en 53 tegengehouden kandidaten. Wat er nu nog open staat, zijn twee Amerikaanse wedstrijden die op het moment van deze run nog gewoon aan het spelen waren — Los Angeles FC stond bij mijn eerste blik 0–2 achter na negentig minuten spelen die nog niet om waren — en de drie weddenschappen van vanmorgen, die vandaag pas worden gespeeld. Niets daarvan mag ik al afrekenen; ik wacht tot mijn bron zegt dat de wedstrijd klaar is, en geen van deze zeventien is dat. De twee Amerikaanse duels komen morgenochtend aan de beurt.
+
+Wat ik wél over de uitslagen van de afgelopen weken kan zeggen, staat bovenaan: in de wedstrijden waarin ik op weinig doelpunten inzette, zijn er tweederde doelpunt per wedstrijd méér gevallen dan ik had gerekend, en die meting staat nu op 117 wedstrijden in plaats van de 49 van half oktober. Dat is geen conclusie uit één dag — het is precies de reeks die groot genoeg is geworden om er iets van te mogen vinden.</p></div>
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.240 tegen mijn 0.260 — lager is beter). Bij 447 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run B · maandag 2 november 2026 · 3 bets uit 15 wedstrijden · Alle bronnen deden vandaag wat ze moesten doen. The Odds API is in orde (19.841 credits over van 20.000; 33 van de 34 competitiesleutels van mijn lijst actief), Fotmob leverde de dagprogramma&#x27;s, de standen en de wedstrijdinformatie van alle vijftien duels zonder één fout, BetExplorer leverde het gratis marktgemiddelde voor alle zes spelende competities én de controle op de elf die stilliggen, en Pinnacle — de scherpste bookmaker van de markt, en mijn enige onafhankelijke tweede mening — gaf prijzen voor zeven van de vijftien wedstrijden. Understat heb ik niet aangeroepen: die bron dekt alleen de vijf grote Europese competities en daarvan staat er geen enkele op mijn lijst. De losse statistiekenabonnement dat ik niet heb, is een besluit van jou van 27 september en geen storing; ik noem het alleen omdat het dan zichtbaar blijft dat de stilte een keuze is.</p>
+</footer>
+
+</div>

@@ -343,7 +343,11 @@ def _selftest() -> int:
     lg = reference_league()
     home = convert("ENG", 38, 38, 38, 1.0)
     away = convert("ESP", 38, 38, 38, 1.0)
-    lh, la = match_lambdas(home.stats, away.stats, lg)
+    # `scale=1.0`: deze controle eist dat `match_lambdas` exact de GEFITTE lambda's
+    # teruggeeft. De niveaucorrectie van `model.LEVEL_SCALE` zit niet in die fit, dus met
+    # de correctie erin faalt de identiteit — en de zelftest zou dan vanaf 3 nov 2026
+    # ineens omvallen zonder dat er iets aan deze module is veranderd.
+    lh, la = match_lambdas(home.stats, away.stats, lg, scale=1.0)
     A_h, D_h, _ = FACTORS["ENG"]
     A_a, D_a, _ = FACTORS["ESP"]
     want_h, want_a = EURO_HOME_GOALS * A_h * D_a, EURO_AWAY_GOALS * A_a * D_h

@@ -382,7 +382,11 @@ def _brier(rows: list[dict], f: dict) -> tuple[float, int]:
     for r in rows:
         if r["home_id"] not in f["teams"] or r["away_id"] not in f["teams"]:
             continue
-        p = analyze_match(team(r["home_id"], f), team(r["away_id"], f), ctx, shrink=1.0)
+        # `scale=1.0`: `model.LEVEL_SCALE` (2 nov 2026) is gemeten op de CLUB-lambdas uit
+        # `data/run-state/`; daar zit geen enkel interlandduel in. §1h en §4 verbieden een
+        # gemeten correctie uit te breiden naar een populatie waar de meting hem niet steunt.
+        p = analyze_match(team(r["home_id"], f), team(r["away_id"], f), ctx, shrink=1.0,
+                          scale=1.0)
         werk = (1.0, 0.0, 0.0) if r["gh"] > r["ga"] else (
             (0.0, 1.0, 0.0) if r["gh"] == r["ga"] else (0.0, 0.0, 1.0))
         som += sum((q - w) ** 2 for q, w in zip((p.home, p.draw, p.away), werk))
@@ -437,7 +441,10 @@ def verify(f: dict) -> None:
             gem, adv = f["avg_goals_per_team"], f["home_adv"]
             lh = gem * math.exp(adv / 2) * vh["attack"] * va["defence"]
             la = gem * math.exp(-adv / 2) * va["attack"] * vh["defence"]
-            mlh, mla = match_lambdas(team(h, f), team(a, f), ctx, shrink=1.0)
+            # `scale=1.0`: deze aanroep toetst of de rating exact op `match_lambdas` aansluit.
+            # Met de niveaucorrectie erin faalt die identiteit, en interlandduels vallen
+            # buiten de populatie waarop ze is gemeten (zie `model.level_scale`).
+            mlh, mla = match_lambdas(team(h, f), team(a, f), ctx, shrink=1.0, scale=1.0)
             if abs(lh - mlh) > 1e-6 or abs(la - mla) > 1e-6:
                 ok = False
             print(f"{(vh['name'] or h)[:20]:21s}-{(va['name'] or a)[:20]:21s}"
