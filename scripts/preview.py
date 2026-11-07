@@ -201,7 +201,8 @@ def weather(details: dict) -> dict:
 
 
 def week_around(day: date, teams: dict[str, str], *, before: int = WEEK_BEFORE,
-                after: int = WEEK_AFTER, fixtures: dict | None = None) -> dict:
+                after: int = WEEK_AFTER, fixtures: dict | None = None,
+                ids: dict[str, int] | None = None) -> dict:
     """Wat deze twee ploegen vóór en ná de rundag spelen, met de Europese duels apart.
 
     `teams` is `{"home": naam, "away": naam}`. `fixtures` mag een al opgehaalde
@@ -210,8 +211,26 @@ def week_around(day: date, teams: dict[str, str], *, before: int = WEEK_BEFORE,
     Dit is de enige manier om "drukke week" hard te maken. Rustdagen (§1c) zeggen hoe lang de
     ploeg niet speelde; ze zeggen niet dat het vorige duel een uitwedstrijd in de Champions
     League was, en ze zeggen al helemaal niets over wat er dinsdag wacht.
+
+    **Geef `ids` mee — `{"home": team_id, "away": team_id}` — en doe dat altijd als je ze hebt.**
+    Tot 7 nov 2026 koppelde deze functie uitsluitend op de **genormaliseerde naam**, en de
+    daglijst van Fotmob bevat álle competities ter wereld. Elke club met dezelfde genormaliseerde
+    naam kwam daardoor in de week van een andere club terecht. Dat is op 7 nov 2026 bij Run A
+    gemeten op **Nacional** (Primeira Liga): het weekoverzicht van Nacional uit Funchal bevatte
+    twee duels van *Club Nacional de Football* (Liga AUF Uruguaya) en twee van *Club Nacional*
+    uit Paraguay (Division Profesional) — vier duels van twee andere clubs, naast het enige
+    echte duel (Arouca – Nacional, 1 nov). Een voorbeschouwing die daarop leunt beweert een
+    drukke week die niet bestaat.
+
+    Dit is dezelfde stille faalvorm als de æ-ligatuur van 13 september en de Poolse ł van
+    17 oktober, maar níet dezelfde oorzaak: `teamnames.norm` doet hier precies wat hij moet
+    doen, en het probleem is dat een naam geen sleutel is. Daarom koppelt de functie nu op
+    `id` zodra dat bekend is, en valt ze alleen op de naam terug als er geen id is — dan is de
+    oude, ruimere koppeling nog altijd beter dan niets. Raakt `my_prob` niet (§2: niets uit dit
+    blok gaat in de kansschatting), alleen de tekst die een mens leest (§6c).
     """
     gezocht = {rol: teamnames.norm(naam) for rol, naam in teams.items()}
+    wil_id = {rol: tid for rol, tid in (ids or {}).items() if tid}
     fixtures = {} if fixtures is None else fixtures
     uit = {rol: {"ervoor": [], "erna": []} for rol in teams}
     for off in range(-before, after + 1):
@@ -228,17 +247,31 @@ def week_around(day: date, teams: dict[str, str], *, before: int = WEEK_BEFORE,
             for m in (lg.get("matches") or []):
                 h = ((m.get("home") or {}).get("name") or "").strip()
                 a = ((m.get("away") or {}).get("name") or "").strip()
+                ih = (m.get("home") or {}).get("id")
+                ia = (m.get("away") or {}).get("id")
                 nh, na = teamnames.norm(h), teamnames.norm(a)
                 for rol, naam in gezocht.items():
-                    if naam not in (nh, na):
-                        continue
+                    tid = wil_id.get(rol)
+                    if tid is not None and (ih is not None or ia is not None):
+                        # Op id koppelen zodra beide kanten er een hebben: een naam is geen
+                        # sleutel (zie de docstring, Nacional op 7 nov 2026).
+                        if tid not in (ih, ia):
+                            continue
+                        thuis = tid == ih
+                    else:
+                        if naam not in (nh, na):
+                            continue
+                        thuis = naam == nh
                     st = m.get("status") or {}
                     rij = {"date": d.isoformat(), "competition": comp,
                            "home": h, "away": a,
-                           "thuis": naam == nh,
+                           "thuis": thuis,
                            "score": st.get("scoreStr") if st.get("finished") else None,
                            "kickoff_utc": st.get("utcTime"),
-                           "europees": any(e.lower() in comp.lower() for e in EUROPEAN)}
+                           "europees": any(e.lower() in comp.lower() for e in EUROPEAN),
+                           "gekoppeld_op": "id" if (tid is not None and
+                                                    (ih is not None or ia is not None))
+                                           else "naam"}
                     uit[rol]["ervoor" if off < 0 else "erna"].append(rij)
     for rol in uit:
         uit[rol]["ervoor"].sort(key=lambda r: r["date"])
@@ -249,8 +282,15 @@ def week_around(day: date, teams: dict[str, str], *, before: int = WEEK_BEFORE,
 
 
 def match_block(match_id: int, day: date, home: str, away: str, *,
-                fixtures: dict | None = None) -> dict:
-    """Het volledige voorbeschouwingsblok voor één duel, klaar voor `data/run-state/`."""
+                fixtures: dict | None = None,
+                home_id: int | None = None, away_id: int | None = None) -> dict:
+    """Het volledige voorbeschouwingsblok voor één duel, klaar voor `data/run-state/`.
+
+    **Geef `home_id` en `away_id` mee.** Ze gaan naar `week_around`, dat zonder id op de naam
+    moet koppelen en dan clubs met dezelfde naam uit andere competities meeneemt — zie de
+    docstring van die functie en het geval Nacional van 7 nov 2026. Het runscript heeft die
+    id's al: ze staan in `data/run-state/` bij elke wedstrijd als `home_id` / `away_id`.
+    """
     details = fotmob.fetch_match_details(match_id)
     return {
         "match_id": match_id,
@@ -258,7 +298,8 @@ def match_block(match_id: int, day: date, home: str, away: str, *,
         "insights": insights(details),
         "top_players": top_players(details),
         "weather": weather(details),
-        "week": week_around(day, {"home": home, "away": away}, fixtures=fixtures),
+        "week": week_around(day, {"home": home, "away": away}, fixtures=fixtures,
+                            ids={"home": home_id, "away": away_id}),
         "_noot": ("Materiaal voor de voorbeschouwing van §6c. Niets hiervan gaat in my_prob of "
                   "prob_sources (§2, §4): insights is andermans redactie en de rest is historie."),
     }
@@ -367,10 +408,36 @@ def _selftest() -> int:
     eis("europees ervoor gevonden", len(w2["away"]["europees_ervoor"]), 1)
     eis("uitwedstrijd herkend", w2["away"]["ervoor"][0]["thuis"], False)
     eis("uitslag meegenomen", w2["away"]["ervoor"][0]["score"], "2 - 4")
+    eis("zonder id koppelt op naam", w2["away"]["ervoor"][0]["gekoppeld_op"], "naam")
+
+    # DRIE CLUBS DIE "Nacional" HETEN, en dat is het geval van 7 nov 2026 (Run A): de daglijst
+    # van Fotmob bevat álle competities ter wereld, dus koppelen op naam haalde Nacional uit
+    # Uruguay en Paraguay in de week van Nacional uit Funchal. Met `ids` mag alleen het duel
+    # van id 8277 overblijven.
+    drie = {date(2026, 11, 1): {"leagues": [
+        {"name": "Liga Portugal", "matches": [
+            {"home": {"id": 9765, "name": "Arouca"}, "away": {"id": 8277, "name": "Nacional"},
+             "status": {"utcTime": "2026-11-01T15:30:00Z", "finished": True, "scoreStr": "1 - 0"}}]},
+        {"name": "Liga AUF Uruguaya", "matches": [
+            {"home": {"id": 2577, "name": "Danubio"}, "away": {"id": 2578, "name": "Nacional"},
+             "status": {"utcTime": "2026-11-01T19:30:00Z", "finished": True, "scoreStr": "1 - 2"}}]},
+        {"name": "Division Profesional", "matches": [
+            {"home": {"id": 3311, "name": "Luqueño"}, "away": {"id": 3312, "name": "Nacional"},
+             "status": {"utcTime": "2026-10-31T22:30:00Z", "finished": True, "scoreStr": "0 - 3"}}]},
+    ]}}
+    w3 = week_around(date(2026, 11, 2), {"home": "Nacional"}, before=1, after=0,
+                     fixtures=drie, ids={"home": 8277})
+    eis("id scheidt de drie Nacionals", len(w3["home"]["ervoor"]), 1)
+    eis("en het is de Portugese", w3["home"]["ervoor"][0]["competition"], "Liga Portugal")
+    eis("op id gekoppeld", w3["home"]["ervoor"][0]["gekoppeld_op"], "id")
+    # En zonder id doet hij wat hij tot 7 nov deed: alle drie meenemen. Die regel staat hier
+    # zodat zichtbaar blijft WAT de fix repareert in plaats van alleen DAT hij er is.
+    w4 = week_around(date(2026, 11, 2), {"home": "Nacional"}, before=1, after=0, fixtures=drie)
+    eis("zonder id de oude, te ruime koppeling", len(w4["home"]["ervoor"]), 3)
 
     for f in fouten:
         print("FOUT:", f)
-    print(f"{27 - len(fouten)} van 27 controles goed.")
+    print(f"{32 - len(fouten)} van 32 controles goed.")
     return 1 if fouten else 0
 
 
