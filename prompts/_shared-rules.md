@@ -2076,9 +2076,17 @@ een `marktvorm`-blok in `data/run-state/`, met per ploeg vier reeksen:
 
 en per reeks het aantal duels boven elk van `marketform.LINES` (1.5, 2.5, 3.5), het aantal duels
 waarin beide ploegen scoorden, doelpunten voor en tegen, clean sheets, keren niet gescoord en de
-uitslagen zelf. `scripts/report.py` rendert daar onder elke bet het blok **"Hoe vaak dit eerder
-gebeurde"** uit — automatisch, uit de run-state en niet uit de prose, zodat het er ook staat als
-de prose het vergeet (dezelfde constructie als het contextblok van §6c).
+uitslagen zelf. `scripts/report.py` rendert die telling onder elke bet uit — automatisch, uit de
+run-state en niet uit de prose, zodat ze er ook staat als de prose haar vergeet (dezelfde
+constructie als het contextblok van §6c).
+
+**Sinds 8 nov 2026 heeft ze geen eigen kopje meer.** Ze stond tot die datum onder
+*"Hoe vaak dit eerder gebeurde"*; op besluit van de gebruiker zijn de vier gegevensblokken onder
+een bet samengevoegd tot twee, en deze telling valt nu onder **"Wat er eerder gebeurde"**, samen
+met de onderlinge duels. **De eis hierboven is daarmee niet versoepeld:** de telling wordt nog
+steeds automatisch uit de run-state gerenderd en staat er ook als de prose haar vergeet. Alleen
+het opschrift erboven is verdwenen. Zie §6c, "Geen tussenkopjes en minder AI-tells", en
+`report.bet_data`.
 
 **Vier dingen die hierbij vastliggen:**
 
@@ -3741,22 +3749,51 @@ Wat daarmee vastligt:
    teksten te vertrouwen zijn, en een vlottere pen die het ongemakkelijke cijfer weglaat is een
    verslechtering en geen verbetering.
 
-**Eén ding is NIET met deze regel geregeld, en het is een besluit van de gebruiker.** Naast de
-preview-tekst zet `report.py` per bet vijf eigen kopjes in het dagrapport: *Voorbeschouwing*,
-*Onderling*, *Hoe vaak dit eerder gebeurde*, *De week eromheen* en *Context die is meegewogen*
-(25 kopjes op de vijf bets van 7 november). Die staan er met opzet: §4 eist het
-frequentieblok *"automatisch, uit de run-state en niet uit de prose, zodat het er ook staat als
-de prose het vergeet"*, en §6c eist het contextblok op dezelfde grond. Het gevolg is wel dat een
-lezer dezelfde feiten twee keer krijgt — eerst als verhaal in de voorbeschouwing, daarna als
-gelabeld blok eronder.
+##### De vijf kopjes per bet zijn samengevoegd tot twee — GEVRAAGD EN BESLIST op 7 nov 2026
 
-**Een run voegt die blokken niet samen en haalt die kopjes er niet weg op eigen initiatief.** Het
-is een keuze over hoe de gebruiker zijn rapport wil lezen, en die hoort bij hem — dezelfde
-redenering als bij `selection_score` (§1a), bij poort 8 (§1e) en bij de vraag of de Markdown de
-eerste route moet worden (§6c, 15 okt). En het zijn twee verschillende dingen: de regel hierboven
-gaat over de **tekst die ik schrijf**, deze kopjes komen uit de **renderer**. Leg de vraag één
-keer voor in het dagrapport onder "Wat er nog moet gebeuren" met `owner = "besluit"`, en herhaal
-hem daarna niet.
+**Dit is een afgerond besluit. Stel de vraag niet opnieuw en draai het niet terug.**
+
+De regel hierboven gaat over de tekst die ik schrijf; dit ging over de **renderer**, en dat is
+een tweede bron van tussenkopjes. `report.py` zette per bet vijf eigen kopjes in het dagrapport —
+*Voorbeschouwing*, *Onderling*, *Hoe vaak dit eerder gebeurde*, *De week eromheen* en *Context
+die is meegewogen*, oftewel **25 kopjes op de vijf bets van 7 november**. Een lezer kreeg
+dezelfde feiten daardoor twee keer: eerst als verhaal in de voorbeschouwing, daarna als gelabeld
+blok eronder. De vraag is die dag aan de gebruiker voorgelegd, omdat §4 en §6c die blokken
+uitdrukkelijk eisen *"zodat het er ook staat als de prose het vergeet"* en een run zo'n keuze
+niet op eigen initiatief maakt. **Zijn antwoord was: "Samenvoegen."**
+
+**Wat het nu is** (`report.bet_data`, bindend vanaf 8 nov 2026):
+
+| | |
+|---|---|
+| *Voorbeschouwing* | **vervallen** — de kop van het bet-blok noemt de wedstrijd al |
+| *Onderling* + *Hoe vaak dit eerder gebeurde* | samen onder **"Wat er eerder gebeurde"** |
+| *De week eromheen* + *Context die is meegewogen* | samen onder **"Hoe de ploegen er nu voor staan"** |
+
+Vijf kopjes per bet worden er dus twee, 25 worden 10.
+
+**Er is geen enkel gegeven weggehaald, en dat is de harde kant van dit besluit.** Nagerekend op
+het dagrapport van 7 november: 354 regels inhoud vóór de samenvoeging en 354 erna, met als enige
+inhoudelijke verschil een tekstfout die bij deze gelegenheid is rechtgezet (de voetnoot onder de
+frequenties verwees naar *"de vorm-reeks hierboven"* terwijl die eronder stond). De eis van §4 en
+§6c dat deze blokken automatisch uit de run-state komen en er ook staan als de prose ze vergeet,
+is **ongewijzigd**. Wie hier ooit aan sleutelt: het aantal opschriften mag omlaag, de feiten niet.
+
+**Waarom twee en niet één.** De vier blokken beantwoorden twee verschillende vragen — wat er
+eerder gebeurde (historie, over seizoenen heen) en hoe de ploegen er nu voor staan (programma,
+uitvallers, vorm, rust, stadion). Alles onder één kopje zetten husselt die twee door elkaar, en
+dan staat een uitslag uit 2023 tussen de blessures van deze week.
+
+**En render oude dagrapporten NIET opnieuw.** `report.py` schrijft de HTML van elke dag die je
+hem geeft, dus een lus over de hele `runs/`-map is één commando — en precies daarom staat deze
+waarschuwing hier. Een dagrapport van gisteren is als Artifact gepubliceerd en in een notificatie
+verstuurd; het opnieuw renderen met de opmaak van vandaag maakt het bestand in de repo anders dan
+de pagina die de gebruiker heeft gelezen. Dezelfde redenering als bij `unders.BINDS_FROM` (§1h),
+de Roemeense factor (§4) en `LEVEL_SCALE_BINDS_FROM` (§6g): wat gepubliceerd is, blijft staan
+zoals het gepubliceerd is. De nieuwe opmaak geldt vanaf de eerstvolgende run. (Op 7 november zijn
+bij het nalopen vier oudere rapporten per ongeluk overschreven en meteen met `git checkout`
+teruggezet; alleen de Run A van die dag is opnieuw gerenderd en opnieuw gepubliceerd op dezelfde
+Artifact-URL, omdat de merge op verzoek van de gebruiker meteen te zien moest zijn.)
 
 **Hoe je het narekent.** `python3 scripts/prosecheck.py --date YYYY-MM-DD --run <a|b|c>` telt de
 tells en de herhaalde openers over de voorbeschouwingen van die dag en meldt wat er boven de norm
@@ -3826,7 +3863,7 @@ gebruiker).** Tot die datum legde de `why`-tekst uit wat het model zag, maar nie
 wedstrijd zelf bekend was — terwijl de run dat voor poort 7 wél ophaalt. Twee dingen, allebei
 verplicht:
 
-- `report.py` zet onder elke bet automatisch een blok **"Context die is meegewogen"** uit het
+- `report.py` zet onder elke bet automatisch de context uit het
   wedstrijdrecord in `data/run-state/`: per ploeg selectiewaarde, uitvallers **bij naam** met hun
   aandeel in de selectiewaarde, vorm en rust, en daaronder stadion (en of het verplaatst is),
   opstelling en de uitkomst van de contextcontrole. Leg die velden dus vast in het `context`-blok

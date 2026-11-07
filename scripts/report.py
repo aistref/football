@@ -310,7 +310,10 @@ def render_context(match: dict | None, pick: dict) -> str:
     if cand and cand.get("context_reason"):
         extra.append(("Contextcontrole", esc(cand["context_reason"])))
     rows += [f'<div class="ctx-row"><dt>{k}</dt><dd>{v}</dd></div>' for k, v in extra]
-    return f'<h4>Context die is meegewogen</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
+    # Geen eigen <h4> meer: dit blok staat sinds 8 nov 2026 onder het gezamenlijke kopje
+    # "Hoe de ploegen er nu voor staan", samen met het weekoverzicht. Zie `render_bets` en
+    # §6c, "Geen tussenkopjes en minder AI-tells" — op besluit van de gebruiker samengevoegd.
+    return f'<dl class="ctx">{"".join(rows)}</dl>'
 
 
 def render_marketform(match: dict | None, pick: dict) -> str:
@@ -401,15 +404,17 @@ def render_marketform(match: dict | None, pick: dict) -> str:
         rows.append(f'<div class="ctx-row"><dt>{esc(naam)}</dt>'
                     f'<dd>{esc(" · ".join(parts)) or "niets te tellen"}</dd></div>')
 
-    kop = "Hoe vaak dit eerder gebeurde"
+    # "hierboven" stond hier tot 8 nov 2026 en wees de verkeerde kant op: de vorm-reeks (WWDLW)
+    # zit in het contextblok, en dat werd ná dit blok gerenderd. Sinds de samenvoeging staat het
+    # een kopje lager, dus "hieronder" — en nu klopt het ook.
     noot = ("Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden "
-            "— daarom kan dit afwijken van de vorm-reeks hierboven. Deze cijfers staan náást mijn "
+            "— daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn "
             "berekening en zitten er niet in verwerkt.")
     if kwart and lijn is not None:
         noot += (f" Deze weddenschap staat op een kwartlijn, die in twee halve weddenschappen "
                  f"splitst; geteld is de helft die vólledig moet winnen "
                  f"({'onder' if onder else 'boven'} {f'{lijn:g}'.replace('.', ',')}).")
-    return (f'<h4>{kop}</h4>\n      <dl class="ctx">{"".join(rows)}</dl>'
+    return (f'<dl class="ctx">{"".join(rows)}</dl>'
             f'\n      <p class="prose micro">{noot}</p>')
 
 
@@ -458,7 +463,7 @@ def render_h2h(match: dict | None) -> str:
         staart = (f'<p class="prose micro">Over deze {sam["n"]} duels: gemiddeld '
                   f'{str(sam["doelpunten_per_duel"]).replace(".", ",")} doelpunten, en in '
                   f'{sam["btts"]} van de {sam["n"]} scoorden beide ploegen.</p>')
-    return f'<h4>Onderling</h4>\n      <dl class="ctx">{"".join(rijen)}</dl>\n      {staart}'
+    return f'<dl class="ctx">{"".join(rijen)}</dl>\n      {staart}'
 
 
 def render_week(match: dict | None) -> str:
@@ -495,9 +500,48 @@ def render_week(match: dict | None) -> str:
                          f'<dd>{" · ".join(stukken)}</dd></div>')
     if not rijen:
         return ""
-    return (f'<h4>De week eromheen</h4>\n      <dl class="ctx">{"".join(rijen)}</dl>'
+    return (f'<dl class="ctx">{"".join(rijen)}</dl>'
             f'\n      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee '
             f'erna, voor zover de kalender ze geeft.</p>')
+
+
+def bet_data(match: dict | None, pick: dict) -> str:
+    """De vier gegevensblokken onder een bet, samengevoegd onder TWEE kopjes (8 nov 2026).
+
+    **Op besluit van de gebruiker.** Tot 7 november had elke bet er vijf: `Voorbeschouwing`,
+    `Onderling`, `Hoe vaak dit eerder gebeurde`, `De week eromheen` en `Context die is
+    meegewogen`. Op vijf bets zijn dat 25 kopjes, en de gebruiker las dat — terecht — als een
+    formulier: dezelfde feiten kwamen twee keer langs, eerst als verhaal in de voorbeschouwing en
+    daarna als gelabeld blok eronder. Zijn opdracht van 7 november was "samenvoegen".
+
+    Wat hier NIET is gebeurd, en dat is het hele punt van de constructie: er is geen enkel
+    gegeven weggehaald. §4 eist het frequentieblok *"automatisch, uit de run-state en niet uit de
+    prose, zodat het er ook staat als de prose het vergeet"* en §6c eist het contextblok op
+    dezelfde grond. Die eis is ongewijzigd; alleen het aantal opschriften erboven gaat van vijf
+    naar twee.
+
+    **Waarom twee en niet één.** De vier blokken beantwoorden twee verschillende vragen, en die
+    scheiding is de enige die een lezer werkelijk helpt:
+
+    * *Wat er eerder gebeurde* — de onderlinge duels en hoe vaak deze markt eerder opging.
+      Historie, over seizoenen heen.
+    * *Hoe de ploegen er nu voor staan* — het weekprogramma, de uitvallers, de vorm, de rust en
+      het stadion. De stand van vandaag.
+
+    Alles onder één kopje zetten zou die twee door elkaar husselen, en dan staat de uitslag van
+    2023 tussen de blessures van deze week. `Voorbeschouwing` is helemaal vervallen: de kop van
+    het bet-blok noemt de wedstrijd al, dus dat opschrift voegde niets toe.
+    """
+    groepen = (
+        ("Wat er eerder gebeurde", (render_h2h(match), render_marketform(match, pick))),
+        ("Hoe de ploegen er nu voor staan", (render_week(match), render_context(match, pick))),
+    )
+    uit = []
+    for kop, delen in groepen:
+        body = "\n      ".join(d for d in delen if d and d.strip())
+        if body:
+            uit.append(f"<h4>{kop}</h4>\n      {body}")
+    return "\n      ".join(uit)
 
 
 def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None = None) -> str:
@@ -534,12 +578,8 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
       <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">{signed(pick["edge_pp"])}</span></div>
     </div>
     <div class="why">
-      <h4>Voorbeschouwing</h4>
       <p class="prose">{inline(why)}</p>
-      {render_h2h(find_match(state or {}, pick))}
-      {render_marketform(find_match(state or {}, pick), pick)}
-      {render_week(find_match(state or {}, pick))}
-      {render_context(find_match(state or {}, pick), pick)}
+      {bet_data(find_match(state or {}, pick), pick)}
       <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
   </div>''')
