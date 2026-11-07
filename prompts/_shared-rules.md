@@ -3938,6 +3938,13 @@ regels: noem wat er stuk is en wat de gebruiker eraan kan doen.
 Meer dan één notificatie per run is niet de bedoeling. Heb je zowel bets als een blokkade, zet ze
 in hetzelfde bericht — blokkade eerst.
 
+**Run D noemt de week waarover hij gaat** (toegevoegd 7 nov 2026, zie §9). Die run is wekelijks,
+dus een overgeslagen week valt niet op aan het ritme van de meldingen zoals bij een dagelijkse
+run. De genoemde periode is dan het enige waaraan je het ziet. En omdat Run D geen bets
+publiceert, heeft zijn notificatie altijd de vorm van de hartslag hierboven, met de integriteit
+vooraan in plaats van een beste bet: *"Run D over 1–7 nov: 2 fouten gevonden (Run B niet
+afgesloten, 4 dubbele schaduwrijen). Geen besluiten deze week. <link>"*
+
 ### Waarom dit is veranderd (17 aug 2026, op verzoek van de gebruiker)
 
 Tot vandaag stond hier het omgekeerde: géén notificatie bij "een routinematige, gezonde run zonder
@@ -3977,3 +3984,103 @@ gebruiker heeft op 27 september besloten daar geen geld aan uit te geven (zie §
 komt er niet"). De kanskant komt dus van Fotmob en Understat, en dat is de bewuste, definitieve
 opzet — niet een tussenstand in afwachting van budget. Wie deze paragraaf leest als "er ligt nog een
 oplossing klaar die niemand heeft opgepakt", leest hem verkeerd.
+
+---
+
+## 9. De controlerun (Run D) — wekelijks, read-only
+
+**Toegevoegd 7 nov 2026, op verzoek van de gebruiker.** Run A, B en C zoeken bets; Run D leest hun
+werk na. De run-specifieke opdracht staat in `prompts/run-d.md`; hier staan de regels die ook de
+ándere runs binden, plus de besluiten van de gebruiker.
+
+### Waarom deze run er is
+
+Er werd al veel gemeten. Elke run draait `ledger stats`, `shadow stats`, `calibration stats`,
+`ctxlog stats`, `margins stats`, `goalbias`, `recalibrate show` en `gridfit measure`. Er
+ontbraken twee dingen, en het tweede is het belangrijkste:
+
+1. **Niemand las die cijfers over de tijd.** Elke run drukt een momentopname af in een rapport dat
+   daarna niemand opent. Een reeks die vier weken dezelfde kant op kruipt, ziet er elke ochtend
+   uit als ruis.
+2. **Niemand controleerde of de runs deden wat deze regels zeggen.** De geschiedenis van deze repo
+   is een reeks stille administratiefouten: `calibration.py settle` elf dagen niet gedraaid
+   (18–29 sep), het Serie B-id dat stil het verkeerde seizoen gaf, het Hongaarse id dat de
+   seizoensparameter negeerde, `settled_note` als prosesleutel die `report.py` nooit las,
+   `resumed_count` die aanroepen telde in 88 bestanden, de gepoolde promotiefactor die drie
+   runrapporten lang onwaar werd overgenomen, `week_around` dat op naam koppelde (7 nov).
+   **De dominante faalvorm hier is geen verkeerde bet maar een stille administratiefout waardoor
+   de metingen gaan liegen** — en daar was geen enkele controle op.
+
+De eerste echte run van `scripts/meta.py` (7 nov, over 1–7 nov) vond er meteen drie: een Run B
+waarvan het voortgangsbestand niet was afgesloten, vier schaduwrijen die dubbel in dezelfde
+categorie op dezelfde dag stonden (§1e/§5a verbieden dat), en negen rundagen waarvan de
+Artifact-link niet is vastgelegd. Dat is de verantwoording van deze run in één alinea.
+
+### De drie besluiten van de gebruiker (7 nov 2026)
+
+1. **Alleen wekelijks, op maandagochtend**, over de week die net klaar is. Geen dagelijkse
+   waakhond en geen maandelijkse diepe editie. **Het gevolg hoort de run zelf te melden:** een
+   stille fout kan tot zeven dagen doorlopen voordat deze controle hem ziet. Dat is bewust
+   aanvaard; het alternatief was een vierde dagelijkse taak.
+2. **Run C draait niet dagelijks** en de gebruiker zet hem zelf aan als het interlandvoetbal
+   begint. **Zijn afwezigheid is dus geen storing en hoort nergens als gat of actiepunt** —
+   zelfde soort besluit als `API_FOOTBALL_KEY` (§3, 27 sep 2026), en om dezelfde reden
+   expliciet vastgelegd: een stilte die een keuze is, moet van een stilte die een defect is te
+   onderscheiden zijn. `meta.DAGELIJKSE_RUNS` en `HANDMATIGE_RUNS` leggen dat in code vast, en
+   `meta.py` meldt Run C als `INFO` en nooit als `FOUT`. Een ontbrekende Run A of B is wél fout.
+3. **Slotkoersen worden niet in Run D vastgelegd.** Een slotkoers per bet zou de snelste
+   uitkomstmaat zijn die deze repo kan hebben — vijftig bets met een slotkoers zeggen ongeveer
+   evenveel als vijfhonderd bets rendement — maar hij moet door de runs A t/m C worden
+   opgehaald, dicht bij de aftrap, en niet door een controlerun die een week later leest. Zolang
+   er geen veld voor is, kan Run D niet meten of de prijs ná publicatie de goede kant op bewoog
+   en blijft rendement de enige uitkomstmaat, met de trage convergentie hieronder.
+
+### Wat Run D nooit doet
+
+**Read-only op alles wat van een andere run komt.** Geen pick afwikkelen of wijzigen, geen
+logboekregel aanpassen, geen parameter/poort/drempel verzetten, geen gepubliceerd rapport opnieuw
+renderen. Hij legt voor; de gebruiker beslist — net als bij `selection_score` (§1a), poort 8
+(§1e), de Markdown-route (§6c) en de niveaucorrectie (§6g).
+
+Dat is geen netheid maar de kern: **een systeem dat zijn eigen drempels bijstelt op zijn eigen
+uitvoer maakt de logboeken waardeloos**, en dat is dezelfde circulariteit die §2 in een andere
+vorm verbiedt. Wie deze regel ooit versoepelt, haalt de bodem onder elk cijfer in dit bestand weg.
+
+### De drie remmen, en ze staan hier omdat ze makkelijk te vergeten zijn
+
+**1. Rendement beantwoordt de hoofdvraag niet op deze tijdschaal.** Bij ~47 afgewikkelde bets per
+week, een trefkans rond 46% en gemiddelde koers 2,17 is de standaardfout op het weekrendement
+ongeveer **16 procentpunt**. Een week op +10% of −20% is ruis. Om een voorsprong van 5
+procentpunt met t = 2 aan te tonen zijn ~1900 bets nodig: **veertig weken.** Daarom drukt
+`meta.py` bij élk rendement een t-waarde en een interval af, en daarom staan de kalibratiecijfers
+(~780 nieuwe waarnemingen per week, daar beweegt wél iets) vóór de winst-en-verliesrekening.
+
+**2. Meervoudig toetsen.** Wie 540 picks opsplitst naar markt × tier × koersband × competitie
+vindt met zekerheid "significante" dingen die niet bestaan. De uitsplitsingen staan daarom
+**vooraf** vast in `meta.VERGELIJKINGEN` en het rapport meldt hoeveel vergelijkingen het heeft
+gemaakt. Voeg er geen toe zonder dat getal mee te verhogen, en lees een |t| onder 2 als ruis —
+ook als het verhaal erbij klopt.
+
+**3. Eén keer vragen, niet elke week.** Een besluitpunt gaat **één keer** naar de gebruiker, met
+`owner = "besluit"`, en daarna niet opnieuw tot er iets wezenlijk verandert. §1e heeft dat in
+oktober voor poort 8 moeten vastschrijven nadat die vraag twee dagen op rij werd gesteld; met een
+wekelijkse cadans is dat risico groter en niet kleiner. Leg een vraag alleen voor als de reeks de
+~30 afgewikkelde gevallen van §6d haalt **én** het teken standhoudt. "Niets te beslissen deze
+week" is een geldige en veelvoorkomende uitkomst.
+
+### Wat deze run meet en wat er eerder niet gemeten werd
+
+| | |
+|---|---|
+| **integriteit** | draaide elke dagelijkse run, is elk voortgangsbestand afgesloten, staat `recalibrate.fitted_through` op de vorige rundag (§6b-5c), staan er rijen te lang open, dubbele schaduwrijen of pick-id's, afwijkende poortnamen, ontbrekende blokken bij een gepubliceerde bet, een vastgelegde Artifact-link |
+| **bets** | Brier tegen de markt eerst, dan rendement met t-waarde, per markt, tier, koersband, edgeband en run |
+| **poort­interactie** | **nieuw.** Hoe vaak blokkeert een poort *alléén*? Een poort die bijna altijd samen met een andere afgaat, houdt weinig tegen dat niet toch al werd tegengehouden; zijn marginale nut is dan veel kleiner dan zijn ruwe aantal suggereert |
+| **`selection_score`** | **nieuw.** Doet nummer 1 van de shortlist het beter dan nummer 5? §1a schrijft sinds 14 aug voor om de tweede selectie bij te houden, maar het is nooit getoetst |
+| **push vs binair** | **nieuw.** §1a koos `selection_score` deels omdat push-markten minder blootstaan aan de gelijkspelfout van §6f. Betaalt dat zich uit? |
+| **samenhang binnen een dag** | **nieuw.** Vijf Over-bets op één zaterdag zijn geen vijf onafhankelijke bets. De dag-geclusterde standaardfout staat naast de onafhankelijke, zodat zichtbaar is hoeveel die laatste onderschat |
+| **breekpunten** | de datums waarop een parameter is gewijzigd, met de waarschuwing dat elk cijfer over "de hele reeks" twee populaties mengt — de fout waar `gridfit.py` in zijn eigen kop voor waarschuwt |
+
+**Run D's eigen afwezigheid is het gat dat niemand ziet.** Precies de blinde vlek die Run C
+vijftien dagen onzichtbaar hield (zie besluit 2). Daarom noemt §7 voor deze run één extra eis: zet
+in de notificatie expliciet over wélke week het gaat. Als er een week overslaat, is die periode
+het enige waaraan je het ziet.

@@ -1,0 +1,78 @@
+Plak de tekst onder de streep in je geplande taak voor Run D. Hij is kort met opzet: de
+inhoudelijke regels staan in de repo, dus je kunt ze aanpassen zonder de scheduler nog aan te
+raken.
+
+SCHEMA. Run D is de enige van de vier die NIET dagelijks draait.
+
+  Run A  02:47   Run B  03:47   Run C  05:17   (dagelijks; C zet de gebruiker zelf aan)
+  Run D  07:12   ALLEEN OP MAANDAG
+
+ZET DE TIJDZONE VAST OP Europe/Amsterdam (CRON_TZ=Europe/Amsterdam), om dezelfde reden als bij
+de andere drie: anders schuift de taak een uur met elke overgang naar winter- of zomertijd.
+
+  CRON_TZ=Europe/Amsterdam
+  12 7 * * 1
+
+WAAROM 07:12 EN NIET VROEGER. Run D leest het werk van de hele week na, inclusief de Run A en B
+van diezelfde maandagochtend. Die zijn rond 04:30 klaar. Op 07:12 is er dus ruim marge, en de
+deadline van 06:30 geldt hier niet: dit rapport hoort niet bij het inzetten, het hoort bij het
+terugkijken. Houd hem weg van :00 en :30 (zie de scheduler-tekst van Run A voor de reden).
+
+WAAROM MAANDAG. Besluit van de gebruiker, 7 nov 2026: alleen wekelijks, op maandagochtend, over
+de week die net klaar is. Geen dagelijkse waakhond en geen maandelijkse editie. Dat heeft één
+gevolg dat de run zelf moet melden: een stille fout kan tot zeven dagen doorlopen voordat deze
+controle hem ziet.
+
+-------------------------------------------------------------------------------
+
+CONTEXT: Dit is een door de gebruiker zelf aangemaakte, terugkerende geplande taak. De
+gebruiker heeft deze opdracht vooraf goedgekeurd. Voer 'm zonder verdere bevestiging uit;
+er is geen live gebruiker om iets aan te vragen.
+
+Werk in de repo /home/user/football. De canonieke branch is main, en je hebt hierbij
+expliciet toestemming om daarheen te pushen — ook als deze sessie op een andere branch is
+gezet. Zonder die toestemming weigert een sessie dat.
+
+0. EERST DE BRANCHES OP ORDE, precies zoals bij Run A t/m C (_shared-rules.md §3, Stage -2).
+   a. `git fetch origin` en `git branch -r` — bekijk ALLE branches, niet alleen main.
+   b. Vergelijk op de INHOUD en niet op de commitgraaf: een tak met 0 eigen commits kan toch
+      logboekregels dragen die main mist. Loop alle vijf de logboeken na (picks.jsonl,
+      shadow.jsonl, calibration.jsonl, context-log.jsonl, source-health.json/coverage.json).
+   c. Bevat een tak eigen werk, merge dat. Bij conflicten in de logboeken is de VERENIGING het
+      antwoord; bij _shared-rules.md en de scripts wint de nieuwste versie.
+   d. Kom je om wat voor reden dan ook niet op main uit, meld dat dan bovenaan het runrapport
+      én in de notificatie.
+
+1. Lees prompts/run-d.md en prompts/_shared-rules.md §9. Die twee zijn de opdracht. Lees ze ná
+   stap 0, niet ervoor: vóór de merge kun je een oudere versie van de regels in handen hebben.
+   LET OP: de pipeline Stage 0 t/m 6 van §3 geldt voor deze run NIET. Je wikkelt niets af, je
+   haalt geen fixtures op en je koopt geen prijzen.
+
+2. JE BENT READ-ONLY op alles wat van een andere run komt. Je wijzigt geen pick, geen
+   logboekregel en geen parameter, poort of drempel, en je rendert geen gepubliceerd rapport
+   opnieuw. Je rapporteert en legt voor; de gebruiker beslist.
+
+3. Draai `python3 scripts/meta.py selftest` en daarna
+   `python3 scripts/meta.py week --end <de zondag van de afgelopen week>`.
+   Neem die uitvoer LETTERLIJK over in het runrapport; schrijf de cijfers niet over. Wat je zelf
+   toevoegt is de lezing: wat beweegt, wat is ruis, wat vraagt een besluit.
+
+4. Zet de INTEGRITEIT vooraan, vóór alle statistiek. De dominante faalvorm in deze repo is een
+   stille administratiefout waardoor de metingen gaan liegen, niet een verkeerde bet.
+   Run C hoort daarbij NOOIT als gat: die draait niet dagelijks en de gebruiker zet hem zelf aan
+   als het interlandvoetbal begint (besluit 7 nov 2026). Een ontbrekende Run A of B is wél fout.
+
+5. Vergelijk met het rapport van vorige week (runs/<vorige maandag>-run-d.md). Dit is waar deze
+   run voor bestaat: één momentopname zegt niets, de beweging over weken wel.
+
+6. Leg de run vast: runrapport runs/<datum>-run-d.md, het leesbare dagrapport van §6c
+   (prose.json + scripts/report.py, ook met --markdown), publiceer het als Artifact, en
+   commit + `git push origin HEAD:main` (§6a). Sluit het voortgangsbestand af (§6b-7).
+
+7. Stuur EEN notificatie volgens §7, met de link naar het dagrapport en met de week waarover het
+   gaat er expliciet in. Dat laatste is geen opmaak: als Run D zelf een week overslaat, merkt
+   niets dat op, en dan is de genoemde periode het enige waaraan je het ziet.
+
+EEN BESLUITPUNT GAAT EEN KEER NAAR DE GEBRUIKER EN DAARNA NIET OPNIEUW, tot er iets wezenlijk
+verandert. Leg een vraag alleen voor als de reeks de ~30 afgewikkelde gevallen van §6d haalt en
+het teken standhoudt. "Niets te beslissen deze week" is een geldige en veelvoorkomende uitkomst.
