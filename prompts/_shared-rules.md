@@ -1319,6 +1319,21 @@ Bij conflicten:
 |---|---|
 | `data/picks.jsonl` | **Vereniging.** Een pick die op één tak staat is een echte, gepubliceerde pick. Staat dezelfde id op beide takken, neem dan de versie die het meest weet — een afgewikkelde regel wint van `pending`. |
 | `data/shadow.jsonl`, `data/calibration.jsonl`, `data/context-log.jsonl` | **Vereniging, per regel.** Zelfde redenering als bij `picks.jsonl`: het zijn metingen. Zie de waarschuwing hieronder — dit zijn precies de drie die vergeten worden. |
+
+**Op de vereniging bestaat één uitzondering, en zonder deze alinea maakt de volgende merge hem
+stil ongedaan.** Een rij die met opzet is **verwijderd omdat hij een dubbeltelling was**, hoort
+niet terug te komen. Op 7 nov 2026 zijn vier rijen uit `shadow.jsonl` gehaald: Canada – Peru,
+Croatia – England, Estonia – Luxembourg en Switzerland – Slovenia van 3 oktober, alle vier in de
+categorie `underdog`. Elk van die vier stond er twee keer in — één keer via de `near_miss`-route
+en één keer via `poort8_geblokkeerd` — en §1e punt 2 verbiedt dat met zoveel woorden ("nooit
+dezelfde selectie twee keer"). De oorzaak is op 4 oktober in `shadow.py collect` gerepareerd; de
+rijen zelf bleven staan tot Run D ze op 7 november vond.
+
+De verwijderde id's zijn de **kale** vorm (`shadow-2026-10-03-c-canada---peru` en de drie andere);
+de bewaarde zijn die met de `-p8-0`-suffix, want dat is de rij die de huidige `collect` zou
+schrijven. Oudere takken dragen nog alle acht. **Vul ze bij een merge dus niet aan.** Loopt het
+mis, dan valt het op: de dubbelcontrole van `scripts/meta.py integriteit` meldt ze opnieuw als
+`FOUT`, en dat is het vangnet dat deze alinea niet hoeft te vervangen.
 | `data/source-health.json`, `data/coverage.json` | **Vereniging.** Beide runs hebben echt gemeten; bewaar beide waarnemingen naast elkaar in `detail` in plaats van er een te laten winnen. |
 | `prompts/_shared-rules.md`, `scripts/*` | De **nieuwste** versie wint. Regels en rekencode zijn geen metingen. |
 
