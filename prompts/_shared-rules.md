@@ -2909,6 +2909,13 @@ Elke run, ook een run met nul bets:
    waarnemingen per ploeg, topspelers, weer en het weekoverzicht vóór en ná de rundag (met de
    Europese duels apart). Draai dit **na** `toplist.py` — pas dan is bekend wélke duels een bet
    zijn. Zie §6c, "Elke gepubliceerde bet krijgt een VOORBESCHOUWING". Geen credits.
+5j. **Stijlcontrole op de voorbeschouwingen** → `python3 scripts/prosecheck.py --date <datum>
+   --run <a|b|c>`, elke run met minstens één bet. Zie §6c, "Geen tussenkopjes en minder
+   AI-tells"; neem de uitvoer op in het runrapport onder de topselectie. Dit is een
+   **hulpmiddel en geen poort** — anders dan `progress.py verify` houdt het niets tegen, want
+   het kan geen sjabloon zien dat met andere woorden is geschreven. Bij nul bets zijn er geen
+   voorbeschouwingen en valt er niets te meten.
+
 5h. **Marktvormlogboek** → een `marktvorm`-blok per doorgerekende wedstrijd in
    `data/run-state/`, via `marketform.match_block(...)`. Zie §4, "Hoe vaak ging deze markt eerder
    op?". `report.py` rendert het zelf onder elke bet; het hoeft dus niet in de prose, maar de
@@ -3645,6 +3652,117 @@ python3 scripts/preview.py selftest      # 27 controles, geen netwerk nodig
 **En de harde grens van §2 geldt onverkort.** Niets uit dit blok gaat in `my_prob` of in
 `prob_sources`. `insights` is per ontwerp een selectie van feiten die Fotmob interessant vindt —
 andermans redactie — en de h2h is historie. Een voorbeschouwing beschrijft; ze rekent niet.
+
+##### Geen tussenkopjes en minder AI-tells (toegevoegd 7 nov 2026, op verzoek van de gebruiker; BINDT VANAF 8 NOV 2026)
+
+**De gebruiker, na de vijf voorbeschouwingen van 7 november:**
+
+> *"Vanaf morgen: minder AI-tells en tussenkopjes in de wedstrijdbeschouwingen."*
+
+**Het verwijt is nagerekend op de vijf teksten van die dag en het klopt — maar niet op de plek
+waar je het zou zoeken.** Er stond geen enkel markdown-kopje en geen enkel vetgedrukt woord in
+die vijf previews (`**` nul keer, `#` nul keer). De tussenkopjes zaten in de **taal**: elke
+alinea opende met een label dat zei waar hij over ging, en alle vijf de teksten hadden hetzelfde
+skelet in dezelfde volgorde. Gemeten over 2843 woorden:
+
+| | |
+|---|---|
+| *"Wat deze weddenschap kan slopen is…"* | **5 van de 5**, letterlijk dezelfde woorden |
+| *"Hij staat [bovenaan/tweede/derde/vierde/onderaan]…"* (de cursieve slotregel) | **5 van de 5** |
+| opener met de klok (*"Om twee uur 's middags…"*, *"Half vier in de MEWA ARENA…"*) | **5 van de 5**, waarvan 3 met *"…, en dit is de wedstrijd…"* |
+| *"Wat er voor pleit, is…"* / *"Wat deze weddenschap dan wél draagt, is…"* / *"Waar deze weddenschap dan op rust…"* | 4 van de 5 (de teller ziet er 3; de vierde is een variant) |
+| teamnieuws-alinea die opent met het woord teamnieuws/bezetting | 4 van de 5 |
+| em-dash (`—`) | 26 (één per 109 woorden) |
+| *"precies"* als versterker | 8 |
+| *"en dat is…"* / *"dat is precies…"* als afsluiter | 6 |
+| meta-aankondiging (*"dus laat ik daarmee beginnen"*, *"begin bij de vorm"*, *"dan het teamnieuws"*) | 6 |
+
+**Let op het verschil tussen de twee rechterkolommen, want het zegt iets over de controle die
+hieronder staat.** `prosecheck.py` telt letterlijke formuleringen en ziet er dus 3 waar er met de
+hand 4 of 5 te vinden zijn: *"Waar deze weddenschap dan op rust"* is hetzelfde invulveld als
+*"Wat er voor pleit, is"*, maar niet dezelfde tekst. **De teller is daarmee een ondergrens en
+geen uitspraak.** Dat is de juiste kant om fout te zitten — hij schreeuwt niet bij variatie die
+er wel is — maar reken er niet op dat groen betekent dat het goed is.
+
+**Een lezer die er vijf achter elkaar leest, leest vijf keer hetzelfde formulier met andere
+zelfstandige naamwoorden in de gaten.** Dat is wat "tussenkopjes" hier betekent, en het is erger
+dan een opmaakkwestie: een vaste vorm verraadt dat de tekst uit een sjabloon komt en niet uit het
+kijken naar deze wedstrijd.
+
+**De oorzaak zit in de regel hierboven, en die wordt hiermee bijgesteld.** De zes punten in "Wat
+erin hoort" staan er met "ongeveer in deze volgorde" bij, en daar staat al *"maar schrijf een
+verhaal en geen lijstje"*. Dat is in de praktijk alsnog een lijstje geworden: zes punten, zes
+alinea's, elke alinea met zijn punt als opschrift. **Lees die zes punten vanaf nu uitsluitend als
+een boodschappenlijst van WAT erin hoort, nooit als de volgorde waarin het moet staan.**
+
+Wat daarmee vastligt:
+
+1. **Geen enkel kopje in de preview-tekst.** Geen `#`, geen `**vetgedrukte aanhef**`, en geen
+   alinea die opent met het onderwerp als label (*"Het teamnieuws is…"*, *"Over de bezetting…"*,
+   *"Wat er voor pleit, is…"*). Begin een alinea bij de wedstrijd, niet bij de rubriek.
+   **Dit overschrijft op dít punt de maatstaf van 17 oktober**
+   (`runs/voorbeschouwingen/2026-10-17-strasbourg-psg.md`), die vetgedrukte aanhefregels
+   gebruikt — *"**Teamnieuws, en daar wordt het ongemakkelijk voor de thuisploeg.**"*. Die tekst
+   blijft de maatstaf voor **toon en detailniveau**; ze is dat niet meer voor de **opmaak**.
+2. **Twee openers zijn verboden omdat ze vijf van de vijf keer voorkwamen:** *"Wat deze
+   weddenschap kan slopen is…"* en *"Hij staat [positie]…"* als begin van de slotregel. Let op
+   waar de herhaling precies zit: vier van de vijf slotregels vervolgden met *"omdat"* en de
+   vijfde met *"maar"*, dus het is de aanhef die een invulveld is en niet het voegwoord.
+   **De inhoud blijft verplicht** — punt 5 (wat de bet kan slopen) en punt 6 (de cursieve
+   verantwoording) staan ongewijzigd. Wat verandert is dat die inhoud elke dag andere woorden
+   krijgt. Een eis die altijd met dezelfde zin wordt ingevuld, is een invulveld.
+3. **Varieer de vorm per wedstrijd, en laat weg wat niets zegt.** Vijf teksten op één ochtend
+   horen vijf verschillende vormen te hebben. Heeft een duel geen interessante onderlinge
+   historie, dan hoort die alinea er niet te staan in plaats van een alinea te krijgen waarin
+   staat dat er niets te melden is. Alleen de **inhoudelijke** eisen zijn hard: de tegenspraak
+   vooraan (§4 punt 2), wat de bet kan slopen, en de cursieve verantwoording aan het eind.
+4. **Em-dash: maximaal twee per voorbeschouwing.** Dat is vijf keer minder dan op 7 november
+   (26 over vijf teksten). Een gedachtestreep die een bijzin inklemt kan vrijwel altijd een komma,
+   een punt of een haakje zijn.
+5. **Deze constructies horen eruit** — het zijn de tells die in de meting hierboven staan:
+   - *"en dat is precies waarom…"*, *"en dat is de hele vraag"*, *"dat is geen detail"*,
+     *"dat is geen toeval"*, *"dat is geen slap voorbehoud"*;
+   - de antithese als afsluiter: *"niet X maar Y"*, *"dat is de analyse en niet de portemonnee"*,
+     *"niet zwak maar kapot"*;
+   - meta-aankondigingen over de eigen tekst: *"dus laat ik daarmee beginnen"*, *"dat hoort
+     vooraan en niet in een voetnoot"*, *"en hier moet ik eerlijk zijn"*. **Doe het gewoon in
+     plaats van aan te kondigen dat je het gaat doen** — de eerlijkheid zit in het cijfer dat
+     erop volgt, niet in de aankondiging ervan;
+   - het losse nadruk-fragment als eigen zin: *"Achttien."*, *"Niet één."*, *"Vijf uit vijf."*
+     Eén daarvan in een tekst kan; drie is een tic;
+   - gemaniëreerde versterkers: *"bijna komisch"*, *"griezelig precies"*, *"onaangenaam
+     precies"*, *"vernietigend"*;
+   - *"precies"* als stopwoord. Het mag blijven staan waar het werkelijk precies betekent.
+6. **Wat NIET verandert, en lees dit voordat je gaat schrappen.** De lengte (300–600 woorden), de
+   verboden rekenwoorden uit de regel hierboven (*procentpunt, drempel, edge, scheefstand,
+   rangorde, poort 7/8/9, herijking, Brier, shrink, rho*), de eis dat een getal een voetbalgetal
+   is, en bovenal de eis van §4 punt 2 dat een frequentie die de bet **tegenspreekt** vooraan
+   staat. Minder tells mag nooit minder tegenspraak worden: de voorbehouden zijn de reden dat deze
+   teksten te vertrouwen zijn, en een vlottere pen die het ongemakkelijke cijfer weglaat is een
+   verslechtering en geen verbetering.
+
+**Eén ding is NIET met deze regel geregeld, en het is een besluit van de gebruiker.** Naast de
+preview-tekst zet `report.py` per bet vijf eigen kopjes in het dagrapport: *Voorbeschouwing*,
+*Onderling*, *Hoe vaak dit eerder gebeurde*, *De week eromheen* en *Context die is meegewogen*
+(25 kopjes op de vijf bets van 7 november). Die staan er met opzet: §4 eist het
+frequentieblok *"automatisch, uit de run-state en niet uit de prose, zodat het er ook staat als
+de prose het vergeet"*, en §6c eist het contextblok op dezelfde grond. Het gevolg is wel dat een
+lezer dezelfde feiten twee keer krijgt — eerst als verhaal in de voorbeschouwing, daarna als
+gelabeld blok eronder.
+
+**Een run voegt die blokken niet samen en haalt die kopjes er niet weg op eigen initiatief.** Het
+is een keuze over hoe de gebruiker zijn rapport wil lezen, en die hoort bij hem — dezelfde
+redenering als bij `selection_score` (§1a), bij poort 8 (§1e) en bij de vraag of de Markdown de
+eerste route moet worden (§6c, 15 okt). En het zijn twee verschillende dingen: de regel hierboven
+gaat over de **tekst die ik schrijf**, deze kopjes komen uit de **renderer**. Leg de vraag één
+keer voor in het dagrapport onder "Wat er nog moet gebeuren" met `owner = "besluit"`, en herhaal
+hem daarna niet.
+
+**Hoe je het narekent.** `python3 scripts/prosecheck.py --date YYYY-MM-DD --run <a|b|c>` telt de
+tells en de herhaalde openers over de voorbeschouwingen van die dag en meldt wat er boven de norm
+staat. Het is een **hulpmiddel en geen poort**: het kan geen sjabloon zien dat met andere woorden
+is geschreven, en een tekst die er groen door komt kan nog steeds vijf keer dezelfde vorm hebben.
+Neem de uitvoer op in het runrapport onder de topselectie.
 
 #### Elk actiepunt zegt wat de gebruiker moet doen (toegevoegd 27 sep 2026, op verzoek van de gebruiker)
 
