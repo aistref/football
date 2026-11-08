@@ -149,7 +149,14 @@ def meet(tekst: str) -> dict:
     jargon = {}
     laag = tekst.lower()
     for w in JARGON:
-        n = laag.count(w)
+        # OP HELE WOORDEN ZOEKEN, NIET OP LETTERREEKSEN (gerepareerd 8 nov 2026). `laag.count(w)`
+        # vond `rho` in "voorhoede" en "achterhoede" en meldde twee volstrekt normale
+        # voetbalwoorden als rekenjargon. Dezelfde val ligt klaar voor `edge` (in een Engelse
+        # clubnaam) en `lat van`. Een controle die bij gewoon taalgebruik alarm slaat, leert je
+        # hem te negeren, en dan vangt hij ook het echte geval niet meer.
+        # `\b` werkt hier omdat elke term uit letters, cijfers of een underscore bestaat; bij
+        # een term met een spatie erin (`lat van`, `poort 8`) staat de grens om het geheel.
+        n = len(re.findall(r"\b" + re.escape(w) + r"\b", laag))
         if n:
             jargon[w] = n
 
