@@ -149,7 +149,13 @@ def meet(tekst: str) -> dict:
     jargon = {}
     laag = tekst.lower()
     for w in JARGON:
-        n = laag.count(w)
+        # OP WOORDGRENS EN NIET OP SUBSTRING (8 nov 2026). `laag.count(w)` vond `rho` in
+        # "voorhoede" en meldde dat als verboden rekenjargon; `lat van` en `edge` hebben hetzelfde
+        # probleem ("plat vanaf", "hedge" bestaat niet in het Nederlands maar "edge" zit in
+        # "wedge"). Een controle die afgaat op een gewoon Nederlands woord leert de lezer hem te
+        # negeren, en dan vangt hij het echte geval ook niet meer. `\b` aan beide kanten; de term
+        # mag spaties bevatten (`lat van`, `poort 8`) en wordt daarom geëscaped.
+        n = len(re.findall(rf"\b{re.escape(w)}\b", laag))
         if n:
             jargon[w] = n
 
@@ -270,7 +276,18 @@ def check_bestand(pad: Path) -> int:
     bets = prose.get("bets") or {}
     metingen = {}
     for pid, blok in bets.items():
-        tekst = (blok or {}).get("preview")
+        # `why` EERST ERBIJ GEZET OP 8 NOV 2026, EN DIT IS DE REDEN. Dit script las alleen
+        # `preview`, en geen enkel prosebestand van Run A, B of C gebruikt die sleutel voor de
+        # tekst: alle 404 gepubliceerde bets staan onder `why` (88 oudere onder `preview`).
+        # `report.py` accepteert sinds 17 okt beide (`text.get("preview") or text.get("why")`),
+        # dit script niet — dus gaf het op élke run met bets "geen voorbeschouwingen (nul bets)"
+        # terug, met exitcode 0. Een hulpmiddel dat niet kan afgaan is erger dan geen hulpmiddel:
+        # het staat groen in het runrapport en §6b-5j eist die uitvoer juist als controle op de
+        # stijlregel die op 7 november is afgesproken. Dezelfde stille faalstand als
+        # `calibration.py settle` (§6b-5c), het Serie B-id (`run-b.md`) en `settled_note` — een
+        # stap die kan wegvallen zonder dat iets klaagt. De zelftest ving het niet, want die
+        # voedt de tekst rechtstreeks aan `meet()` en komt nooit langs deze lus.
+        tekst = (blok or {}).get("preview") or (blok or {}).get("why")
         if not tekst:
             continue
         metingen[pid] = meet(tekst)
