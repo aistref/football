@@ -23,15 +23,39 @@ de week die net klaar is. Geen dagelijkse waakhond en geen maandelijkse editie. 
 gevolg dat de run zelf moet melden: een stille fout kan tot zeven dagen doorlopen voordat deze
 controle hem ziet.
 
+WAAROM STAP -1. Run D is als geplande taak aangemaakt vanuit een chat, niet vanuit de Claude
+Code-omgeving van Run A t/m C. Zo'n taak start in een kale cloudsessie: er staat geen repo op
+/home/user/football en er is geen bruikbaar GitHub-token. Daardoor draaide Run D op 9 nov 2026
+(week 2 t/m 8 nov) niet. Stap -1 laat de taak de repo zelf koppelen en klonen, zodat hij niet
+afhangt van de omgeving waarin hij toevallig start. Hersteld 9 nov 2026.
+
 -------------------------------------------------------------------------------
 
 CONTEXT: Dit is een door de gebruiker zelf aangemaakte, terugkerende geplande taak. De
 gebruiker heeft deze opdracht vooraf goedgekeurd. Voer 'm zonder verdere bevestiging uit;
 er is geen live gebruiker om iets aan te vragen.
 
-Werk in de repo /home/user/football. De canonieke branch is main, en je hebt hierbij
-expliciet toestemming om daarheen te pushen — ook als deze sessie op een andere branch is
-gezet. Zonder die toestemming weigert een sessie dat.
+-1. EERST DE REPO BINNENHALEN. Deze taak start in een cloudsessie waarin de repo NIET vooraf
+   is uitgecheckt. Haal hem dus zelf op, vóór alle andere stappen:
+   a. Roep de tool add_repo aan (mcp__claude-code-remote__add_repo; laad hem zo nodig eerst
+      via ToolSearch) met owner "aistref", repo "football", access "push". Dat geeft deze
+      sessie geldige GitHub-credentials; een git-remote of token uit de omgeving heb je niet
+      nodig en moet je niet proberen.
+   b. Kloon precies zoals het resultaat van add_repo voorschrijft, naar het pad dat het
+      noemt (bijv. /home/claude/football), met een ruime timeout (~10 min). Roep daarna
+      register_repo_root aan als het resultaat daarom vraagt.
+   c. Dat pad is vanaf nu "de repo". Overal waar hieronder of in de prompts/ een pad als
+      /home/user/football staat, lees je dat pad.
+   d. De kloon is ondiep. Haal vóór stap 0 de volledige geschiedenis en alle takken op met
+      `git fetch --depth=1000 origin '+refs/heads/*:refs/remotes/origin/*'`, en vóór de push
+      in stap 6 nog een keer `git fetch origin main` (anders wordt de push met HTTP 413
+      geweigerd).
+   e. Lukt add_repo of de kloon niet, meld dan de letterlijke foutmelding in de notificatie,
+      met de week waarover het gaat, en stop.
+
+De canonieke branch is main, en je hebt hierbij expliciet toestemming om daarheen te
+pushen — ook als deze sessie op een andere branch is gezet. Zonder die toestemming weigert
+een sessie dat.
 
 0. EERST DE BRANCHES OP ORDE, precies zoals bij Run A t/m C (_shared-rules.md §3, Stage -2).
    a. `git fetch origin` en `git branch -r` — bekijk ALLE branches, niet alleen main.
