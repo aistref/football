@@ -16,7 +16,7 @@
   "Actuele bereikbaarheid staat NIET hier maar in source-health.json. Dit bestand beschrijft",
   "wat een bron in principe dekt; source-health.json wat er laatst werkte."
  ],
- "updated": "2026-11-07",
+ "updated": "2026-11-09",
  "sources": {
   "sportinglife": {
    "role": "fixtures",
@@ -405,7 +405,13 @@
     "fbref",
     "forebet"
    ],
-   "notes": "Run A 6 nov 2026: HET FOTMOB-ID IS 132. De FA Cup staat gewoon in de daglijst (ccode ENG, primaryId 132, 2 duels op 6 november), en BetExplorer /england/fa-cup/fixtures/ noemde dezelfde twee duels met dezelfde aftraptijden. Het id staat hier onder `notes` en NIET onder `fotmob_id`, omdat idcheck.py van elk fotmob_id een bruikbare stand eist en een beker die niet heeft - zelfde constructie als 133 (League Cup), 209 (DFB Pokal) en 235 (KNVB Beker). Een volgende run hoeft het dus niet opnieuw te zoeken: filter de daglijst op 132 en reken het duel door via promotion.CUP_BASE (Premier League) en promotion.shared_lower_division."
+   "notes": "Run A 9 nov 2026: HET FOTMOB-ID BLIJFT 132 (bevestigd; de daglijst gaf er één duel onder, en BetExplorer /england/fa-cup/fixtures/ gaf hetzelfde duel met dezelfde aftrap 'Today 20:30'). NIEUW EN HERBRUIKBAAR: EEN TIE TUSSEN TWEE NON-LEAGUE-CLUBS KOMT STRUCTUREEL OP `NONE` UIT, en dat is geen tekort in deze administratie. `promotion.CUP_BASE` hangt de FA Cup aan de Premier League en `promotion.shared_lower_division` loopt vandaar de `TIER2`-keten af; die keten is onder de Premier League ÉÉN schakel lang (Championship, id 48). Een club uit de National League of lager staat daar niet in, en er is geen gemeten divisiefactor die zo diep reikt — `MEASURED_TIER2_GAP` meet uitsluitend het paar hoogste divisie / divisie daaronder. Op 9 november liep Plymouth Parkway – Berkhamsted daarop vast: beide ploegen spelen in de Southern League Premier Division (achtste niveau), en nog in twee VERSCHILLENDE groepen (South en Central), dus er is ook geen gedeelde divisie om het duel in door te rekenen. Op 8 november gebeurde hetzelfde met Stafford Rangers, Cray Wanderers en Wimborne Town. WAT EEN VOLGENDE RUN HIERMEE MOET DOEN: dit meteen als `NONE` opschrijven met de reden, en er GEEN gepoolde factor op zetten (§2, §4) en geen nieuw `fotmob_id` voor gaan zoeken. Het is pas op te lossen met een eigen gemeten keten van meer dan één schakel diep, en dat is een besluit voor de gebruiker en geen regel die een run erbij schrijft. WAT WEL WERKT: een ronde waarin BEIDE ploegen in de Premier League of de Championship staan, of waarin ze samen in één divisie onder de basis staan — dan is er niets te overbruggen en rekent het duel gewoon door (§4, 15 sep 2026).",
+   "notes_history": [
+    {
+     "date": "2026-11-07",
+     "notes": "Run A 6 nov 2026: HET FOTMOB-ID IS 132. De FA Cup staat gewoon in de daglijst (ccode ENG, primaryId 132, 2 duels op 6 november), en BetExplorer /england/fa-cup/fixtures/ noemde dezelfde twee duels met dezelfde aftraptijden. Het id staat hier onder `notes` en NIET onder `fotmob_id`, omdat idcheck.py van elk fotmob_id een bruikbare stand eist en een beker die niet heeft - zelfde constructie als 133 (League Cup), 209 (DFB Pokal) en 235 (KNVB Beker). Een volgende run hoeft het dus niet opnieuw te zoeken: filter de daglijst op 132 en reken het duel door via promotion.CUP_BASE (Premier League) en promotion.shared_lower_division."
+    }
+   ]
   },
   "League Cup (ENG)": {
    "prob_sources": [
