@@ -1,0 +1,383 @@
+<title>Run A — dinsdag 10 november 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+/* De voetnoot onder de marktvorm-telling (17 okt 2026): kleiner dan de telling zelf, want ze
+   zegt wat de cijfers NIET zijn en hoort de telling niet te overschreeuwen. */
+.prose.micro{font-size:.78rem; color:var(--muted); margin:2px 0 0}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run A</h1>
+    <span class="date">dinsdag 10 november 2026 · gedraaid om 03:05 (klaar om 04:05)</span>
+  </div>
+
+  <p class="verdict">**Vandaag geen weddenschappen, en voor het eerst is mijn hele lijst leeg.** De interlandperiode loopt. Van de eenentwintig competities en toernooien die ik volg, speelt er vandaag geen enkele. Gisteren was er nog één wedstrijd — de eerste ronde van de FA Cup, waar ik geen cijfers van had — en vandaag is het er geen.
+
+Dat betekent iets anders dan een dag waarop ik tientallen wedstrijden doorreken en er niets boven mijn grens uitkomt. Er is vandaag geen enkele weddenschap doorgerekend die ergens op afgewezen kón worden. Mijn filters hebben niets gedaan, mijn grenzen hebben niets tegengehouden, en mijn inkoopbudget is onaangeroerd gebleven.
+
+Wat ik wél heb gedaan, is nagaan of die leegte echt is. Een lege lijst en een kapotte bron zien er in een rapport hetzelfde uit, en dat verschil wil ik niet aan het toeval laten. Ik heb alle eenentwintig competities nagelopen, en bij de vijf bekers bij twee verschillende bronnen gecontroleerd dat er werkelijk niets te spelen is in plaats van dat ik een ronde over het hoofd zie. Bij alle vijf noemt de tweede bron ook de datum van de volgende ronde, en die staat in december. En de bron zelf levert gewoon: er staan vandaag drieënzeventig wedstrijden op de kalender van Fotmob, verdeeld over drieëndertig competities. Er wordt dus volop gevoetbald; het staat alleen niet op mijn lijst.
+
+De eerstvolgende dag met werk wordt het weekend van 21 en 22 november, als de Engelse en de Europese competities weer beginnen. De Champions League komt op 24 november terug, de bekers op 1 december.
+
+Wat vandaag wél de moeite is, gaat niet over wedstrijden maar over mijn eigen administratie, en het zijn twee dingen. Ik heb in mijn rapport van gisteren een onjuistheid gevonden over de Spaanse beker — en dat is geen schoonheidsfoutje, want het schoof een punt door naar een run die het niet in zijn opdracht heeft. En de geschiedenis van mijn eigen repository blijkt afgekapt te zijn, waardoor mijn ochtendcontrole op verdwaald werk tachtig keer alarm slaat zonder dat er iets aan de hand is. Beide staan onder 'Wat mij vandaag opviel'.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">0</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">225/488</span><span class="l">record tot nu toe</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>Geen bets vandaag</h2>
+  </div>
+  <div class="callout"><p class="prose"><strong>Geen bets vandaag.</strong> Geen enkele wedstrijd haalde alle drempels. Dat is een geldige uitkomst, geen mislukte run — de lijst wordt niet aangevuld om hem voller te laten lijken.</p></div>
+</section>
+
+
+
+
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van de 5 punten hieronder zijn er 4 iets voor jou; bij de rest staat erbij dat je niets hoeft te doen.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Moet de Spaanse beker op een van mijn lijsten komen?</span>
+        <span class="d">De Copa del Rey speelde vandaag zeven wedstrijden en staat op geen van mijn drie lijsten. Bij mijn prijzenbron zijn er prijzen voor te koop; wat ik niet heb is een vast nummer bij mijn cijferbron, dus dat zou ik moeten opzoeken.
+
+Dit punt staat sinds 1 november op mijn lijst en ik stel de vraag dus niet opnieuw — ik meld alleen dat hij er vandaag voor het eerst echt geld had kunnen kosten, en dat ik hem gisteren ten onrechte bij mijn avondrun heb neergelegd.
+
+Wat ik hier niet zelf doe: een competitie toevoegen. Mijn opdracht zegt letterlijk dat mijn lijst exact de genoemde competities bevat en dat ik niets mag toevoegen of raden. Dat is met opzet zo, want een lijst die groeit omdat een run dat handig vond, is geen lijst meer.
+
+Waar het om gaat als u erover nadenkt: een Spaanse bekerronde in deze fase zet clubs uit de hoogste divisie tegenover ploegen uit de regionale divisies, en dat zijn precies de wedstrijden waar ik geen cijfers van heb — dezelfde reden dat de Engelse bekerrondes van de afgelopen week mij niets opleverden. Het is dus geen zekere winst maar een zekere hoeveelheid werk.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Laat weten of ik de Copa del Rey aan een van de drie lijsten moet toevoegen; zo niet, dan laat ik hem buiten beeld en meld ik hem niet meer.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">De oude takken in mijn repository maken mijn ochtendcontrole onbruikbaar</span>
+        <span class="d">Er staan achtentachtig takken op de server. Tachtig daarvan hebben geen enkel gemeenschappelijk punt met de hoofdlijn, doordat de geschiedenis van die hoofdlijn ergens is afgekapt. Daardoor meldt mijn ochtendcontrole elke dag tachtig takken met &#x27;eigen werk&#x27; terwijl er niets aan de hand is — ik heb het vandaag op de inhoud nagerekend en er ontbreekt geen enkele weddenschap.
+
+Dat kost mij elke ochtend tijd en, erger, het maakt het echte geval onvindbaar. De controle bestaat om te merken wanneer twee runs langs elkaar heen werken; als hij altijd afgaat, merk ik dat niet meer.
+
+Twee dingen zouden helpen, en het zijn beide handelingen op uw repository en niet op mijn regels. De oude takken opruimen is de eenvoudigste: ze bevatten geen werk dat niet ook op de hoofdlijn staat, dat heb ik vandaag per weddenschap nagegaan. Als u ze als archief wilt houden, kan ik mijn ochtendcontrole in plaats daarvan volledig op de inhoud laten draaien — dat is wat ik vandaag met de hand heb gedaan.
+
+Ik doe geen van beide op eigen initiatief. Takken verwijderen is onomkeerbaar en het is uw repository.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Laat weten of ik de oude takken mag opruimen, of dat ik mijn ochtendcontrole op de inhoud moet omzetten en de takken laat staan.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Een run van vorige week heeft zijn eigen logboek niet afgesloten, en geen latere run kan dat nog doen</span>
+        <span class="d">De avondrun van 6 november heeft zijn voortgangsbestand nooit op &#x27;afgerond&#x27; gezet. Dat is geen verloren werk — het rapport van die dag is geschreven en de weddenschappen staan in mijn logboek — maar het bestand zegt nu dat die run nog bezig is.
+
+In mijn dagrapport van gisteren schreef ik dat de avondrun van die dag het alsnog zelf kon afsluiten. Dat was onjuist en ik zet het hier recht. Elk voortgangsbestand hoort bij één datum en één run: de avondrun van 9 november heeft het bestand van 9 november afgesloten, zoals hij hoort te doen, en kan dat van 6 november niet aanraken. Er bestaat dus geen latere run die dit vanzelf oplost.
+
+Ik zet het ook niet met terugwerkende kracht goed. Dat bestand nu op &#x27;afgerond&#x27; zetten zou een mededeling zijn over werk dat ik niet heb gedaan en niet kan controleren — en dat is precies waarom mijn wekelijkse controlerun niets mag aanraken wat van een andere run komt.
+
+Het gevolg is overigens klein: het bestand van 6 november wordt door niemand meer gelezen, behalve door mijn wekelijkse controle, die het elke week opnieuw zal melden. Dit is de derde melding.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Laat weten of ik dat ene bestand eenmalig op &#x27;afgerond&#x27; mag zetten, of dat het als openstaand moet blijven staan; zonder uw antwoord blijft mijn wekelijkse controle het melden.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">4</span>
+      <span class="body">
+        <span class="t">Moet mijn rem op &#x27;weinig doelpunten&#x27; ook gaan gelden voor &#x27;beide ploegen scoren niet&#x27;?</span>
+        <span class="d">Dit punt stond gisteren ook op de lijst en het staat er nog omdat er nog geen antwoord is. Ik stel de vraag niet opnieuw, ik meld alleen de stand — en die is vandaag ongewijzigd, want er is geen enkele weddenschap in deze markt bijgekomen.
+
+De stand: in deze markt heb ik tweeëndertig afgewikkelde weddenschappen, samen bijna twaalf procent in de plus. De kant waar het vermoeden over gaat — &#x27;beide ploegen scoren niet&#x27; — staat op eenentwintig gevallen en vrijwel precies op nul. De andere kant, &#x27;beide ploegen scoren wel&#x27;, staat op elf gevallen en flink in de plus. Eenentwintig is onder de dertig die ik voor een losse reeks eis, dus die kant is nog niet te lezen.
+
+Voor de rem op weinig doelpunten had ik twee onafhankelijke metingen die dezelfde kant op wezen. Hier heb ik er één, en die staat op nul.</span>
+        <span class="act decide"><strong>Jouw besluit:</strong> Laat weten of ik deze rem ook op &#x27;beide ploegen scoren niet&#x27; moet zetten, of dat ik eerst verder moet meten — zonder uw antwoord verandert er niets.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">5</span>
+      <span class="body">
+        <span class="t">Mijn tweede bron voor verwachte doelpunten ligt er negen dagen uit</span>
+        <span class="d">Understat staat sinds 1 november uit de lucht, en sinds gisteren weet ik waarom: de beheerder heeft er een onderhoudspagina voor gezet. Er is geen slot om langs te werken en geen adres dat verhuisd is; er is simpelweg geen data.
+
+Dat kostte vandaag niets, en gisteren ook niet: Understat dekt vijf competities en geen van die vijf speelt in de interlandperiode. Op 8 november kostte het nog vierentwintig van mijn vijfenvijftig wedstrijden hun tweede meting.
+
+Wat het wel blijft kosten is de reserve waarvoor ik hem had aangezet. Voor vrijwel elke competitie is Fotmob nu mijn enige bron voor verwachte doelpunten. Dat werkt — Fotmob leverde vandaag opnieuw alles zonder één fout — maar als Fotmob ook uitvalt, heb ik niets meer en levert elke run gegarandeerd nul weddenschappen. Dát is het moment waarop ik u vooraan in een melding zou aanspreken, en dat moment is niet nu.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets — ik meld het elke run en controleer het automatisch; hij komt terug zodra de beheerder hem terugzet.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Mijn rapport van gisteren schoof de Spaanse beker door naar een run die hem niet in zijn opdracht heeft</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Elke ochtend controleer ik bij mijn prijzenbron welke competities er prijzen te koop hebben die ik niet in mijn adressenboek heb staan. Vandaag zijn dat er zes, en één ervan is de Copa del Rey — de Spaanse beker, die vandaag zeven wedstrijden speelt.</p>
+    <p class="prose">In mijn rapport van gisteren schreef ik hierover: van die zes valt alleen de Copa del Rey binnen een van mijn lijsten, namelijk die van mijn avondrun, en hij speelt 10 november, dus dat is een punt voor de avondrun en niet voor mij. Dat is niet waar. De Copa del Rey staat op geen van mijn drie lijsten. Mijn avondrun volgt zeventien competities en geen enkele beker; ik heb het nagezocht in alle drie de opdrachtbestanden en hij komt er nul keer in voor.</p>
+    <p class="prose">Mijn rapport van 8 november had het nog goed en schreef precies het tegenovergestelde: dat deze beker structureel buiten het beeld van alle drie mijn runs valt. Die juiste formulering is een dag later vervangen door een onjuiste.</p>
+    <p class="prose">Dit is erger dan een slip van de pen, en wel om één reden: ik heb het punt daarmee doorgeschoven naar iemand die het niet kan oppakken. Mijn avondrun zou vandaag naar de Spaanse beker hebben gekeken, hem niet op zijn eigen lijst hebben gevonden, en het punt hebben teruggelegd — of, en dat is het echte risico, hem hebben toegevoegd. Mijn eigen opdracht zegt met zoveel woorden dat ik niets aan mijn lijst mag toevoegen of raden. En het is vandaag niet hypothetisch: deze beker speelt zeven wedstrijden op een dag dat al mijn lijsten leeg zijn.</p>
+    <p class="prose">Ik ken dit soort fout, en dat is waarom hij me opvalt. Mijn eigen regels waarschuwen ervoor bij een ander onderwerp: een samenvattende zin die op het moment van schrijven klopt, daarna niet meegroeit, en vervolgens ongemerkt wordt overgenomen. Bij die andere kwestie duurde het drie rapporten voordat iemand het zag. Hier is het binnen één dag gevonden, en wel doordat de wedstrijden er vandaag werkelijk waren.</p>
+    <p class="prose">Wat ik ermee doe, is niets anders dan het rechtzetten en het terugleggen waar het hoort. Of deze beker aan een van mijn lijsten moet worden toegevoegd is geen vraag die de cijfers voor mij beantwoorden; die staat hieronder bij wat er nog moet gebeuren.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Ook uit deze run</span>
+    <h2>De geschiedenis van mijn eigen repository is afgekapt, en daardoor slaat mijn ochtendcontrole tachtig keer vals alarm</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Voordat ik aan een run begin, controleer ik of er werk van een eerdere run op een andere tak is achtergebleven. Die controle bestaat omdat het in augustus één keer echt is misgegaan: twee runs schreven naar twee verschillende takken, en er bleven weddenschappen onafgerekend staan op een tak die niemand meer aanraakte. Sindsdien tel ik elke ochtend per tak hoeveel commits er staan die ik nog niet heb.</p>
+    <p class="prose">Vandaag staan er achtentachtig takken op de server, en tachtig daarvan melden eigen werk — van acht tot zeshonderdzevenenveertig commits. Dat is precies het beeld dat in augustus het echte probleem was.</p>
+    <p class="prose">Het is het niet. Geen van die tachtig takken heeft ook maar één gemeenschappelijk punt met de hoofdlijn: het zijn twee volledig losse geschiedenissen. De hoofdlijn telt zevenenvijftig commits en begint op 1 november; de langste tak telt zeshonderdzevenenveertig en loopt tot 28 oktober. Op een bepaald moment is de geschiedenis van de hoofdlijn afgekapt en in die afgekapte vorm naar de server gezet, en alles van vóór die knip hangt nu aan de oude takken.</p>
+    <p class="prose">Mijn eigen regels beschrijven een mildere versie van dit probleem: een container krijgt de repository soms maar half mee, en één commando haalt de rest op. Dat commando helpt hier niet, want de oude geschiedenis bestaat op de server niet meer onder de hoofdlijn. De manier van tellen die ik elke ochtend gebruik, geeft bij twee losse geschiedenissen per definitie het alarmerende antwoord.</p>
+    <p class="prose">Dus heb ik het op de inhoud gecontroleerd in plaats van op de geschiedenis — en dat is sowieso wat mijn regels voorschrijven, want 'nul eigen commits' is een uitspraak over een boekhouding en niet over de metingen zelf. Ik heb per tak de identificatienummers van alle vastgelegde weddenschappen vergeleken met die van de hoofdlijn. De hoofdlijn heeft vijfhonderdvijftig weddenschappen, van 8 augustus tot en met 8 november. Elke tak die ik heb nagekeken is daar een onderdeel van: geen enkele weddenschap staat op een tak en niet op de hoofdlijn. Ook de jongste tak is niet nieuwer dan de hoofdlijn, en er staat geen enkele weddenschap meer open.</p>
+    <p class="prose">Er is dus niets verloren en er valt niets samen te voegen. Wat er wél is, is een ochtendcontrole die elke dag tachtig keer roept zonder dat er iets aan de hand is — en een controle die altijd alarm geeft, is net zo nuttig als een controle die nooit alarm geeft. Wat er aan te doen valt staat hieronder.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 21 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Belgian Pro League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Championship</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Coppa Italia</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Twee bronnen nagekeken: nul wedstrijden in de kalender van Fotmob, en 1 december als eerstvolgende ronde bij BetExplorer. Bij mijn prijzenbron staat deze beker vandaag ook op inactief, wat hetzelfde zegt.</td></tr>
+        <tr><td class="comp">DFB Pokal</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Twee bronnen nagekeken: nul wedstrijden in de kalender van Fotmob, en 1 december als eerstvolgende ronde bij BetExplorer.</td></tr>
+        <tr><td class="comp">Danish Superliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Ekstraklasa</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Eredivisie</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">FA Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Hier staat 'speelt vandaag niet', en bij een beker kijk ik daarvoor altijd op twee plaatsen. Een beker heeft in mijn administratie geen vast nummer, dus als ik een ronde over het hoofd zie, ziet mijn rapport er normaal uit met een nette nul erin. Dat is me op 6 oktober overkomen en het kostte me toen vijf wedstrijden. De kalender van Fotmob geeft nul wedstrijden en het speelschema van BetExplorer noemt 5 december als eerstvolgende ronde, met twintig wedstrijden op het programma. Twee bronnen, hetzelfde antwoord.</td></tr>
+        <tr><td class="comp">KNVB Beker</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Twee bronnen nagekeken: nul wedstrijden in de kalender van Fotmob, en 1 december als eerstvolgende ronde bij BetExplorer, met zestien wedstrijden op het schema.</td></tr>
+        <tr><td class="comp">La Liga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">League Cup</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Twee bronnen nagekeken: nul wedstrijden in de kalender van Fotmob, en 15 december als eerstvolgende ronde bij BetExplorer.</td></tr>
+        <tr><td class="comp">Ligue 1</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Premier League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">De interlandperiode loopt, dus hier wordt tot het weekend van 21 november niet gespeeld. Dat geldt voor alle dertien competities op mijn lijst. De drie Europese toernooien komen op 24 en 26 november terug. Wat er vandaag in Europa wél speelt is bekervoetbal, tweede- en derdedivisievoetbal en vrouwenvoetbal, en dat valt buiten mijn lijst.</td></tr>
+        <tr><td class="comp">Primeira Liga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Scottish Premiership</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Serie A</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Super Lig</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">UEFA Champions League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Volgende speelronde 24 en 25 november.</td></tr>
+        <tr><td class="comp">UEFA Conference League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">UEFA Europa League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 40 per run diep worden bekeken en het waren er 0.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout"><p class="prose">Er stond vandaag geen enkele weddenschap open om af te rekenen. Dat klopt: gisterochtend heb ik alle elf openstaande weddenschappen afgewikkeld en gisteravond kwamen er geen nieuwe bij.
+
+Wat er wel lag, zijn twee weddenschappen die ik gisteren juist níet heb gespeeld en waarvan ik bijhoud hoe ze zouden zijn afgelopen. Eén ervan verloor en één won, en ze zijn alle twee om een andere reden leerzaam dan de uitslag suggereert.
+
+De eerste was een thuiszege van Botoșani tegen Oțelul Galați tegen een koers van 2,09. Mijn filter hield die tegen omdat mijn twee rekenmethodes het oneens waren: de ene zag er flink voordeel in, de andere zag er juist verlies. Het werd 1–1, dus die weddenschap zou verloren zijn. Het aantal doelpunten klopte wel met wat ik had gerekend — ik verwachtte er tweeënhalf en er vielen er twee — maar de dominantie van de thuisploeg die mijn berekening erin zag, kwam er niet. Het filter deed hier dus precies wat het moet doen, en om de juiste reden.
+
+De tweede was een handicap voor Real Sociedad B bij Sabadell. Die hield ik tegen omdat de markt Real Sociedad B als de mindere ploeg zag, en op die kant heb ik een rem staan. Het werd 0–0, dus die weddenschap zou gewonnen hebben. Maar lees dat naast het tweede cijfer: ik verwachtte in die wedstrijd bijna drie doelpunten en er vielen er nul. Die weddenschap zou hebben gewonnen doordat er niets gebeurde, niet doordat mijn inschatting goed was. Dat is een zwakkere waarneming dan een rem die een winnaar tegenhoudt in een wedstrijd die precies liep zoals voorgerekend.
+
+Het enige patroon dat ik in deze twee kan aanwijzen: in beide wedstrijden vielen er minder doelpunten dan ik had gerekend — twee waar ik er tweeënhalf verwachtte, en nul waar ik er bijna drie verwachtte. Dat is de omgekeerde richting van de zwakte waar ik al weken over schrijf, namelijk dat er juist méér doelpunten vallen in de wedstrijden waarop ik op weinig doelpunten zet. Maar het zijn twee wedstrijden tegen honderdzesendertig, en ik heb vandaag dus niets aangepast. Twee uitslagen zijn geen reeks; daarvoor heb ik er ongeveer dertig nodig.</p></div>
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.241 tegen mijn 0.261 — lager is beter). Bij 488 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run A · dinsdag 10 november 2026 · 0 bets uit 0 wedstrijden · De wedstrijdkalender komt van Fotmob — twee daglijsten, die van vandaag en die van morgen, zodat ook een late avondwedstrijd nog bij de juiste dag terechtkomt. Voor de vijf bekerstoernooien heb ik daarnaast de speelschema&#x27;s van BetExplorer gelezen, omdat een beker in mijn administratie geen vast nummer heeft en ik een ronde die ik mis nooit als &#x27;speelt niet&#x27; wil opschrijven zonder tweede bron. Prijzen heb ik vandaag niet ingekocht en ook geen marktgemiddelde opgehaald: dat doe ik per wedstrijd, en er is geen wedstrijd. Mijn budget stond op het ruimste punt van de maand en is onaangeroerd. Mijn tweede bron voor verwachte doelpunten, Understat, is voor de negende dag onbereikbaar; sinds gisteren weet ik waarom — de site staat bij zijn eigen beheerder uit voor onderhoud. Dat kostte vandaag niets, want geen van de vijf competities die Understat dekt speelt.</p>
+</footer>
+
+</div>

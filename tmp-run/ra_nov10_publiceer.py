@@ -1,0 +1,241 @@
+"""Run A 10 nov 2026 onder §5b: run-state en logboeken. NUL BETS, en voor het eerst in deze
+reeks met een VOLLEDIG LEGE RUNLIJST.
+
+EENENTWINTIG VAN DE EENENTWINTIG COMPETITIES VAN DE RUNLIJST HEBBEN VANDAAG GEEN WEDSTRIJD IN
+HET INZETVENSTER. Gisteren was er nog één (FA Cup, Plymouth Parkway - Berkhamsted, op NONE);
+vandaag is het er nul. Zie DE_RUNLIJST_IS_VANDAAG_VOLLEDIG_LEEG.
+
+DAT IS BIJ TWEE BRONNEN NAGETROKKEN en niet aan de daglijst alleen overgelaten. Zie
+TWEE_BRONNEN_HETZELFDE_ANTWOORD.
+
+ER IS NUL CREDIT UITGEGEVEN EN DE MARKTBALANS-CONTROLE VAN §1a KAN NIET SLAGEN. Zie
+NUL_CREDITS_EN_DE_MARKTBALANS_CONTROLE_SLAAGT_NIET.
+
+ER STOND GEEN ENKELE PICK OPEN; TWEE SCHADUWRIJEN ZIJN AFGEWIKKELD. Zie
+DE_AFWIKKELING_EN_DE_REFLECTIE.
+
+DE BEVINDING VAN DEZE RUN IS EEN FOUT IN HET RUNRAPPORT VAN GISTEREN. Zie
+DE_COPA_DEL_REY_STAAT_IN_GEEN_ENKELE_RUNLIJST.
+
+`mark_completed` gebeurt pas na het runrapport en de push (Stage -1, §6b-7).
+"""
+import json
+from datetime import date
+from scripts import toplist
+from scripts.progress import load_or_start, mark, save
+
+DAG = "2026-11-10"
+RUN = "A"
+
+# Er is geen enkele doorgerekende wedstrijd, dus de dagranglijst van §5a is per definitie leeg.
+st = {"date": DAG, "run": RUN, "competitions": {}}
+top = toplist.build(st)
+
+state = load_or_start(RUN.lower(), date.fromisoformat(DAG))
+state["parameters"] = {
+    "DE_RUNLIJST_IS_VANDAAG_VOLLEDIG_LEEG": (
+        "EENENTWINTIG VAN DE EENENTWINTIG COMPETITIES VAN DE RUNLIJST HEBBEN GEEN WEDSTRIJD IN "
+        "HET INZETVENSTER [08:00 NL 10 nov, 08:00 NL 11 nov). Dat is `GEEN WEDSTRIJD` en geen "
+        "storing (§5, Stage 2): het FIFA-interlandvenster van november loopt, dus de dertien "
+        "clubcompetities liggen stil, de drie Europese toernooien spelen niet en de vijf bekers "
+        "hebben hun eerstvolgende ronde pas in december. "
+        "DIT IS EEN STAP VERDER DAN GISTEREN, en dat verschil hoort opgeschreven: op 9 november "
+        "was er nog één duel in het venster (FA Cup, Plymouth Parkway - Berkhamsted, dat op "
+        "`NONE` uitkwam); vandaag is het er nul. Er is dus geen enkele wedstrijd waarop een "
+        "poort, een drempel of een rangorde kon binden. "
+        "DE CAP BINDT NIET EN HEEFT ALLE VEERTIG PLEKKEN OVER (`MAX_DEEP_ANALYSES` = 40 op een "
+        "dinsdag, §0, via `ranking.max_deep_analyses`). Er is nul duel afgekapt, en de twee "
+        "getallen die §3 Stage 4 eist - de datarijkdom van de laagste wedstrijd die het nog "
+        "haalde en van de hoogste die afviel - bestaan vandaag niet, want er is geen enkele "
+        "wedstrijd om te rangschikken. Dat is iets anders dan nul: een lijst van nul heeft geen "
+        "onderkant. "
+        "DE BRON LEVERT WEL, en dat is de controle die dit onderscheidt van een storing: de "
+        "Fotmob-daglijst van 10 november geeft 33 competities en 73 wedstrijden, die van "
+        "11 november 24 en 48. Er speelt dus volop voetbal; het staat alleen niet in deze "
+        "runlijst. Wat er vandaag wel in de daglijst staat: zeven duels Copa del Rey, veertien "
+        "groepsduels EFL Trophy, Engelse zesde- en zevendeniveaudivisies, de Women's Champions "
+        "League, Liga II (ROU) en vijf Zuid-Amerikaanse competities."),
+    "TWEE_BRONNEN_HETZELFDE_ANTWOORD": (
+        "'NIET IN DE DAGLIJST' MAG NOOIT ALS `GEEN WEDSTRIJD` WORDEN OPGESCHREVEN ZONDER TWEEDE "
+        "BRON. Dat is het gat dat Run A op 6 oktober 2026 vijf duels kostte: de "
+        "FA Cup-kwalificatie stond toen niet in de Fotmob-daglijst en wel bij BetExplorer. "
+        "DE DERTIEN COMPETITIES EN DE DRIE EUROPESE TOERNOOIEN zijn gefilterd op hun "
+        "`fotmob_id` uit `data/coverage.json` (alle 33 vandaag groen bij `scripts/idcheck.py`), "
+        "tegen twee daglijsten via `runwindow.matches_for_run`. Nul duels. "
+        "DE VIJF BEKERS zijn langs BEIDE bronnen gegaan. Fotmob-daglijst: League Cup (id 133) "
+        "nul duels, DFB Pokal (209) nul, KNVB Beker (235) nul. BetExplorer-fixturepagina's, met "
+        "de eerstvolgende ronde erbij: FA Cup 20 teamparen / 5 dec, League Cup 4 / 15 dec, "
+        "Coppa Italia 8 / 1 dec, KNVB Beker 16 / 1 dec, DFB Pokal 8 / 1 dec. Twee bronnen, "
+        "hetzelfde antwoord, en bij vier van de vijf een datum die het antwoord verklaart."),
+    "NUL_CREDITS_EN_DE_MARKTBALANS_CONTROLE_SLAAGT_NIET": (
+        "ER IS VANDAAG NUL CREDIT UITGEGEVEN, op een plafond van 462 (`suggest_cap(19438, 21)`, "
+        "twee runs per dag). Niet omdat het plafond krap is - het is ruimer dan dat van gisteren "
+        "(441) - maar omdat er NUL inkoopbare competitie in de run zit: er speelt geen enkele "
+        "competitie uit de runlijst, dus `split_budget(462, 0)` geeft (0, 0) en `CreditGuard` "
+        "doet nul aanroepen. "
+        "DE MARKTBALANS-CONTROLE VAN §1a SLAAGT DAARMEE NIET, en dat moet er staan in plaats van "
+        "stil te worden overgeslagen. Die controle eist minstens één competitie met een "
+        "doelpuntenmarkt EN minstens één met een uitkomstmarkt. Vandaag zijn het er nul van elk. "
+        "§1a schrijft voor dat je dan meldt dat het plafond te krap is voor de runlijst; DAT IS "
+        "HIER DE OORZAAK NIET, en dat onderscheid is het hele punt van die controle: ze bestaat "
+        "om te zien wanneer een scheve uitkomst uit de PORTEMONNEE komt in plaats van uit de "
+        "data. Vandaag komt ze uit de KALENDER, en strikt genomen komt er helemaal geen "
+        "uitkomst - er is niets om scheef te zijn. "
+        "ER IS OOK NUL GRATIS PRIJS OPGEHAALD, anders dan gisteren. Het "
+        "BetExplorer-marktgemiddelde van §1a wordt per wedstrijd gelezen en er is geen wedstrijd; "
+        "wat er van BetExplorer wel is gelezen zijn de vijf fixturepagina's, als tweede bron voor "
+        "de bekerronde, en dat zijn geen koersen. "
+        "`api_check.py` MELDT GEEN ENKELE AFGEWEZEN SLEUTEL: The Odds API staat op OK met 19.438 "
+        "credits over en 562 verbruikt deze maand, 31 van de 34 sportkeys actief. Drie staan op "
+        "NIET ACTIEF (Coppa Italia, Eliteserien, Conference League) en dat is het "
+        "interlandvenster, geen storing. `API_FOOTBALL_KEY` ontbreekt met opzet - besluit van de "
+        "gebruiker van 27 september 2026 - en dat is geen gat, geen actiepunt en niets voor de "
+        "notificatie (§3)."),
+    "DE_AFWIKKELING_EN_DE_REFLECTIE": (
+        "ER STOND GEEN ENKELE ECHTE PICK OPEN: `ledger.py open` meldt 'Geen picks klaar om af te "
+        "wikkelen' en `picks.jsonl` heeft nul rijen op `pending`. Dat klopt met gisteren - Run A "
+        "van 9 november wikkelde alle elf openstaande picks af en Run B publiceerde er nul. "
+        "TWEE SCHADUWRIJEN VAN RUN B VAN 9 NOVEMBER ZIJN AFGEWIKKELD, beide op de stand na "
+        "90 minuten (§6d), beide een competitieduel zonder verlenging: "
+        "(1) Botosani - Otelul Galati, 1X2 op de thuiszege @2.09, tegengehouden door poort 5 "
+        "(`tweede_methode`), uitslag 1-1 -> VERLOREN. "
+        "(2) Sabadell - Real Sociedad B, Asian Handicap Real Sociedad B +1 @1.63, tegengehouden "
+        "door poort 8 (`underdog`), uitslag 0-0 -> GEWONNEN. "
+        "DE REFLECTIE VAN §3 STAGE 0 (12 okt 2026), vier vragen: "
+        "1. KLOPTE DE REDENERING OF ALLEEN DE UITKOMST? Bij Botosani klopte de uitkomst van de "
+        "poort maar niet de wedstrijdinschatting: de xG-lambdas stonden op 1,77 - 0,869, dus een "
+        "duidelijke thuisfavoriet met 2,64 verwachte doelpunten, en het werd een 1-1 met twee. "
+        "Het totaal lag dus dicht bij de verwachting, de verdeling niet. Bij Sabadell is de rij "
+        "GEWONNEN EN VERKEERD INGESCHAT: lambdas 1,666 - 1,035, samen 2,70 verwachte doelpunten, "
+        "en er vielen er NUL. Een 0-0 is de uitslag waar een handicap +1 het makkelijkst van "
+        "wint, maar niet de wedstrijd die was voorgerekend. "
+        "2. DEED DE POORT ZIJN WERK, IN DIT GEVAL? Poort 5 wel: hij hield een verliezer tegen op "
+        "een duel dat qua doelpunten liep zoals voorspeld, en de tweede methode zat daar met "
+        "-7,36 pp ver onder de markt terwijl de xG-methode op +10,30 pp stond - precies het "
+        "tegengestelde-richting-geval waarvoor die poort bestaat. Poort 8 niet: hij hield een "
+        "WINNAAR tegen, op een duel dat juist volledig anders liep dan voorspeld. Dat zijn twee "
+        "verschillende waarnemingen en de tweede is de zwakkere van de twee - de rij won doordat "
+        "er niets gebeurde, niet doordat de kansschatting goed was. "
+        "3. ZAT ER EEN PATROON IN DE DAG? Op twee rijen is daar nauwelijks van te spreken, maar "
+        "wat er is wijst één kant op: in beide duels vielen er MINDER doelpunten dan voorgerekend "
+        "(2 tegen 2,64 en 0 tegen 2,70, samen 2 tegen 5,34). Dat is de tegenovergestelde richting "
+        "van de Under-scheefstand die §6g meet, en het zijn twee duels. "
+        "4. WAT BETEKENT DIT NIET? Twee rijen zijn geen reeks; §6d eist er ~30. Er is vandaag "
+        "geen drempel, gewicht, poort of parameter aangeraakt, en deze twee rijen zijn geen "
+        "aanleiding om er een voor te leggen. De `underdog`-reeks staat na vandaag op 342 "
+        "afgewikkelde gevallen met -4,2% rendement en de `tweede_methode`-reeks op 288 met "
+        "-1,4%; één rij erbij verandert daar niets aan. "
+        "`calibration.py settle` EN `ctxlog.py settle` ZIJN GEDRAAID: 12 kalibratiewaarnemingen "
+        "en 4 contextwedstrijden afgewikkeld. `recalibrate.load_fit().fitted_through` staat "
+        "daarmee op 2026-11-09, de vorige rundag, zoals §6b-5c eist."),
+    "DE_COPA_DEL_REY_STAAT_IN_GEEN_ENKELE_RUNLIJST": (
+        "DE BEVINDING VAN DEZE RUN IS EEN FOUT IN HET RUNRAPPORT VAN GISTEREN, en ze is van het "
+        "soort waar §4 bij de gepoolde promotiefactor voor waarschuwt: een samenvattende zin die "
+        "onwaar is en ongemerkt wordt overgenomen. "
+        "`runs/2026-11-09-run-a.md` schrijft over de actieve sportkeys die de repo niet kent: "
+        "'daarvan valt alleen de Copa del Rey binnen een runlijst (Run B), en die speelt "
+        "10 november - dat is een punt voor Run B en niet voor deze run.' "
+        "DE COPA DEL REY STAAT NIET IN DE RUNLIJST VAN RUN B. `prompts/run-b.md` noemt zeventien "
+        "competities en geen enkele beker; `grep -i 'copa' prompts/run-a.md prompts/run-b.md "
+        "prompts/run-c.md` geeft nul treffers. Het rapport van 8 november had het wél goed - "
+        "'de Copa del Rey staat niet in run-a.md, run-b.md of run-c.md' - en die juiste "
+        "formulering is op 9 november vervangen door een onjuiste. "
+        "WAAROM DIT MEER IS DAN EEN SLIP VAN DE PEN: het punt is op die manier DOORGESCHOVEN naar "
+        "een run die het niet in zijn opdracht heeft. Run B van 10 november zou vandaag naar de "
+        "Copa del Rey hebben gekeken, hem niet in zijn eigen runlijst hebben gevonden en het punt "
+        "weer hebben teruggelegd - of, erger, hem hebben toegevoegd, en `prompts/run-a.md` zegt "
+        "met zoveel woorden 'niets toevoegen of raden'. Vandaag is dat niet hypothetisch: er "
+        "spelen ZEVEN Copa del Rey-duels in het inzetvenster, op een dag dat alle drie de "
+        "runlijsten vrijwel leeg zijn. "
+        "WAT DEZE RUN ERMEE DOET: niets anders dan het rechtzetten en het terugleggen waar het "
+        "hoort. Een competitie aan een runlijst toevoegen is een besluit van de gebruiker, niet "
+        "van een run - dezelfde redenering als bij `selection_score` (§1a), poort 8 (§1e) en de "
+        "niveaucorrectie (§6g). Het staat daarom als één punt met `owner = besluit` in het "
+        "dagrapport, en het is dezelfde vraag die sinds 1 november openstaat; ze wordt vandaag "
+        "niet opnieuw gesteld maar voor het eerst juist geadresseerd."),
+    "DE_HERIJKING_DE_LOGBOEKEN_EN_WAT_ER_NIET_IS_GELOGD": (
+        "`recalibrate.load_fit()` geeft a=1.0320, b=0.0207 over 7746 waarnemingen, gefit t/m "
+        "2026-11-09. Hij is GEDRAAID en RAAKT VANDAAG NIETS, want er is geen kans om te herijken. "
+        "Hij staat hier omdat §1g een reeks wil die over dagen heen vergelijkbaar is en een dag "
+        "zonder opgeschreven getal een gat in die reeks is. "
+        "DE VROEG-SEIZOENSCORRECTIE EN `model.league_level` ZIJN VANDAAG NIET AANGEROEPEN, en dat "
+        "is het juiste antwoord in plaats van een lege aanroep: `uplift_observations` krijgt zijn "
+        "waarnemingen per competitie uit `fetch_league_stats`, en er is geen competitie in de run. "
+        "Gisteren zat er één in de pool (de Premier League, als bekerbasis) en het rapport "
+        "schreef er toen bij dat een pool van één geen pool is; vandaag is het er nul. "
+        "NUL near_miss-rijen, nul schaduwrijen, nul kalibratierijen, nul contextrijen, nul "
+        "marktvormblokken, nul voorbeschouwingen en nul regels in beide dagranglijsten van §5a. "
+        "Dat is bij een lege runlijst het juiste antwoord en geen vergeetachtigheid: "
+        "`shadow.py collect` heeft geen kandidaat, `calibration.py collect` eist een doorgerekend "
+        "duel met modelkansen, `ctxlog.py collect` eist een opgehaalde context, "
+        "`marketform.match_block` wordt per DOORGEREKEND duel gevraagd (§4: 'dus niet bij "
+        "tier = NONE, daar valt niets te tellen'), `preview.py` draait per GEPUBLICEERDE bet en "
+        "`prosecheck.py` heeft daarmee niets te meten (§6b-5j zegt dat zelf: bij nul bets zijn er "
+        "geen voorbeschouwingen). Het verschil met gisteren is dat er toen één duel WAS en de "
+        "contextrij op een ontbrekende selectiewaarde sneuvelde; vandaag is er geen duel. "
+        "`progress.py verify` HOORT HIERBIJ GROEN TE ZIJN en is dat ook: §6b-5b slaat wedstrijden "
+        "met `tier = NONE` over en een run zonder wedstrijden heeft niets om te verifiëren."),
+    "DE_METINGEN_DIE_WEL_ZIJN_GEDRAAID": (
+        "ALLE VERPLICHTE METINGEN VAN §6b ZIJN GEDRAAID, ook al verandert er vandaag niets aan de "
+        "steekproef. Dat is met opzet: het logboek van gisteren wordt door de run van vandaag "
+        "afgewikkeld, en een overgeslagen stap klaagt niet (§6b-5c). "
+        "`ledger.py stats`: 550 picks, 488 beslist, trefkans 46,1%, rendement -6,9%, Brier eigen "
+        "0,2607 tegen de markt 0,2410 - de markt schat nog steeds scherper, zoals §1g voorspelt. "
+        "`shadow.py stats`: 1778 kandidaten, 1712 beslist, -4,5%. "
+        "`margins.py stats --since 2026-09-20`: het gelijkspel-overschot staat op -3,0 pp over "
+        "1436 duels en is daarmee de enige cel buiten twee standaardfouten; 'favoriet wint met 2 "
+        "of meer' staat op -4,7 pp over 401 duels met een duidelijke favoriet. "
+        "`margins.py goalbias`: de regel 'Under gespeeld' staat op 136 duels met +0,658 doelpunt "
+        "per duel en z = +4,62 - de hoogste z van deze reeks tot nu toe. Dat is de scheefstand "
+        "van §6g en ze is NIET kleiner geworden; de niveaucorrectie `LEVEL_SCALE` bindt sinds "
+        "3 november en er liggen nog te weinig duels van ná die datum om te zien wat ze doet. "
+        "`gridfit.py measure` zegt dat zelf, luidruchtig: 263 van de 1436 duels dragen de "
+        "correctie al in zich, dus de populatie is niet meer homogeen op het niveau en de regel "
+        "`scale = 1.032` toetst daar een DUBBELE correctie. "
+        "ER IS OP GEEN VAN DEZE CIJFERS IETS VERZET. §6d eist een richting over weken en §9 "
+        "besluit 3 eist dat een besluitpunt één keer wordt voorgelegd en niet elke dag opnieuw."),
+}
+state["vroeg_seizoen"] = None
+state["niveau"] = {}
+state["selectie_5b"] = top
+state["credits"] = {
+    "plafond": 462,
+    "split_budget": [0, 0],
+    "verbruikt": 0,
+    "aanroepen": 0,
+    "quota_over": 19438,
+    "quota_gebruikt_deze_maand": 562,
+    "markten_gekocht": {"h2h": [], "spreads": [], "totals": [], "btts": []},
+    "gratis": {"betexplorer_1x2": [],
+               "betexplorer_fixturepaginas": ["FA Cup (ENG)", "League Cup (ENG)",
+                                              "Coppa Italia (ITA)", "KNVB Beker (NED)",
+                                              "DFB Pokal (GER)"]},
+    "marktbalans": ("SLAAGT NIET: nul competities met een doelpuntenmarkt en nul met een "
+                    "uitkomstmarkt. De oorzaak is NIET het plafond (462 credits, nul gebruikt, "
+                    "ruimer dan gisteren) maar dat er geen enkele competitie uit de runlijst "
+                    "vandaag speelt. §1a schrijft voor te melden dat het plafond te krap is voor "
+                    "de runlijst; dat is hier de oorzaak niet. Zie §1a en het runrapport."),
+}
+
+# Alle 16 competities/toernooien uit de daglijstfilter: GEEN WEDSTRIJD.
+s3 = json.load(open("tmp-run/ra_nov10_stage3.json"))
+for comp, v in s3["fixtures"].items():
+    mark(state, comp, {"status": "GEEN WEDSTRIJD", "matches": [],
+                       "bron": "Fotmob-daglijst op fotmob_id uit coverage.json",
+                       "fotmob_id": v.get("primaryId")})
+
+# De vijf bekers: twee bronnen.
+cups = json.load(open("tmp-run/ra_nov10_cups.json"))["cups"]
+for comp, v in cups.items():
+    bxv = v.get("betexplorer") or {}
+    mark(state, comp, {"status": v["status"], "matches": [],
+                       "bron": v.get("bron", "BetExplorer (§5)") + " + BetExplorer",
+                       "fotmob_id": v.get("fotmob_id"),
+                       "eerstvolgende_ronde": bxv.get("eerste_ronde"),
+                       "teamparen_op_de_fixturepagina": bxv.get("teamparen")})
+
+save(state)
+print(f"run-state Run {RUN} weggeschreven ({len(state['competitions'])} competities)")
+print("statussen:", sorted({v["status"] for v in state["competitions"].values()}))
+print("regels in de dagranglijst (herijkt):", len(top["herijkt"]), "ruw:", len(top["ruw"]))
+print("picks toegevoegd aan data/picks.jsonl: 0 (nul bets)")
