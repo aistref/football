@@ -283,6 +283,7 @@ KNOWN_LEAGUE_URLS: dict[str, str] = {
     # BetExplorer noemt dit toernooi bij zijn officiële naam, niet 'gulf-cup-of-nations' (dat stopt
     # bij de editie van 2023); de generieke, actuele pagina heet 'arabian-gulf-cup'.
     "Arabian Gulf Cup": "https://www.betexplorer.com/football/asia/arabian-gulf-cup/",
+    "SAFF Championship": "https://www.betexplorer.com/football/asia/saff-championship/",  # Run C, 11 nov 2026
     # Toegevoegd 24 sep 2026 (Run C). De AFCON-kwalificatie staat op de toernooipagina zelf, niet
     # onder een eigen slug: 'africa-cup-of-nations-qualification', '-qualifying', '-qualifiers' en
     # 'afcon-qualification' redirecten alle vier stilzwijgend naar de homepage. Gebruik

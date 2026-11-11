@@ -25,6 +25,7 @@ Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 |---|---|---|
 | UEFA Nations League — groepsfase | 24 sep t/m 17 nov 2026 | **loopt nu** |
 | CONCACAF Nations League — groepsfase | sep/okt 2026 | **loopt nu** |
+| SAFF Championship (Zuid-Azië, senior mannen, id 9876) | groepsfase gezien op 11 nov 2026 | **loopt nu** — op de runlijst gezet volgens het precedent van de Arabian Gulf Cup |
 | Arabian Gulf Cup (Golfstaten, senior mannen) | editie gezien op 23-24 sep 2026 (Fotmob id 329) | **loopt nu** — stond hier niet op tot Run C hem op de daglijst zag; niet eerder op een kalender gevonden, dus geen bredere datumrange bekend |
 | UEFA Nations League — kwartfinales en play-offs | maart 2027 | |
 | CONCACAF Nations League — finales | maart 2027 | |
@@ -110,6 +111,7 @@ Bekende ids, gemeten:
 | **Club** Friendlies — NIET gebruiken | 489 |
 | Arabian Gulf Cup (senior mannentoernooi, Golfstaten) | 329 — gevonden 23 sep 2026, stond nog niet in de daglijst-tabel hierboven totdat hij daadwerkelijk speelde |
 | ASEAN Cup Challenge Division (senior, Laos/Brunei/Myanmar/Timor-Leste) | 13287 — gezien 24 sep 2026; de **Challenge Division** heeft geen prijsbron (geen sportkey), dus `BUITEN DATADEKKING`. De **Premier Division** (Thailand, Vietnam, Filipijnen, Pakistan…) heeft sinds 29 sep 2026 wél 1X2-koersen op BetExplorer: `https://www.betexplorer.com/football/asia/fifa-asean-cup/` (`rc29_bx.py`) |
+| SAFF Championship (senior mannentoernooi, Zuid-Azië) | 9876 — gezien 11 nov 2026 (India – Malediven, Bangladesh – Sri Lanka). Geen sportkey; 1X2 op BetExplorer: `https://www.betexplorer.com/football/asia/saff-championship/` (13 boeken). Let op: dezelfde dag stond India ook op Nieuw-Zeeland – India (oefen, 12 nov 07:00 NL) — speelt India de SAFF met een tweede elftal, dan beschrijft de landenrating die ploeg niet |
 | EURO U21-kwalificatie — NIET gebruiken (jeugd) | 10437 |
 
 De overige toernooien hebben pas een id zodra ze op de kalender staan. Zoek hem dan op in de
