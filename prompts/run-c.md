@@ -346,6 +346,10 @@ uit één kalenderjaar.
 
 ## Let op bij deze runlijst
 
+- **Run A en Run B kunnen tijdens een interlandperiode bewust stilliggen** (bevestigd door de gebruiker op
+  12 nov 2026). Ontbreken hun rapporten in zo'n venster, meld dat dan niet als storing; wel blijft
+  `recalibrate.load_fit().fitted_through` dan op de laatste clubdag staan, en dat is verwacht.
+
 - **De meeste dagen is er niets.** Interlandvoetbal speelt in ongeveer vijf vensters per jaar.
   Buiten die vensters staat élke competitie op `GEEN WEDSTRIJD` en is de notificatie een
   hartslag van één regel. Dat is correct gedrag (§7): zolang er elke run een melding komt, is
