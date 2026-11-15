@@ -235,7 +235,9 @@ def ledger_summary(picks: list[dict]) -> dict:
     profit = sum(ledger.pick_units(p) for p in settled)
     own = ledger.brier([(p["my_prob"], 1 if p["result"] == "won" else 0) for p in settled])
     market = ledger.brier([(p["implied_prob"], 1 if p["result"] == "won" else 0) for p in settled])
-    return {"settled": len(settled), "won": len(won), "profit": profit,
+    void = sum(1 for p in picks if p.get("result") == "void")
+    return {"settled": len(settled), "won": len(won), "lost": len(settled) - len(won), "void": void,
+            "profit": profit,
             "brier_own": own, "brier_market": market}
 
 
@@ -1102,7 +1104,10 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     matches = sum(len(r.get("matches", [])) for r in comps.values())
     # De bets zelf ook op score tonen, zodat de volgorde daar niet afwijkt van de topselectie.
     ranked_picks = [p for group in rank_picks(picks, day) for p in group] if picks else picks
-    record = f'{stats["won"]}/{stats["settled"]}' if stats["settled"] else "–"
+    # Winst / verlies / inzet terug, op verzoek van de gebruiker (15 nov 2026): "228/492" liet
+    # niet zien dat de picks met inzet terug buiten de noemer vallen.
+    record = (f'{stats["won"]} / {stats["lost"]} / {stats["void"]}'
+              if stats["settled"] or stats["void"] else "–")
     record_colour = ' style="color:var(--neg)"' if stats["settled"] and not stats["won"] else ""
     started = prose.get("started")
     verdict = prose.get("verdict") or (
@@ -1141,7 +1146,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     <div class="fact"><span class="v num">{matches}</span><span class="l">wedstrijden bekeken</span></div>
     <div class="fact"><span class="v num">{active}</span><span class="l">competities actief</span></div>
     <div class="fact"><span class="v num">{truncated}</span><span class="l">wedstrijden afgekapt</span></div>
-    <div class="fact"><span class="v num"{record_colour}>{record}</span><span class="l">record tot nu toe</span></div>
+    <div class="fact"><span class="v num"{record_colour}>{record}</span><span class="l">record tot nu toe</span><span class="s">(winst / verlies / inzet terug)</span></div>
   </div>
 </header>
 
@@ -1259,6 +1264,7 @@ header{padding:44px 0 0}
 .fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
 .fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
 .fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+.fact .s{font-size:.66rem; color:var(--muted); font-weight:500}
 
 .bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
 .bet + .bet{margin-top:20px}
