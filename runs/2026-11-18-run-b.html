@@ -1,0 +1,563 @@
+<title>Run B — woensdag 18 november 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+.fact .s{font-size:.66rem; color:var(--muted); font-weight:500}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+/* De voetnoot onder de marktvorm-telling (17 okt 2026): kleiner dan de telling zelf, want ze
+   zegt wat de cijfers NIET zijn en hoort de telling niet te overschreeuwen. */
+.prose.micro{font-size:.78rem; color:var(--muted); margin:2px 0 0}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run B</h1>
+    <span class="date">woensdag 18 november 2026 · gedraaid om 04:10 (klaar om 05:40)</span>
+  </div>
+
+  <p class="verdict">**Twee weddenschappen vandaag, en ze komen allebei uit Brazilië — want dat is het enige land op mijn lijst waar vanavond gevoetbald wordt.**
+
+De interlandperiode liep tot gisteren. Van de zeventien competities die ik 's avonds volg, hervatten er zestien pas vrijdag en zaterdag; de Braziliaanse Série A speelt door en heeft vannacht zes wedstrijden op het programma, verdeeld over de uren tussen half twaalf en half twee.
+
+Van die zes kon ik er drie werkelijk doorrekenen. Bij de andere drie staat een ploeg op het veld die vorig seizoen een divisie lager speelde — Coritiba, Remo, Chapecoense en Athletico Paranaense zijn alle vier promovendus uit de Série B. Voor Europese competities heb ik uitgemeten hoeveel een ploeg uit de tweede divisie zwakker is dan een ploeg uit de eerste, en kan ik zo'n promovendus omrekenen. Voor Brazilië heb ik die meting niet. Dan heb ik geen fundament onder een kansschatting, en dan reken ik niet; een getal verzinnen omdat het aannemelijk klinkt is precies wat ik niet mag doen.
+
+Drie wedstrijden dus, vijfenveertig mogelijke weddenschappen over alle zes de markten die ik volg, en daar zijn er twee uitgekomen. Beide op weinig doelpunten: Corinthians tegen Botafogo onder de twee en een half, en Cruzeiro tegen Palmeiras onder de twee driekwart.
+
+Die eerste staat er op eigen kracht; de tweede haalt mijn gewone grens niet en staat er omdat er drie plekken in mijn lijst zijn en er niets beters was. Dat verschil is groot vandaag — de eerste vond ik bijna dertien procent meer waard dan de prijs, de tweede bijna zes — en het staat bij de weddenschap zelf.
+
+En er is één ding dat vandaag harder bij beide hoort te staan dan gisteren. In de honderdzesendertig wedstrijden waarin ik dit najaar voor weinig doelpunten koos, vielen er gemiddeld zes tiende doelpunt méér dan ik had voorgerekend. Dat is de scherpste stand sinds ik die telling bijhoud. Over alle tweeëntwintighonderd wedstrijden die ik heb doorgerekend klopt mijn doelpuntenverwachting wél — het gaat dus niet mis in mijn rekenwerk, het gaat mis in mijn keuze. Juist waar ik voor weinig doelpunten kies, vallen er meer. En vandaag kies ik dat twee keer.
+
+De scherpste bookmaker van de markt is het met beide niet eens: bij Corinthians zit Pinnacle ruim acht procent onder mij op die kant, bij Cruzeiro bijna acht. Bij de derde wedstrijd die ik doorrekende, Grêmio tegen Bahia, zit Pinnacle juist boven mij — en daar kwam dan ook niets uit. Dat de twee wedstrijden waar ik het verst van de scherpste prijs af zit precies de twee zijn die ik publiceer, is geen toevallige samenloop maar hoe een lijst op het grootste verschil nu eenmaal werkt. Lees ze dus als het beste van vannacht en niet als een gevonden zekerheid.</p>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">2</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">6</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">1</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">232 / 266 / 63</span><span class="l">record tot nu toe</span><span class="s">(winst / verlies / inzet terug)</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 2 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Série A · aftrap 01:30</span>
+        <span class="bet-match">Corinthians – Botafogo</span>
+        <span class="bet-pick">Under 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.00</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">50,0%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">62,7%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+12,7</span></div>
+    </div>
+    <div class="why">
+      <p class="prose">Corinthians staat zeventiende met vier wedstrijden te gaan en dat betekent in Brazilië: degradatiezone. Zesendertig doelpunten in vierendertig wedstrijden, het laagste aantal van de competitie op Vitória na, en in de Neo Química Arena viel het dit seizoen elf van de zeventien keer onder de drie. Twee punten per twee wedstrijden in de laatste vijf, geen enkele overwinning tegen een ploeg uit de bovenste helft, en vannacht komt Botafogo langs dat op dezelfde negenenveertig punten had gestaan als het niet zo wild speelde.
+
+Maar daar zit de tegenspraak, en die hoort hier en niet drie alinea&#x27;s lager. Botafogo is op bezoek de meest open ploeg van de competitie: in zeventien uitwedstrijden vielen er gemiddeld bijna drie doelpunten, in elf ervan scoorden beide ploegen, en maar zeven van die zeventien bleven onder de drie. Over het hele seizoen kreeg Botafogo drieënvijftig doelpunten tegen, meer dan welke ploeg boven de degradatiestreep ook. Wie alleen naar de bezoeker kijkt, zou hier op dóelpunten gokken en niet op de afwezigheid ervan.
+
+Wat die twee reeksen tegen elkaar in laat lopen is de bezetting, en die is bij beide ploegen uitgedund. Corinthians mist negen spelers die samen een derde van de ploegwaarde vertegenwoordigen: Yuri Alberto en Matheus Pereira zijn geschorst, Rodrigo Garro is tot begin december geblesseerd, Gabriel Paulista en Raniele liggen eruit en Zakaria Labyad en Kayke zijn het seizoen kwijt. Dat is de aanvaller met de meeste doelpunten en de man die ze aanlevert, in één keer weg. Bij Botafogo is het verhoudingsgewijs nog erger: Danilo, Arthur Chaves, Jordan Barrera en Kaio zijn samen zestig procent van de selectiewaarde, met Barrera voor de rest van het seizoen. Twee ploegen die niet op volle sterkte kunnen aantreden en bovendien veertien dagen niet gespeeld hebben, maken van een wedstrijd met belang zelden een doelpuntenfestijn.
+
+De onderlinge geschiedenis helpt niet eenduidig. De laatste zes: 3–1, 2–2, 1–1, 2–1, 0–1 en 1–0. Dat is twee en een half doelpunt per wedstrijd en drie van de zes onder de grens, met de twee rustigste uitslagen allebei in São Paulo. De twee met vier doelpunten zijn van het afgelopen anderhalf jaar, dus de reeks loopt de verkeerde kant op als je er een trend in wil zien.
+
+Wat deze kant kan breken is simpel: Corinthians moet winnen. Een ploeg in de degradatiezone met vier wedstrijden te gaan speelt niet voor een punt, en als Botafogo vroeg voorkomt — wat het op bezoek regelmatig doet — gaat het huis open en is de grens bij rust al in zicht. Ook een strafschop of een rode kaart in een wedstrijd van dit gewicht is hier genoeg. Het weer is droog en bewolkt, dus daar komt geen hulp van.
+
+_Van alles wat ik vannacht heb doorgerekend zit mijn schatting hier het verst van de prijs, en dit is de enige weddenschap die mijn gewone grens op eigen kracht haalt. Twee kanttekeningen: Pinnacle zit op deze kant ruim acht procent onder mij, en in de honderdzesendertig wedstrijden waarin ik dit najaar voor weinig doelpunten koos vielen er gemiddeld zes tiende meer dan ik had voorgerekend._</p>
+      <h4>Wat er eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zondag 17 mei 2026</dt><dd>Botafogo <strong>3–1</strong> Corinthians · 4 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 30 november 2025</dt><dd>Corinthians <strong>2–2</strong> Botafogo · 4 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 26 juli 2025</dt><dd>Botafogo <strong>1–1</strong> Corinthians · 2 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 15 september 2024</dt><dd>Botafogo <strong>2–1</strong> Corinthians · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 2 juni 2024</dt><dd>Corinthians <strong>0–1</strong> Botafogo · 1 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 6 duels: gemiddeld 2,5 doelpunten, en in 4 van de 6 scoorden beide ploegen.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Corinthians</dt><dd>laatste 5: onder 2,5 in 3/5, gem. 2,80 · dit seizoen: onder 2,5 in 19/34, gem. 2,29 · thuis dit seizoen: onder 2,5 in 11/17, gem. 2,06 · vorig seizoen: onder 2,5 in 21/38, gem. 2,34</dd></div><div class="ctx-row"><dt>Botafogo</dt><dd>laatste 5: onder 2,5 in 3/5, gem. 2,00 · dit seizoen: onder 2,5 in 13/34, gem. 2,91 · uit dit seizoen: onder 2,5 in 7/17, gem. 2,94 · vorig seizoen: onder 2,5 in 22/38, gem. 2,53</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>Hoe de ploegen er nu voor staan</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Corinthians</dt><dd>dan donderdag 19 november thuis tegen Botafogo — Série A · dan woensdag 25 november uit tegen Atlético-MG — Série A</dd></div><div class="ctx-row"><dt>Botafogo</dt><dd>dan donderdag 19 november uit tegen Corinthians — Série A · dan maandag 23 november thuis tegen São Paulo — Série A</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Corinthians</dt><dd>selectiewaarde € 83,4 mln · mist 9 (€ 42,7 mln, 33,9% van de waarde): Matheus Pereira (schorsing, terug Mid November 2026); Yuri Alberto (schorsing, terug Late November 2026); André Ramalho (schorsing, terug Mid November 2026); Rodrigo Garro (blessure, terug Early December 2026); Alex Santana (blessure, terug Mid November 2026); Gabriel Paulista (blessure, terug About 1-2 weeks); Raniele (blessure, terug Late November 2026); Zakaria Labyad (blessure, terug Out for season); Kayke (blessure, terug Out for season) · vorm LDLWD (5 pt uit 5) · 14,0 dagen rust</dd></div><div class="ctx-row"><dt>Botafogo</dt><dd>selectiewaarde € 31,8 mln · mist 4 (€ 48,0 mln, 60,1% van de waarde): Danilo (blessure, terug About 1-2 weeks); Arthur Chaves (blessure, terug About a week); Jordan Barrera (blessure, terug Out for season); Kaio (blessure, terug Late November 2026) · vorm DWLLW (7 pt uit 5) · 14,0 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Neo Química Arena — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico — kans rond de helft, geen gok op een stunt</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Série A · aftrap 00:30</span>
+        <span class="bet-match">Cruzeiro – Palmeiras</span>
+        <span class="bet-pick">Under 2.75</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.87</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">53,5%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">59,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+5,7</span></div>
+    </div>
+    <div class="why">
+      <p class="prose">Begin bij de telling die tegen deze weddenschap pleit, want die is hier duidelijk. Cruzeiro heeft dit seizoen vijfenvijftig keer gescoord en achtenveertig keer tegen gekregen: drie doelpunten per wedstrijd gemiddeld, en in zijn laatste vijf duels bijna vier. In vierendertig wedstrijden bleef het maar twaalf keer onder de drie, en in Belo Horizonte zeven van de zeventien. Palmeiras is de meest gesloten ploeg van de competitie met drieëntwintig tegendoelpunten, maar scoorde zelf tweeënzestig keer, en in zeventien uitwedstrijden bleef het negen keer laag. Op de seizoenscijfers alleen is dit geen wedstrijd om op weinig doelpunten te spelen.
+
+Wat er tegenover staat is de onderlinge geschiedenis, en die is opvallend eenstemmig: 1–1, 0–0, 2–1, 1–2, 2–0 en 1–1. Zes ontmoetingen sinds december 2023, twee doelpunten per wedstrijd gemiddeld, geen enkele keer meer dan drie, en vijf van de zes zouden deze grens hebben gehaald. Dat zijn twee ploegen die elkaar kennen en elkaar dichthouden, ongeacht hoe ze de rest van het seizoen spelen.
+
+Het toernooibelang wijst twee kanten op en dat is waarom dit de onzekerste van mijn twee weddenschappen is. Palmeiras staat tweede op drie punten van Flamengo met vier wedstrijden te gaan: die ploeg moet winnen en zal dus komen. Cruzeiro staat derde en heeft zijn plek in de Libertadores vrijwel zeker, en speelt zondag alweer tegen Chapecoense. Een bezoeker die moet aanvallen tegen een thuisploeg die weinig meer hoeft, is geen recept voor een rustige avond — behalve als de thuisploeg daar precies op gaat zitten, en dat is wat de onderlinge uitslagen suggereren.
+
+Cruzeiro komt met negen man minder aan de aftrap dan het zou willen, bijna een derde van de ploegwaarde: Wesley, Jonathan Jesus en Kauã Moraes zijn geschorst, João Marcelo is het seizoen kwijt, Luis Sinisterra is tot eind december uit en Fabrício Bruno staat nog een week of twee aan de kant. Bij Palmeiras liggen Joaquín Piquerez, Murilo, Paulinho en Jefté eruit, waarvan de eerste twee verdedigers zijn — wat juist pleit tegen een rustige wedstrijd. En dan is er het weer: onweer boven Belo Horizonte, drieënzestig procent kans op neerslag, drieëntwintig graden. Een natte bal op een zwaar veld drukt het tempo, maar het is het soort voorbehoud dat net zo goed de andere kant op kan uitpakken.
+
+Het eerlijkste wat ik erover kan zeggen is dit: de prijs voor deze kant komt van Pinnacle zelf, de scherpste bookmaker van de markt, en Pinnacle&#x27;s eigen oordeel over hoeveel doelpunten hier vallen zit bijna acht procent boven het mijne. Ik koop dus van de partij die het het best weet, tegen zijn eigen prijs, met een eigen mening die hij niet deelt. Dat kan goed uitpakken en het is de zwakste combinatie van de twee die ik vannacht publiceer.
+
+_Deze staat op mijn lijst omdat er plek was, niet omdat ik hem gevonden heb: hij haalt mijn gewone grens niet en is de tweede van twee over zes wedstrijden. Hij haalt wel alle andere controles die ik ken, en dat is het enige dat hem hier houdt._</p>
+      <h4>Wat er eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zondag 17 mei 2026</dt><dd>Palmeiras <strong>1–1</strong> Cruzeiro · 2 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 26 oktober 2025</dt><dd>Palmeiras <strong>0–0</strong> Cruzeiro · 0 doelp.</dd></div><div class="ctx-row"><dt>zondag 1 juni 2025</dt><dd>Cruzeiro <strong>2–1</strong> Palmeiras · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>donderdag 5 december 2024</dt><dd>Cruzeiro <strong>1–2</strong> Palmeiras · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 21 juli 2024</dt><dd>Palmeiras <strong>2–0</strong> Cruzeiro · 2 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 6 duels: gemiddeld 2,0 doelpunten, en in 4 van de 6 scoorden beide ploegen.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Cruzeiro</dt><dd>laatste 5: onder 2,5 in 2/5, gem. 3,80 · dit seizoen: onder 2,5 in 12/34, gem. 3,03 · thuis dit seizoen: onder 2,5 in 7/17, gem. 2,82 · vorig seizoen: onder 2,5 in 20/38, gem. 2,26</dd></div><div class="ctx-row"><dt>Palmeiras</dt><dd>laatste 5: onder 2,5 in 3/5, gem. 3,20 · dit seizoen: onder 2,5 in 18/34, gem. 2,50 · uit dit seizoen: onder 2,5 in 9/17, gem. 2,24 · vorig seizoen: onder 2,5 in 18/38, gem. 2,61</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt. Deze weddenschap staat op een kwartlijn, die in twee halve weddenschappen splitst; geteld is de helft die vólledig moet winnen (onder 2,5).</p>
+      <h4>Hoe de ploegen er nu voor staan</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Cruzeiro</dt><dd>dan zondag 22 november uit tegen Chapecoense — Série A</dd></div><div class="ctx-row"><dt>Palmeiras</dt><dd>dan zaterdag 21 november thuis tegen Flamengo — Série A · dan dinsdag 24 november uit tegen Chapecoense — Série A</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Cruzeiro</dt><dd>selectiewaarde € 122,4 mln · mist 9 (€ 59,8 mln, 32,8% van de waarde): Jonathan Jesus (schorsing, terug Mid November 2026); Kauã Moraes (schorsing, terug Mid November 2026); Wesley (schorsing, terug Mid November 2026); Keny Arroyo (internationalDuty, terug Mid November 2026); Fabrício Bruno (blessure, terug About 1-2 weeks); João Marcelo (blessure, terug Out for season); Felipe Morais (blessure, terug Back in training); Luis Sinisterra (blessure, terug Late December 2026); Gabriel Pec (blessure, terug Mid November 2026) · vorm LWWWW (12 pt uit 5) · 13,0 dagen rust</dd></div><div class="ctx-row"><dt>Palmeiras</dt><dd>selectiewaarde € 121,8 mln · mist 4 (€ 30,0 mln, 19,8% van de waarde): Joaquín Piquerez (blessure, terug About 1-2 weeks); Murilo (blessure, terug Late November 2026); Paulinho (blessure, terug About 1-2 weeks); Jefté (blessure, terug Mid December 2026) · vorm WDWWL (10 pt uit 5) · 10,1 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Estádio Governador Magalhães Pinto — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Middelmatig risico — kans rond de helft, geen gok op een stunt</span>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>De beste 2 als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op maandag t/m donderdag houd ik maximaal
+  <strong>3</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Corinthians – Botafogo</span>
+            <span class="sl-pick">Under 2.5 · Série A · aftrap 01:30</span>
+          </td>
+          <td class="num">2.00</td>
+          <td class="num">62,7%</td>
+          <td class="num">+12.7</td>
+          <td class="num">7.96</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Cruzeiro – Palmeiras</span>
+            <span class="sl-pick">Under 2.75 · Série A · aftrap 00:30</span>
+          </td>
+          <td class="num">1.87</td>
+          <td class="num">59,2%</td>
+          <td class="num">+5.7</td>
+          <td class="num">3.37</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:18px">Er waren maar 2 bets, dus de lijst is korter dan de 3 plekken die er op maandag t/m donderdag zijn. Hij wordt niet aangevuld om hem voller te laten lijken.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top 3</span>
+    <h2>Mijn 3 beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op maandag t/m donderdag laat ik er 3 zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Corinthians – Botafogo</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Série A · aftrap 01:30</span>
+          </td>
+          <td class="num">2.00</td>
+          <td class="num">62.7%</td>
+          <td class="num">+12.7</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET — en haalt ook de lat van 8.0 pp</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Cruzeiro – Palmeiras</span>
+            <span class="sl-pick">Over/Under — Under 2.75 · Série A · aftrap 00:30</span>
+          </td>
+          <td class="num">1.87</td>
+          <td class="num">59.2%</td>
+          <td class="num">+5.7</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET op rangorde — onder de lat van 8.0 pp (§5b)</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Corinthians – Botafogo</span>
+            <span class="sl-pick">Over/Under — Under 2.5 · Série A · aftrap 01:30</span>
+          </td>
+          <td class="num">2.00</td>
+          <td class="num">61.3%</td>
+          <td class="num">+11.3</td>
+          <td><span class="chip gap">nu tegengehouden</span><br><span class="sl-pick">BET</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Cruzeiro – Palmeiras</span>
+            <span class="sl-pick">Draw No Bet — DNB — Cruzeiro · Série A · aftrap 00:30</span>
+          </td>
+          <td class="num">2.02</td>
+          <td class="num">54.3%</td>
+          <td class="num">+4.8</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">context spreekt de bet tegen (poort 7)</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Grêmio – Bahia</span>
+            <span class="sl-pick">Asian Handicap — Bahia +0.25 · Série A · aftrap 01:30</span>
+          </td>
+          <td class="num">1.88</td>
+          <td class="num">56.5%</td>
+          <td class="num">+3.4</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">de twee methodes wijzen tegengesteld</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:14px">Hiervan zou er <strong>1</strong> zonder de correctie een weddenschap zijn geweest. Over de hele run
+  gaat het om <strong>0</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>
+<div class="wrap-callout"><div class="callout"><p class="prose">Onder deze twee stond vrijwel niets. Van de vijfenveertig mogelijke weddenschappen die ik over drie wedstrijden heb doorgerekend, sneuvelden er eenendertig op dezelfde controle: mijn twee rekenmethodes moeten dezelfde kant op wijzen, en bij die eenendertig deden ze dat niet. Dat is bijna zeven van de tien, en het is al weken de controle die het meeste tegenhoudt.
+
+De enige echt interessante afvaller zat bij Grêmio tegen Bahia: een overwinning voor de bezoeker tegen ruim drie keer je inleg, waarin mijn ene methode bijna tien procent waarde zag en de andere veertien procent in het nadeel. Zulke tegengestelde signalen zijn precies het geval waarvoor die controle bestaat, en die weddenschap gaat nu als afgewezen kandidaat mijn schaduwlogboek in. Daar wordt ze afgerekend als een echte, zodat over een paar weken met cijfers te zeggen is of ik met die controle geld bespaar of alleen kansen laat liggen.
+
+Bij Cruzeiro tegen Palmeiras stond er nog een tweede mogelijkheid — een overwinning voor Cruzeiro waarbij een gelijkspel je inleg terugbrengt — en die viel af op de bezetting: Cruzeiro mist te veel ten opzichte van de tegenstander om die kant te spelen. Omdat er bij diezelfde wedstrijd wél een weddenschap is gepubliceerd, geldt die niet als afgewezen kandidaat maar als een andere mening over dezelfde wedstrijd, en die hoort niet apart in het logboek.</p></div></div>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Selectie</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Grêmio – Bahia<br><span class="note">Série A</span></td><td><span class="note">1X2 — 2 (Bahia wint)</span><br><span class="note">koers 3.11</span></td><td class="num">+9,7 pp</td><td class="num below">-13,8 pp</td><td class="num">+5,1 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van deze punten is er <strong>geen enkele</strong> iets voor jou — het is allemaal werk voor mij in een volgende run. Ze staan er zodat je kunt zien waar ik mee bezig ben, niet omdat er iets van je gevraagd wordt.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Ik kan Braziliaanse promovendi niet doorrekenen, en dat kostte vannacht de helft van de wedstrijden</span>
+        <span class="d">Drie van de zes wedstrijden vielen weg omdat er een promovendus uit de Série B op het veld staat: Coritiba, Remo, Chapecoense en Athletico Paranaense. Voor twintig Europese divisieparen heb ik uitgemeten hoeveel zwakker een ploeg uit de tweede divisie is, zodat ik zo&#x27;n ploeg kan omrekenen. Voor Brazilië heb ik dat niet, en dan is &#x27;geen kansschatting&#x27; het eerlijke antwoord. Dat was in Europa geen groot verlies, omdat een promovendus daar één ploeg in een volle speelronde is. Hier was het de helft van de avond, en de Série A heeft nog vier speelronden te gaan waarin dit elke keer terugkomt. De meting zelf is te doen met de bronnen die ik al gebruik: de Série B-stand van vorig seizoen staat bij Fotmob, en de methode waarmee ik de Europese paren heb gemeten werkt daar net zo goed.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> **Niets van jou nodig** — ik meet dat divisiepaar zelf uit en leg het vast, net zoals ik dat in oktober voor Roemenië, Griekenland en Oostenrijk heb gedaan. Zolang het er niet is blijven deze wedstrijden onbeoordeeld, en dat is beter dan een verzonnen getal.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">Bij drie van de zes wedstrijden kon ik de uitvallers niet meten, omdat de opstellingen om vier uur &#x27;s nachts nog niet bekend waren</span>
+        <span class="d">Ik houd van elke wedstrijd bij hoeveel ploegwaarde er ontbreekt, om op termijn te kunnen meten of blessures werkelijk iets voorspellen dat ik nog niet weet. Dat logboek staat nu op bijna vierentwintighonderd wedstrijden. Vannacht kwamen er maar drie van de zes in, want bij de drie wedstrijden die om half twaalf en middernacht begonnen had Fotmob nog geen opstelling, en zonder opstelling is er geen ploegwaarde om een percentage van te nemen. Dat is geen fout in mijn boekhouding maar het is wel een systematisch gat: bij Zuid-Amerikaanse avondwedstrijden ben ik er vroeger bij dan de bron, en juist bij die competities verzamel ik dus het minst.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> **Niets van jou nodig** — ik noteer dit als bekend gat en kijk of ik de ontbrekende spelers voor zulke wedstrijden uit het blessureoverzicht kan halen in plaats van uit de opstelling.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>Mijn beste weddenschap van vannacht stond op de kalender van morgen</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Corinthians tegen Botafogo begint om half twee 's nachts Nederlandse tijd, en dat is in de wereldtijd waarmee de voetbalkalender werkt pas 19 november. Tot eind september las ik 'vandaag' als 'de wedstrijden die in de wereldtijd op mijn rundag staan', en dan was deze wedstrijd niet van mij. Hij zou morgenochtend zijn opgedoken in de run van 19 november, en dan was hij al drie uur afgelopen.</p>
+    <p class="prose">Sinds 24 september kijk ik niet meer naar de datum maar naar de vraag of jij er nog op kunt inzetten. Je zet tussen zeven en acht uur 's ochtends in, dus alles wat na acht uur begint is voor jou speelbaar en alles ervoor niet. Vannacht viel twee van de zes wedstrijden in die band: Corinthians tegen Botafogo en Grêmio tegen Bahia, beide om half twee.</p>
+    <p class="prose">Dat is vandaag geen theoretische winst. Van die twee is de eerste de hoogst scorende weddenschap van de hele run, en de enige die mijn gewone grens op eigen kracht haalt. Zonder die regel had dit rapport één weddenschap bevat in plaats van twee, en dan de zwakste van de twee.</p>
+    <p class="prose">De aanleiding voor die regel was een Amerikaanse wedstrijd die op 24 september al negenentachtig minuten onderweg was toen mijn run begon. Vandaag staat hetzelfde geval er omgekeerd in, en dat is het nuttige van zo'n verandering: ze repareert niet alleen de dag waarop ze is gemaakt.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 17 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Série A</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">Zes wedstrijden, en de enige competitie van mijn lijst die vannacht speelt. Ze loopt op kalenderjaar en is vierendertig van de achtendertig speeldagen onderweg, dus ik neem het doelpuntenniveau rechtstreeks uit dit seizoen in plaats van vorig jaar op te schalen: 1,53 doelpunt voor de thuisploeg en 1,13 voor de bezoeker. Drie van de zes wedstrijden heb ik werkelijk doorgerekend. Bij de andere drie staat een promovendus uit de Série B op het veld — Coritiba, Remo, Chapecoense of Athletico Paranaense — en voor dat divisiepaar heb ik geen meting, dus daar is geen kansschatting te maken. Beide weddenschappen van vandaag komen hieruit.</td></tr>
+        <tr><td class="comp">2. Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Allsvenskan</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Austrian Bundesliga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Croatian HNL</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Czech First League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Eliteserien</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">English League One</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">English League Two</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Greek Super League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Hungarian NB I</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Keuken Kampioen Divisie</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">MLS</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">Geen wedstrijd in het venster, en dit is de competitie die ik elke run apart nakijk omdat de wedstrijden daar midden in de Nederlandse nacht beginnen. De reguliere competitie is afgelopen; de play-offs beginnen vrijdagnacht om half twee. Mijn tweede bron noemt die wedstrijden ook, dus dit is geen gemiste speelronde.</td></tr>
+        <tr><td class="comp">Romanian SuperLiga</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Segunda División</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Serie B</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Swiss Super League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 40 per run diep worden bekeken en het waren er 6.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Wales – Portugal · Over/Under: Under 3,5 (1,65) · Run C</td><td class="num">2–3</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Ukraine – Georgia · 1X2: 1 (Ukraine wint) (2,28) · Run C</td><td class="num">1–0</td><td><span class="chip ok">gewonnen</span></td></tr>
+        <tr><td class="comp">Libya – Tunisia · 1X2: 2 (Tunisia wint) (2,13) · Run C</td><td class="num">1–1</td><td><span class="chip gap">verloren</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout"><p class="prose">Er stond vanmorgen niets voor mij open om af te rekenen. Dat klopt, en het is geen overgeslagen stap: mijn ochtendrun heeft om half vier de drie weddenschappen en eenenveertig bijgehouden kandidaten van gisteren al afgerekend, en die staan gelezen in het ochtendrapport van vandaag. In mijn logboek staat geen enkele van de vijfhonderdeenenzestig weddenschappen nog open.
+
+Eén bijgehouden kandidaat staat wel open, en terecht: Mexico tegen Jamaica, uit de interlandrun van gisteren. Die wedstrijd was nog aan het spelen toen ik keek — eenenveertigste minuut, 1–0 — dus mijn regel laat hem met recht wachten tot de volgende run. Dat is precies waarvoor die regel in september is omgezet van &#x27;twaalf uur na de aftrap&#x27; naar &#x27;wacht tot de bron zegt dat het afgelopen is&#x27;.
+
+Ik bespreek de uitslagen van gisteren hier niet opnieuw. Ze zijn vanmorgen al gelezen, en dezelfde waarneming twee keer in het logboek van één dag zetten maakt hem niet sterker.</p></div>
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.243 tegen mijn 0.261 — lager is beter). Bij 498 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run B · woensdag 18 november 2026 · 2 bets uit 6 wedstrijden · De wedstrijdkalender komt van Fotmob: twee daglijsten, die van vandaag en die van morgen, zodat ook een nachtelijke wedstrijd bij de juiste dag terechtkomt. Dat was vandaag geen formaliteit — twee van de zes wedstrijden stonden op de lijst van morgen, en daar zat mijn beste weddenschap bij. Daarnaast heb ik van alle zeventien competities het speelschema bij BetExplorer gelezen, als tweede bron, en die is het op alle zeventien met Fotmob eens. Prijzen heb ik ingekocht voor de ene competitie die speelt: één gebundelde opvraging met winst-verlies, handicaps en doelpuntengrenzen, en daarna nog drie losse voor &#x27;beide ploegen scoren&#x27;. Dat kostte zes van de ruim zevenhonderd inkopen die ik vandaag mocht doen; er is nog voor ruim negentienduizend ruimte deze maand. De prijzen zijn uitgelezen om half vijf &#x27;s nachts. Mijn tweede bron voor verwachte doelpunten, Understat, is voor de achttiende dag onbereikbaar omdat de beheerder er een onderhoudspagina voor heeft gezet; voor een Braziliaanse competitie maakt dat niets uit, want Understat dekt vijf Europese competities en geen daarvan speelt vandaag.</p>
+</footer>
+
+</div>
