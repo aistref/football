@@ -24,6 +24,7 @@ import argparse
 import html
 import json
 import re
+import sys
 from zoneinfo import ZoneInfo
 from datetime import date, datetime
 from pathlib import Path
@@ -119,6 +120,57 @@ def inline(value) -> str:
     return out
 
 
+def _emphasis(escaped: str) -> str:
+    """`**vet**` en `*cursief*` omzetten in tags, op al geëscapete tekst.
+
+    De prosevelden gebruikten tot 18 nov 2026 letterlijke `<b>`-tags, en die blijven werken
+    (`inline` zet ze terug). Markdown deed het **niet** — `**zo**` kwam letterlijk met sterretjes
+    op de pagina, en dat is op 18 nov in het dagrapport van Run A ook echt gebeurd. Nu werken
+    beide vormen.
+    """
+    out = re.sub(r"\*\*(?=\S)(.+?)(?<=\S)\*\*", r"<strong>\1</strong>", escaped, flags=re.S)
+    out = re.sub(r"(?<![\*\w])\*(?=\S)([^*\n]+?)(?<=\S)\*(?!\*)", r"<em>\1</em>", out)
+    return out
+
+
+def prose_blocks(value, *, kop: str = "h5") -> str:
+    """Een prosetekst als blokken: alinea's op een witregel, `##` als kopje.
+
+    **Waarom dit op 18 nov 2026 nodig bleek, en dit is een echte fout en geen opmaakwens.** Elk
+    prosetekstveld ging tot vandaag door `inline()` en daarna in één `<p class="prose">`. Een
+    witregel in de prose werd in HTML gewone witruimte, dus **elke voorbeschouwing sinds 17
+    oktober is als één ononderbroken blok op de pagina gekomen** — ongeacht hoe zorgvuldig hij in
+    alinea's was geschreven. Nagemeten op het dagrapport van Run C van 17 november: de prose had
+    zes alinea's, de pagina precies één `<p>`. Dat is letterlijk de "grote lap tekst" waar de
+    gebruiker op 18 november over viel, en de oorzaak zat dus in de renderer en niet in de tekst.
+
+    Daar komt bij dat markdown-nadruk nooit werkte (zie `_emphasis`): de `**`-tekens kwamen
+    letterlijk op de pagina.
+
+    Wat deze functie doet, in deze volgorde: escapen met `inline()` (dus de toegestane
+    `<b>`/`<br>`-tags blijven werken), dan `**vet**` en `*cursief*` omzetten, dan splitsen op
+    witregels. Een blok dat met `##` tot `######` begint wordt een kopje — dat is wat §6c sinds
+    18 nov 2026 van een voorbeschouwing vraagt. Een blok dat in zijn geheel cursief is, krijgt de
+    klasse `slot`, want dat is de verantwoordingsregel aan het eind (§6c punt 6).
+    """
+    tekst = str(value or "").strip()
+    if not tekst:
+        return ""
+    uit = []
+    for blok in re.split(r"\n\s*\n", tekst):
+        blok = blok.strip()
+        if not blok:
+            continue
+        m = re.match(r"^(#{2,6})\s+(.*)$", blok, flags=re.S)
+        if m:
+            uit.append(f'<{kop} class="prose-kop">{_emphasis(inline(m.group(2).strip()))}</{kop}>')
+            continue
+        body = _emphasis(inline(blok))
+        slot = ' slot' if re.fullmatch(r"<em>.*</em>", body, flags=re.S) else ""
+        uit.append(f'<p class="prose{slot}">{body}</p>')
+    return "\n      ".join(uit)
+
+
 def nl_date(day: date) -> str:
     return f"{DAYS[day.weekday()]} {day.day} {MONTHS[day.month - 1]} {day.year}"
 
@@ -178,8 +230,19 @@ def risk_class(pick: dict, prose: dict) -> tuple[str, str]:
 
 
 def max_shortlist(day: date) -> int:
-    """3 op ma-do, 5 op vr-zo — `MAX_SHORTLIST` uit _shared-rules.md §0."""
-    return 5 if day.weekday() >= 4 else 3
+    """`MAX_SHORTLIST` uit _shared-rules.md §0 — 2 op ma-do, 3 op vr, 5 op za, 4 op zo.
+
+    **Uit `ranking` gehaald en hier niet meer uitgeschreven, om precies de reden die
+    `max_deep_analyses` hieronder beschrijft.** Tot 18 nov 2026 stond hier een eigen kopie
+    (`5 if day.weekday() >= 4 else 3`), en dat was al die tijd een tweede plek waar dezelfde
+    parameter stond. Toen de gebruiker de lijstlengte op 18 nov per weekdag liet splitsen — 2 op
+    ma-do, 3 op vrijdag, 5 op zaterdag, 4 op zondag — zou die kopie op de oude verhouding zijn
+    blijven staan en zou elk dagrapport een andere lijst hebben getoond dan de run zelf had
+    gepubliceerd. Dat is dezelfde stille afwijking als de cap van 30/35 in september, en nu op de
+    enige manier opgelost die niet opnieuw uiteen kan lopen: er is één bron.
+    """
+    from ranking import max_shortlist as _cap
+    return _cap(day)
 
 
 def max_deep_analyses(day: date) -> int:
@@ -580,7 +643,7 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
       <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">{signed(pick["edge_pp"])}</span></div>
     </div>
     <div class="why">
-      <p class="prose">{inline(why)}</p>
+      {prose_blocks(why)}
       {bet_data(find_match(state or {}, pick), pick)}
       <span class="risk"><span class="dot {level}"></span>{inline(sentence)}</span>
     </div>
@@ -757,6 +820,144 @@ def render_shortlist(picks: list[dict], prose: dict, labels: dict, day: date) ->
 </section>'''
 
 
+def match_suitability(match: dict) -> tuple[float, dict] | None:
+    """De geschiktheid van een wedstrijd om op te betten, plus de selectie die hem bepaalt.
+
+    Dit is **dezelfde formule** als `selection_score` in §1a en §5 — voordeel in procentpunten x
+    kans x (FULL 1.0 | LIGHT 0.5) — toegepast op de sterkste kandidaat van de wedstrijd. Een
+    wedstrijd zonder kandidaten (`tier = NONE`, geen prijzen, niets doorgerekend) geeft `None`:
+    die heeft geen onderkant en hoort niet met een nul te worden gevuld, net zoals §3 Stage 4 dat
+    voor de datarijkdom van een lege lijst voorschrijft.
+    """
+    tier = match.get("tier")
+    weight = 1.0 if tier == "FULL" else 0.5
+    best: tuple[float, dict] | None = None
+    for cand in match.get("all_candidates") or []:
+        edge, prob = cand.get("edge_pp"), cand.get("my_prob")
+        if edge is None or prob is None:
+            continue
+        score = edge * prob * weight
+        if best is None or score > best[0]:
+            best = (score, cand)
+    if best is None:
+        nm = match.get("near_miss") or {}
+        if nm.get("edge_pp") is not None and nm.get("my_prob") is not None:
+            best = (nm["edge_pp"] * nm["my_prob"] * weight, nm)
+    return best
+
+
+def _qualified_not_published(match: dict) -> dict | None:
+    """De selectie die alle poorten EN zijn drempel haalde en alleen niet in de lijst paste.
+
+    Twee vormen, omdat §5b er twee voorschrijft: het blok
+    `gekwalificeerd_niet_gepubliceerd` op de wedstrijd, en een `near_miss` met
+    `failed_gate = "lijstlengte"`. Beide betekenen hetzelfde en beide horen groen.
+    """
+    blok = match.get("gekwalificeerd_niet_gepubliceerd")
+    if blok:
+        return blok[0] if isinstance(blok, list) else blok
+    nm = match.get("near_miss") or {}
+    if nm.get("failed_gate") == "lijstlengte":
+        return nm
+    for cand in match.get("all_candidates") or []:
+        if cand.get("failed_gate") == "lijstlengte":
+            return cand
+    return None
+
+
+def render_coverage_ranked(state: dict, labels: dict) -> str:
+    """De bekeken wedstrijden op GESCHIKTHEID gerangschikt, niet op competitie gegroepeerd.
+
+    **Toegevoegd 18 nov 2026, op besluit van de gebruiker**, en het is de tweede helft van
+    dezelfde wijziging als de kortere lijst in §0:
+
+    > *"Daarnaast wil ik, in de dekkingsrapportage, dat je de overige wedstrijden die je ook hebt
+    > bekeken rangschikt op geschiktheid om te betten (nu groepeer je ze volgens mij op
+    > competitie). Dus als je op donderdag 3 bets hebt, en er maar twee mag publiceren, dan staat
+    > die derde bet waar geen enkel filter iets op tegen had en die ook genoeg voordeel toonde,
+    > bovenaan in de dekkingsrapportage, met daarbij een groene markering. Daarna rangschik je de
+    > rest, zonder een markering. Zo zie ik tenminste wat er buiten valt."*
+
+    Waarom dit nodig werd: met `MAX_SHORTLIST` op 2 op doordeweekse dagen valt er vaker een
+    selectie buiten de lijst waar **geen enkele poort** iets op tegen had. Die stond tot nu toe
+    alleen als regel in "Net niet" en in het schaduwlogboek onder `lijstlengte`, tussen de
+    kandidaten die wél op iets afvielen — en dat is een andere soort. Groen betekent hier dus
+    precies één ding: *dit was een volwaardige weddenschap en alleen de lengte van de lijst hield
+    hem tegen.*
+
+    De wedstrijden met een bet staan hier niet in; die staan in de topselectie erboven.
+    """
+    rijen: list[tuple[int, float | None, dict, dict | None]] = []
+    for result in normalise_competitions(state).values():
+        for match in result.get("matches") or []:
+            if match.get("bet"):
+                continue
+            gekwal = _qualified_not_published(match)
+            suit = match_suitability(match)
+            score = suit[0] if suit else None
+            sel = gekwal or (suit[1] if suit else None)
+            # groep 0 = groen (gekwalificeerd, alleen de lijstlengte hield hem tegen),
+            # 1 = doorgerekend met een score, 2 = niets doorgerekend (geen onderkant).
+            groep = 0 if gekwal else (1 if score is not None else 2)
+            rijen.append((groep, score, match, sel))
+    if not rijen:
+        return ""
+    rijen.sort(key=lambda r: (r[0], -(r[1] if r[1] is not None else 0.0),
+                              r[2].get("match") or ""))
+
+    groen = sum(1 for r in rijen if r[0] == 0)
+    out = []
+    for i, (groep, score, match, sel) in enumerate(rijen, 1):
+        klas = ' class="qualified"' if groep == 0 else ""
+        markering = ('<span class="chip ok">haalde alles — alleen de lijst was vol</span>'
+                     if groep == 0 else "")
+        if sel:
+            markt = sel.get("market") or ""
+            keuze = sel.get("selection")
+            wat = f"{markt} — {keuze}" if keuze and keuze not in markt else markt
+            koers = sel.get("odds")
+            detail = esc(wat) + (f" @ {koers:.2f}" if isinstance(koers, (int, float)) else "")
+            if groep != 0 and sel.get("failed_gate"):
+                detail += (f' · viel af op <strong>'
+                           f'{esc(GATE_LABEL.get(sel["failed_gate"], sel["failed_gate"]))}</strong>')
+        else:
+            detail = esc(match.get("reason") or "niets doorgerekend")
+        out.append(
+            f'<tr{klas}><td class="num rank">{i}</td>'
+            f'<td><span class="sl-match">{esc(match.get("match") or "?")}</span>'
+            f'<span class="sl-pick">{esc(short_competition(match.get("competition") or "", labels))}'
+            f' · {esc(match.get("tier") or "?")}</span></td>'
+            f'<td class="note">{detail} {markering}</td>'
+            f'<td class="num">{f"{score:.2f}" if score is not None else "—"}</td></tr>')
+
+    inleiding = (
+        f'<p class="prose measure" style="margin:26px 0 14px">En dit zijn de <strong>'
+        f'{len(rijen)}</strong> overige wedstrijden die ik heb bekeken, op geschiktheid '
+        f'gerangschikt in plaats van per competitie — de rechterkolom is dezelfde score waarmee '
+        f'ik de topselectie ordende. '
+        + (f'De <strong>bovenste {groen}</strong> {"is" if groen == 1 else "zijn"} groen '
+           f'gemarkeerd: daar had geen enkel filter iets op tegen en er was genoeg voordeel, '
+           f'alleen was de lijst al vol. Dat is wat er vandaag buiten viel.'
+           if groen else
+           'Geen daarvan is groen gemarkeerd: er was vandaag geen wedstrijd die alles haalde en '
+           'alleen op de lengte van de lijst strandde.')
+        + ' Een streepje in de rechterkolom betekent dat er niets te scoren was — geen bruikbare '
+          'cijfers of geen prijzen, dus geen enkele doorgerekende selectie.</p>')
+
+    return inleiding + f'''
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Wedstrijd</th><th>Beste mogelijkheid</th>
+        <th class="num">Score</th>
+      </tr></thead>
+      <tbody>
+        {"".join(out)}
+      </tbody>
+    </table>
+  </div>'''
+
+
 def render_coverage(state: dict, notes: dict, labels: dict) -> str:
     order = {"GEANALYSEERD": 0, "BUITEN DATADEKKING": 1, "AFGEKAPT": 2, "GEEN WEDSTRIJD": 3}
     rows = sorted(normalise_competitions(state).items(),
@@ -871,7 +1072,10 @@ def render_finding(finding) -> str:
     # toeval maar een schema dat makkelijk mis te lezen is; stilzwijgend tekst weggooien is
     # daarbij de ergste reactie. Beide vormen worden nu geaccepteerd.
     _paras = finding.get("paragraphs") or ([finding["body"]] if finding.get("body") else [])
-    paragraphs = "\n    ".join(f'<p class="prose">{p}</p>' for p in _paras)
+    # `_emphasis` erbij op 18 nov 2026: deze alinea's gaan met opzet ONGEËSCAPEERD de pagina op
+    # (zie de docstring van `inline`), dus `<b>` werkte hier al — maar markdown niet, en `**zo**`
+    # kwam letterlijk met sterretjes op de pagina. Dat gebeurde die dag in de bevinding van Run A.
+    paragraphs = "\n    ".join(f'<p class="prose">{_emphasis(p)}</p>' for p in _paras)
     table = ""
     if finding.get("table"):
         head = "".join(f"<th>{esc(h)}</th>" for h in finding["table"]["head"])
@@ -1139,7 +1343,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     <span class="date">{nl_date(day)}{f" · gedraaid om {esc(started)}" if started else ""}</span>
   </div>
 
-  <p class="verdict">{verdict}</p>
+  <div class="verdict">{prose_blocks(verdict, kop="h3")}</div>
 
   <div class="facts">
     <div class="fact"><span class="v num">{len(picks)}</span><span class="l">bets gepubliceerd</span></div>
@@ -1179,6 +1383,7 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
       </tbody>
     </table>
   </div>
+  {render_coverage_ranked(state, labels)}
   {trunc_line}
 </section>
 {render_settled(prose.get("settled") or auto_settled(all_picks, day), stats, prose.get("settled_note") or "")}
@@ -1259,6 +1464,19 @@ header{padding:44px 0 0}
 .masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
 .verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
 .verdict b{color:var(--accent-ink); font-weight:800}
+/* 18 nov 2026: `verdict` en de voorbeschouwingen gaan door `prose_blocks`, dus een witregel in de
+   prose is nu echt een alinea. Daarvoor liep alles in één <p> en stond er dus één lap tekst. */
+.verdict p{margin:0 0 .5em; font-size:inherit; line-height:inherit; font-weight:inherit; max-width:none}
+.verdict p:last-child{margin-bottom:0}
+.verdict strong{color:var(--accent-ink); font-weight:800}
+.verdict h3{margin:.7em 0 .3em; font-size:.8em; letter-spacing:-.01em}
+/* De kopjes in een voorbeschouwing (§6c, besluit gebruiker 18 nov 2026: kopjes in plaats van een
+   lap tekst). Ze staan in de tekst zelf en zijn iets anders dan de twee kopjes die `bet_data`
+   boven de gegevensblokken zet. */
+.why .prose-kop{margin:14px 0 -2px; font-size:.95rem; font-weight:700; letter-spacing:-.01em;
+  text-transform:none; color:var(--ink)}
+.why .prose-kop:first-child{margin-top:0}
+.why p.slot{color:var(--muted); font-size:.92rem}
 
 .facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
 .fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
@@ -1301,6 +1519,11 @@ header{padding:44px 0 0}
 
 .chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
 .chip.ok{background:var(--pos-wash); color:var(--pos)}
+/* De groene markering van §5: deze wedstrijd haalde alle poorten en zijn drempel, en alleen de
+   lengte van de lijst hield hem tegen (besluit van de gebruiker, 18 nov 2026). */
+tr.qualified{background:var(--pos-wash)}
+tr.qualified td{border-top-color:var(--pos)}
+tr.qualified .sl-match{color:var(--pos)}
 .chip.none{background:var(--hold-wash); color:var(--hold)}
 .chip.gap{background:var(--neg-wash); color:var(--neg)}
 .chip.low{background:var(--pos-wash); color:var(--pos)}
@@ -1392,7 +1615,8 @@ class _MarkdownWriter(_HTMLParser):
     """Zet de HTML van `render()` om naar Markdown. Alleen de tags die daarin voorkomen."""
 
     SKIP = {"style", "script", "title"}
-    HEADING = {"h1": "# ", "h2": "## ", "h3": "### ", "h4": "#### "}
+    HEADING = {"h1": "# ", "h2": "## ", "h3": "### ", "h4": "#### ", "h5": "##### ",
+               "h6": "###### "}
     #: spans die in de HTML elk op hun eigen regel of in hun eigen vakje staan (een cijfer met
     #: zijn label, de kop van een bet, een regel uit de topselectie). Zonder scheiding plakken ze
     #: in Markdown aan elkaar: "3bets gepubliceerd" in plaats van "3 bets gepubliceerd".
@@ -1566,7 +1790,116 @@ def to_markdown(page: str, *, bron: str = "") -> str:
     return kop + body
 
 
+def _selftest() -> int:
+    """Controles op de gerangschikte dekkingstabel van §5 (besluit gebruiker, 18 nov 2026).
+
+    Geen netwerk, geen repo nodig. Wat hier wordt vastgepind is precies wat de gebruiker heeft
+    gevraagd en wat anders stil kan wegvallen: dat een gekwalificeerde-niet-gepubliceerde
+    selectie **bovenaan** staat en **groen** is, dat de rest daarna op score staat, en dat een
+    wedstrijd zonder doorgerekende selectie onderaan komt met een streepje in plaats van een nul.
+    """
+    from datetime import date as _date
+    state = {"competitions": {"Testcompetitie": {"status": "GEANALYSEERD", "matches": [
+        # Lager dan de eerste op score, maar hij haalde alles -> moet tóch bovenaan, groen.
+        {"match": "Groen – Gekwalificeerd", "competition": "Testcompetitie", "tier": "FULL",
+         "bet": False,
+         "all_candidates": [{"market": "1X2", "selection": "1", "odds": 2.0, "edge_pp": 9.0,
+                             "my_prob": 0.50, "failed_gate": "lijstlengte"}]},
+        # Hoogste score van de run, maar viel op een poort af -> geen markering.
+        {"match": "Hoog – Afgevallen", "competition": "Testcompetitie", "tier": "FULL",
+         "bet": False,
+         "all_candidates": [{"market": "Over/Under", "selection": "Over 2.5", "odds": 1.9,
+                             "edge_pp": 20.0, "my_prob": 0.60,
+                             "failed_gate": "tweede_methode"}]},
+        {"match": "Laag – Afgevallen", "competition": "Testcompetitie", "tier": "LIGHT",
+         "bet": False,
+         "all_candidates": [{"market": "1X2", "selection": "2", "odds": 3.0, "edge_pp": 4.0,
+                             "my_prob": 0.30, "failed_gate": "edge"}]},
+        # Niets doorgerekend -> onderaan, streepje, geen nul.
+        {"match": "Geen – Cijfers", "competition": "Testcompetitie", "tier": "NONE",
+         "bet": False, "reason": "geen onafhankelijke kansbron", "all_candidates": []},
+        # Een gepubliceerde bet hoort hier NIET in; die staat in de topselectie.
+        {"match": "Gepubliceerd – Bet", "competition": "Testcompetitie", "tier": "FULL",
+         "bet": True,
+         "all_candidates": [{"market": "1X2", "selection": "1", "odds": 2.0, "edge_pp": 30.0,
+                             "my_prob": 0.60}]},
+    ]}}}
+    html = render_coverage_ranked(state, {})
+    volgorde = re.findall(r'class="sl-match">([^<]+)<', html)
+    assert volgorde == ["Groen – Gekwalificeerd", "Hoog – Afgevallen", "Laag – Afgevallen",
+                        "Geen – Cijfers"], volgorde
+    assert "Gepubliceerd – Bet" not in html, "een gepubliceerde bet hoort in de topselectie"
+    groen = re.findall(r'<tr class="qualified">.*?class="sl-match">([^<]+)<', html, re.S)
+    assert groen == ["Groen – Gekwalificeerd"], groen
+    assert html.count('chip ok') == 1, "precies één groene markering"
+    assert "alleen de lijst was vol" in html
+    assert ">—<" in html, "een wedstrijd zonder selectie krijgt een streepje, geen nul"
+    assert "De <strong>bovenste 1</strong>" in html
+
+    # Zonder gekwalificeerde selectie: geen enkele markering, en de tekst zegt dat met zoveel
+    # woorden in plaats van de alinea weg te laten.
+    state2 = {"competitions": {"T": {"status": "GEANALYSEERD", "matches": [
+        {"match": "A – B", "competition": "T", "tier": "FULL", "bet": False,
+         "all_candidates": [{"market": "1X2", "selection": "1", "odds": 2.0, "edge_pp": 5.0,
+                             "my_prob": 0.4, "failed_gate": "edge"}]}]}}}
+    html2 = render_coverage_ranked(state2, {})
+    assert 'class="qualified"' not in html2 and "chip ok" not in html2
+    assert "Geen daarvan is groen gemarkeerd" in html2
+
+    # Nul bekeken wedstrijden -> geen tabel, geen lege kop.
+    assert render_coverage_ranked({"competitions": {}}, {}) == ""
+
+    # De scoreformule is die van §1a: edge x kans x (FULL 1.0 | LIGHT 0.5).
+    s_full = match_suitability({"tier": "FULL", "all_candidates": [
+        {"edge_pp": 10.0, "my_prob": 0.5}]})
+    s_light = match_suitability({"tier": "LIGHT", "all_candidates": [
+        {"edge_pp": 10.0, "my_prob": 0.5}]})
+    assert s_full and abs(s_full[0] - 5.0) < 1e-9, s_full
+    assert s_light and abs(s_light[0] - 2.5) < 1e-9, s_light
+    assert match_suitability({"tier": "NONE", "all_candidates": []}) is None
+
+    # De lijstlengte komt uit ranking en nergens anders meer (18 nov 2026).
+    assert max_shortlist(_date(2026, 11, 18)) == 3
+    assert [max_shortlist(_date(2026, 11, d)) for d in (19, 20, 21, 22)] == [2, 3, 5, 4]
+
+    # --- prose_blocks: de fout die op 18 nov 2026 is gevonden -----------------------------
+    # Een witregel MOET een alinea worden. Dat deed de pagina tot die datum niet: zes alinea's
+    # prose kwamen als één <p> op de pagina, en dat was de "grote lap tekst".
+    drie = prose_blocks("Eerste alinea.\n\nTweede alinea.\n\nDerde alinea.")
+    assert drie.count("<p class=\"prose\">") == 3, drie
+    assert prose_blocks("Eén alinea.").count("<p") == 1
+    assert prose_blocks("") == "" and prose_blocks(None) == ""
+
+    # Een `##`-kopje wordt een kopje en geen alinea met sterretjes of hekjes erin.
+    mk = prose_blocks("## Acht duels zonder de nul\n\nDe bezoekers hielden de nul niet.")
+    assert '<h5 class="prose-kop">Acht duels zonder de nul</h5>' in mk, mk
+    assert "##" not in mk and mk.count("<p") == 1
+    assert '<h3 class="prose-kop">Kop</h3>' in prose_blocks("### Kop\n\nTekst.", kop="h3")
+
+    # Markdown-nadruk werkte NIET en kwam letterlijk op de pagina (ook in het dagrapport van
+    # Run A van 18 nov zelf). Beide vormen horen nu te werken.
+    assert "<strong>vet</strong>" in prose_blocks("Dit is **vet** in een zin.")
+    assert "<em>schuin</em>" in prose_blocks("Dit is *schuin* in een zin.")
+    assert "**" not in prose_blocks("**Helemaal vet.** En verder.")
+    # De letterlijke <b>-tags van de oude prosebestanden blijven werken.
+    assert "<b>oud</b>" in prose_blocks("Een <b>oud</b> nadrukveld.")
+    # Een los sterretje en een getal als 2*3 mogen geen cursief maken.
+    assert "<em>" not in prose_blocks("Een * los sterretje en 2*3 blijven staan.")
+    # HTML uit de prose wordt nog steeds geëscapet — `inline` blijft de poort.
+    assert "&lt;script&gt;" in prose_blocks("Een <script> tag.")
+
+    # Een blok dat helemaal cursief is, is de verantwoordingsregel van §6c punt 6.
+    slot = prose_blocks("Gewone alinea.\n\n*Hij staat hier omdat het verschil het grootst is.*")
+    assert 'class="prose slot"' in slot, slot
+    assert slot.count('class="prose"') == 1
+
+    print("Zelftest geslaagd — 30 controles.")
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "selftest":
+        return _selftest()
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--run", required=True, choices=["A", "B", "C", "a", "b", "c"])
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")

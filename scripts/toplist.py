@@ -8,7 +8,8 @@ niet nagaan of de correctie klopt.
 
 Deze module maakt dat zichtbaar en meetbaar. Ze doet drie dingen:
 
-1. **Twee ranglijsten per run**, allebei `MAX_SHORTLIST` lang (3 op ma–do, 5 op vr–zo, precies
+1. **Twee ranglijsten per run**, allebei `MAX_SHORTLIST` lang (2 op ma–do, 3 op vr, 5 op za,
+   4 op zo sinds 19 nov 2026; daarvoor 3 op ma–do en 5 op vr–zo — precies
    de bestaande parameter uit §0). De ene rangschikt op `my_prob` ná de herijking, de andere op
    `my_raw` ervóór. Dezelfde weegregel voor beide: `selection_score` uit §5.
 2. **Eén regel per wedstrijd**, want de 0-of-1-bet-regel van §1 geldt hier net zo goed. Dezelfde
@@ -151,7 +152,9 @@ def _edges(c: dict) -> tuple[float | None, float | None]:
 def build(state: dict, n: int | None = None) -> dict:
     """Twee ranglijsten van elk `n` regels: `herijkt` en `ruw`.
 
-    `n` is standaard `MAX_SHORTLIST` voor de dag van de run — 3 op ma–do, 5 op vr–zo.
+    `n` is standaard `MAX_SHORTLIST` voor de dag van de run — 2 op ma–do, 3 op vrijdag, 5 op
+    zaterdag en 4 op zondag (vanaf 19 nov 2026; daarvoor 3 op ma–do en 5 op vr–zo). Het getal komt
+    uit `ranking.max_shortlist(DAY)` en wordt hier niet uitgeschreven.
     Per wedstrijd komt er hoogstens één regel in elke lijst (§1, 0-of-1-bet), en dat is de
     selectie met de hoogste `selection_score` op díe schaal. De twee lijsten kunnen dus een
     andere markt van dezelfde wedstrijd noemen, en dat is geen fout: de weegregel telt de kans

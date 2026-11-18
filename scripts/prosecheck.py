@@ -1,8 +1,13 @@
-"""Tel de AI-tells, de tussenkopjes en de herhaalde vormen in de voorbeschouwingen van een run.
+"""Tel de kopjes, de AI-tells en de herhaalde vormen in de voorbeschouwingen van een run.
 
-Hoort bij §6c, "Geen tussenkopjes en minder AI-tells" (7 nov 2026, op verzoek van de gebruiker,
-bindend vanaf 8 nov 2026). Die regel is op de vijf voorbeschouwingen van 7 november gemeten, en
-dit script is de meting zelf, zodat een volgende run niet op zijn gevoel hoeft af te gaan.
+Hoort bij §6c, "Minder AI-tells" (7 nov 2026, op verzoek van de gebruiker, bindend vanaf 8 nov
+2026). Die regel is op de vijf voorbeschouwingen van 7 november gemeten, en dit script is de
+meting zelf, zodat een volgende run niet op zijn gevoel hoeft af te gaan.
+
+**LET OP — DE KOPJESREGEL IS OP 18 NOV 2026 OMGEDRAAID** en bindt vanaf 19 nov 2026. Waar hier
+eerst `"kopjes": 0` stond, staat nu `"kopjes_min": 3`: de gebruiker wil kopjes in plaats van een
+lap tekst. Alle andere tellers staan onveranderd. Zie `KOPJES_OMGEDRAAID` hieronder voor het
+volledige besluit en voor wat er juist níet mee verandert.
 
     python3 scripts/prosecheck.py --date 2026-11-08 --run a
     python3 scripts/prosecheck.py selftest        # geen netwerk, geen repo nodig
@@ -16,9 +21,10 @@ een run wordt er niet door tegengehouden en hoort er zelf naar te kijken.
 
 Wat het meet, en waarom precies dit:
 
-* **kopjes** — `#`-kopjes en vetgedrukte aanhefregels horen er niet te zijn (norm 0). Op 7 nov
-  waren het er nul en zat het probleem in de taal; deze teller staat er zodat het niet via de
-  opmaak terugkomt.
+* **kopjes** — `#`-kopjes en vetgedrukte aanhefregels, en er moeten er nu **minstens drie** zijn
+  (norm `kopjes_min` = 3, omgedraaid op 18 nov 2026). Tot die datum was de norm nul. Op 7 nov
+  waren het er nul en zat het probleem volledig in de taal, niet in de opmaak — dat is precies
+  waarom deze teller omgedraaid kón worden zonder het besluit van 7 november aan te tasten.
 * **tussenkopjes in woorden** — alinea's die openen met hun eigen onderwerp als label.
 * **herhaalde vormen** — dezelfde opener of dezelfde zinswending in meerdere teksten van één
   dag. Dit is de belangrijkste teller: op 7 nov kwamen twee formuleringen in **vijf van de vijf**
@@ -43,7 +49,7 @@ from pathlib import Path
 # --------------------------------------------------------------------------- norm
 
 NORM = {
-    "kopjes": 0,            # geen `#` en geen **vetgedrukte aanhef** in de preview-tekst
+    "kopjes_min": 3,        # MINSTENS drie kopjes — omgedraaid op 18 nov 2026, zie KOPJES_OMGEDRAAID
     "em_dash": 2,           # per voorbeschouwing; op 7 nov was het gemiddeld 5,2
     "label_openers": 0,     # alinea's die met hun rubriek als opschrift beginnen
     "tells": 3,             # alle tells samen, per voorbeschouwing
@@ -51,6 +57,41 @@ NORM = {
     "woorden_min": 300,
     "woorden_max": 600,
 }
+
+#: Vanaf deze dag geldt `kopjes_min`. Vóór die dag gold het omgekeerde (`kopjes` = 0), dus een
+#: hermeting van de voorbeschouwingen van 7 t/m 17 november hoort op de oude norm te lopen.
+KOPJES_BINDS_FROM = "2026-11-19"
+
+KOPJES_OMGEDRAAID = """De kopjesregel is op 18 nov 2026 OMGEDRAAID, op besluit van de gebruiker.
+
+> *"Daarnaast wil ik dat je, vanaf dat je weer weddenschappen hebt, in de voorbeschouwing werkt
+> met kopjes, in plaats van een grote lap tekst."*
+
+Van 8 t/m 18 november gold hier `"kopjes": 0` — geen `#`-kopje en geen vetgedrukte aanhef. Die
+norm kwam uit het besluit van 7 november, en dat besluit ging over iets anders dan het nu lijkt:
+op die dag stonden er NUL markdown-kopjes in de vijf teksten en zat het probleem volledig in de
+TAAL (vijf van de vijf teksten openden hun alinea's met hun eigen rubriek als label, en twee
+formuleringen kwamen letterlijk in alle vijf voor). De teller op 0 was er alleen om te voorkomen
+dat het via de opmaak terug zou komen.
+
+Het gevolg was een tekst van 300 tot 600 woorden zonder enige structuur, en dat is waar de
+gebruiker nu over valt. Kopjes zijn de oplossing voor de LAP TEKST; ze waren nooit de oorzaak van
+de sjabloonklacht.
+
+**Wat hiermee verandert:** alleen de kopjes. `kopjes_min` = 3.
+
+**Wat NIET verandert, en dat is het grootste deel van 7 november:**
+
+* `label_openers` blijft 0, en wordt er strenger van in plaats van losser. Een kopje draagt nu het
+  onderwerp, dus de alinea eronder hoeft het niet te herhalen — *"Teamnieuws"* als kopje met
+  daaronder *"Het teamnieuws is..."* is het invulveld in het kwadraat.
+* `em_dash` blijft 2, `tells` blijft 3, `jargon` blijft 0, de lengte blijft 300-600 woorden.
+* De harde inhoudelijke eisen van §6c blijven onverkort: een frequentie die de bet TEGENSPREEKT
+  staat vooraan, er staat één alinea over wat de bet kan slopen, en de cursieve verantwoording
+  sluit af. Een kopjesstructuur mag nooit een vaste kopjesstructuur worden — vijf teksten op één
+  ochtend met dezelfde vijf kopjes in dezelfde volgorde is precies het sjabloon waar 7 november
+  over ging, nu met opschriften erboven.
+"""
 
 # De nulmeting waarop de regel is geschreven (vijf teksten, 2843 woorden).
 BASELINE_7_NOV = {
@@ -213,8 +254,9 @@ def rapport(metingen: dict[str, dict], herhaald: dict) -> tuple[list[str], list[
     tot_dash = sum(m["em_dash"] for m in metingen.values())
 
     uit.append(f"VOORBESCHOUWINGEN — {n} tekst(en), {tot_w} woorden")
-    uit.append("§6c, 'Geen tussenkopjes en minder AI-tells' (bindt vanaf 8 nov 2026). "
-               "Hulpmiddel, geen poort.")
+    uit.append("§6c, 'Minder AI-tells' (8 nov 2026) plus de kopjesregel die op 18 nov 2026 is "
+               "OMGEDRAAID: minstens "
+               f"{NORM['kopjes_min']} kopjes per tekst in plaats van nul. Hulpmiddel, geen poort.")
     uit.append("")
     uit.append(f"  {'tekst':46s} {'woorden':>7s} {'—':>4s} {'kop':>4s} {'label':>6s} "
                f"{'tells':>6s} {'jargon':>7s}")
@@ -224,10 +266,11 @@ def rapport(metingen: dict[str, dict], herhaald: dict) -> tuple[list[str], list[
                    f"{len(m['label_openers']):6d} {m['tells_totaal']:6d} "
                    f"{sum(m['jargon'].values()):7d}")
 
-        if m["kopjes"] > NORM["kopjes"]:
+        if m["kopjes"] < NORM["kopjes_min"]:
             fout.append(f"{naam}: {m['kopjes']} kopje(s) in de tekst "
                         f"({m['markdown_kopjes']} markdown, {m['vet_aanhef']} vetgedrukte aanhef) "
-                        f"— norm {NORM['kopjes']}")
+                        f"— norm is MINSTENS {NORM['kopjes_min']} (besluit 18 nov 2026: kopjes "
+                        f"in plaats van een lap tekst)")
         if m["em_dash"] > NORM["em_dash"]:
             fout.append(f"{naam}: {m['em_dash']} em-dashes — norm {NORM['em_dash']}")
         for lab in m["label_openers"]:
@@ -333,7 +376,7 @@ def _selftest() -> int:
     eis("dat-is-geen-X gezien", m["tells"].get("dat-is-geen-X"), 1)
     eis("em-dash geteld", m["em_dash"], 3)
     eis("em-dash boven de norm", m["em_dash"] > NORM["em_dash"], True)
-    eis("geen kopjes in deze tekst", m["kopjes"], 0)
+    eis("de vorm van 7 nov had nul kopjes — en haalt de norm van 18 nov dus niet", m["kopjes"], 0)
 
     # 2. Een vetgedrukte aanhef is een kopje; vet MIDDEN in een zin is nadruk en dus geen kopje.
     eis("vetgedrukte aanhef is een kopje",
@@ -360,11 +403,30 @@ def _selftest() -> int:
         "geen ver gezocht scenario."
     )
     ms = meet(schoon)
-    eis("schoon: geen kopjes", ms["kopjes"], 0)
     eis("schoon: geen labelopeners", ms["label_openers"], [])
     eis("schoon: geen verboden formules", ms["verboden_zinnen"], {})
     eis("schoon: geen jargon", ms["jargon"], {})
     eis("schoon: em-dash binnen de norm", ms["em_dash"] <= NORM["em_dash"], True)
+    # Deze tekst heeft geen kopjes, en dat is sinds 18 nov 2026 juist een TEKORT in plaats van
+    # een verdienste: de norm is omgedraaid naar minstens drie (KOPJES_OMGEDRAAID).
+    eis("schoon maar zonder kopjes: haalt de nieuwe norm NIET",
+        ms["kopjes"] < NORM["kopjes_min"], True)
+
+    # 4b. Dezelfde tekst MET kopjes haalt de norm wel — en de kopjes mogen het onderwerp niet
+    # in de alinea eronder herhalen, want dan is `label_openers` terug.
+    met_kopjes = (
+        "## Acht duels zonder de nul\n\n"
+        + schoon.split("\n\n")[0] + "\n\n"
+        "## Debast en Silva ontbreken\n\n"
+        + schoon.split("\n\n")[1] + "\n\n"
+        "## Wat hier misgaat\n\n"
+        + schoon.split("\n\n")[2]
+    )
+    mk = meet(met_kopjes)
+    eis("met kopjes: drie kopjes geteld", mk["kopjes"], 3)
+    eis("met kopjes: haalt de nieuwe norm", mk["kopjes"] >= NORM["kopjes_min"], True)
+    eis("met kopjes: nog steeds geen labelopeners", mk["label_openers"], [])
+    eis("met kopjes: nog steeds geen jargon", mk["jargon"], {})
 
     # 5. Herhaalde openers over MEERDERE teksten — de belangrijkste teller.
     a = "De bezoekers scoorden in acht duels op rij. Dat draagt de weddenschap.\n\nTwee uitvallers."
@@ -380,7 +442,7 @@ def _selftest() -> int:
 
     for f in fouten:
         print("FOUT:", f)
-    print(f"{22 - len(fouten)} van 22 controles goed.")
+    print(f"{26 - len(fouten)} van 26 controles goed.")
     return 1 if fouten else 0
 
 

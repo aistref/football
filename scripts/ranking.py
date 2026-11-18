@@ -82,9 +82,45 @@ def max_deep_analyses(day: date) -> int:
     return DEEP_WEEKEND if day.weekday() >= 4 else DEEP_WEEKDAY
 
 
+#: `MAX_SHORTLIST` uit _shared-rules.md §0 — per weekdag, **bindt vanaf 19 nov 2026**.
+#: Tot die datum: 3 op ma-do en 5 op vr-zo. Zie `SHORTLIST_BINDS_FROM` hieronder.
+SHORTLIST_PER_WEEKDAY = {0: 2, 1: 2, 2: 2, 3: 2, 4: 3, 5: 5, 6: 4}
+SHORTLIST_LEGACY = {0: 3, 1: 3, 2: 3, 3: 3, 4: 5, 5: 5, 6: 5}
+SHORTLIST_BINDS_FROM = date(2026, 11, 19)
+"""Gewijzigd op 18 nov 2026 **op besluit van de gebruiker**, voor Run A, B én C.
+
+Van 3 op ma-do en 5 op vr-zo naar **2 op ma-do, 3 op vrijdag, 5 op zaterdag en 4 op zondag**.
+
+**De aanleiding is de bevinding van Run A van 18 november.** De reeks `lijstlengte` - selecties
+die alle poorten én hun drempel haalden en alleen niet in de lijst pasten - haalde die dag voor
+het eerst de ~30 afgewikkelde gevallen die §6d eist, en stond op +20,8% over 30 bets. De
+gebruiker heeft daarop de lijst **korter** gemaakt in plaats van langer, en dat is precies de
+andere kant op dan dat cijfer wijst. Dat is geen vergissing maar het punt: de lijst is daarmee
+een strakkere selectie, en de reeks `lijstlengte` groeit sneller omdat er meer gekwalificeerde
+selecties buiten vallen. Bij 100 afgewikkelde gevallen kijkt de gebruiker opnieuw (§5b).
+
+**Wat NIET verandert:** `MAX_DEEP_ANALYSES` (40/55), `EDGE_THRESHOLD_FULL`/`_LIGHT` (8,0/16,0),
+`MAX_LIGHT_IN_SHORTLIST` (2 voor Run A en B, geen voor Run C) en de 0-of-1-bet-regel. Alleen het
+aantal regels dat gepubliceerd wordt gaat omlaag.
+
+**Let op de zondag.** Die gaat van 5 naar 4 en is daarmee de enige dag waar het weekendgetal
+splitst: `weekday() >= 4` is sinds vandaag geen geldige lezing meer van deze parameter, en dat is
+de val voor wie hier later iets aan verandert. Gebruik altijd deze tabel.
+
+**`today` meegeven is verplicht, net als bij `sides.check` (§1e) en `model.level_scale` (§6g).**
+Zonder dat argument krijgt een herberekening van een oudere dag stil de lijstlengte van vandaag,
+en dan verschuift met terugwerkende kracht welke selecties toen `lijstlengte` hadden moeten
+heten. De oude tabel blijft daarom in `SHORTLIST_LEGACY` staan."""
+
+
 def max_shortlist(day: date) -> int:
-    """3 op ma-do, 5 op vr-zo — `MAX_SHORTLIST` uit _shared-rules.md §0."""
-    return 5 if day.weekday() >= 4 else 3
+    """`MAX_SHORTLIST` voor die dag — 2 op ma-do, 3 op vr, 5 op za, 4 op zo (vanaf 19 nov 2026).
+
+    Vóór `SHORTLIST_BINDS_FROM` geldt de oude tabel (3 op ma-do, 5 op vr-zo), zodat een
+    herberekening van een eerdere rundag dezelfde lijst geeft als die dag zelf gaf.
+    """
+    tabel = SHORTLIST_PER_WEEKDAY if day >= SHORTLIST_BINDS_FROM else SHORTLIST_LEGACY
+    return tabel[day.weekday()]
 
 
 # --------------------------------------------------------------------- deelscores
@@ -205,7 +241,17 @@ if __name__ == "__main__":
     assert max_deep_analyses(_d(2026, 8, 31)) == DEEP_WEEKDAY    # maandag
     assert DEEP_WEEKEND > DEEP_WEEKDAY, "het weekend hoort ruimer te zijn dan een werkdag"
     # Dezelfde controle voor de shortlist, die hem nog niet had.
+    # Oude tabel vóór 19 nov 2026: 3 op ma-do, 5 op vr-zo. Een herberekening van een eerdere
+    # rundag moet dezelfde lijstlengte geven als die dag zelf gaf.
     assert max_shortlist(_d(2026, 8, 26)) == 3 and max_shortlist(_d(2026, 8, 29)) == 5
+    assert max_shortlist(_d(2026, 11, 18)) == 3        # woensdag, dag vóór de wijziging
+    # Nieuwe tabel vanaf 19 nov 2026: 2 op ma-do, 3 op vr, 5 op za, 4 op zo.
+    assert max_shortlist(_d(2026, 11, 19)) == 2        # donderdag, de eerste bindende dag
+    assert max_shortlist(_d(2026, 11, 20)) == 3        # vrijdag
+    assert max_shortlist(_d(2026, 11, 21)) == 5        # zaterdag
+    assert max_shortlist(_d(2026, 11, 22)) == 4        # zondag — de enige dag die splitst
+    assert max_shortlist(_d(2026, 11, 23)) == 2        # maandag
+    assert [max_shortlist(_d(2026, 11, d)) for d in range(23, 30)] == [2, 2, 2, 2, 3, 5, 4]
     assert _continuity_points(None) == 0.75
     assert _continuity_points(0.1) == 1.5 and _continuity_points(2.0) == 0.0
     assert _lineup_points("lineup") > _lineup_points("predicted") > _lineup_points("")

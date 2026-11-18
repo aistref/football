@@ -14,7 +14,7 @@ aanpassen zonder de geplande taak aan te raken.
 | Parameter | Waarde | Waarom |
 |---|---|---|
 | `MAX_DEEP_ANALYSES` | **40** (ma–do) / **55** (vr–zo) | Harde cap, en het is een **tijds**grens en geen creditgrens — dat onderscheid is op 5 sep 2026 expliciet gemaakt omdat het makkelijk andersom gelezen wordt. Spreads, totals en h2h rekenen per **competitie** af, dus twintig duels extra binnen al opgehaalde competities kost daarvoor 0 credits (alleen BTTS rekent per duel, 1 credit). Wat de grens wél is: **de rapporten moeten om 06:30 klaar staan**, want de gebruiker zet tussen 07:00 en 08:00 in. Verhoogd van 30/35 op 5 sep 2026 nadat bleek dat de afkapping proportioneel kost: de betkans is vlak over de hele rangorde (29.1% op plek 1–10 tegen 30.0% op plek 31–35), dus een afgekapt duel is niet slechter maar gewoon weg. Op 5 sep kostte dat 44 duels over beide runs. Gebruik `ranking.max_deep_analyses(date.today())`. Elke run legt sinds die datum zijn looptijd vast in `data/run-state/` onder `duur`; past 55 niet vóór 06:30, dan is dat met cijfers te zien in plaats van te raden. |
-| `MAX_SHORTLIST` | **3** (ma–do) / **5** (vr–zo) | Onveranderd t.o.v. de oude opdracht. |
+| `MAX_SHORTLIST` | **2** (ma–do) · **3** (vr) · **5** (za) · **4** (zo) | **Gewijzigd op 18 nov 2026, op besluit van de gebruiker, voor Run A, B én C**; bindt vanaf **19 nov 2026** (`ranking.SHORTLIST_BINDS_FROM`). Was 3 op ma–do en 5 op vr–zo. Aanleiding is de bevinding van Run A van 18 november: de reeks `lijstlengte` haalde die dag voor het eerst de ~30 afgewikkelde gevallen die §6d eist en stond op +20,8% over 30 bets — en de gebruiker heeft de lijst daarop **korter** gemaakt in plaats van langer. Gebruik **altijd** `ranking.max_shortlist(DAY)` en geef de rundag mee: `weekday() >= 4` is sinds deze wijziging geen geldige lezing meer, want de zondag splitst van de zaterdag. De oude tabel staat in `ranking.SHORTLIST_LEGACY`, zodat een herberekening van een eerdere rundag dezelfde lijst geeft als die dag zelf gaf. **`MAX_DEEP_ANALYSES`, de drempels en `MAX_LIGHT_IN_SHORTLIST` veranderen hier niet door** — alleen het aantal regels dat gepubliceerd wordt. Bij **100** afgewikkelde `lijstlengte`-gevallen kijkt de gebruiker opnieuw; zie §5b. |
 | `EDGE_THRESHOLD_FULL` | **8.0 procentpunt** | Verhoogd van 3.0 op 31 aug 2026, op verzoek van de gebruiker, en dit keer op **uitkomsten** gemeten in plaats van beredeneerd. Zie "Waarom de drempel op 8 staat" hieronder. |
 | `EDGE_THRESHOLD_LIGHT` | **16.0 procentpunt** | Zwakkere data eist een grotere marge: exact tweemaal `EDGE_THRESHOLD_FULL`. Die verhouding is geen keuze maar een afhankelijkheid — `model.DATA_WEIGHT` leidt het LIGHT-gewicht van 0.5 in `selection_score` er rechtstreeks uit af (§1a). Verander de een niet zonder de ander. |
 | `MAX_LIGHT_IN_SHORTLIST` | **2** (Run A en B) · **geen** (Run C) | Voorkomt dat de topselectie volloopt met zwak onderbouwde bets. **Geldt niet voor Run C** — daar is alle data per ontwerp LIGHT en werkte de grens als een vast plafond van twee bets per dag; op 24 sep 2026 door de gebruiker geschrapt. `scripts/toplist.py` slaat hem over bij `run == "C"`. |
@@ -2543,8 +2543,45 @@ Een tabel met elke competitie uit je runlijst en precies één status:
 | `GEEN WEDSTRIJD` | niets op de kalender vandaag |
 | `BUITEN DATADEKKING` | wedstrijden vandaag, maar geen werkende onafhankelijke kansbron (noem welke bron faalde + status) |
 | `AFGEKAPT` | wel dekking, maar buiten `MAX_DEEP_ANALYSES` gevallen (noem het aantal) |
+| `BUITEN DE RUNLIJST` | er wordt gespeeld, maar het toernooi staat vandaag niet op de lijst — de vijf bekers in de eerste seizoenshelft (`cups.reason`, zie `prompts/run-a.md`). **Dit is géén `GEEN WEDSTRIJD`**: dat zou hetzelfde zijn als een stille truncatie in Stage 4 |
 
 Doe niet alsof de dekking volledig is als dat niet zo is.
+
+#### De overige wedstrijden staan op GESCHIKTHEID, niet per competitie (18 nov 2026, op besluit van de gebruiker)
+
+**Onder de statustabel hierboven komt een tweede tabel: élke bekeken wedstrijd die geen bet werd,
+aflopend op `selection_score`.** De gebruiker:
+
+> *"Daarnaast wil ik, in de dekkingsrapportage, dat je de overige wedstrijden die je ook hebt
+> bekeken rangschikt op geschiktheid om te betten (nu groepeer je ze volgens mij op competitie).
+> Dus als je op donderdag 3 bets hebt, en er maar twee mag publiceren, dan staat die derde bet
+> waar geen enkel filter iets op tegen had en die ook genoeg voordeel toonde, bovenaan in de
+> dekkingsrapportage, met daarbij een groene markering. Daarna rangschik je de rest, zonder een
+> markering. Zo zie ik tenminste wat er buiten valt."*
+
+Wat daarmee vastligt, en `scripts/report.py` rendert het zelf uit `data/run-state/` — **niet
+overtypen**:
+
+1. **Bovenaan, groen gemarkeerd: de gekwalificeerde selecties die niet zijn gepubliceerd.** Dat
+   zijn de selecties waar géén enkele poort iets op tegen had en die hun drempel haalden, en die
+   alleen op `MAX_SHORTLIST` strandden — de `lijstlengte`-rijen van §5b. Groen betekent hier
+   precies één ding: *dit was een volwaardige weddenschap en alleen de lengte van de lijst hield
+   hem tegen.* Ze staan bovenaan ook als hun score lager is dan die van een afgewezen kandidaat,
+   want het onderscheid is een ander: niet "beter" maar "niets op tegen".
+2. **Daarna de rest, op score, zonder markering**, met per regel de poort waarop de selectie
+   sneuvelde.
+3. **Onderaan de wedstrijden waar niets is doorgerekend** (`tier = NONE`, geen prijzen), met een
+   **streepje** in de scorekolom en niet met een nul. Een wedstrijd zonder kandidaten heeft geen
+   onderkant — dezelfde regel die Stage 4 voorschrijft voor de datarijkdom van een lege lijst.
+4. **De score is dezelfde `selection_score` als in §1a en §5**: voordeel in procentpunten ×
+   kans × (FULL 1.0 | LIGHT 0.5), toegepast op de sterkste kandidaat van die wedstrijd. Eén
+   weegregel voor de bets, de topselectie én deze tabel, zodat de drie niet uiteen kunnen lopen.
+5. **Wedstrijden die wél een bet werden, staan hier niet in.** Die staan in de topselectie
+   erboven; ze twee keer tonen maakt de lijst langer en niet duidelijker.
+
+`python3 scripts/report.py selftest` pint dit vast — dat de groene regel bovenaan staat ook als
+haar score lager is, dat er precies één markering per gekwalificeerde selectie komt, en dat een
+wedstrijd zonder selectie een streepje krijgt.
 
 ### Per wedstrijd
 
@@ -2623,7 +2660,7 @@ Vanaf nu dus:
 2. Neem **per wedstrijd de sterkste selectie** op `selection_score` (§1a) — de 0-of-1-bet-regel
    verandert niet, dit is dezelfde keuze als voorheen.
 3. Zet die op één rij over de hele runlijst, aflopend op score.
-4. **Publiceer de bovenste `MAX_SHORTLIST`** (3 op ma–do, 5 op vr–zo).
+4. **Publiceer de bovenste `MAX_SHORTLIST`** (2 op ma–do, 3 op vr, 5 op za, 4 op zo — §0).
 5. **Snijdt `EDGE_THRESHOLD_FULL` pas hier**: staan er méér dan `MAX_SHORTLIST` selecties bóven de
    drempel, dan is de drempel de grens en niet de rangorde. Staan er minder — wat sinds 5 september
    vrijwel altijd het geval is — dan bepaalt de rangorde de lijst en gaat de drempel mee als
@@ -2653,6 +2690,31 @@ Ze is ook geen bet. Leg haar daarom vast als:
 — en twee namen zouden één populatie in twee reeksen splitsen, waarna geen van beide ooit de ~30
 afgewikkelde gevallen haalt die §6d eist. Op 26 sep 2026 stond de reeks op 3 rijen, waarvan 1
 afgewikkeld (verloren).
+
+> **Stand op 18 november 2026: de reeks haalde de 30 van §6d, en de gebruiker heeft de lijst
+> daarop KORTER gemaakt. Lees dit voordat je iets met deze reeks doet.**
+>
+> Run A van 18 november stelde vast dat `lijstlengte` voor het eerst de ~30 afgewikkelde gevallen
+> haalde die §6d eist: **30 bets, 15 winnaars, +6,24u = +20,8%**, op **t = +0,89** — positief maar
+> niet van nul te onderscheiden. Die run heeft er daarom géén besluit aan verbonden en geen
+> parameter aangeraakt, precies zoals §1e dat voor poort 8 voorschrijft.
+>
+> **De gebruiker heeft vervolgens de andere kant op besloten dan het cijfer wijst:**
+> `MAX_SHORTLIST` gaat van 3/5 naar **2 (ma–do) · 3 (vr) · 5 (za) · 4 (zo)** (§0). Dat is geen
+> vergissing en het hoort niet als zodanig te worden gelezen. Twee dingen volgen eruit:
+>
+> 1. **De reeks groeit vanaf nu sneller**, want er vallen per dag meer gekwalificeerde selecties
+>    buiten de lijst. Dat is ook de reden dat ze zichtbaar wordt gemaakt: §5 schrijft sinds deze
+>    datum voor dat zo'n selectie **bovenaan de dekkingsrapportage staat, groen gemarkeerd**.
+> 2. **De gebruiker kijkt opnieuw bij 100 afgewikkelde gevallen** — zijn woorden: *"Na 100
+>    gevallen wil ik even kijken wat we ermee gaan doen."* Noem de stand daarom elke run onder
+>    "Stand van het logboek", mét het aantal, en leg de vraag **bij 100 voor** en niet eerder.
+>    Dat is een hogere lat dan de ~30 van §6d, en met opzet: bij 30 stond t op +0,89 en dat is te
+>    weinig om een lijstlengte op te kiezen.
+>
+> **Een run verandert `MAX_SHORTLIST` nooit op eigen initiatief**, ook niet als deze reeks bij 100
+> gevallen hard positief staat. Het gaat over risicobereidheid en hoeveel regels de gebruiker 's
+> ochtends wil lezen — dezelfde redenering als bij `selection_score` (§1a) en poort 8 (§1e).
 
 **En tel `lijstlengte` nooit bij `edge` op.** `edge` betekent "te weinig voordeel"; deze rij
 betekent "genoeg voordeel, maar andere wedstrijden hadden er meer". Dat zijn twee populaties en een
@@ -2688,7 +2750,8 @@ is dat een signaal over het model en niet over deze regel.
 
 De topselectie hierboven bevat alleen **gepubliceerde bets**, en die zijn er sinds de herijking
 van §1g vaak nul. Daarmee verdween ook het zicht op wat er dan wél bovenaan stond. Elke run levert
-daarom **twee ranglijsten** van elk `MAX_SHORTLIST` regels — 3 op ma–do, 5 op vr–zo, dezelfde
+daarom **twee ranglijsten** van elk `MAX_SHORTLIST` regels — 2 op ma–do, 3 op vr, 5 op za en 4
+op zo (§0), dezelfde
 parameter, geen nieuwe:
 
 ```bash
@@ -3720,13 +3783,12 @@ een boodschappenlijst van WAT erin hoort, nooit als de volgorde waarin het moet 
 
 Wat daarmee vastligt:
 
-1. **Geen enkel kopje in de preview-tekst.** Geen `#`, geen `**vetgedrukte aanhef**`, en geen
-   alinea die opent met het onderwerp als label (*"Het teamnieuws is…"*, *"Over de bezetting…"*,
-   *"Wat er voor pleit, is…"*). Begin een alinea bij de wedstrijd, niet bij de rubriek.
-   **Dit overschrijft op dít punt de maatstaf van 17 oktober**
-   (`runs/voorbeschouwingen/2026-10-17-strasbourg-psg.md`), die vetgedrukte aanhefregels
-   gebruikt — *"**Teamnieuws, en daar wordt het ongemakkelijk voor de thuisploeg.**"*. Die tekst
-   blijft de maatstaf voor **toon en detailniveau**; ze is dat niet meer voor de **opmaak**.
+1. ~~**Geen enkel kopje in de preview-tekst.**~~ **OMGEDRAAID OP 18 NOV 2026, op besluit van de
+   gebruiker; bindt vanaf de eerstvolgende run met bets.** Zie "De voorbeschouwing krijgt kopjes"
+   hieronder. Wat van dit punt **wél** overeind blijft, en dat is het grootste deel: **geen alinea
+   die opent met het onderwerp als label** (*"Het teamnieuws is…"*, *"Over de bezetting…"*, *"Wat
+   er voor pleit, is…"*). Met een kopje erboven wordt die herhaling juist erger, niet milder —
+   zie punt 2 van het nieuwe besluit.
 2. **Twee openers zijn verboden omdat ze vijf van de vijf keer voorkwamen:** *"Wat deze
    weddenschap kan slopen is…"* en *"Hij staat [positie]…"* als begin van de slotregel. Let op
    waar de herhaling precies zit: vier van de vijf slotregels vervolgden met *"omdat"* en de
@@ -3763,6 +3825,52 @@ Wat daarmee vastligt:
    staat. Minder tells mag nooit minder tegenspraak worden: de voorbehouden zijn de reden dat deze
    teksten te vertrouwen zijn, en een vlottere pen die het ongemakkelijke cijfer weglaat is een
    verslechtering en geen verbetering.
+
+##### De voorbeschouwing krijgt kopjes — besluit van de gebruiker, 18 nov 2026
+
+**Dit draait punt 1 van de regel hierboven om, en alleen punt 1.** De gebruiker:
+
+> *"Daarnaast wil ik dat je, vanaf dat je weer weddenschappen hebt, in de voorbeschouwing werkt
+> met kopjes, in plaats van een grote lap tekst."*
+
+**Bindt vanaf de eerstvolgende run met minstens één bet** (`prosecheck.KOPJES_BINDS_FROM` =
+19 nov 2026). De voorbeschouwingen van 8 t/m 18 november blijven staan zoals ze zijn gepubliceerd
+en worden niet herschreven — wat gepubliceerd is, blijft zoals het gepubliceerd is.
+
+**Waarom dit het besluit van 7 november niet tegenspreekt, en dit is de kern.** Die regel is
+geschreven op een meting van vijf teksten waarin **nul** markdown-kopjes en **nul** vetgedrukte
+woorden stonden: `**` kwam nul keer voor, `#` nul keer. Het sjabloon zat volledig in de **taal** —
+elke alinea opende met zijn rubriek als label, en twee formuleringen kwamen letterlijk in vijf van
+de vijf teksten voor. De teller op nul was er alleen om te voorkomen dat het via de opmaak terug
+zou komen. Het gevolg was 300 tot 600 woorden zonder enig houvast voor de lezer, en dat is waar de
+gebruiker nu over valt. **Kopjes zijn de oplossing voor de lap tekst; ze waren nooit de oorzaak
+van de sjabloonklacht.**
+
+Wat daarmee vastligt:
+
+1. **Minstens drie kopjes per voorbeschouwing** (`prosecheck.NORM["kopjes_min"]`). Een
+   `##`-kopje of een vetgedrukte aanhefregel telt beide; vet midden in een zin is nadruk en geen
+   kopje. Bij 300–600 woorden zijn drie tot vijf kopjes het bereik waarin ze helpen — meer maakt
+   het een lijstje, en §6c verbiedt een lijstje nog steeds.
+2. **Het kopje draagt het onderwerp, dus de alinea eronder herhaalt het niet.** *"Teamnieuws"* als
+   kopje met daaronder *"Het teamnieuws is…"* is het invulveld in het kwadraat.
+   `prosecheck.NORM["label_openers"]` blijft daarom op 0 en wordt hier strenger van, niet losser.
+3. **Schrijf geen vaste kopjes.** Vijf teksten op één ochtend met dezelfde vijf kopjes in dezelfde
+   volgorde is precies het sjabloon van 7 november, nu met opschriften erboven. Een kopje is een
+   zin over déze wedstrijd (*"Acht duels zonder de nul"*), geen rubrieknaam (*"Statistiek"*). De
+   zes punten in "Wat erin hoort" blijven een boodschappenlijst van WAT erin hoort en worden
+   hiermee **niet** een kopjesindeling.
+4. **Al het andere van 7 november blijft onverkort staan:** maximaal twee em-dashes, de verboden
+   constructies en openers, geen rekenjargon, 300–600 woorden, en bovenal de eis van §4 punt 2 dat
+   een frequentie die de bet **tegenspreekt** vooraan staat. Een kopje mag nooit een reden worden
+   om het ongemakkelijke cijfer onder een ander kopje weg te stoppen.
+5. **De cursieve verantwoording aan het eind krijgt géén kopje.** Dat is de slotregel van punt 6
+   hierboven en hij hoort als slotregel te lezen.
+
+`python3 scripts/prosecheck.py --date <datum> --run <a|b|c>` meet dit: de kopjesteller is van
+"maximaal 0" naar "minstens 3" gegaan en meldt nu een **tekort** in plaats van een overschot. Het
+blijft een hulpmiddel en geen poort — het kan geen vaste kopjesindeling zien die met andere
+woorden is geschreven.
 
 ##### De vijf kopjes per bet zijn samengevoegd tot twee — GEVRAAGD EN BESLIST op 7 nov 2026
 
