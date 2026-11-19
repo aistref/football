@@ -901,7 +901,21 @@ def render_coverage_ranked(state: dict, labels: dict) -> str:
             groep = 0 if gekwal else (1 if score is not None else 2)
             rijen.append((groep, score, match, sel))
     if not rijen:
-        return ""
+        # LEEG IS EEN ANTWOORD EN GEEN REDEN OM DE SECTIE WEG TE LATEN (19 nov 2026).
+        # Tot vandaag gaf deze functie bij nul rijen een lege string terug en verdween de
+        # rangschikking stilzwijgend van de pagina. Dat is precies het bezwaar dat §5 bij "Net
+        # niet" maakt: een dag zonder kandidaten en een dag waarop de tabel niet is gebouwd zien
+        # er dan hetzelfde uit — en de gebruiker kan niet zien óf er gerangschikt is. Zeg dus met
+        # zoveel woorden dat er niets afviel, en waaróm.
+        return ('<p class="prose measure" style="margin:26px 0 14px">'
+                '<strong>Er viel vandaag niets buiten de boot.</strong> Hieronder hoort de '
+                'rangschikking van alle wedstrijden die ik wél heb bekeken maar die geen '
+                'weddenschap werden, van meest naar minst geschikt — zodat je ziet wat er afvalt '
+                'en waarop. Die lijst is vandaag leeg omdat er geen enkele wedstrijd te bekijken '
+                'was: geen van de competities op mijn lijst speelt in het venster waarin je kunt '
+                'inzetten. Er is dus niets doorgerekend, niets afgewezen en niets afgekapt. Dat '
+                'is iets anders dan een dag waarop ik tientallen wedstrijden doorreken en er '
+                'niets overblijft — dan staat deze lijst vol.</p>')
     rijen.sort(key=lambda r: (r[0], -(r[1] if r[1] is not None else 0.0),
                               r[2].get("match") or ""))
 
@@ -1022,7 +1036,28 @@ def render_near_misses(state: dict, labels: dict) -> str:
                 + "".join(cells)
                 + f'<td><span class="chip gap">{esc(gate)}</span></td></tr>')
     if not rows:
-        return ""
+        # §5 eist deze sectie "ook (juist) bij nul bets", om te kunnen zien of er GEEN ENKELE
+        # kandidaat was of er drie op een haar afvielen. Tot 19 nov 2026 gaf deze functie bij nul
+        # rijen een lege string terug en viel de hele sectie van de pagina — waarmee die twee
+        # gevallen er van buiten af identiek uitzagen. Dat is de faalvorm die de regel beschrijft.
+        return '''
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure"><strong>Vandaag niets — en dat betekent hier iets heel precies.</strong>
+  In deze sectie staan normaal de weddenschappen die een echt voordeel lieten zien en toch zijn
+  afgewezen, met per rij het cijfer van elke toets en de reden waarop ze afvielen. Vandaag is er
+  geen enkele kandidaat geweest: er stond geen wedstrijd op mijn lijst in het venster waarin je kunt
+  inzetten, dus er is niets doorgerekend dat ergens op afgewezen kón worden.</p>
+
+  <p class="prose measure">Ik laat deze sectie met opzet staan in plaats van hem weg te halen. Een
+  dag waarop er niets te kiezen viel en een dag waarop drie kandidaten op een haar afvielen, zien
+  er anders allebei uit als stilte — en juist het verschil daartussen is wat je over meerdere dagen
+  wilt kunnen zien.</p>
+</section>'''
     return f'''
 <section>
   <div class="sectionhead">
@@ -1846,8 +1881,18 @@ def _selftest() -> int:
     assert 'class="qualified"' not in html2 and "chip ok" not in html2
     assert "Geen daarvan is groen gemarkeerd" in html2
 
-    # Nul bekeken wedstrijden -> geen tabel, geen lege kop.
-    assert render_coverage_ranked({"competitions": {}}, {}) == ""
+    # Nul bekeken wedstrijden -> GEEN lege string, maar een uitgeschreven lege stand.
+    # Gewijzigd 19 nov 2026, op aanwijzing van de gebruiker: de rangschikking verdween op een dag
+    # zonder wedstrijden stilzwijgend van de pagina, en dan is van buiten af niet te zien of er
+    # niets afviel of dat de tabel niet is gebouwd. Zelfde eis als §5 aan "Net niet" stelt.
+    leeg = render_coverage_ranked({"competitions": {}}, {})
+    assert leeg and "Er viel vandaag niets buiten de boot" in leeg, leeg
+    assert "<table" not in leeg, "geen lege tabel, wel een uitleg"
+    # En de sectie "Net niet" blijft óók staan bij nul kandidaten (§5: verplicht, juist dan).
+    nm_leeg = render_near_misses({"competitions": {}}, {})
+    assert "Net niet" in nm_leeg and "Wat er wél in beeld was" in nm_leeg, nm_leeg
+    assert "geen enkele kandidaat" in nm_leeg, nm_leeg
+    assert "<tbody" not in nm_leeg, "geen lege tabel, wel een uitleg"
 
     # De scoreformule is die van §1a: edge x kans x (FULL 1.0 | LIGHT 0.5).
     s_full = match_suitability({"tier": "FULL", "all_candidates": [
@@ -1893,7 +1938,7 @@ def _selftest() -> int:
     assert 'class="prose slot"' in slot, slot
     assert slot.count('class="prose"') == 1
 
-    print("Zelftest geslaagd — 30 controles.")
+    print("Zelftest geslaagd — 36 controles.")
     return 0
 
 

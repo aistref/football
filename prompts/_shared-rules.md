@@ -2543,7 +2543,7 @@ Een tabel met elke competitie uit je runlijst en precies één status:
 | `GEEN WEDSTRIJD` | niets op de kalender vandaag |
 | `BUITEN DATADEKKING` | wedstrijden vandaag, maar geen werkende onafhankelijke kansbron (noem welke bron faalde + status) |
 | `AFGEKAPT` | wel dekking, maar buiten `MAX_DEEP_ANALYSES` gevallen (noem het aantal) |
-| `BUITEN DE RUNLIJST` | er wordt gespeeld, maar het toernooi staat vandaag niet op de lijst — de vijf bekers in de eerste seizoenshelft (`cups.reason`, zie `prompts/run-a.md`). **Dit is géén `GEEN WEDSTRIJD`**: dat zou hetzelfde zijn als een stille truncatie in Stage 4 |
+| `BUITEN DE RUNLIJST` | er wordt gespeeld, maar het toernooi staat vandaag niet op de lijst — de zes bekers in de eerste seizoenshelft (`cups.reason`, zie `prompts/run-a.md`). **Dit is géén `GEEN WEDSTRIJD`**: dat zou hetzelfde zijn als een stille truncatie in Stage 4 |
 
 Doe niet alsof de dekking volledig is als dat niet zo is.
 
@@ -2582,6 +2582,16 @@ overtypen**:
 `python3 scripts/report.py selftest` pint dit vast — dat de groene regel bovenaan staat ook als
 haar score lager is, dat er precies één markering per gekwalificeerde selectie komt, en dat een
 wedstrijd zonder selectie een streepje krijgt.
+
+**6. Is de lijst leeg, dan staat er dát er niets afviel — de sectie verdwijnt nooit** (toegevoegd
+19 nov 2026, op aanwijzing van de gebruiker). Tot die datum gaf `render_coverage_ranked` bij nul
+rijen een lege string terug en viel de hele rangschikking stilzwijgend van de pagina. Op een dag
+zonder wedstrijden zag de gebruiker daardoor **niets** staan, en van buiten af is dan niet te
+onderscheiden of er niets afviel of dat de tabel nooit gebouwd is. Dat is exact het bezwaar dat
+deze paragraaf hieronder bij "Net niet" maakt, en het geldt hier net zo goed: het verschil tussen
+*geen enkele kandidaat* en *vijf die net afvielen* is precies wat deze tabel moet laten zien.
+Schrijf in de lege stand dus uit **dat** de rangschikking er is, **wat** er normaal in staat en
+**waarom** hij vandaag leeg is — geen lege tabel met alleen een kop.
 
 ### Per wedstrijd
 
@@ -2876,7 +2886,15 @@ de fout die `report.py` moest wegnemen.
 
 Waarom dit moet (verzoek van de gebruiker, 10 aug 2026): een run met nul bets leest anders als "er
 was niets", terwijl het verschil tussen *geen enkele kandidaat* en *drie kandidaten die op een haar
-afvielen* precies is wat je over meerdere dagen wilt kunnen zien. Het is ook de enige manier om te
+afvielen* precies is wat je over meerdere dagen wilt kunnen zien.
+
+**En "verplicht ook bij nul bets" betekent dat de sectie ook bij nul kandidaten op de pagina
+staat** (aangescherpt 19 nov 2026, op aanwijzing van de gebruiker). `render_near_misses` gaf tot
+die datum bij nul rijen een lege string terug, waarmee de hele sectie van het dagrapport viel —
+precies de twee gevallen die deze regel wil onderscheiden zagen er dus identiek uit, namelijk als
+stilte. Bij nul kandidaten hoort er een uitgeschreven lege stand te staan die zegt wat er normaal
+in deze sectie staat en waarom hij vandaag leeg is. `report.py selftest` pint dat vast, voor deze
+sectie én voor de rangschikking van §5 hierboven. Het is ook de enige manier om te
 merken dat één poort structureel alles wegvangt: valt er een week lang alles af op `tweede_methode`,
 dan is de vraag of de twee methodes systematisch uiteenlopen — en dat is een bevinding, geen ruis.
 Neem dezelfde tabel op in het markdown-runrapport onder de topselectie.
@@ -3656,6 +3674,28 @@ de gebruiker zijn rapport wil lezen, en die hoort bij hem (dezelfde redenering a
 `selection_score` in §1a en bij poort 8 in §1e). **Een run verandert die volgorde niet op eigen
 initiatief.** Leg de vraag één keer voor, in het dagrapport onder "Wat er nog moet gebeuren" met
 `owner = "besluit"`, en herhaal hem daarna niet.
+
+> **BEANTWOORD OP 19 NOVEMBER 2026: DE ARTIFACT BLIJFT DE EERSTE ROUTE. STEL DEZE VRAAG NIET
+> OPNIEUW.** De gebruiker, op de vraag zoals Run A van 19 november hem voorlegde: *"artifact
+> eerst"*. De volgorde blijft dus zoals ze hierboven staat — de HTML-pagina is het origineel, de
+> Markdown is de terugval, en die rangorde is nu een besluit in plaats van een aanname.
+>
+> **Wat er NIET verandert, en dat is de helft van het besluit.** `--markdown` draaien en het
+> `.dagrapport.md` committen blijft **verplicht** (§6c punt 4), en de GitHub-link blijft **naast**
+> de Artifact-link in de notificatie staan (§7). Het besluit gaat over welke link vóóraan staat,
+> niet over het bestaan van de tweede route — die is er juist omdat de eerste twee keer stil is
+> omgevallen, en dat risico is met dit antwoord niet weg.
+>
+> **En de diagnoseregel van hieronder blijft onverkort gelden:** komt er een melding dat het
+> dagrapport niet te openen is, draai dan eerst de rendercontrole in Chromium. Bevestigt die dat
+> de pagina rendert, dan is opnieuw publiceren zinloos en is de Markdown-route het antwoord — dat
+> is geen wijziging van de rangorde maar de afhandeling van een storing.
+
+> **Dit punt hoort vanaf 19 nov 2026 NIET MEER in `todo` van het dagrapport.** Het stond daar van
+> 15 oktober tot 19 november als onbeantwoord besluitpunt. Het is beantwoord; zet het er niet
+> opnieuw in. Dat is dezelfde regel als bij `API_FOOTBALL_KEY` (§3) en bij poort 8 (§1e): een
+> besluit dat genomen is, is geen openstaande vraag meer, en het elke dag opnieuw voorleggen leert
+> de gebruiker de sectie over te slaan.
 
 **Zet bij een onbereikbare Artifact altijd de directe GitHub-link in de notificatie**, niet alleen
 het bestandspad: `https://github.com/aistref/football/blob/main/runs/<datum>-run-<a|b|c>.dagrapport.md`.

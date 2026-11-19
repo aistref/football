@@ -28,15 +28,15 @@ Markten: 1X2, Double Chance, Draw No Bet, Asian Handicap, Over/Under, BTTS.
 - UEFA Champions League
 - UEFA Europa League
 - UEFA Conference League
-- League Cup (ENG)
 
 **Toernooien die alleen in de TWEEDE SEIZOENSHELFT meedoen** (1 januari t/m 30 juni) — zie
-"De vijf bekers doen alleen in de tweede seizoenshelft mee" hieronder:
+"De zes bekers doen alleen in de tweede seizoenshelft mee" hieronder:
 - FA Cup (ENG)
 - Coppa Italia (ITA)
 - KNVB Beker (NED)
 - DFB Pokal (GER)
 - Copa del Rey (ESP) — **nieuw op 18 nov 2026**
+- League Cup (ENG) — **nieuw op 19 nov 2026, en hij bindt een dag later dan de andere vijf**
 
 ## Werkwijze
 
@@ -52,15 +52,15 @@ Run-specifieke waarden:
 | Runrapport | `runs/YYYY-MM-DD-run-a.md` |
 | `run` in ledger | `"A"` |
 
-## De vijf bekers doen alleen in de tweede seizoenshelft mee (besluit gebruiker, 18 nov 2026)
+## De zes bekers doen alleen in de tweede seizoenshelft mee (besluit gebruiker, 18 en 19 nov 2026)
 
 ```python
 from scripts import cups
 mee, buiten = cups.filter_runlist(RUNLIST, DAY)     # geef DAY mee met de rundag
 ```
 
-**FA Cup, Coppa Italia, KNVB Beker, DFB Pokal en Copa del Rey staan van 1 juli t/m 31 december
-NIET op de runlijst.** De gebruiker:
+**FA Cup, Coppa Italia, KNVB Beker, DFB Pokal, Copa del Rey én League Cup staan van 1 juli t/m
+31 december NIET op de runlijst.** De gebruiker, op 18 november over de eerste vijf:
 
 > *"Copa del Rey, DFB Pokal, FA Cup, Coppa Italia en KNVB Beker wil ik vanaf nu alleen pas in de
 > tweede helft van het seizoen. Dus activeer deze competities pas vanaf 2027 (en volgend seizoen
@@ -82,11 +82,23 @@ Vier dingen die daarbij vastliggen:
    staat alleen niet op de runlijst. Gebruik `cups.reason(...)` voor de regel in de dekkingstabel.
    Een toernooi dat buiten de lijst valt als "niets op de kalender" opschrijven is hetzelfde
    probleem als een stille truncatie in Stage 4.
-4. **De `League Cup (ENG)` valt er met opzet NIET onder.** De gebruiker noemde vijf bekers en deze
-   was daar niet een van. Hij blijft dus het hele seizoen op de lijst, inclusief zijn
-   lage-divisierondes — zie de waarschuwing hieronder. Dat is geen vergeetachtigheid maar het
-   besluit zoals het is genomen; de vraag of hij erbij hoort staat als besluitpunt bij de gebruiker
-   en een run verandert dit niet op eigen initiatief.
+4. **De `League Cup (ENG)` is er op 19 november 2026 bij gekomen, en hij BINDT EEN DAG LATER.**
+   Op 18 november viel hij er met opzet buiten: de gebruiker noemde vijf bekers en deze was daar
+   niet een van. Run A van 19 november heeft de vraag voorgelegd die dit punt ervoor openhield, en
+   het antwoord was **"League Cup ook"**. Hij staat dus vanaf nu in `cups.SECOND_HALF_ONLY`, en
+   daarmee zijn het er zes.
+
+   **Zijn ingangsdatum is 20 november 2026 en niet de 19e** (`cups.BINDS_FROM_PER_COMPETITION`).
+   Run A van 19 november had op het moment van het besluit al gedraaid **met** de League Cup op
+   de runlijst en hem als `GEEN WEDSTRIJD` in zijn dekkingstabel gezet; zou hij op de 19e binden,
+   dan gaf een herberekening van die dag een andere runlijst dan die dag zelf gaf. Dat is precies
+   wat `sides.LAPSED_FROM` (§1e) en `ranking.SHORTLIST_LEGACY` (§0) voorkomen. Het kost niets: zijn
+   eerstvolgende ronde was 15 december, en die valt nu buiten de lijst.
+
+   **Wat dit oplost.** De waarschuwing hieronder over ronde 1–2 — 25 tot 30 ties tussen League
+   One/Two-clubs waarvoor vrijwel geen publieke xG bestaat — is daarmee geen openstaand risico
+   meer. Er is nu **geen enkele beker** die in de eerste seizoenshelft `MAX_DEEP_ANALYSES` kan
+   laten vollopen met `NONE`-duels.
 
 **Waarom deze grens er is, in één meting.** De vroege rondes zetten clubs uit de hoogste divisie
 tegenover ploegen uit de regionale en amateurdivisies. Voor die tegenstanders bestaat geen
@@ -101,8 +113,9 @@ duel in het hele inzetvenster van Run A een FA Cup-duel dat op `NONE` uitkwam.
   Championship, Süper Lig, Danish Superliga, UCL/UEL/UECL). Dat is `GEEN WEDSTRIJD`, geen storing.
   De vijf bekers hierboven staan dan sowieso niet op de lijst.
 - **League Cup ronde 1–2** levert 25–30 ties tussen League One/Two-clubs op. Daar bestaat vrijwel
-  geen publieke xG of modelkans van. Verwacht `BUITEN DATADEKKING`, en laat `MAX_DEEP_ANALYSES`
-  niet volstromen met deze wedstrijden ten koste van beter gedocumenteerde competities:
-  bij gelijke datakwaliteit gaat een competitiewedstrijd vóór een lage-divisie bekerwedstrijd.
-  **Dit is de enige beker die dat probleem nog kan veroorzaken**, want de andere vijf doen in de
-  eerste seizoenshelft niet mee.
+  geen publieke xG of modelkans van. *(Historie sinds 19 nov 2026: deze waarschuwing is niet meer
+  van toepassing in de eerste seizoenshelft — de League Cup doet daar sinds dat besluit niet meer
+  mee. Ze blijft staan voor de tweede seizoenshelft, waar zijn latere rondes wél meedoen; dan staan
+  er clubs tegenover elkaar die het model allebei kent, dus het probleem is daar veel kleiner.)*
+  Bij gelijke datakwaliteit gaat een competitiewedstrijd nog steeds vóór een lage-divisie
+  bekerwedstrijd.
