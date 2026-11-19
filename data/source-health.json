@@ -19,9 +19,9 @@
   "dubbele zinnen en '|| RUN A (samengevoegd)'-markers komen te staan. Voeg samen, herhaal niet."
  ],
  "last_run": {
-  "run": "B",
-  "date": "2026-11-18",
-  "note": "ZESTIEN VAN DE ZEVENTIEN COMPETITIES OP GEEN WEDSTRIJD: het FIFA-interlandvenster van november liep tot 17/18 nov en de Europese competities hervatten op 20 en 21 november. Alleen Serie A (BRA) speelt, met ZES duels in het inzetvenster [08:00 NL 18 nov, 08:00 NL 19 nov). Bij twee bronnen nagetrokken en 17 van 17 eens (Fotmob-daglijsten tegen BetExplorer-fixturepagina's), met idcheck.py groen op alle 33 id's. DRIE van de zes duels op data_tier = NONE, alle drie omdat een Braziliaanse promovendus geen gemeten divisiepaar heeft (prompts/run-b.md schrijft die uitkomst voor). Drie duels doorgerekend, 45 selecties over alle zes de markten, TWEE gepubliceerde regels - beide een Under op FULL-data: Corinthians - Botafogo Under 2.5 @2.00 (+12,70 pp, haalt ook de verzwaarde lat van poort 9) en Cruzeiro - Palmeiras Under 2.75 @1.87 (+5,69 pp, onder de lat van 8,0 en dus op rangorde onder Sec. 5b). HET VOORBEHOUD VAN VANDAAG: margins.py goalbias staat op de hardste stand van deze reeks (+0,658 doelpunt per duel over 136 gespeelde Unders, z = +4,62) en beide regels zijn precies de twee duels waar het model het verst boven het Pinnacle-oordeel op de Under-kant staat. Geen parameter, poort, drempel of script gewijzigd en geen besluitpunt opnieuw voorgelegd."
+  "run": "A",
+  "date": "2026-11-19",
+  "note": "ZEVENTIEN VAN DE ZEVENTIEN COMPETITIES OP DE RUNLIJST OP GEEN WEDSTRIJD, en de vijf bekers staan vandaag BUITEN DE RUNLIJST (cups.py bindt vanaf vandaag). Nul duels in het inzetvenster [08:00 NL 19 nov, 08:00 NL 20 nov), dus nul doorgerekende selecties en nul bets. Het FIFA-interlandvenster van november is net afgelopen; de clubcompetities hervatten vrijdagavond 20 nov (La Liga, Bundesliga, Ligue 1, België, Polen, Denemarken) en die zes trappen NA 08:00 NL af, dus ze horen bij de run van 20 november. Bij TWEE bronnen nagetrokken en 17 van 17 eens: Fotmob-daglijsten van 19 en 20 nov tegen de BetExplorer-fixturepagina per competitie (alle 17 geleverd, nul is_today-rijen). Nul credits uitgegeven. Stage 0: 1 pick afgewikkeld (Cruzeiro – Palmeiras, Under 2.75, 2-1 = verloren) en 1 schaduwrij (Mexico – Jamaica, 1-0, verloren); 1 pick blijft open (Corinthians – Botafogo, 1,6u na aftrap). Understat ligt er voor de NEGENTIENDE dag uit — vandaag kosteloos, vanaf vrijdag niet."
  },
  "sources": {
   "sportinglife": {
@@ -38,9 +38,9 @@
   },
   "understat": {
    "status": "onderhoudspagina",
-   "last_checked": "2026-11-18",
+   "last_checked": "2026-11-19",
    "role": "prob",
-   "detail": "18 nov (run A): ACHTTIENDE dag onbruikbaar, en de diagnose van 9 november houdt onveranderd stand. `understat.fetch_league('EPL', '2026')` geeft opnieuw `UnderstatError: geen JSON terug van https://understat.com/getLeagueData/EPL/2026 (26719 bytes)` - EXACT hetzelfde aantal bytes als alle dagen ervoor, en de pagina zelf is opnieuw uitgepakt om zeker te zijn dat het geen nieuwe storing is: HTTP 200, `<title>Understat.com</title>`, zichtbare tekst 'We will come back soon'. Dat is Understats eigen onderhoudspagina, geen Cloudflare en geen verhuisde route; er is dus niets om langs te werken (§3, 'Niet doen'). WAT HET VANDAAG KOST: NIETS, en om dezelfde reden als op 9 en 10 november - geen van de vijf Understat-competities (EPL, La Liga, Bundesliga, Serie A, Ligue 1) speelt in het inzetvenster, dus er is geen doorgerekende wedstrijd die een `p_xg_understat`-arm had kunnen krijgen. WANNEER HET WEER GAAT KOSTEN, EN DAT IS BINNENKORT: op vrijdag 20 november spelen La Liga (Ath Bilbao - Espanyol), Bundesliga (Bayern - FC Koln) en Ligue 1 (Troyes - Le Havre) weer, en op 21/22 november de volle speelronde. Vanaf dan is Fotmob opnieuw de enige xG-bron voor elk duel. §3 (27 sep 2026) schrijft voor dat de kanskant pas VOORAAN in de notificatie hoort zodra FOTMOB wegvalt; dat is niet gebeurd - Fotmob leverde vandaag twee volledige daglijsten (47 competities / 122 duels) en alle 33 standen van `idcheck.py` zonder een enkele fout. Run B 18 nov 2026, dag achttien van de storing: UnderstatError, geen JSON terug van https://understat.com/getLeagueData/EPL/2026 (26719 bytes - exact hetzelfde aantal als op alle dagen ervoor). Diagnose onveranderd: Understats eigen onderhoudspagina, geen Cloudflare en geen verhuisde route. Voor de Run B-runlijst maakt dat niets uit, want Understat dekt vijf grote competities en geen daarvan staat op deze lijst.",
+   "detail": "19 nov (run A): NEGENTIENDE dag onbruikbaar en de diagnose van 9 november houdt onveranderd stand. https://understat.com/league/EPL geeft HTTP 200 met 26.719 bytes — exact hetzelfde aantal als alle dagen ervoor — en de zichtbare tekst van de pagina is in zijn geheel 'Understat.com We will come back soon'. Geen `teamsData` en geen `datesData` in de respons, dus `understat.fetch_league_stats` geeft None. Dit is de stille faalvorm: HTTP 200 zonder data. Het kostte vandaag niets — geen van de vijf competities die Understat dekt (PL, La Liga, Bundesliga, Serie A, Ligue 1) heeft een duel in het inzetvenster. Vanaf VRIJDAG 20 nov kost het wel iets: dan spelen La Liga, Bundesliga en Ligue 1. De redundantie van §4 is zolang weg en Fotmob is de enige xG-bron.",
    "notes": "Run A 4 okt 2026: niet aangeroepen, want er was geen wedstrijd om door te rekenen. Status ongewijzigd overgenomen van 3 okt.",
    "laatst_gemeten": "2026-10-12",
    "detail_history": [
@@ -123,9 +123,9 @@
   },
   "betexplorer": {
    "status": "ok",
-   "last_checked": "2026-11-18",
+   "last_checked": "2026-11-19",
    "role": "odds",
-   "detail": "10 nov (run A): OK, en vandaag UITSLUITEND als tweede bron voor de bekerronde — geen enkele koers opgehaald. De vijf fixturepagina's zijn gelezen en bevestigen de Fotmob-daglijst, met de eerstvolgende ronde erbij: FA Cup 20 teamparen / 5 dec, League Cup 4 / 15 dec, Coppa Italia 8 / 1 dec, KNVB Beker 16 / 1 dec, DFB Pokal 8 / 1 dec. Twee bronnen, hetzelfde antwoord, en bij alle vijf een datum die het antwoord verklaart. DAT IS DE CONTROLE DIE RUN A OP 6 OKTOBER 2026 VIJF DUELS KOSTTE toen ze er niet was: de FA Cup-kwalificatie stond toen niet in de Fotmob-daglijst en wel bij BetExplorer. 'Niet in de daglijst' mag nooit als `GEEN WEDSTRIJD` worden opgeschreven zonder tweede bron. Anders dan gisteren is er geen marktgemiddelde gelezen: dat gaat per wedstrijd en er is geen wedstrijd. Een fixturepagina is een kalender, geen koers. Run B 18 nov 2026: alle zeventien fixturepagina's van de Run B-runlijst geleverd en alle zeventien eens met Fotmob (0 tegen 0 voor de zestien stille competities, 6 tegen 6 voor Serie A (BRA)). Anders dan op 10 november was GEEN ENKELE pagina leeg: alle zeventien noemden hun eerstvolgende speelronde, en die valt steeds op 20 of 21 november. Ook het marktgemiddelde 1X2 voor Serie A (BRA) kwam binnen (22 rijen).",
+   "detail": "19 nov (run A): OK, en vandaag UITSLUITEND als tweede bron — nul koersen opgehaald, want er is geen duel om prijzen voor te kopen. Alle 17 fixturepagina's van de runlijst geleverd (4 t/m 24 rijen) en alle 17 bevestigen de Fotmob-daglijst: geen enkele rij met `is_today`, eerstvolgende duel per competitie 20 nov of later. Ook de vijf bekers nagekeken: FA Cup 20 rijen / 4 dec, Coppa Italia 3 / 1 dec, DFB Pokal 8 / 1 dec. KNVB Beker en Copa del Rey geven 0 rijen — dezelfde stabiel lege pagina als op 18 nov; die twee staan vandaag toch BUITEN DE RUNLIJST (cups.py), dus er hangt geen uitspraak over een speeldag aan.",
    "checked": "2026-08-25",
    "notes": "Run B 8 sep 2026: /fixtures/-pagina's opgehaald als tweede bron voor de dagdekking. Vijftien van de zeventien runlijst-competities gaven rijen (5 t/m 16 komende duels, geen enkele vandaag); Hungarian NB I en Kategoria Superiore gaven 0 rijen — geen HTTP-fout, gewoon een lege fixtures-tabel, en dus ook geen bevestiging in de andere richting. Voor Kosovo Superleague is er nog altijd geen werkende slug. Run A 4 okt 2026: fixturepagina van alle 21 runlijst-competities opgehaald als tweede bron voor de dagdekking. Achttien gaven rijen (5 t/m 20 komende duels, geen enkele in het inzetvenster); FA Cup, Coppa Italia en KNVB Beker gaven 0 rijen — geen HTTP-fout, een lege fixtures-tabel, dus ook geen bevestiging in de andere richting. Deze bron was hiermee de enige die de cups kon uitsluiten, want Fotmob toont de FA Cup-kwalificatie niet.",
    "laatst_gemeten": "2026-10-12",
@@ -167,9 +167,9 @@
   },
   "fotmob": {
    "status": "ok",
-   "last_checked": "2026-11-18",
+   "last_checked": "2026-11-19",
    "role": "prob",
-   "detail": "18 nov (run A): levert zonder fout. Twee daglijsten (18 en 19 nov) met samen 47 competities en 122 duels, en geen van die 122 hoort bij de Run A-runlijst. De drie id's die makkelijk verwarren zijn nagekeken en zijn alle drie een andere competitie dan de runlijst: `Ligue 1 [516]` is ALGERIJE (niet Frankrijk, dat is 53), en de drie `Cup`-ingangen zijn Slovenie (174), Egypte (9941) en Colombia (9490). `Copa del Rey - 1st Round [138]` speelt 6 duels en staat in geen enkele runlijst. `idcheck.py`: alle 33 id's uit coverage.json leveren een bruikbare stand. Run B 18 nov 2026: beide daglijsten (18 en 19 nov) geleverd, 62 en 60 wedstrijden; idcheck.py groen op alle 33 id's; team-xG, context en stand voor Serie A (BRA) zonder fout. Leverde ook de LIVE-status van Mexico - Jamaica (finished=false, ongoing=true, 41e minuut), waarop de statusregel van Sec. 0 die schaduwrij terecht open hield.",
+   "detail": "19 nov (run A): levert zonder fout. Twee daglijsten (19 en 20 nov) met 27 resp. 87 competitieblokken; geen enkel blok uit de Run A-runlijst heeft een duel in het inzetvenster [08:00 NL 19 nov, 08:00 NL 20 nov). De zes runlijstcompetities die op de 20-nov-daglijst staan (La Liga 87, Bundesliga 54, Ligue 1 53, Belgian Pro League 40, Ekstraklasa 196, Superligaen 46) trappen alle zes 's avonds af en vallen dus NA het venster — ze horen bij de Run A van 20 november. De id-verwarring van 18 nov is opnieuw nagekeken: `Ligue 1 [516]` is ALGERIJE (Frankrijk is 53) en `Série A [268]` is BRAZILIË (Italië is 55).",
    "checked": "2026-08-25",
    "notes": "Run B 8 sep 2026: daglijst opgehaald, 47 competities, geen daarvan uit de Run B-runlijst. Geen enkele league-stats-aanroep nodig deze run. Run A 4 okt 2026: beide daglijsten van het inzetvenster opgehaald (4 okt: 88 competities, 5 okt: 30). Geen van de 21 Run A-competities stond erop — interlandperiode. Nul league-stats-aanroepen nodig. LET OP, en dit is de bevinding van deze run: de FA Cup-kwalificatie staat NIET op de Fotmob-daglijst. Op 3 okt rekende Run A 40 FA Cup-duels door die uitsluitend bij BetExplorer stonden, dus een Stage 1 die alleen op de Fotmob-daglijst leunt mist die ronde stilzwijgend.",
    "laatst_gemeten": "2026-10-12",
@@ -211,9 +211,9 @@
   },
   "the_odds_api": {
    "status": "ok",
-   "last_checked": "2026-11-18",
+   "last_checked": "2026-11-19",
    "role": "odds",
-   "detail": "18 nov (run A): `api_check.py` geeft OK - 46 actieve voetbalcompetities, quota 19385 over / 615 gebruikt deze maand, en 33 van de 34 sportkeys van de repo actief. NIET actief vandaag: `soccer_italy_coppa_italia` (Coppa Italia), wat klopt - die beker speelt pas 2 december. ZES actieve sportkeys die de repo niet kent: soccer_brazil_serie_b, soccer_germany_bundesliga_women, soccer_germany_liga3, soccer_spain_copa_del_rey, soccer_sweden_superettan, soccer_uefa_champs_league_women. Dat is dezelfde lijst als op 10 november; alleen de Copa del Rey valt binnen de soort competities die de runlijsten volgen, en dat punt staat al als besluit bij de gebruiker (zie `copa_del_rey_buiten_alle_runlijsten`). NUL CREDITS UITGEGEVEN deze run: zonder duel in het inzetvenster is er geen competitie om prijzen voor te kopen. Run B 18 nov 2026: OK, 19.385 credits over en 615 gebruikt deze maand bij aanvang; 6 credits verbruikt (1 bulk-aanroep h2h+spreads+totals voor soccer_brazil_campeonato = 3, plus 3 losse BTTS-verzoeken). 33 van 34 sportkeys van de repo actief; soccer_italy_coppa_italia NIET ACTIEF (hoort bij Run A). Zes actieve sportkeys die de repo niet kent, onveranderd t.o.v. 10 nov.",
+   "detail": "19 nov (run A): `api_check.py` geeft OK — 45 actieve voetbalcompetities, quota 19379 over / 621 gebruikt deze maand, en 33 van de 34 sportkeys van de repo actief. NIET actief: `soccer_italy_coppa_italia`, wat klopt (eerstvolgende ronde 1 dec). De lijst onbekende actieve sportkeys is van zes naar VIJF gezakt: `soccer_spain_copa_del_rey` staat er niet meer bij omdat de repo hem op 18 nov heeft opgenomen. Geen sleutel afgewezen. NUL credits uitgegeven deze run.",
    "checked": "2026-08-25",
    "notes": "Run B 8 sep 2026: api_check.py geeft OK — 47 actieve voetbalcompetities, 19550 credits over van 20000, 450 gebruikt deze maand. Deze run heeft er nul verbruikt, want er stond geen enkele wedstrijd van de runlijst op de kalender. Run A 4 okt 2026: api_check.py geeft OK — 49 actieve voetbalcompetities, 19914 credits over, 86 gebruikt deze maand. Deze run heeft er nul verbruikt: geen enkele wedstrijd van de runlijst in het inzetvenster.",
    "laatst_gemeten": "2026-10-12",
@@ -254,9 +254,9 @@
   },
   "api_football": {
    "status": "niet_gezet",
-   "last_checked": "2026-11-18",
+   "last_checked": "2026-11-19",
    "role": "prob",
-   "detail": "9 nov (run B): API_FOOTBALL_KEY is niet gezet en dat blijft zo - besluit van de gebruiker van 27 sep 2026, geen storing en geen actiepunt (§3). De kanskant kwam vandaag volledig van Fotmob; Understat was niet van toepassing. Fotmob leverde zonder haperen, dus de uitzondering van punt 3 (wel melden zodra Fotmob omvalt) is niet van kracht. || 5 nov (run B): API_FOOTBALL_KEY is niet gezet en dat blijft zo. Besluit van de gebruiker van 27 sep 2026 ('Dat wil ik niet'); geen gat, geen actiepunt, niet in de notificatie. De kanskant komt van Fotmob (en Understat voor vijf competities, die vandaag geen van de runlijst dekken). api_check.py meldt het feitelijk en dringt niet meer aan. || 8 nov 2026, Run B — sleutel ontbreekt, besluit van de gebruiker van 27 sep 2026 en geen actiepunt (§3). Fotmob leverde vandaag voor alle 44 duels, dus de uitzondering van §3 punt 3 (melden zodra Fotmob omvalt) is niet aan de orde. Run B 18 nov 2026: API_FOOTBALL_KEY onveranderd niet gezet. Besluit van de gebruiker van 27 sep 2026 (Sec. 3) - geen gat, geen actiepunt, niet in de notificatie. De kanskant kwam vandaag volledig van Fotmob; Understat ligt eruit, dus er was vandaag maar EEN xG-bron voor deze lijst.",
+   "detail": "19 nov (run A): API_FOOTBALL_KEY is niet gezet en dat blijft zo — besluit van de gebruiker van 27 sep 2026, geen storing en geen actiepunt (§3). De uitzondering van punt 3 (wél melden zodra Fotmob omvalt) is NIET ingetreden: Fotmob leverde zonder haperen. Let wel op de samenloop: Understat ligt er negentien dagen uit, dus Fotmob is nu de enige xG-bron en er is geen tweede been meer.",
    "checked": "2026-08-25",
    "notes": "Run B 8 sep 2026: API_FOOTBALL_KEY nog steeds niet gezet, dus overgeslagen door api_check.py. Dit is geen afgewezen sleutel maar een ontbrekende; het blijft de sleutel die telt, want zonder statistiekenbron is er geen onafhankelijke kansinput (§2). Zie README, 'Sleutels toevoegen'. Run A 4 okt 2026: nog steeds niet gezet en dat blijft zo — de gebruiker heeft op 27 sep 2026 besloten hier geen geld aan uit te geven (§3). api_check.py slaat hem over en meldt hem niet als gat. Geen actiepunt.",
    "besluit": "27 sep 2026: de gebruiker wil geen betaald plan. Geen gat, geen actiepunt, niet in de notificatie. Meld het alleen als Fotmob wegvalt — dan is er geen kansbron meer. Zie _shared-rules.md §3, 'API_FOOTBALL_KEY komt er niet'.",
@@ -493,8 +493,8 @@
   },
   "herijking_fitted_through": {
    "status": "ok",
-   "last_checked": "2026-11-18",
-   "detail": "18 nov (run A): `recalibrate.load_fit().fitted_through` = 2026-11-17, de vorige rundag, dus `calibration.py settle` is niet blijven liggen (§6b-5c). De fit staat op a=1.0541, b=0.0349 over 7983 waarnemingen. `settle` wikkelde deze run 126 waarnemingen af; het logboek staat op 8382 van 8415 compleet, 33 nog open.",
+   "last_checked": "2026-11-19",
+   "detail": "19 nov (run A): `recalibrate.load_fit().fitted_through` = 2026-11-18, de vorige rundag, dus `calibration.py settle` is gedraaid en is niet blijven liggen (§6b-5c). Fit: a=1.056, b=0.036 over 7989 afgerekende gevallen; het model zei gemiddeld 33,3% en het werd 33,3%. Deze run heeft zelf 6 waarnemingen afgewikkeld; 8388 van 8424 compleet, 36 nog open.",
    "detail_history": [
     {
      "date": "2026-11-09",
@@ -666,10 +666,22 @@
    "last_checked": "2026-11-18",
    "status": "doorgevoerd",
    "role": "MAX_SHORTLIST, dekkingsrapportage en voorbeschouwing"
+  },
+  "cups_grens": {
+   "status": "bindt_vanaf_vandaag",
+   "last_checked": "2026-11-19",
+   "role": "runlijst",
+   "detail": "19 nov (run A): `scripts/cups.BINDS_FROM` = 2026-11-19, dus dit is de EERSTE run waarin de vijf bekers (FA Cup, Coppa Italia, KNVB Beker, DFB Pokal, Copa del Rey) van de runlijst af zijn in de eerste seizoenshelft. `cups.filter_runlist` gaf 17 mee en 5 buiten. Vandaag verandert dat niets aan de uitkomst: geen van de vijf heeft een duel in het inzetvenster, dus er is feitelijk niets overgeslagen. De eerste dagen waarop de grens wél iets wegneemt zijn 1 dec (Coppa Italia, DFB Pokal) en 4 dec (FA Cup). De League Cup (ENG) valt er met opzet niet onder en staat gewoon op de lijst; eerstvolgende ronde 15 dec."
+  },
+  "max_shortlist_knip": {
+   "status": "bindt_vanaf_vandaag",
+   "last_checked": "2026-11-19",
+   "role": "parameter",
+   "detail": "19 nov (run A): `ranking.SHORTLIST_BINDS_FROM` = 2026-11-19, dus de nieuwe tabel 2 (ma-do) / 3 (vr) / 5 (za) / 4 (zo) geldt vandaag voor het eerst. `ranking.max_shortlist(2026-11-19)` geeft 2. Hij heeft vandaag geen effect — er is geen selectie om af te kappen — maar hij is wél aangeroepen en niet uit de datum geraden. De `lijstlengte`-reeks staat onveranderd op 30 afgewikkelde gevallen (+20,8%, t=+0,89); de gebruiker kijkt opnieuw bij 100."
   }
  },
  "_network": "Netwerkpolicy is NIET de blokkade: proxy verbindt, geen x-deny-reason. Beide API-hosts zijn bereikbaar op Trusted. Allowed domains hoeft niet aangepast.",
- "updated": "2026-11-18",
+ "updated": "2026-11-19",
  "last_run_bevinding": "18 nov (run A): de reeks `lijstlengte` - de selecties die alle poorten EN hun drempel haalden maar niet in de top 3/5 pasten - haalt vandaag voor het eerst de ~30 afgewikkelde gevallen die §6d eist, en staat op +20,8% over 30 bets (15 winnaars). Dat is de reeks die moet meten wat de lijstlengte kost. Hij staat positief, maar op t = +0,89: niet van nul te onderscheiden. Geen besluit, geen wijziging, alleen vanaf nu elke run de stand melden.",
  "last_run_run_b": {
   "run": "B",
