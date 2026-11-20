@@ -65,6 +65,22 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     # 0,322, onder sides.UNDERDOG_FLOOR (0,35), dus de poort hoorde dicht te staan.
     "la galaxy": "los angeles galaxy",
     "los angeles galaxy": "la galaxy",
+    # 20 nov 2026 (Run B): BetExplorer kort de Nederlandse tweede-divisienamen in tot alleen de
+    # PLAATS, en dat laat van de clubnaam niets over dat met de Fotmob-naam overlapt. Fotmob
+    # schrijft "TOP Oss" en "Roda JC Kerkrade", BetExplorer "Oss" en "Roda" — na _DROP blijft
+    # {top, oss} tegen {oss} en {roda, jc, kerkrade} tegen {roda} over. Dat is in de ene richting
+    # wél een deelverzameling, maar `is_abbreviation` eist sinds 27 okt een VOORVOEGSEL op
+    # woordniveau ("oss" is de staart van "top oss", niet de kop), en `best_pair` haalt met 0,44
+    # de vloer van 0,62 niet. Zelfde stille faalstand als "LA Galaxy" hierboven: de Keuken
+    # Kampioen Divisie heeft geen sportkey bij The Odds API, dus het BetExplorer-marktgemiddelde
+    # is daar de ENIGE prijsbron. TOP Oss – Roda JC Kerkrade kwam daardoor uit op "geen prijzen
+    # gevonden voor deze wedstrijd": nul doorgerekende selecties van de zes markten, geen
+    # kalibratieblok (§6e), en poort 8 ongetoetst op een duel dat gewoon in het inzetvenster
+    # stond. Eén van de negen KKD-duels van vandaag.
+    "top oss": "oss",
+    "oss": "top oss",
+    "roda jc kerkrade": "roda",
+    "roda": "roda jc kerkrade",
     # 1 sep 2026: de Engelse daglijst kort af tot een deel dat na _DROP niets overhoudt dat
     # met de tabelnaam overlapt. Zonder deze drie leest een ploeg die gewoon in de stand
     # staat als "geen historie in deze divisie" en gaat hij ten onrechte de omrekening in.
