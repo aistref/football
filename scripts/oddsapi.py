@@ -104,6 +104,59 @@ SPORT_KEYS: dict[str, str] = {
     "English League Two (ENG)": "soccer_england_league2",
 }
 
+# Naamvarianten tussen `data/coverage.json` / de runlijsten en de tabel hierboven. Zoek een
+# sportkey daarom NOOIT met `SPORT_KEYS.get(naam)` maar met `sport_key(naam)` hieronder.
+#
+# Aanleiding, 21 nov 2026 (Run A): `data/coverage.json` en de runlijstscripts schrijven
+# "Super Lig (TUR)" zonder trema, deze tabel schrijft "Süper Lig (TUR)" mét. `SPORT_KEYS.get`
+# gaf daarop stil `None`, en de Turkse competitie viel die ochtend buiten de bulk-aanroep: geen
+# beste 1X2-prijs, geen Asian Handicap, geen Draw No Bet, geen Double Chance en geen
+# Over/Under — vier duels op het gratis BetExplorer-marktgemiddelde alleen. Niets klaagde.
+#
+# Het is dezelfde stille faalvorm als `soccer_spl` (9 sep t/m 27 okt 2026, hierboven) en het
+# Serie B-id: de sleutel bestond al, de naam waarmee ernaar werd gezocht niet. Tot 1 november
+# dekten de runscripts dit zelf af door de sportkey in hun eigen META-tabel te zetten; sinds
+# 20 november lezen ze hem uit deze module, en toen werd het verschil een gat. De Süper Lig
+# speelde op 20 november niet, dus het viel pas op de 21e op.
+#
+# `promotion.py` kent voor precies dezelfde twee namen al een eigen omzetting (`PROMO_COMP` in
+# de runscripts). Deze tabel is de tegenhanger daarvan voor de prijskant.
+NAME_ALIASES: dict[str, str] = {
+    "Super Lig (TUR)": "Süper Lig (TUR)",
+    "Segunda Division (ESP)": "Segunda División (ESP)",
+}
+
+
+def _fold_name(name: str) -> str:
+    """Competitienaam zonder diakrieten en zonder kapitalen, om op te vergelijken."""
+    import unicodedata
+    decomposed = unicodedata.normalize("NFKD", name or "")
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).casefold().strip()
+
+
+def sport_key(name: str) -> str | None:
+    """De sportkey bij een runlijst- of coverage-naam, of None als die er echt niet is.
+
+    Drie stappen, in deze volgorde: exacte naam, `NAME_ALIASES`, en als laatste redmiddel een
+    vergelijking zonder diakrieten. Die derde stap is er zodat een volgende trema-, cedille- of
+    accentvariant geen gat meer oplevert maar gewoon wordt gevonden; hij is met opzet alleen de
+    terugval, zodat `NAME_ALIASES` blijft opschrijven welke verschillen we kennen.
+
+    `None` betekent nu dus werkelijk "deze competitie heeft geen sportkey", en niet meer
+    "de naam was anders gespeld". Dat onderscheid was het hele probleem van 21 nov 2026.
+    """
+    if name in SPORT_KEYS:
+        return SPORT_KEYS[name]
+    alias = NAME_ALIASES.get(name)
+    if alias and alias in SPORT_KEYS:
+        return SPORT_KEYS[alias]
+    folded = _fold_name(name)
+    if folded:
+        for known, key in SPORT_KEYS.items():
+            if _fold_name(known) == folded:
+                return key
+    return None
+
 # Markten die alleen via de per-wedstrijd-endpoint gaan (bevestigd met HTTP 422 op de bulk-call).
 EVENT_ONLY_MARKETS = {"btts", "double_chance", "draw_no_bet"}
 

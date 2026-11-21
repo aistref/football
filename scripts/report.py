@@ -982,8 +982,19 @@ def render_coverage(state: dict, notes: dict, labels: dict) -> str:
         note = notes.get(name) or result.get("note")
         if note is None:
             count = len(result.get("matches", []))
-            note = (f"{count} wedstrijd{'en' if count != 1 else ''} bekeken" if count
-                    else "niets op de kalender")
+            if count:
+                note = f"{count} wedstrijd{'en' if count != 1 else ''} bekeken"
+            elif result.get("status") == "BUITEN DE RUNLIJST":
+                # 21 nov 2026 — NOOIT "niets op de kalender" BIJ DEZE STATUS. §5 zegt met zoveel
+                # woorden: "Een beker die buiten de lijst valt, is géén `GEEN WEDSTRIJD` ... Een
+                # toernooi dat buiten de lijst valt als 'niets op de kalender' opschrijven is
+                # hetzelfde probleem als een stille truncatie in Stage 4." De statuschip stond
+                # goed en de toelichting ernaast sprak hem tegen, wat de hele reden dat deze
+                # status bestaat weer ongedaan maakt. De run-state draagt de volle reden onder
+                # `reden` (cups.reason); die is te lang voor deze kolom, dus hier de korte vorm.
+                note = "staat vandaag niet op de runlijst — er wordt wel gespeeld"
+            else:
+                note = "niets op de kalender"
         out.append(f'<tr><td class="comp">{esc(short_competition(name, labels))}</td>'
                    f'<td><span class="chip {css}">{esc(label)}</span></td>'
                    f'<td class="note">{note}</td></tr>')
