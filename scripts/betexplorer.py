@@ -120,7 +120,7 @@ def fetch_league_fixtures(url: str, *, retries: int = 3, retry_pause: float = 1.
         row_html = row.group(0)
         teams = _TEAMS_RE.search(row_html)
         odds = _ODDS_RE.findall(row_html)
-        if not (teams and len(odds) >= 3):
+        if not teams:
             continue
         when = _WHEN_RE.search(row_html)
         books = _BOOKS_RE.search(row_html)
@@ -128,11 +128,25 @@ def fetch_league_fixtures(url: str, *, retries: int = 3, retry_pause: float = 1.
         # erboven; die cel bevat dan alleen &nbsp;. Zonder doorschuiven raak je precies de dagen
         # kwijt waarop het druk is: op 15 aug 2026 hadden zes van de acht Championship-duels om
         # 15:00 UK een lege cel, en een filter op "Today" hield er dan drie over in plaats van acht.
+        #
+        # DE DOORSCHUIVING MOET OVER *ELKE* RIJ MET TEAMS LOPEN, OOK ZONDER KOERS — gemeten
+        # 21 nov 2026 (Run B). Tot die datum sloeg de lus een rij zonder drie koersen over
+        # vóórdat `carried` werd bijgewerkt, dus droeg een rij met een lege tijdcel de datum van
+        # de laatste rij mét koers in plaats van die van de rij direct erboven. Op de
+        # fixturepagina van de Keuken Kampioen Divisie stond NAC Breda – Den Bosch (werkelijk
+        # 27 nov 20:00, nagerekend op de JSON-LD van die pagina) daardoor op "Today 16:30": de
+        # vijf rijen van het 27-novemberblok erboven hadden nog geen koers en de laatste rij mét
+        # koers was FC Eindhoven – RKC van vandaag. Gevolg: de bevestigingspoort van §1 meldde
+        # Fotmob 1 tegen BetExplorer 2 en wees naar een wedstrijd die vandaag niet bestaat.
+        # Dit is een STILLE faalstand in twee richtingen: zo'n spookduel valt op, maar een echte
+        # wedstrijd die naar een andere dag verschuift valt uit het venster zonder foutmelding.
         label = (when.group(1).strip() if when else "")
         if label.replace("&nbsp;", "").strip():
             carried = label
         else:
             label = carried
+        if len(odds) < 3:
+            continue
         matches.append(MatchOdds(
             home=teams.group(1).strip(),
             away=teams.group(2).strip(),
