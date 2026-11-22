@@ -37,7 +37,15 @@ De oorspronkelijke kop van `ra_names.py`, omdat hij uitlegt waaróm de tabel bes
 """
 import re, unicodedata
 
-_DROP = {"fc", "afc", "cf", "sc", "ac", "as", "sv", "vfl", "vfb", "tsv", "bsc", "se", "if", "ff",
+# 22 nov 2026 (Run B): `fk` is hier bijgeschreven. Het stond er niet, terwijl `fc`, `afc`, `sc`,
+# `ac` en `as` er vanaf het begin in staan — en `FK` is in Tsjechië, Slowakije, Scandinavië en de
+# Balkan net zo'n ruiswoord als `FC` in West-Europa. Gevonden op Pardubice - FC Zbrojovka Brno:
+# BetExplorer noteert de thuisploeg als "FK Pardubice" en Fotmob als "Pardubice", en zonder `fk`
+# in deze verzameling is dat {pardubice} tegen {fk, pardubice} — geen gelijkheid, dus
+# `is_abbreviation` wijst het af en de 1X2-koppeling faalt stil. In een competitie zonder
+# sportkey bij The Odds API (Tsjechië) is het BetExplorer-gemiddelde de ENIGE 1X2-bron, dus het
+# duel kwam met nul doorgerekende markten door de analyse.
+_DROP = {"fc", "fk", "afc", "cf", "sc", "ac", "as", "sv", "vfl", "vfb", "tsv", "bsc", "se", "if", "ff",
          "town", "city", "united", "utd", "athletic", "wanderers", "rovers", "county", "argyle",
          "albion", "kf", "ks", "cd", "ad", "ca", "ud", "sd", "us", "club", "calcio", "1905"}
 
@@ -240,6 +248,21 @@ ALIASES = {  # daglijstnaam -> tabelnaam, alleen waar geen enkele token overlapt
     "borussia m gladbach": "borussia monchengladbach",
     "m gladbach": "borussia monchengladbach",
     "monchengladbach": "borussia monchengladbach",
+    # 22 nov 2026 (Run B) — BETEXPLORER LAAT DE CLUBNAAM WEG EN HOUDT DE STAD OVER, en in Brno
+    # staan dit seizoen TWEE clubs in de Chance Liga. Fotmob noteert ze als "Artis Brno" en
+    # "FC Zbrojovka Brno", BetExplorer als "Artis Brno" en kaal "Brno". Na `norm` is dat {brno}
+    # tegen {zbrojovka, brno}: wél een deelverzameling, maar `is_abbreviation` eist sinds
+    # 27 okt 2026 meer dan dat (zie de uitleg daar, FC Eindhoven -> PSV), dus de koppeling
+    # faalt. Gevolg op Pardubice - FC Zbrojovka Brno vanochtend: `find_1x2` gaf None, de
+    # Tsjechische competitie heeft GEEN sportkey bij The Odds API en dus is het
+    # BetExplorer-gemiddelde daar de enige 1X2-bron — het duel kwam met NUL selecties door de
+    # analyse ("geen prijzen gevonden") terwijl vijftien boeken een koers hadden. Dat kost drie
+    # dingen tegelijk: geen enkele markt doorgerekend, een leeg kalibratieblok (§6e) en poort 8
+    # die opengaat op "geen marktoordeel over wie de mindere is" zonder te zijn getoetst.
+    # Dezelfde stille faalstand als "LA Galaxy" op 17 okt en de `is_today`-filter op 7 okt.
+    # Alleen de KALE stad krijgt de alias: "Artis Brno" koppelt op zijn eigen genormaliseerde
+    # naam en wordt hier dus niet door geraakt.
+    "brno": "fc zbrojovka brno",
 }
 
 
