@@ -55,7 +55,8 @@ A = lines.append
 
 A(f"# Run A — {DAG}")
 A("")
-A("**Gestart:** 02:04 CET · **Bets gepubliceerd:** 2 · **Wedstrijden diep geanalyseerd:** "
+A("**Gestart:** 03:04 CET · **Klaar:** 03:28 CET · **Looptijd:** 23,5 minuten "
+  "(`progress.py`, `duur`) · **Bets gepubliceerd:** 2 · **Wedstrijden diep geanalyseerd:** "
   "6 van 6 in het inzetvenster · **Afgekapt:** 0 (maandagcap 40)")
 A("")
 A("**Branch:** de run staat op `main` (`git push origin HEAD:main`, §6a). De scheduler-tekst "
