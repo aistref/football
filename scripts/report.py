@@ -1350,7 +1350,17 @@ def render(run_id: str, day: date, picks: list[dict], all_picks: list[dict],
     labels = prose.get("coverage_labels", {})
     stats = ledger_summary(all_picks)
     comps = normalise_competitions(state)
-    active = sum(1 for r in comps.values() if r.get("status") != "GEEN WEDSTRIJD")
+    # 25 nov 2026 — DEZE TELLER IS GEREPAREERD EN HET WAS EEN STILLE ONWAARHEID. Hij luidde
+    # `status != "GEEN WEDSTRIJD"` en dat klopte zolang er VIER statussen waren. Sinds §5 op
+    # 19 nov 2026 een vijfde kreeg (`BUITEN DE RUNLIJST`, voor de zes bekers die van 1 juli t/m
+    # 31 december niet op de runlijst staan) telde hij die zes mee als "actief": op 25 november
+    # stond er "8 competities actief" bovenaan het dagrapport terwijl er TWEE speelden. Dat is
+    # dezelfde faalvorm als de overige stille administratiefouten van §9 — niets klaagt, en het
+    # getal leest als een meting. Een competitie die niet op de runlijst staat, is per definitie
+    # niet actief; een competitie met duels die buiten het dagbudget vielen of zonder kansbron
+    # bleven, is dat wél (er is naar gekeken).
+    NIET_ACTIEF = {"GEEN WEDSTRIJD", "BUITEN DE RUNLIJST"}
+    active = sum(1 for r in comps.values() if r.get("status") not in NIET_ACTIEF)
     matches = sum(len(r.get("matches", [])) for r in comps.values())
     # De bets zelf ook op score tonen, zodat de volgorde daar niet afwijkt van de topselectie.
     ranked_picks = [p for group in rank_picks(picks, day) for p in group] if picks else picks
