@@ -1051,7 +1051,31 @@ def render_near_misses(state: dict, labels: dict) -> str:
         # kandidaat was of er drie op een haar afvielen. Tot 19 nov 2026 gaf deze functie bij nul
         # rijen een lege string terug en viel de hele sectie van de pagina — waarmee die twee
         # gevallen er van buiten af identiek uitzagen. Dat is de faalvorm die de regel beschrijft.
-        return '''
+        #
+        # 26 nov 2026 — DE LEGE STAND DEED EEN UITSPRAAK DIE NIET ALTIJD WAAR IS. Hij schreef
+        # "er stond geen wedstrijd op mijn lijst in het venster", en dat is maar één van de twee
+        # manieren waarop deze tabel leeg kan zijn. De tweede deed zich die ochtend voor: Run B
+        # had één wedstrijd met vijftien doorgerekende selecties, en geen ervan haalde de
+        # NEAR-drempel waarboven een afgewezen kandidaat een `near_miss` krijgt. De pagina zei
+        # toen dat er niets te bekijken was gewéést, terwijl er wel degelijk was gerekend — een
+        # onware mededeling op precies de plek die het verschil tussen twee soorten stilte moet
+        # laten zien. De tekst leidt daarom nu af wat er werkelijk is gebeurd.
+        doorgerekend = sum(1 for _c, _r in normalise_competitions(state).items()
+                           for m in (_r.get("matches") or [])
+                           if m.get("all_candidates"))
+        if doorgerekend:
+            n_sel = sum(len(m.get("all_candidates") or [])
+                        for _c, _r in normalise_competitions(state).items()
+                        for m in (_r.get("matches") or []))
+            waarom = (f'ik heb {n_sel} mogelijkheden doorgerekend over '
+                      f'{doorgerekend} wedstrijd{"en" if doorgerekend > 1 else ""}, en geen ervan '
+                      'liet genoeg voordeel zien om hier als afgewezen kandidaat te worden '
+                      'opgeschreven — onder die ondergrens bewaar ik ze niet eens voor mijn '
+                      'eigen metingen')
+        else:
+            waarom = ('er is vandaag niets doorgerekend, dus er is ook niets dat ergens op '
+                      'afgewezen kón worden')
+        return f'''
 <section>
   <div class="sectionhead">
     <span class="eyebrow">Net niet</span>
@@ -1061,8 +1085,7 @@ def render_near_misses(state: dict, labels: dict) -> str:
   <p class="prose measure"><strong>Vandaag niets — en dat betekent hier iets heel precies.</strong>
   In deze sectie staan normaal de weddenschappen die een echt voordeel lieten zien en toch zijn
   afgewezen, met per rij het cijfer van elke toets en de reden waarop ze afvielen. Vandaag is er
-  geen enkele kandidaat geweest: er stond geen wedstrijd op mijn lijst in het venster waarin je kunt
-  inzetten, dus er is niets doorgerekend dat ergens op afgewezen kón worden.</p>
+  geen enkele kandidaat geweest: {waarom}.</p>
 
   <p class="prose measure">Ik laat deze sectie met opzet staan in plaats van hem weg te halen. Een
   dag waarop er niets te kiezen viel en een dag waarop drie kandidaten op een haar afvielen, zien
