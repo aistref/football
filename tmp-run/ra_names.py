@@ -76,6 +76,50 @@ def _prefix_pair(a: str, b: str) -> bool:
     return long[:len(short)] == short
 
 
+# Ploegen waarvan de ONDERSCHEIDENDE kop vooraan staat: een reserveploeg heet "Jong PSV" en de
+# hoofdmacht "PSV", dus daar is de kop juist het hele verschil. `_affix_pair` mag de staartrichting
+# daarom nooit op zo'n naam toepassen — zie de docstring daar.
+_RESERVE = frozenset({"jong", "ii", "2", "b", "u19", "u20", "u21", "u23", "reserves", "res",
+                      "amateurs", "castilla", "atletic", "atletico b"})
+
+
+def _affix_pair(a: str, b: str) -> bool:
+    """Is de ene naam op woordniveau een AANSLUITENDE kop OF staart van de andere, na `_DROP`?
+
+    Dit verruimt `_prefix_pair` met de staartrichting, en de aanleiding is gemeten op
+    27 nov 2026 (Run B). `Jong AZ Alkmaar – TOP Oss` stond bij BetExplorer als `Jong AZ – Oss`.
+    De paarscore is (0.636 + 0.600) / 2 = **0.618**, twee duizendsten onder de vloer van 0.62, en
+    de kopterugval van 30 oktober redde alleen de thuisploeg: `['jong', 'az']` is een kop van
+    `['jong', 'az', 'alkmaar']`, maar `['oss']` is géén kop van `['top', 'oss']` — het is de
+    staart. Het duel kwam daardoor de analyse binnen met **nul prijzen in alle zes de markten**
+    en werd gerapporteerd als `GEEN BET — geen prijzen gevonden voor deze wedstrijd`, terwijl de
+    prijzen op precies de pagina stonden die de run al had opgehaald. Dat is dezelfde stille
+    faalstand als `la galaxy` (17 okt), `red bull new york` (30 sep) en `Roda – Jong AZ`
+    (30 okt), nu in de andere richting.
+
+    **De staartrichting is gevaarlijker dan de kop en krijgt daarom een eigen rem.** `['psv']` is
+    een staart van `['jong', 'psv']`, en MVV Maastricht – Jong PSV stond diezelfde ochtend op de
+    runlijst. Een koppeling van Jong PSV aan een rij die PSV noemt is precies de verkeerde prijs
+    waar §4 en `teamnames.is_abbreviation` voor waarschuwen. Daarom geldt: de woorden die in de
+    staartrichting wegvallen mogen géén reserveaanduiding bevatten (`_RESERVE`). Bij `TOP Oss`
+    valt `top` weg en dat is er geen; bij `Jong PSV` valt `jong` weg en dat is er wel.
+
+    De drie eisen van `best_pair` blijven er bovendien onverkort bovenop staan: de fuzzy score
+    moet eerst hebben gefaald, BEIDE ploegen van het paar moeten op woordniveau koppelen, en er
+    moet precies ÉÉN rij overblijven. Liever geen prijs dan de verkeerde.
+    """
+    ta, tb = ordered_tokens(a), ordered_tokens(b)
+    if not ta or not tb:
+        return False
+    short, long = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    if long[:len(short)] == short:                      # kop — de regel van 30 okt 2026
+        return True
+    if long[len(long) - len(short):] == short:          # staart — nieuw op 27 nov 2026
+        weggevallen = set(long[:len(long) - len(short)])
+        return not (weggevallen & _RESERVE)
+    return False
+
+
 def best_pair(home: str, away: str, rows: list, key_home, key_away, floor: float = 0.62):
     """Vind de rij die bij (home, away) hoort, op naamgelijkenis over het hele paar.
 
@@ -121,7 +165,7 @@ def best_pair(home: str, away: str, rows: list, key_home, key_away, floor: float
     if ok:
         return scored[0][1]
     hits = [r for r in rows
-            if _prefix_pair(home, key_home(r)) and _prefix_pair(away, key_away(r))]
+            if _affix_pair(home, key_home(r)) and _affix_pair(away, key_away(r))]
     if len(hits) == 1:
         return hits[0]
     return None
@@ -147,6 +191,17 @@ def selftest() -> None:
            {"home": "Helmond", "away": "Eindhoven FC"},
            {"home": "Roda", "away": "Jong AZ"},
            {"home": "Waalwijk", "away": "Almere City"}]
+    # de volledige BetExplorer-pagina van de Keuken Kampioen Divisie van 27 nov 2026, zeven
+    # duels, zoals `rb_nov27_odds.py` haar ophaalde
+    kkd27 = [{"home": "Jong AZ", "away": "Oss"},
+             {"home": "Dordrecht", "away": "Vitesse"},
+             {"home": "Jong Ajax", "away": "Heracles"},
+             {"home": "Jong Utrecht", "away": "Almere City"},
+             {"home": "Maastricht", "away": "Jong PSV"},
+             {"home": "NAC Breda", "away": "Den Bosch"},
+             {"home": "Venlo", "away": "Waalwijk"}]
+    rou27 = [{"home": "U. Cluj", "away": "Sepsi Sf. Gheorghe"},
+             {"home": "Petrolul", "away": "FC Arges"}]
     cases = [
         # het geval van 30 okt: paarscore 0.518, onder de vloer — de terugval moet hem vangen
         (("Roda JC Kerkrade", "Jong AZ Alkmaar", kkd), ("Roda", "Jong AZ")),
@@ -166,8 +221,56 @@ def selftest() -> None:
          ("Jong AZ", "Roda")),
         # FC Eindhoven tegen PSV: GEEN voorvoegsel op woordniveau, dus geen koppeling
         (("FC Eindhoven", "Ajax", [{"home": "PSV", "away": "Ajax"}]), None),
+        # --- de staartrichting, nieuw op 27 nov 2026 (Run B) ---
+        # het gemeten geval: paarscore 0.618, twee duizendsten onder de vloer, en `Oss` is de
+        # STAART van `TOP Oss`. Zonder deze richting kwam dit duel met nul prijzen binnen.
+        (("Jong AZ Alkmaar", "TOP Oss", kkd27), ("Jong AZ", "Oss")),
+        # de zes andere duels van diezelfde pagina mogen niet veranderen
+        (("FC Dordrecht", "Vitesse", kkd27), ("Dordrecht", "Vitesse")),
+        (("MVV Maastricht", "Jong PSV", kkd27), ("Maastricht", "Jong PSV")),
+        (("NAC Breda", "FC Den Bosch", kkd27), ("NAC Breda", "Den Bosch")),
+        (("VVV-Venlo", "RKC Waalwijk", kkd27), ("Venlo", "Waalwijk")),
+        (("Jong Ajax", "Heracles", kkd27), ("Jong Ajax", "Heracles")),
+        (("Jong FC Utrecht", "Almere City FC", kkd27), ("Jong Utrecht", "Almere City")),
+        # `az` is in `jong az alkmaar` het MIDDELSTE woord en dus geen kop en geen staart: de
+        # terugval koppelt Jong AZ Alkmaar niet aan een rij die de hoofdmacht noemt, ook niet
+        # als de tegenstander wél klopt. Liever geen prijs dan de verkeerde.
+        (("Jong AZ Alkmaar", "Oss", [{"home": "AZ", "away": "Oss"}]), None),
+        # en dezelfde rem in de andere richting: de kopregel van 30 okt blijft wél gelden
+        (("Jong AZ Alkmaar", "TOP Oss", [{"home": "Jong AZ", "away": "Oss"}]), ("Jong AZ", "Oss")),
+        # Universitatea Cluj – Sepsi OSK, óók van 27 nov 2026: dit blijft met opzet ONGEKOPPELD.
+        # `U. Cluj` is een AFKORTING (geen kop en geen staart van `Universitatea Cluj`) en
+        # `Sepsi OSK` deelt met `Sepsi Sf. Gheorghe` alleen het eerste woord. Koppelen op één
+        # gedeeld woord is exact de Excelsior-val van 27 okt 2026.
+        (("Universitatea Cluj", "Sepsi OSK", rou27), None),
+    ]
+    # Losse controles op `_affix_pair` zelf. Via `best_pair` zijn ze niet te isoleren: de fuzzy
+    # score beslist daar vaak al, en die laag is met deze reparatie niet veranderd.
+    affix_cases = [
+        # de kopregel van 30 okt 2026, ongewijzigd
+        (("Jong AZ Alkmaar", "Jong AZ"), True),
+        (("Roda JC Kerkrade", "Roda"), True),
+        # de staartregel van 27 nov 2026
+        (("TOP Oss", "Oss"), True),
+        # DE REM: `psv` is een staart van `jong psv`, maar `jong` is een reserveaanduiding, dus
+        # de staartrichting mag hier niet. Zonder `_RESERVE` zou dit True geven en zou een
+        # reserveploeg aan de prijs van de hoofdmacht kunnen koppelen.
+        (("Jong PSV", "PSV"), False),
+        (("Jong AZ Alkmaar", "AZ Alkmaar"), False),
+        # een afkorting is geen kop en geen staart, en blijft dus buiten deze terugval
+        (("Universitatea Cluj", "U. Cluj"), False),
+        (("Sepsi OSK", "Sepsi Sf. Gheorghe"), False),
+        # de Excelsior-val van 27 okt 2026: op woordniveau is dit wél een kop, en daarom staan
+        # de drie eisen van `best_pair` eromheen in plaats van in deze functie
+        (("Excelsior '31", "Excelsior"), True),
     ]
     fails = 0
+    for (a, b), want in affix_cases:
+        got = _affix_pair(a, b)
+        ok = got is want
+        fails += not ok
+        print(f"  {'OK  ' if ok else 'FOUT'} _affix_pair({a!r}, {b!r}) -> {got}"
+              + ("" if ok else f"   verwacht {want}"))
     for (home, away, rows), want in cases:
         got = best_pair(home, away, rows, kh, ka)
         got_t = (got["home"], got["away"]) if got else None
@@ -175,7 +278,8 @@ def selftest() -> None:
         fails += not ok
         print(f"  {'OK  ' if ok else 'FOUT'} {home} – {away} -> {got_t}"
               + ("" if ok else f"   verwacht {want}"))
-    print(f"\n{len(cases) - fails} van {len(cases)} controles geslaagd.")
+    totaal = len(cases) + len(affix_cases)
+    print(f"\n{totaal - fails} van {totaal} controles geslaagd.")
     if fails:
         raise SystemExit(1)
 
