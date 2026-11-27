@@ -1,0 +1,685 @@
+<title>Run A — vrijdag 27 november 2026</title>
+<style>
+:root{
+  --ground:#EBEEF2; --surface:#FFFFFF; --surface-2:#F4F6F9;
+  --ink:#141A21; --ink-2:#3D4854; --muted:#68737F; --line:#D3DAE2; --line-soft:#E3E8EE;
+  --accent:#96620F; --accent-ink:#7A4F0B; --accent-wash:#F6EDDC;
+  --pos:#256B4E; --pos-wash:#E2EFE8;
+  --neg:#9E3B33; --neg-wash:#F6E5E3;
+  --hold:#5C6672; --hold-wash:#E7EBEF;
+  --shadow:0 1px 2px rgba(20,26,33,.06), 0 8px 24px -12px rgba(20,26,33,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+    --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+    --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+    --pos:#5FB48C; --pos-wash:#16281F;
+    --neg:#D77A70; --neg-wash:#2B1917;
+    --hold:#8B98A6; --hold-wash:#1D252E;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1117; --surface:#141B23; --surface-2:#1A222B;
+  --ink:#E6EBF1; --ink-2:#B9C3CE; --muted:#8593A2; --line:#2A343F; --line-soft:#212A34;
+  --accent:#D6A44B; --accent-ink:#E8BC6C; --accent-wash:#2A2313;
+  --pos:#5FB48C; --pos-wash:#16281F;
+  --neg:#D77A70; --neg-wash:#2B1917;
+  --hold:#8B98A6; --hold-wash:#1D252E;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.prose{font-family:ui-serif,Georgia,"Iowan Old Style","Times New Roman",serif; font-size:1.02rem; line-height:1.62; color:var(--ink-2)}
+.num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+
+.wrap{max-width:920px; margin:0 auto; padding:0 20px 80px}
+section{margin-top:56px}
+h1,h2,h3{text-wrap:balance; margin:0}
+h2{font-size:1.5rem; font-weight:750; letter-spacing:-.018em}
+p{margin:0}
+.stack{display:flex; flex-direction:column}
+.g16{gap:16px}
+.measure{max-width:64ch}
+
+.eyebrow{font-size:.7rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--accent)}
+.sectionhead{display:flex; flex-direction:column; gap:6px; padding-bottom:16px; border-bottom:2px solid var(--ink); margin-bottom:24px}
+
+header{padding:44px 0 0}
+.masthead{display:flex; flex-wrap:wrap; align-items:baseline; gap:12px 18px; padding-bottom:20px; border-bottom:1px solid var(--line)}
+.masthead h1{font-size:clamp(1.9rem,5vw,2.6rem); font-weight:800; letter-spacing:-.032em; line-height:1.05}
+.masthead .date{font-size:.95rem; color:var(--muted); font-weight:500}
+.verdict{margin-top:22px; font-size:clamp(1.15rem,2.9vw,1.42rem); line-height:1.42; font-weight:600; letter-spacing:-.014em; max-width:34ch}
+.verdict b{color:var(--accent-ink); font-weight:800}
+/* 18 nov 2026: `verdict` en de voorbeschouwingen gaan door `prose_blocks`, dus een witregel in de
+   prose is nu echt een alinea. Daarvoor liep alles in één <p> en stond er dus één lap tekst. */
+.verdict p{margin:0 0 .5em; font-size:inherit; line-height:inherit; font-weight:inherit; max-width:none}
+.verdict p:last-child{margin-bottom:0}
+.verdict strong{color:var(--accent-ink); font-weight:800}
+.verdict h3{margin:.7em 0 .3em; font-size:.8em; letter-spacing:-.01em}
+/* De kopjes in een voorbeschouwing (§6c, besluit gebruiker 18 nov 2026: kopjes in plaats van een
+   lap tekst). Ze staan in de tekst zelf en zijn iets anders dan de twee kopjes die `bet_data`
+   boven de gegevensblokken zet. */
+.why .prose-kop{margin:14px 0 -2px; font-size:.95rem; font-weight:700; letter-spacing:-.01em;
+  text-transform:none; color:var(--ink)}
+.why .prose-kop:first-child{margin-top:0}
+.why p.slot{color:var(--muted); font-size:.92rem}
+
+.facts{display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden; margin-top:30px}
+.fact{background:var(--surface); padding:14px 16px; display:flex; flex-direction:column; gap:3px}
+.fact .v{font-size:1.5rem; font-weight:780; letter-spacing:-.03em}
+.fact .l{font-size:.74rem; color:var(--muted); font-weight:600; letter-spacing:.02em}
+.fact .s{font-size:.66rem; color:var(--muted); font-weight:500}
+
+.bet{background:var(--surface); border:1px solid var(--line); border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+.bet + .bet{margin-top:20px}
+.bet-top{padding:20px 22px 18px; display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-start; justify-content:space-between}
+.bet-id{display:flex; flex-direction:column; gap:5px; min-width:min(100%,260px)}
+.bet-meta{font-size:.78rem; color:var(--muted); font-weight:600; letter-spacing:.03em; text-transform:uppercase}
+.bet-match{font-size:1.22rem; font-weight:760; letter-spacing:-.02em; line-height:1.25}
+.bet-pick{display:inline-flex; align-items:center; gap:8px; align-self:flex-start; margin-top:4px;
+  background:var(--accent-wash); color:var(--accent-ink); border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  padding:5px 11px; border-radius:6px; font-size:.9rem; font-weight:700}
+.price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
+.price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
+.price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+
+.probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
+.prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
+.prob .l{font-size:.72rem; color:var(--muted); font-weight:650; letter-spacing:.02em}
+.prob .v{font-size:1.28rem; font-weight:750; letter-spacing:-.025em}
+.prob.hl .v{color:var(--accent-ink)}
+
+.why{padding:18px 22px 22px; display:flex; flex-direction:column; gap:12px}
+.why h4{margin:0; font-size:.72rem; font-weight:700; letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+.ctx{margin:0; display:grid; gap:6px; font-size:.86rem}
+.ctx-row{display:grid; grid-template-columns:minmax(90px,max-content) 1fr; gap:10px}
+.ctx dt{font-weight:650; color:var(--ink-2)}
+.ctx dd{margin:0; color:var(--ink-2); overflow-wrap:anywhere}
+@media (max-width:520px){.ctx-row{grid-template-columns:1fr; gap:0}}
+/* De voetnoot onder de marktvorm-telling (17 okt 2026): kleiner dan de telling zelf, want ze
+   zegt wat de cijfers NIET zijn en hoort de telling niet te overschreeuwen. */
+.prose.micro{font-size:.78rem; color:var(--muted); margin:2px 0 0}
+.risk{display:inline-flex; align-items:center; gap:7px; font-size:.82rem; font-weight:650; color:var(--ink-2)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+.dot.med{background:var(--accent)} .dot.high{background:var(--neg)}
+
+.chip{display:inline-block; padding:3px 9px; border-radius:5px; font-size:.73rem; font-weight:700; white-space:nowrap}
+.chip.ok{background:var(--pos-wash); color:var(--pos)}
+/* De groene markering van §5: deze wedstrijd haalde alle poorten en zijn drempel, en alleen de
+   lengte van de lijst hield hem tegen (besluit van de gebruiker, 18 nov 2026). */
+tr.qualified{background:var(--pos-wash)}
+tr.qualified td{border-top-color:var(--pos)}
+tr.qualified .sl-match{color:var(--pos)}
+.chip.none{background:var(--hold-wash); color:var(--hold)}
+.chip.gap{background:var(--neg-wash); color:var(--neg)}
+.chip.low{background:var(--pos-wash); color:var(--pos)}
+.chip.med{background:var(--accent-wash); color:var(--accent-ink)}
+.chip.high{background:var(--neg-wash); color:var(--neg)}
+/* een getal onder de drempel: de reden dat de bet er niet is, dus visueel te vinden */
+.num.below{color:var(--neg); font-weight:600}
+
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:.9rem; min-width:520px}
+th{text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); font-weight:700;
+   padding:11px 16px; background:var(--surface-2); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.comp{font-weight:640; white-space:nowrap}
+td.note{color:var(--ink-2); font-size:.86rem}
+
+/* Topselectie: de rangschikking van §5, zodat "welke zou ik spelen" een antwoord krijgt. */
+table.shortlist{min-width:640px}
+table.shortlist td{vertical-align:middle}
+td.rank{font-size:1.05rem; font-weight:700; color:var(--accent-ink); width:1%}
+.sl-match{display:block; font-weight:660; letter-spacing:-.01em}
+.sl-pick{display:block; font-size:.82rem; color:var(--muted); margin-top:3px}
+.wrap-callout{max-width:var(--measure, 68ch); margin:24px auto 0}
+
+.todo{display:flex; flex-direction:column; gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.task{background:var(--surface); padding:16px 18px; display:flex; gap:14px; align-items:flex-start}
+.tick{width:22px; height:22px; border-radius:5px; border:2px solid var(--line); flex:none; margin-top:1px; display:grid; place-items:center; color:var(--muted); font-size:.72rem; font-weight:800}
+.tick.done{background:var(--pos-wash); border-color:var(--pos); color:var(--pos)}
+.task .body{display:flex; flex-direction:column; gap:4px}
+.task .t{font-weight:680; letter-spacing:-.008em}
+.task .d{font-size:.88rem; color:var(--ink-2)}
+.when{font-size:.74rem; font-weight:700; color:var(--accent-ink); background:var(--accent-wash); padding:2px 8px; border-radius:4px; align-self:flex-start; margin-top:2px}
+.act{font-size:.87rem; margin-top:8px; padding:9px 12px; border-radius:7px; border-left:3px solid var(--line); background:var(--surface-2); color:var(--ink)}
+.act strong{font-weight:800}
+.act.you{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.you strong{color:var(--accent-ink)}
+.act.decide{border-left-color:var(--accent); background:var(--accent-wash); color:var(--accent-ink)}
+.act.me{border-left-color:var(--line); background:var(--surface-2); color:var(--muted)}
+.act.act-missing{border-left-color:var(--neg); background:var(--neg-wash); color:var(--neg)}
+
+.gloss{display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); border-radius:10px; overflow:hidden}
+.term{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:6px}
+.term dt{font-weight:720; font-size:.95rem; letter-spacing:-.01em}
+.term dd{margin:0; font-size:.88rem; color:var(--ink-2); line-height:1.55}
+.term dd em{color:var(--muted); font-style:normal}
+
+.callout{border-left:3px solid var(--accent); background:var(--surface); padding:18px 20px; border-radius:0 10px 10px 0; display:flex; flex-direction:column; gap:10px}
+.callout.warn{border-left-color:var(--neg)}
+
+footer{margin-top:64px; padding-top:24px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:10px}
+footer .disc{font-size:.92rem; color:var(--ink-2); font-style:italic; max-width:62ch}
+footer .meta{font-size:.78rem; color:var(--muted)}
+a{color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="masthead">
+    <h1>Run A</h1>
+    <span class="date">vrijdag 27 november 2026 · gedraaid om 03:04 CET</span>
+  </div>
+
+  <div class="verdict"><p class="prose">Na een week Europees voetbal zijn de binnenlandse competities weer begonnen, en dat is precies wat u vandaag in het rapport ziet. Twaalf van mijn zestien competities hebben een wedstrijd in het venster waarin u kunt inzetten, veertien wedstrijden bij elkaar: elf competities met één duel en de Turkse en de Poolse met twee. Mijn dagbudget is op vrijdag vijfenvijftig wedstrijden, dus er is niets afgevallen en u ziet hieronder werkelijk alles wat er te zien was. Alle veertien wedstrijden trappen na achten vanavond af, dus ze zijn alle veertien voor u speelbaar.</p>
+      <p class="prose">Er staan drie weddenschappen op de lijst, en ze hebben één ding gemeen dat ik meteen wil noemen: het zijn alle drie weddenschappen op véél doelpunten. Dat is voor het eerst in weken. De afgelopen maand kwam mijn lijst bijna elke dag uit op het tegendeel, en dat was een bekend probleem van mij: ik zet structureel te weinig kans op wedstrijden met vier of vijf doelpunten, waardoor weddenschappen op weinig doelpunten er bij mij te goedkoop uitzien. Over mijn hele logboek staan de weddenschappen op weinig doelpunten op ruim vijftien procent verlies en die op veel doelpunten op ruim vier procent winst. Vandaag sta ik dus aan de kant die het historisch beter doet.</p>
+      <p class="prose">Maar ik wil u daar niet geruster mee maken dan de cijfers toelaten, want er is vandaag een nieuw cijfer bij gekomen dat de andere kant op wijst. Over de drieëntachtig wedstrijden waarin ik werkelijk op veel doelpunten heb gewed, vielen er gemiddeld bijna vier tiende doelpunt minder dan ik had voorgerekend. Dat is een spiegelbeeld van wat ik aan de andere kant al wist, en het betekent dat ik ook hier mijn eigen keuzes net iets te rooskleurig inschat. Het haalt mijn eigen lat voor hard bewijs nog niet, en ik verzet er dus niets aan, maar het hoort bij drie regels die alle drie op die kant staan wel genoemd te worden.</p>
+      <p class="prose">Twee van de drie regels halen mijn eigen eis ruim: Nottingham Forest tegen Chelsea en Alanyaspor tegen Konyaspor. De derde, Levante tegen Racing Santander, staat er omdat er op vrijdag drie plekken in de lijst zijn en er maar twee wedstrijden boven mijn eis uitkwamen. Hij haalt zijn eigen, strengere eis bovendien alleen nádat ik mijn kans met de correctie uit mijn logboek heb bijgesteld; op mijn ruwe cijfers blijft hij er net onder. Dat staat erbij omdat het uitmaakt, niet als formaliteit.</p>
+      <p class="prose">Wat er verder opvalt aan vandaag: er is geen enkele wedstrijd die ik niet kon doorrekenen. Vijf van de veertien hebben een ploeg die vorig seizoen een divisie lager speelde, en alle vijf die omrekeningen bleven binnen wat ik heb kunnen meten. Dat is bij vijf omrekeningen geen vanzelfsprekendheid; deze maand zijn er meerdere wedstrijden op precies die grens afgevallen.</p></div>
+
+  <div class="facts">
+    <div class="fact"><span class="v num">3</span><span class="l">bets gepubliceerd</span></div>
+    <div class="fact"><span class="v num">14</span><span class="l">wedstrijden bekeken</span></div>
+    <div class="fact"><span class="v num">12</span><span class="l">competities actief</span></div>
+    <div class="fact"><span class="v num">0</span><span class="l">wedstrijden afgekapt</span></div>
+    <div class="fact"><span class="v num">249 / 288 / 66</span><span class="l">record tot nu toe</span><span class="s">(winst / verlies / inzet terug)</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Het antwoord</span>
+    <h2>De 3 bets</h2>
+  </div>
+  <div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Premier League · aftrap 21:00</span>
+        <span class="bet-match">Nottingham Forest – Chelsea</span>
+        <span class="bet-pick">Over 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">1.93</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">51,8%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">61,6%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+9,8</span></div>
+    </div>
+    <div class="why">
+      <p class="prose"><strong>De thuisploeg praat hier tegen me in</strong></p>
+      <p class="prose">Elf competitieduels heeft Nottingham Forest dit seizoen gespeeld, en in zeven ervan vielen er twee doelpunten of minder. Op The City Ground is het nog schraler: in vijf thuiswedstrijden samen vielen er zeven doelpunten, en vier van die vijf bleven onder de drie. Wie vanavond op drie of meer wedt, wedt dus rechtstreeks tegen het patroon van de ploeg die thuis speelt. Zeven keer twee doelpunten of minder in elf wedstrijden is geen reeks die om een weddenschap op drie vraagt.</p>
+      <p class="prose"><strong>Chelsea brengt de doelpunten mee</strong></p>
+      <p class="prose">Aan de andere kant staat een ploeg die dit seizoen twintig keer scoorde en twintig keer werd gepasseerd, in elf wedstrijden. Zeven van die elf gingen over de drie heen, buitenshuis drie van vijf. Afgelopen zaterdag ging Chelsea thuis met 1–4 onderuit tegen Leeds United, en dat was geen incident in een reeks waarin vier keer op vijf de nul niet werd gehouden. Forest hield acht wedstrijden achtereen de nul niet, iets wat Fotmob er zelf bij zet. Twee ploegen die beide hun laatste vijf duels op vier eigen doelpunten uitkwamen, en die beide moeite hebben om achterin de deur dicht te houden: daar zit de weddenschap in.</p>
+      <p class="prose"><strong>Een halve Chelsea-ploeg in de ziekenboeg</strong></p>
+      <p class="prose">Reece James ligt eruit tot midden januari, Maxence Lacroix tot begin januari, Jorrel Hato is er niet, João Pedro komt pas eind november terug en Jamie Gittens is twijfelgeval. Bij elkaar is dat ruim driehonderd miljoen aan marktwaarde, bijna twee vijfde van wat Chelsea aan selectie heeft. Forest mist er drie, met Nicolò Savona, Nicolás Domínguez en Callum Hudson-Odoi, en dat is ongeveer een achtste. Beide ploegen hadden ruim zes dagen rust en speelden niet midweeks, dus vermoeidheid speelt geen rol. De opstellingen zijn op dit moment nog voorspeld en niet bevestigd.</p>
+      <p class="prose"><strong>Vijf ontmoetingen, vijf verschillende wedstrijden</strong></p>
+      <p class="prose">0–3, 2–3, 1–1, 0–1 en in mei nog 1–3 voor Forest in Londen. Vijf, drie, twee, één en vier doelpunten, dus gemiddeld precies drie, en drie van de vijf gingen over de lijn van vanavond. Chelsea won er vier van de vijf; Forest heeft er in geen van de laatste vier meer dan twee gemaakt.</p>
+      <p class="prose"><strong>Drie graden en lichte regen</strong></p>
+      <p class="prose">Drie graden, honderd procent bewolking en lichte regen in Nottingham. Een ploeg die in elf wedstrijden negen keer scoorde, heeft op zo&#x27;n avond zomaar een duel waarin ze helemaal niet scoort, en dan moet Chelsea er in zijn eentje drie maken. Chelsea&#x27;s eigen uitwedstrijden geven daar maar matig hoop: twee van de vijf bleven onder de drie. Een 1–1 is precies de uitslag die het thuisrecord van Forest voorspelt, en die kost deze weddenschap.</p>
+      <p class="prose slot"><em>Mijn twee rekenwijzen wijzen hier dezelfde kant op, en de 1,95 van Matchbook ligt een flink stuk boven mijn eigen schatting van ruim eenenzestig procent. Dat de thuiswedstrijden van Forest daar lijnrecht tegenin gaan, blijft de zwakke plek van deze regel.</em></p>
+      <h4>Wat er eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>maandag 4 mei 2026</dt><dd>Chelsea <strong>1–3</strong> Nottingham Forest · 4 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 18 oktober 2025</dt><dd>Nottingham Forest <strong>0–3</strong> Chelsea · 3 doelp.</dd></div><div class="ctx-row"><dt>zondag 25 mei 2025</dt><dd>Nottingham Forest <strong>0–1</strong> Chelsea · 1 doelp.</dd></div><div class="ctx-row"><dt>zondag 6 oktober 2024</dt><dd>Chelsea <strong>1–1</strong> Nottingham Forest · 2 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 11 mei 2024</dt><dd>Nottingham Forest <strong>2–3</strong> Chelsea · 5 doelp. · beide scoorden</dd></div></dl>
+      <p class="prose micro">Over deze 5 duels: gemiddeld 3,0 doelpunten, en in 3 van de 5 scoorden beide ploegen.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Nottingham Forest</dt><dd>laatste 5: boven 2,5 in 1/5, gem. 2,20 · dit seizoen: boven 2,5 in 4/11, gem. 2,18 · thuis dit seizoen: boven 2,5 in 1/5, gem. 1,40 · vorig seizoen: boven 2,5 in 20/38, gem. 2,61</dd></div><div class="ctx-row"><dt>Chelsea</dt><dd>laatste 5: boven 2,5 in 1/5, gem. 2,40 · dit seizoen: boven 2,5 in 7/11, gem. 3,64 · uit dit seizoen: boven 2,5 in 3/5, gem. 2,80 · vorig seizoen: boven 2,5 in 25/38, gem. 2,89</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>Hoe de ploegen er nu voor staan</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Nottingham Forest</dt><dd>zaterdag 21 november uit tegen AFC Bournemouth (2–0) — Premier League · dan woensdag 2 december uit tegen Hull City — Premier League</dd></div><div class="ctx-row"><dt>Chelsea</dt><dd>zaterdag 21 november thuis tegen Leeds United (1–4) — Premier League · dan woensdag 2 december thuis tegen Crystal Palace — Premier League</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Nottingham Forest</dt><dd>selectiewaarde € 383,4 mln · mist 3 (€ 56,5 mln, 12,8% van de waarde): Nicolò Savona (blessure, terug Early December 2026); Nicolás Domínguez (blessure, terug Early January 2027); Callum Hudson-Odoi (blessure, terug Doubtful) · vorm LDLWL (4 pt uit 5) · 6,2 dagen rust</dd></div><div class="ctx-row"><dt>Chelsea</dt><dd>selectiewaarde € 476,7 mln · mist 5 (€ 312,9 mln, 39,6% van de waarde): Jorrel Hato (blessure, terug Mid November 2026); Maxence Lacroix (blessure, terug Early January 2027); Reece James (blessure, terug Mid January 2027); Jamie Gittens (blessure, terug Doubtful); João Pedro (blessure, terug Late November 2026) · vorm LDWLL (4 pt uit 5) · 6,2 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>The City Ground — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>verwacht</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot high"></span>Mijn eigen schatting voor deze wedstrijd wijkt bijna elf punten af van wat Pinnacle, de scherpste bookmaker, ervan vindt, en Pinnacle zit aan de kant van minder doelpunten. Daar komt bij dat de thuisploeg dit seizoen vier van haar vijf thuiswedstrijden onder deze lijn hield.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">Super Lig · aftrap 18:00</span>
+        <span class="bet-match">Alanyaspor – Konyaspor</span>
+        <span class="bet-pick">Over 2.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.43</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">41,1%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">52,2%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+11,1</span></div>
+    </div>
+    <div class="why">
+      <p class="prose"><strong>Konyaspor houdt het buitenshuis juist stil</strong></p>
+      <p class="prose">Van de twaalf competitieduels die Konyaspor dit seizoen speelde gingen er maar vier over de drie doelpunten heen, en van de vijf uitwedstrijden precies één. Dat is het tegendeel van wat deze weddenschap nodig heeft, en het is de eerste reden om er niet te veel van te verwachten. Wie alleen naar de bezoekers kijkt, komt bij een rustige middag uit.</p>
+      <p class="prose"><strong>Veertien tegendoelpunten in vijf wedstrijden</strong></p>
+      <p class="prose">In de laatste vijf duels kreeg Alanyaspor er veertien om de oren. Veertien, in vijf wedstrijden, terwijl er aan de eigen kant twee werden gemaakt. Vier van die vijf gingen over de drie doelpunten heen. Over het hele seizoen staat de ploeg op tien voor en twintig tegen in twaalf duels, waarvan er zeven over de lijn kwamen. Vorig seizoen was Alanyaspor met eenenveertig voor en eenenveertig tegen nog een nette middenmoter; dit jaar is de verdediging weggevallen en is dat precies de kant waarop deze weddenschap leunt.</p>
+      <p class="prose"><strong>Vier keer precies drie</strong></p>
+      <p class="prose">De vijf laatste ontmoetingen eindigden op 2–1, 1–2, 1–2, 2–1 en 0–2. Vier van de vijf dus op exact drie doelpunten, en in vier van de vijf scoorden beide ploegen. Dat is een opvallend smalle reeks: nooit een doelpuntenfestival, maar ook bijna nooit die ene te weinig. Bij een lijn van tweeënhalf is dat een gunstige geschiedenis, al moet ik eerlijk zeggen dat vier keer dezelfde uitslag net zo goed toeval kan zijn als een patroon.</p>
+      <p class="prose"><strong>Twee ploegen die beide uit een nederlaag komen</strong></p>
+      <p class="prose">Alanyaspor verloor zondag met 1–2 bij Kasımpaşa, Konyaspor ging thuis met 2–4 onderuit tegen Beşiktaş. Beide staan op één overwinning in vijf. Alanyaspor mist Fidan Aliti door een schorsing en Paolo Fernandes en Fatih Aksoy met blessures; bij Konyaspor zijn Chidozie Awaziem en Adil Demirbağ er niet bij, die laatste voor de rest van het seizoen. In geld is dat bij beide ploegen rond een vijfde van de selectiewaarde, dus niemand heeft hier een voordeel. Vijf dagen rust voor allebei, veertien graden en halfbewolkt in het GAIN Park, en van geen van beide ploegen is de opstelling al bekend.</p>
+      <p class="prose"><strong>Waar het misloopt</strong></p>
+      <p class="prose">Twee ploegen in slechte vorm gaan vaak voorzichtig spelen, en een 1–0 of 0–0 in een duel tussen de nummers laag op de ranglijst is niets bijzonders. Konyaspor maakte er in vijf uitwedstrijden twee, en dat is het soort cijfer waarbij één rustige middag genoeg is om hier niets van over te laten. De prijs van 2,46 zegt het ook: de markt vindt dit eerder een wedstrijd die onder de drie blijft dan erboven.</p>
+      <p class="prose slot"><em>Bij een prijs van 2,46 bij Matchbook hoort een kans van ruim eenenveertig procent; ik kom op tweeënvijftig uit. Van de drie regels van vandaag is dit bovendien de enige waarbij mijn beide rekenwijzen allebei ruim boven de markt uitkomen in plaats van maar één.</em></p>
+      <h4>Wat er eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zaterdag 14 februari 2026</dt><dd>Alanyaspor <strong>2–1</strong> Konyaspor · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 13 september 2025</dt><dd>Konyaspor <strong>1–2</strong> Alanyaspor · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 25 mei 2025</dt><dd>Konyaspor <strong>1–2</strong> Alanyaspor · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>vrijdag 3 januari 2025</dt><dd>Alanyaspor <strong>2–1</strong> Konyaspor · 3 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 20 april 2024</dt><dd>Konyaspor <strong>0–2</strong> Alanyaspor · 2 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 5 duels: gemiddeld 2,8 doelpunten, en in 4 van de 5 scoorden beide ploegen.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Alanyaspor</dt><dd>laatste 5: boven 2,5 in 4/5, gem. 3,20 · dit seizoen: boven 2,5 in 7/12, gem. 2,50 · thuis dit seizoen: boven 2,5 in 2/5, gem. 2,00 · vorig seizoen: boven 2,5 in 16/34, gem. 2,41</dd></div><div class="ctx-row"><dt>Konyaspor</dt><dd>laatste 5: boven 2,5 in 2/5, gem. 2,80 · dit seizoen: boven 2,5 in 4/12, gem. 2,17 · uit dit seizoen: boven 2,5 in 1/5, gem. 1,80 · vorig seizoen: boven 2,5 in 19/34, gem. 2,74</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>Hoe de ploegen er nu voor staan</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Alanyaspor</dt><dd>zondag 22 november uit tegen Kasımpaşa (2–1) — Süper Lig · dan dinsdag 1 december uit tegen Isparta 32 Spor — Cup Qualification</dd></div><div class="ctx-row"><dt>Konyaspor</dt><dd>zondag 22 november thuis tegen Beşiktaş (2–4) — Süper Lig · dan dinsdag 1 december uit tegen Karabük Idmanyurdu Spor — Cup Qualification</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Alanyaspor</dt><dd>selectiewaarde € 16,9 mln · mist 3 (€ 2,3 mln, 11,9% van de waarde): Fidan Aliti (schorsing, terug Late November 2026); Paolo Fernandes (blessure, terug Doubtful); Fatih Aksoy (blessure, terug Doubtful) · vorm LWLLL (3 pt uit 5) · 5,2 dagen rust</dd></div><div class="ctx-row"><dt>Konyaspor</dt><dd>selectiewaarde € 12,2 mln · mist 2 (€ 3,0 mln, 19,7% van de waarde): Chidozie Awaziem (blessure, terug Doubtful); Adil Demirbağ (blessure, terug Out for season) · vorm LWLLL (3 pt uit 5) · 5,2 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>GAIN Park Stadium — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>lastStarting11</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot med"></span>Twee ploegen in slechte vorm kunnen allebei voorzichtig gaan spelen, en Konyaspor kwam in vijf uitwedstrijden maar één keer boven deze lijn uit. De prijs van 2,46 zegt dat de markt dit eerder een rustige middag vindt.</span>
+    </div>
+  </div>
+<div class="bet">
+    <div class="bet-top">
+      <div class="bet-id">
+        <span class="bet-meta">La Liga · aftrap 21:00</span>
+        <span class="bet-match">Levante – Racing Santander</span>
+        <span class="bet-pick">Over 3.5</span>
+      </div>
+      <div class="price">
+        <span class="odds num">2.10</span>
+        <span class="book">bij The Odds API</span>
+      </div>
+    </div>
+    <div class="probrow">
+      <div class="prob"><span class="l">De bookmaker zegt</span><span class="v num">47,6%</span></div>
+      <div class="prob"><span class="l">Ik schat</span><span class="v num">64,5%</span></div>
+      <div class="prob hl"><span class="l">Verschil in mijn voordeel</span><span class="v num">+16,8</span></div>
+    </div>
+    <div class="why">
+      <p class="prose"><strong>Vijf ontmoetingen die dit tegenspreken</strong></p>
+      <p class="prose">Vijf keer stonden Levante en Racing Santander de afgelopen jaren tegenover elkaar, en er vielen vier, één, nul, zes en één doelpunt. Twee van de vijf kwamen boven de drieënhalf uit; twee andere eindigden op 0–0 en 1–0. Gemiddeld tweeënhalf doelpunt per duel, waar deze weddenschap er vier nodig heeft. Twee van de vijf keer waren er genoeg doelpunten, drie keer bij lange na niet.</p>
+      <p class="prose"><strong>Zes thuisduels, zevenentwintig doelpunten</strong></p>
+      <p class="prose">En dan het beeld van dit seizoen, dat precies de andere kant op wijst. Levante speelde zes keer in het Estadio Ciudad de Valencia en er vielen zevenentwintig doelpunten: viereneenhalf per wedstrijd, met vier van de zes boven de drieënhalf en drie zelfs boven de vierenhalf. Over het hele seizoen staat de ploeg op zeventien voor en tweeëntwintig tegen in dertien duels. Vorig seizoen was het veel rustiger, met elf van achtendertig boven deze lijn, dus het is een beeld van dit najaar en niet van de club.</p>
+      <p class="prose"><strong>Een promovendus die geen wedstrijd rustig houdt</strong></p>
+      <p class="prose">Racing Santander is de ploeg die dit alles aan elkaar knoopt. Twintig doelpunten gemaakt en tweeëndertig geïncasseerd in dertien wedstrijden, zeven van de dertien boven de drieënhalf, en in de laatste vijf wedstrijden negen keer zelf gescoord. Buitenshuis is het nog uitbundiger: zes duels, zes eigen doelpunten en negentien tegen, bij elkaar ruim vier per wedstrijd. Fotmob noteert er bovendien bij dat geen ploeg in La Liga dit seizoen meer strafschoppen tegen kreeg, zes stuks. Zondag won Racing thuis met 3–2 van Real Sociedad en dat was de vierde zege in vijf.</p>
+      <p class="prose">Belangrijk voorbehoud: Racing speelde vorig seizoen een divisie lager, dus zijn sterkte is omgerekend in plaats van gemeten op dit niveau. Daar zit onzekerheid in die bij Levante niet zit.</p>
+      <p class="prose"><strong>Wie er niet bij zijn</strong></p>
+      <p class="prose">Levante mist Petar Ratkov, Jeremy Toljan en Manuel Sánchez, bij elkaar bijna de helft van wat de ploeg aan marktwaarde heeft, en komt met vier dagen rust uit een 1–1 tegen Elche van maandagavond. Racing heeft Álvaro Mantilla, Maguette Gueye en Andrés Martín niet, samen rond een achtste van de selectie, en had een dag langer rust. Twaalf graden en een onbewolkte hemel in Valencia.</p>
+      <p class="prose"><strong>Dinsdag wacht de beker</strong></p>
+      <p class="prose">Beide ploegen spelen dinsdag een bekerduel tegen een lagere tegenstander, en dat is precies het soort week waarin een trainer een avond rust inbouwt. Vier doelpunten is ook gewoon veel: in bijna de helft van Levante&#x27;s thuisduels viel het aantal lager uit, en één van de twee ploegen die vroeg op voorsprong komt en het daarna uitspeelt, is genoeg.</p>
+      <p class="prose slot"><em>Van de drie regels van vandaag is dit de enige die op omgerekende cijfers rust, en daarom moet hij een strengere eis halen dan de andere twee. Die eis van zestien punten haalt hij net; op mijn ruwe cijfers blijft hij er een kwart punt onder.</em></p>
+      <h4>Wat er eerder gebeurde</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>zondag 6 april 2025</dt><dd>Levante <strong>3–1</strong> Racing Santander · 4 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zondag 13 oktober 2024</dt><dd>Racing Santander <strong>1–0</strong> Levante · 1 doelp.</dd></div><div class="ctx-row"><dt>zaterdag 20 april 2024</dt><dd>Racing Santander <strong>0–0</strong> Levante · 0 doelp.</dd></div><div class="ctx-row"><dt>maandag 20 november 2023</dt><dd>Levante <strong>2–4</strong> Racing Santander · 6 doelp. · beide scoorden</dd></div><div class="ctx-row"><dt>zaterdag 25 maart 2023</dt><dd>Racing Santander <strong>0–1</strong> Levante · 1 doelp.</dd></div></dl>
+      <p class="prose micro">Over deze 5 duels: gemiddeld 2,4 doelpunten, en in 2 van de 5 scoorden beide ploegen.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Levante</dt><dd>laatste 5: boven 3,5 in 1/5, gem. 2,20 · dit seizoen: boven 3,5 in 5/13, gem. 3,00 · thuis dit seizoen: boven 3,5 in 4/6, gem. 4,50 · vorig seizoen: boven 3,5 in 11/38, gem. 2,84</dd></div><div class="ctx-row"><dt>Racing Santander</dt><dd>laatste 5: boven 3,5 in 1/5, gem. 3,20 · dit seizoen: boven 3,5 in 7/13, gem. 4,00 · uit dit seizoen: boven 3,5 in 3/6, gem. 4,17 · vorig seizoen: speelde deze divisie niet</dd></div></dl>
+      <p class="prose micro">Geteld over de afgelopen competitieduels, dus zonder beker- en Europese wedstrijden — daarom kan dit afwijken van de vorm-reeks hieronder. Deze cijfers staan náást mijn berekening en zitten er niet in verwerkt.</p>
+      <h4>Hoe de ploegen er nu voor staan</h4>
+      <dl class="ctx"><div class="ctx-row"><dt>Levante</dt><dd>maandag 23 november thuis tegen Elche (1–1) — LaLiga · dan dinsdag 1 december uit tegen Antequera — Copa del Rey - 2nd Round</dd></div><div class="ctx-row"><dt>Racing Santander</dt><dd>zondag 22 november thuis tegen Real Sociedad (3–2) — LaLiga · dan dinsdag 1 december uit tegen Reus — Copa del Rey - 2nd Round</dd></div></dl>
+      <p class="prose micro">🇪🇺 = Europees duel. Twee wedstrijden ervoor en twee erna, voor zover de kalender ze geeft.</p>
+      <dl class="ctx"><div class="ctx-row"><dt>Levante</dt><dd>selectiewaarde € 39,7 mln · mist 3 (€ 18,6 mln, 32,0% van de waarde): Petar Ratkov (blessure, terug Doubtful); Jeremy Toljan (blessure, terug Mid December 2026); Manuel Sánchez (blessure, terug Out for season) · vorm LLDWD (5 pt uit 5) · 4,0 dagen rust</dd></div><div class="ctx-row"><dt>Racing Santander</dt><dd>selectiewaarde € 79,8 mln · mist 3 (€ 10,6 mln, 11,7% van de waarde): Álvaro Mantilla (blessure, terug Out for season); Maguette Gueye (blessure, terug Late December 2026); Andrés Martín (blessure, terug About 1-2 weeks) · vorm WWLWW (12 pt uit 5) · 5,2 dagen rust</dd></div><div class="ctx-row"><dt>Stadion</dt><dd>Estadio Ciudad de Valencia — het eigen stadion van de thuisploeg</dd></div><div class="ctx-row"><dt>Opstelling</dt><dd>verwacht</dd></div><div class="ctx-row"><dt>Contextcontrole</dt><dd>geen kant om te benadelen</dd></div></dl>
+      <span class="risk"><span class="dot high"></span>Deze regel rust op omgerekende cijfers van een ploeg die vorig seizoen een divisie lager speelde, en hij haalt mijn strengere eis voor zulke cijfers alleen nadat ik mijn kans met de correctie uit mijn logboek heb bijgesteld. De vijf onderlinge duels wijzen bovendien de andere kant op.</span>
+    </div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Topselectie</span>
+    <h2>De beste 3 als u er maar een paar speelt</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Op vrijdag t/m zondag houd ik maximaal
+  <strong>3</strong> bets in de topselectie. De volgorde is die van de score hieronder: het
+  voordeel in procentpunten maal de kans dat het lukt, en gehalveerd als de cijfers zwakker zijn.
+  Dat weegt een hogere trefkans dus zwaarder dan een paar procentpunt extra voordeel.
+  <strong>De score rangschikt, het risico waarschuwt</strong> — een bet kan bovenaan staan én hoog
+  risico zijn.</p>
+
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Bet</th><th class="num">Koers</th>
+        <th class="num">Mijn kans</th><th class="num">Voordeel</th>
+        <th class="num">Score</th><th>Risico</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Nottingham Forest – Chelsea</span>
+            <span class="sl-pick">Over 2.5 · Premier League · aftrap 21:00</span>
+          </td>
+          <td class="num">1.93</td>
+          <td class="num">61,6%</td>
+          <td class="num">+9.8</td>
+          <td class="num">6.02</td>
+          <td><span class="chip high">hoog</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Alanyaspor – Konyaspor</span>
+            <span class="sl-pick">Over 2.5 · Super Lig · aftrap 18:00</span>
+          </td>
+          <td class="num">2.43</td>
+          <td class="num">52,2%</td>
+          <td class="num">+11.1</td>
+          <td class="num">5.80</td>
+          <td><span class="chip med">gemiddeld</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Levante – Racing Santander</span>
+            <span class="sl-pick">Over 3.5 · La Liga · aftrap 21:00</span>
+          </td>
+          <td class="num">2.10</td>
+          <td class="num">64,5%</td>
+          <td class="num">+16.8</td>
+          <td class="num">5.43</td>
+          <td><span class="chip high">hoog</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De dagelijkse top 3</span>
+    <h2>Mijn 3 beste, op twee manieren gerekend</h2>
+  </div>
+  <p class="prose measure" style="margin-bottom:22px">Op vrijdag t/m zondag laat ik er 3 zien. De eerste
+  lijst is hoe ik het nu doe: ik trek van elke kansschatting af hoeveel ik er de afgelopen maand
+  structureel naast bleek te zitten. De tweede lijst is dezelfde dag zonder die aftrek — wat ik
+  vóór 5 september zou hebben gezien. <strong>De tweede lijst is geen advies.</strong> Ik houd hem
+  bij omdat ik wil kunnen nagaan of die aftrek klopt: alles wat er alleen daardoor uit valt, boek
+  ik mee in mijn logboek en reken ik af alsof ik het had gespeeld. Over een paar weken zeggen de
+  cijfers wie er gelijk had.</p>
+
+  <h3 class="prose" style="margin:0 0 10px">Zoals ik het nu doe — hier komen de weddenschappen uit</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Nottingham Forest – Chelsea</span>
+            <span class="sl-pick">Over/Under — Over 2.5 · Premier League · aftrap 21:00</span>
+          </td>
+          <td class="num">1.93</td>
+          <td class="num">61.6%</td>
+          <td class="num">+9.8</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET — en haalt ook de lat van 8.0 pp</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Alanyaspor – Konyaspor</span>
+            <span class="sl-pick">Over/Under — Over 2.5 · Super Lig · aftrap 18:00</span>
+          </td>
+          <td class="num">2.43</td>
+          <td class="num">52.2%</td>
+          <td class="num">+11.1</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET — en haalt ook de lat van 8.0 pp</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Levante – Racing Santander</span>
+            <span class="sl-pick">Over/Under — Over 3.5 · La Liga · aftrap 21:00</span>
+          </td>
+          <td class="num">2.10</td>
+          <td class="num">64.5%</td>
+          <td class="num">+16.8</td>
+          <td><span class="chip ok">gespeeld</span><br><span class="sl-pick">BET — en haalt ook de lat van 16.0 pp</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <h3 class="prose" style="margin:26px 0 10px">Zonder de correctie — puur ter vergelijking</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">#</th><th>Wedstrijd en selectie</th><th class="num">Koers</th>
+      <th class="num">Mijn kans</th><th class="num">Voordeel</th><th>Status</th></tr></thead>
+      <tbody><tr>
+          <td class="num rank">1</td>
+          <td>
+            <span class="sl-match">Brest – Paris FC</span>
+            <span class="sl-pick">Asian Handicap — Brest +0.25 · Ligue 1 · aftrap 20:45</span>
+          </td>
+          <td class="num">2.02</td>
+          <td class="num">61.9%</td>
+          <td class="num">+12.4</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">context spreekt de bet tegen (poort 7)</span></td>
+        </tr><tr>
+          <td class="num rank">2</td>
+          <td>
+            <span class="sl-match">Sønderjyske – Brøndby IF</span>
+            <span class="sl-pick">Asian Handicap — SonderjyskE +0.75 · Danish Superliga · aftrap 19:00</span>
+          </td>
+          <td class="num">1.99</td>
+          <td class="num">61.6%</td>
+          <td class="num">+11.3</td>
+          <td><span class="chip">geen bet</span><br><span class="sl-pick">underdog-kant onder de ondergrens (poort 8)</span></td>
+        </tr><tr>
+          <td class="num rank">3</td>
+          <td>
+            <span class="sl-match">Alanyaspor – Konyaspor</span>
+            <span class="sl-pick">Over/Under — Over 2.5 · Super Lig · aftrap 18:00</span>
+          </td>
+          <td class="num">2.43</td>
+          <td class="num">51.5%</td>
+          <td class="num">+10.4</td>
+          <td><span class="chip gap">nu tegengehouden</span><br><span class="sl-pick">BET</span></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:14px">Hiervan zou er <strong>1</strong> zonder de correctie een weddenschap zijn geweest. Over de hele run
+  gaat het om <strong>0</strong> mogelijkheden die alleen op de correctie
+  strandden; die staan allemaal in mijn logboek.</p>
+</section>
+<div class="wrap-callout"><div class="callout"><p class="prose">Er viel vandaag geen volwaardige weddenschap buiten de lijst. Twee wedstrijden kwamen boven mijn eigen eis uit en er zijn op vrijdag drie plekken, dus de lengte van de lijst heeft vandaag niets tegengehouden; de derde plek is juist aangevuld met de sterkste wedstrijd die overbleef. De reeks waarmee ik bijhoud wat die lijstlengte kost staat nu op vierendertig afgewikkelde gevallen met zestien winnaars en ruim dertien procent winst, tegen dertig gevallen en ruim twintig procent een week geleden. U kijkt er bij honderd gevallen naar en tot dan leg ik de vraag niet voor.
+
+Twee wedstrijden die het níet haalden zijn het vermelden waard, omdat ze allebei op dezelfde grond zijn tegengehouden: de ploeg waarop ik zou wedden mist te veel spelers in vergelijking met de tegenstander. Bij Brest tegen Paris FC gaf ik Brest bijna vijfendertig procent kans om te winnen tegen een prijs van 3,55, ruim vijftien punten boven de markt en de hoogste van de hele dag. Brest mist bijna de helft van zijn selectiewaarde en Paris FC een tiende, en dan houd ik die weddenschap tegen. Hetzelfde gebeurde bij Werder Bremen tegen Borussia Mönchengladbach, waar Gladbach achtendertig procent van zijn selectiewaarde mist tegen achtentwintig bij Werder. Die rem is de scherpste die ik heb: over honderddrieënvijftig afgerekende gevallen staat hij op bijna vierentwintig procent verlies, dus hij bespaart aantoonbaar geld.
+
+Veruit de meeste wedstrijden vielen vandaag af omdat mijn twee rekenwijzen elkaar tegenspraken: van de tweehonderdtwee mogelijke weddenschappen die ik heb doorgerekend was dat bij honderdnegenenveertig de eerste reden om te stoppen. Dat is driekwart, en het is de tweede dag op rij dat dat zo scheef ligt. Die eis bespaart me over driehonderdzevenenveertig afgerekende gevallen maar ruim twee procent, dus ze houdt veel tegen voor weinig opbrengst. Ik hou het in de gaten; er is nog geen reden om er iets aan te veranderen.</p></div></div>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Net niet</span>
+    <h2>Wat er wél in beeld was</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Kandidaten die een echt voordeel lieten zien
+  en alsnog zijn afgewezen. De grens ligt sinds 31 augustus op <strong>8,0 procentpunt</strong>
+  (16,0 als de cijfers zwakker zijn), verhoogd van 3,0 omdat alles daaronder over 179 afgerekende
+  weddenschappen geld bleek te kosten.
+  Staat er in één rij een hoog én een laag getal, dan zijn twee rekenmethodes het oneens over
+  dezelfde wedstrijd — en dan hoort er geen bet uit te komen.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Wedstrijd</th><th>Selectie</th><th>xG-model</th><th>2e methode</th>
+        <th>zwakste stand</th><th>Valt af op</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Werder Bremen – Borussia Mönchengladbach<br><span class="note">Bundesliga</span></td><td><span class="note">Double Chance — Double Chance — Borussia Mönchengladbach of gelijk (AH +0.5 @ 2.29)</span><br><span class="note">koers 2.29</span></td><td class="num">+4,1 pp</td><td class="num">+26,3 pp</td><td class="num">+3,6 pp</td><td><span class="chip gap">blessures of rust spreken de bet tegen</span></td></tr>
+<tr><td class="comp">Sønderjyske – Brøndby IF<br><span class="note">Danish Superliga</span></td><td><span class="note">Over/Under — Under 2.5</span><br><span class="note">koers 2.40</span></td><td class="num below">+1,5 pp</td><td class="num">+40,7 pp</td><td class="num below">+0,5 pp</td><td><span class="chip gap">haalt het alleen mét mijn correctie op uitslagen</span></td></tr>
+<tr><td class="comp">Raków Częstochowa – Piast Gliwice<br><span class="note">Ekstraklasa</span></td><td><span class="note">1X2 — 1 (Raków Częstochowa wint)</span><br><span class="note">koers 1.87</span></td><td class="num">+5,3 pp</td><td class="num below">-8,6 pp</td><td class="num below">+2,1 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">FC Groningen – Willem II<br><span class="note">Eredivisie</span></td><td><span class="note">Over/Under — Over 3.5</span><br><span class="note">koers 2.25</span></td><td class="num">+14,0 pp</td><td class="num below">-0,2 pp</td><td class="num">+11,3 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+<tr><td class="comp">Brest – Paris FC<br><span class="note">Ligue 1</span></td><td><span class="note">1X2 — 1 (Brest wint)</span><br><span class="note">koers 3.55</span></td><td class="num">+15,0 pp</td><td class="num">+13,6 pp</td><td class="num">+14,4 pp</td><td><span class="chip gap">blessures of rust spreken de bet tegen</span></td></tr>
+<tr><td class="comp">Venezia – Bologna<br><span class="note">Serie A</span></td><td><span class="note">Over/Under — Over 2.5</span><br><span class="note">koers 2.16</span></td><td class="num">+9,3 pp</td><td class="num">+14,3 pp</td><td class="num">+8,3 pp</td><td><span class="chip gap">voordeel te klein</span></td></tr>
+<tr><td class="comp">Rizespor – Kasımpaşa<br><span class="note">Super Lig</span></td><td><span class="note">Over/Under — Under 2.5</span><br><span class="note">koers 2.27</span></td><td class="num">+8,4 pp</td><td class="num below">-6,3 pp</td><td class="num">+5,1 pp</td><td><span class="chip gap">tweede rekenmethode is het oneens</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Actie</span>
+    <h2>Wat er nog moet gebeuren</h2>
+  </div>
+  <p class="prose">Van deze punten is er <strong>geen enkele</strong> iets voor jou — het is allemaal werk voor mij in een volgende run. Ze staan er zodat je kunt zien waar ik mee bezig ben, niet omdat er iets van je gevraagd wordt.</p>
+  <div class="todo">
+    <div class="task">
+      <span class="tick">1</span>
+      <span class="body">
+        <span class="t">Bij mij: de verhoging van mijn doelpuntenniveau lijkt doorgeschoten, en ik kom er rond de kerst op terug</span>
+        <span class="d">U hebt op 2 november besloten mijn verwachte aantal doelpunten met ruim drie procent te verhogen, en we hebben toen afgesproken waaraan we zouden zien of het hielp. Vandaag kan ik dat voor het eerst apart meten, op vijfhonderdnegentien wedstrijden, en de uitkomst is dat de fout niet kleiner is geworden maar van teken is omgeslagen: ik verwachtte eerst ruim een tiende doelpunt per wedstrijd te weinig en nu ruim een tiende te veel. Dat is geen reden om vandaag iets te doen: ik heb zelf opgeschreven dat deze vraag pas thuishoort bij ruim boven de negenhonderd wedstrijden, en het verschil is nog niet hard genoeg. Ik verzet zoiets ook nooit op eigen initiatief; dat is uw besluit. Wat ik vandaag doe, is het vastleggen zodat het bij de volgende meting niet opnieuw ontdekt hoeft te worden.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets van u nodig — ik meet dit opnieuw zodra ik ruim negenhonderd wedstrijden heb van ná 3 november, naar verwachting rond de kerst, en kom dan met een cijfer en een voorstel bij u terug.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">2</span>
+      <span class="body">
+        <span class="t">Bij mij: Understat levert voor de negende rundag niets, en vandaag kostte dat wel iets</span>
+        <span class="d">Understat is mijn tweede bron voor verwachte doelpunten, naast Fotmob. Hij geeft nu negen rundagen achtereen een gewone, geslaagde respons terug die alleen geen cijfers bevat: een pagina van bijna zevenentwintigduizend tekens, elke dag exact even groot. Dat lijkt eerder op een blokkade dan op een server die eruit ligt. De afgelopen dagen kostte het niets, omdat de vijf competities die hij dekt stillagen. Vandaag speelden ze alle vijf, dus het kostte wel iets: bij vijf wedstrijden mist mijn vergelijking tussen twee verschillende modellen voor verwachte doelpunten een kant, en er was vandaag geen tweede, onafhankelijk model. Mijn weddenschappen zijn er niet door geraakt, want Fotmob leverde alles wat ik nodig had.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets van u nodig — ik blijf hem elke run bevragen en meld het pas opnieuw als het beeld verandert of als het een gepubliceerde weddenschap raakt.</span>
+        
+      </span>
+    </div><div class="task">
+      <span class="tick">3</span>
+      <span class="body">
+        <span class="t">Bij mij: mijn twee rekenwijzen spreken elkaar nu twee dagen op rij bij driekwart van de kandidaten tegen</span>
+        <span class="d">Ik reken elke wedstrijd op twee manieren door en eis dat ze de markt dezelfde kant op verslaan. Vandaag was dat bij honderdnegenenveertig van de tweehonderdtwee mogelijke weddenschappen de eerste reden om te stoppen, gisteren bij veertien van de vijftien. Dat is scheef, en het is het soort scheefheid die betekent dat mijn tweede rekenwijze iets systematisch anders ziet dan mijn eerste in plaats van af en toe. Over driehonderdzevenenveertig afgerekende gevallen bespaart die eis me maar ruim twee procent, dus ze houdt veel tegen voor weinig. Ik verzet er niets aan op basis van twee dagen; wat ik doe is de reeks volgen.</span>
+        <span class="act me"><strong>Van jou is hier niets nodig:</strong> Niets van u nodig — ik kijk hier over een week opnieuw naar en meld het als bevinding zodra het een week lang zo scheef blijft liggen.</span>
+        
+      </span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De belangrijkste bevinding</span>
+    <h2>De verhoging van mijn doelpuntenniveau is voor het eerst apart te meten, en ze is doorgeschoten in plaats van de fout te verkleinen</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Op 2 november hebt u besloten mijn verwachte aantal doelpunten met ruim drie procent te verhogen. De reden was een gemeten tekort: over elfhonderdzevenenveertig wedstrijden verwachtte ik gemiddeld een tiende doelpunt per wedstrijd te weinig. Ik heb er toen bij geschreven hoe we zouden zien of het hielp, en dat was simpel: op de wedstrijden van ná 3 november hoort dat tekort naar nul te zakken.</p>
+    <p class="prose">Vandaag zijn er vijfhonderdnegentien van die wedstrijden en kan ik ze voor het eerst apart bekijken. Het tekort is niet naar nul gezakt, het is van teken omgeslagen. Op de elfhonderddrieënzeventig wedstrijden van vóór de verhoging verwachtte ik een tiende doelpunt te weinig; op de vijfhonderdnegentien erna verwacht ik er ruim een tiende te veel. Hetzelfde geldt voor de kans die eronder het meest meebeweegt, die op minder dan tweeënhalf doelpunt: die stond ruim twee punten te laag en staat nu ruim twee punten te hoog. De fout is dus niet kleiner geworden maar gespiegeld, in vrijwel dezelfde omvang.</p>
+    <p class="prose">Een tweede aanwijzing uit dezelfde meting wijst dezelfde kant op: wanneer ik op die vijfhonderdnegentien wedstrijden dezelfde verhoging nóg een keer toepas, is dat duidelijk slechter dan wat ik nu doe. Dat is de eerste keer in deze hele reeks metingen dat een variant hard genoeg uitvalt om die conclusie te dragen, en hij valt uit in de richting van minder verhogen in plaats van meer.</p>
+    <p class="prose">Ik verzet hier vandaag niets aan en ik leg u de vraag ook nog niet voor, en dat is met opzet. Ik heb op 21 november zelf opgeschreven dat deze vraag pas thuishoort bij ruim boven de negenhonderd wedstrijden, en het zijn er vijfhonderdnegentien. Het verschil dat ik nu meet is bovendien nog niet groot genoeg om hard te noemen. Wat vandaag verandert is alleen dat de meting leesbaar is geworden en dat haar richting nu bekend is. Bij het huidige tempo zijn er rond de kerst genoeg wedstrijden, en dan kom ik er met een cijfer en een voorstel bij u terug.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Ook uit deze run</span>
+    <h2>Ook aan de andere kant van de doelpuntenas kies ik nu te gunstig, en dat raakt alle drie de regels van vandaag</h2>
+  </div>
+  <div class="stack g16 measure">
+    <p class="prose">Ik houd twee dingen apart bij: of mijn model gemiddeld goed rekent, en of mijn eigen keuzes toevallig precies in de wedstrijden vallen waar het misgaat. Dat tweede is al lang bekend aan de kant van weinig doelpunten: in de honderddrieënvijftig wedstrijden waarin ik daarop wedde vielen er gemiddeld zes tiende doelpunt méér dan ik voorrekende, en dat is met deze aantallen een hard cijfer.</p>
+    <p class="prose">Wat vandaag nieuw is, is dat hetzelfde zich nu aan de ándere kant begint af te tekenen. In de drieëntachtig wedstrijden waarin ik op veel doelpunten wedde, vielen er gemiddeld bijna vier tiende doelpunt mínder dan ik voorrekende. Toen ik dit in oktober voor het laatst opschreef waren het achtendertig wedstrijden en was er niets te zien. Nu wijst het de spiegel van de andere kant op: ik kies op beide kanten juist die wedstrijden waar mijn eigen schatting de verkeerde richting uit staat.</p>
+    <p class="prose">Het rendement laat hetzelfde zien, langzamer. Weddenschappen op veel doelpunten stonden in oktober op ruim tien procent winst over tweeënzestig gevallen en staan nu op ruim vier procent over honderdtien. Weinig doelpunten staat op ruim vijftien procent verlies over honderdtweeënnegentig. De kant waar ik vandaag drie keer op speel is dus nog steeds de betere van de twee, maar het verschil is kleiner dan het was, en de verklaring die ik er in oktober bij gaf, dat de kant van veel doelpunten juist aan mijn rekenfout verdient, komt hiermee onder druk.</p>
+    <p class="prose">Geen van beide cijfers haalt de lat die ik voor mezelf aanhoud voordat ik iets verzet, en ik verzet dus niets. Maar het is de reden dat ik vandaag bij alle drie de voorbeschouwingen het ongemakkelijke cijfer vooraan heb gezet.</p>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Dekkingsrapportage</span>
+    <h2>Wat er is bekeken, en wat niet</h2>
+  </div>
+
+  <p class="prose measure" style="margin-bottom:22px">Alle 22 competities uit de opdracht, elk met één status.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Competitie</th><th>Status</th><th>Toelichting</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Belgian Pro League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Bundesliga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Championship</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Danish Superliga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Ekstraklasa</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">2 wedstrijden bekeken</td></tr>
+        <tr><td class="comp">Eredivisie</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">La Liga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Ligue 1</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Premier League</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Primeira Liga</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Serie A</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">1 wedstrijd bekeken</td></tr>
+        <tr><td class="comp">Super Lig</td><td><span class="chip ok">geanalyseerd</span></td><td class="note">2 wedstrijden bekeken</td></tr>
+        <tr><td class="comp">Scottish Premiership</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">UEFA Champions League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">UEFA Conference League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">UEFA Europa League</td><td><span class="chip none">geen wedstrijd</span></td><td class="note">niets op de kalender</td></tr>
+        <tr><td class="comp">Copa del Rey</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+        <tr><td class="comp">Coppa Italia</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+        <tr><td class="comp">DFB Pokal</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+        <tr><td class="comp">FA Cup</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+        <tr><td class="comp">KNVB Beker</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+        <tr><td class="comp">League Cup</td><td><span class="chip none">BUITEN DE RUNLIJST</span></td><td class="note">staat vandaag niet op de runlijst — er wordt wel gespeeld</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin:26px 0 14px">En dit zijn de <strong>11</strong> overige wedstrijden die ik heb bekeken, op geschiktheid gerangschikt in plaats van per competitie — de rechterkolom is dezelfde score waarmee ik de topselectie ordende. Geen daarvan is groen gemarkeerd: er was vandaag geen wedstrijd die alles haalde en alleen op de lengte van de lijst strandde. Een streepje in de rechterkolom betekent dat er niets te scoren was — geen bruikbare cijfers of geen prijzen, dus geen enkele doorgerekende selectie.</p>
+  <div class="tablewrap">
+    <table class="shortlist">
+      <thead><tr>
+        <th class="num">#</th><th>Wedstrijd</th><th>Beste mogelijkheid</th>
+        <th class="num">Score</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="num rank">1</td><td><span class="sl-match">Brest – Paris FC</span><span class="sl-pick">Ligue 1 · FULL</span></td><td class="note">Asian Handicap — Brest +0.25 @ 2.02 · viel af op <strong>blessures of rust spreken de bet tegen</strong> </td><td class="num">8.50</td></tr><tr><td class="num rank">2</td><td><span class="sl-match">Sønderjyske – Brøndby IF</span><span class="sl-pick">Danish Superliga · FULL</span></td><td class="note">Asian Handicap — SonderjyskE +0.75 @ 1.99 · viel af op <strong>staat op de mindere ploeg, en die kant staat scheef</strong> </td><td class="num">7.75</td></tr><tr><td class="num rank">3</td><td><span class="sl-match">Werder Bremen – Borussia Mönchengladbach</span><span class="sl-pick">Bundesliga · FULL</span></td><td class="note">Asian Handicap — Borussia Monchengladbach +1 @ 1.77 · viel af op <strong>blessures of rust spreken de bet tegen</strong> </td><td class="num">5.59</td></tr><tr><td class="num rank">4</td><td><span class="sl-match">Venezia – Bologna</span><span class="sl-pick">Serie A · LIGHT</span></td><td class="note">Over/Under — Over 2.25 @ 1.88 · viel af op <strong>voordeel te klein</strong> </td><td class="num">3.46</td></tr><tr><td class="num rank">5</td><td><span class="sl-match">FC Groningen – Willem II</span><span class="sl-pick">Eredivisie · LIGHT</span></td><td class="note">Over/Under — Over 3.5 @ 2.25 · viel af op <strong>tweede rekenmethode is het oneens</strong> </td><td class="num">3.39</td></tr><tr><td class="num rank">6</td><td><span class="sl-match">Rizespor – Kasımpaşa</span><span class="sl-pick">Super Lig · FULL</span></td><td class="note">Over/Under — Under 2.75 @ 1.99 · viel af op <strong>tweede rekenmethode is het oneens</strong> </td><td class="num">3.06</td></tr><tr><td class="num rank">7</td><td><span class="sl-match">Raków Częstochowa – Piast Gliwice</span><span class="sl-pick">Ekstraklasa · FULL</span></td><td class="note">Over/Under — Over 2.5 @ 1.53 · viel af op <strong>tweede rekenmethode is het oneens</strong> </td><td class="num">2.08</td></tr><tr><td class="num rank">8</td><td><span class="sl-match">Marítimo – Nacional</span><span class="sl-pick">Primeira Liga · LIGHT</span></td><td class="note">Over/Under — Over 2.25 @ 1.87 · viel af op <strong>tweede rekenmethode is het oneens</strong> </td><td class="num">1.41</td></tr><tr><td class="num rank">9</td><td><span class="sl-match">Southampton – Middlesbrough</span><span class="sl-pick">Championship · FULL</span></td><td class="note">Over/Under — Under 3 @ 1.91 · viel af op <strong>voordeel te klein</strong> </td><td class="num">1.22</td></tr><tr><td class="num rank">10</td><td><span class="sl-match">OH Leuven – Kortrijk</span><span class="sl-pick">Belgian Pro League · LIGHT</span></td><td class="note">Over/Under — Under 2.75 @ 2.03 · viel af op <strong>voordeel te klein</strong> </td><td class="num">0.90</td></tr><tr><td class="num rank">11</td><td><span class="sl-match">Górnik Zabrze – Wisła Płock</span><span class="sl-pick">Ekstraklasa · FULL</span></td><td class="note">Over/Under — Under 2.75 @ 2.03 · viel af op <strong>voordeel te klein</strong> </td><td class="num">0.83</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="prose measure" style="margin-top:20px">Er is <strong>niets weggelaten wegens tijdgebrek</strong>: er mogen er 55 per run diep worden bekeken en het waren er 14.</p>
+</section>
+
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">Eerlijke stand</span>
+    <h2>Hoe het tot nu toe gaat</h2>
+  </div>
+  <div class="tablewrap" style="margin-bottom:22px">
+    <table>
+      <thead><tr><th>Afgewikkelde bet</th><th>Uitslag</th><th>Resultaat</th></tr></thead>
+      <tbody>
+        <tr><td class="comp">Union St.Gilloise – Lech Poznań · Over/Under: Under 3,5 (1,76) · Run A</td><td class="num">2–2</td><td><span class="chip gap">verloren</span></td></tr>
+        <tr><td class="comp">Lyon – Lillestrøm · Over/Under: Under 3,5 (1,89) · Run A</td><td class="num">0–0</td><td><span class="chip ok">gewonnen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stack g16 measure">
+    <div class="callout"><p class="prose">Er lagen twee weddenschappen open van gisteravond, beide uit de Europa League, en beide wedden op weinig doelpunten. Eén won, één verloor, en samen leverden ze een tiende inzet verlies op. Dat is zo ongeveer de definitie van een vlakke dag.
+
+De winnaar is Lyon tegen Lillestrøm, waar ik had gewed op minder dan vier doelpunten. Het werd 0–0, dus gewonnen, maar ik moet er meteen bij zeggen dat de wedstrijd niet liep zoals ik had voorgerekend: ik verwachtte er ruim drie, en er viel er niet één. Dat is winnen op een uitslag die ik niet had voorzien, en dat is iets anders dan goed inschatten. Union Sint-Gillis tegen Lech Poznań werd 2–2, precies één doelpunt te veel voor mijn lijn van drieënhalf, en daar zat ik met mijn verwachting dichter bij de werkelijkheid dan bij de wedstrijd die ik won.
+
+Veel leerzamer was de schaduwlijst: vierendertig kandidaten die ik gisteren op een of andere grond heb tegengehouden, zijn vanochtend afgerekend, en daarvan wonnen er tweeëntwintig. Dat klinkt alsof mijn filters me geld hebben gekost, en op deze ene dag is dat ook zo. Het patroon erachter is de moeite van het noemen waard: van de zestien tegengehouden handicapweddenschappen op de mindere ploeg wonnen er elf. Dat is één avond en geen reeks; over de volle vierhonderdeenenveertig gevallen die ik van die soort heb afgerekend staat diezelfde rem nog steeds licht in de plus voor mij. Ik verander er dus niets aan, en ik noem het omdat één avond die zo eenzijdig uitvalt het waard is om op te schrijven in plaats van weg te laten.
+
+Er is na vanochtend geen enkele weddenschap en geen enkele schaduwregel meer open.</p></div>
+    <div class="callout warn"><p class="prose"><strong>De cijferregel om op te letten.</strong> Er is één getal dat op termijn zegt of dit werkt: of mijn kansinschatting scherper is dan die van de bookmaker. Op dit moment is die van de bookmaker beter (0.243 tegen mijn 0.263 — lager is beter). Bij 537 wedstrijden is dat ruis, maar het is de goede meter, en hij staat nu in het rood.</p></div>
+  </div>
+</section>
+<section>
+  <div class="sectionhead">
+    <span class="eyebrow">De termen</span>
+    <h2>Wat al dat jargon betekent</h2>
+  </div>
+  <dl class="gloss">
+    <div class="term"><dt>Koers / odds</dt><dd>Wat je terugkrijgt per ingezette euro als je wint. Koers 2.48 betekent: 1 euro inzet levert 2,48 euro terug, dus 1,48 winst.</dd></div>
+    <div class="term"><dt>Kans van de bookmaker</dt><dd>De koers omgerekend naar een percentage. Koers 2.48 komt neer op 40,3% — zo vaak moet het gebeuren voordat die prijs eerlijk is. <em>In de repo heet dit “implied prob”.</em></dd></div>
+    <div class="term"><dt>Voordeel in procentpunten</dt><dd>Het verschil tussen mijn schatting en die van de bookmaker. Zeg ik 48,2% en hij 40,3%, dan is dat +7,9. Mijn lat ligt op 8 — 16 als de cijfers zwakker zijn — maar die lat snijdt sinds 20 september aan het eind: staan er meer kandidaten boven dan er plekken in de lijst zijn, dan is de lat de grens; staan er minder, dan vult de rangorde de lijst en is de lat een waarschuwing. Een bet onder de lat kan er dus staan, en dan zegt het risico erbij hoe hij gelezen hoort te worden. <em>In de repo: “edge_pp”, §5b.</em></dd></div>
+    <div class="term"><dt>Kansenkwaliteit (xG)</dt><dd>Hoeveel doelpunten een ploeg had “moeten” maken op basis van de kwaliteit van hun kansen. Betrouwbaarder dan de echte score, omdat geluk er grotendeels uit is.</dd></div>
+    <div class="term"><dt>De robuustheidstoets</dt><dd>Elke bet wordt zes keer doorgerekend met andere instellingen. Blijft het voordeel alleen bestaan bij één toevallige instelling, dan is het een rekenartefact en gaat de bet eruit.</dd></div>
+    <div class="term"><dt>De tweede methode</dt><dd>Naast het xG-model rekent een tweede berekening dezelfde wedstrijd door op wat de ploegen thuis en uit werkelijk scoorden. Alleen wat beide methodes bevestigen wordt gepubliceerd.</dd></div>
+    <div class="term"><dt>Marge eruit rekenen</dt><dd>Elke bookmaker rekent zijn winst in de koersen. Om eerlijk te vergelijken gaat die marge er eerst uit — anders lijkt elke bet slecht. <em>In de repo: “de-viggen”.</em></dd></div>
+    <div class="term"><dt>Volledig / beperkt / geen data</dt><dd>Hoeveel er bekend is over een wedstrijd. Bij “geen data” — meestal een net gepromoveerde club zonder historie — komt er per definitie geen bet, hoe mooi de koers ook is.</dd></div>
+    <div class="term"><dt>De kalibratiescore</dt><dd>Meet of iemands percentages op de lange duur kloppen. Lager is beter. Het punt is de vergelijking: is die van mij lager dan die van de bookmaker, dan voegt de analyse iets toe.</dd></div>
+  </dl>
+</section>
+
+<footer>
+  <p class="disc">Beslissingsondersteuning, geen winnend systeem. Na de bookmakermarge is de verwachtingswaarde negatief.</p>
+  <p class="meta">Run A · vrijdag 27 november 2026 · 3 bets uit 14 wedstrijden · Fotmob leverde alles wat ik nodig had: de twee dagkalenders, de standen van twaalf competities over twee seizoenen, de wedstrijdcontext van alle veertien wedstrijden zonder één fout, de doelpuntenfrequenties van alle veertien en de voorbeschouwingsdata van de drie waarop ik speel. Ook de afrekening van gisteravond kwam daar vandaan. BetExplorer gaf het gratis marktgemiddelde voor alle twaalf spelende competities en diende als tweede bron voor de vraag wélke wedstrijden er zijn; die twee bronnen waren het over alle tweeëntwintig competities van mijn lijst eens, veertien tegen veertien.
+
+The Odds API leverde de prijzen. Alle twaalf competities kregen de volledige inkoop van drie markten in één aanroep, en tien wedstrijden kregen daarnaast de markt of beide ploegen scoren. Dat kostte zesenveertig van mijn tweeduizenddriehonderdachtenvijftig toegestane eenheden voor vandaag; er zijn er nog achttienduizendachthonderdachtendertig over bij vier dagen tot de maandwissel. Alle zes de markten waren bij alle veertien wedstrijden te koop, dus dat alle drie de regels van vandaag uit dezelfde markt komen, is de analyse en niet mijn inkoop.
+
+Understat gaf voor de negende rundag geen cijfers. De extra statistiekensleutel ontbreekt nog steeds, en dat is uw besluit van 27 september en geen storing; de kanskant komt van Fotmob. Forebet, fbref, Oddschecker, FootyStats en PredictZ staan nog steeds dicht achter hun botbeveiliging, en daar werk ik niet omheen.</p>
+</footer>
+
+</div>

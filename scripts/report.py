@@ -1007,6 +1007,20 @@ GATE_LABEL = {
     "tweede_methode": "tweede rekenmethode is het oneens",
     "odds": "koers buiten de toegestane band",
     "data": "te weinig onafhankelijke cijfers",
+    # Aangevuld 27 nov 2026. Deze vijf vielen tot die datum door de `.get(...)`-terugval heen en
+    # kwamen met hun interne naam op de pagina te staan: `herijking_omgekeerd` stond die ochtend
+    # letterlijk zo in de tabel "Wat er wél in beeld was". §6c verbiedt jargon in het dagrapport
+    # ("schrijf de prose voor iemand die de repo niet kent en het jargon niet spreekt"), en een
+    # terugval die de interne sleutel afdrukt is precies de stille vorm daarvan: er klaagt niets,
+    # de pagina rendert, en de lezer krijgt een poortnaam uit de code te zien. De namen zelf
+    # veranderen NIET — ze blijven zoals ze in `data/shadow.jsonl` en in `meta.py` staan, want
+    # daar zijn ze de sleutel van een meetreeks (§1e, §5a, §5b).
+    "context": "blessures of rust spreken de bet tegen",
+    "underdog": "staat op de mindere ploeg, en die kant staat scheef",
+    "doelpunten_onder": "weinig doelpunten vraagt bij mij meer marge",
+    "herijking": "haalt het alleen zonder mijn correctie op uitslagen",
+    "herijking_omgekeerd": "haalt het alleen mét mijn correctie op uitslagen",
+    "lijstlengte": "goed genoeg, maar de lijst was al vol",
 }
 
 
