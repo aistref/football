@@ -199,6 +199,34 @@ def short_competition(name: str, labels: dict) -> str:
     return name.split(" (")[0]
 
 
+def exchange_note(pick: dict) -> str:
+    """De bruto koers erbij zetten als de beste prijs van een BEURS komt (§5).
+
+    Toegevoegd 28 nov 2026 (Run B), en het is een reparatie van een stille omissie. §5 eist bij een
+    beurskoers met zoveel woorden dat BEIDE getallen in het rapport staan: *"de gebruiker ziet op de
+    site de koers ervóór, en zonder die twee naast elkaar klopt het rapport niet met wat hij op zijn
+    scherm heeft."* `edge_pp` en `selection_score` rekenen met de koers ná commissie
+    (`oddsapi.net_price`), dus dat is ook de koers die in `picks.jsonl` staat en die het bet-blok
+    afdrukt.
+
+    De regel hierboven knipte `odds_source` af op " (" en gooide daarmee precies het deel weg waar
+    de beurs en de bruto koers in staan. Gevolg: het dagrapport van Run B van 28 november drukte
+    1,73 af voor Bodø/Glimt – KFUM terwijl Matchbook 1,74 op het bord had, zonder ergens te melden
+    dat er commissie van de nettowinst af gaat. Dat is dezelfde stille faalvorm als `settled_note`
+    (27 sep) en `calibration.py settle` (30 sep): het rapport slaagt, de pagina is compleet, en toch
+    staat er iets anders dan de gebruiker op zijn scherm ziet. Nagekeken op de dagrapporten van
+    27 november, waar dezelfde omissie een Matchbook-koers van Real Salt Lake – Vancouver raakte;
+    die pagina's worden NIET opnieuw gerenderd (§6c, 7 nov 2026).
+
+    Er wordt niets herrekend: dit is uitsluitend wat er op de pagina komt te staan.
+    """
+    bron = str(pick.get("odds_source") or "")
+    if "beurs" not in bron.lower():
+        return ""
+    detail = bron.split("(", 1)[1].rsplit(")", 1)[0] if "(" in bron else bron
+    return f'<span class="book exchange">{esc(detail)}</span>'
+
+
 RISK_LEVELS = {"low": "low", "laag": "low",
                "med": "med", "medium": "med", "gemiddeld": "med", "mid": "med",
                "high": "high", "hoog": "high"}
@@ -635,6 +663,7 @@ def render_bets(picks: list[dict], prose: dict, labels: dict, state: dict | None
       <div class="price">
         <span class="odds num">{pick["odds"]:.2f}</span>
         <span class="book">bij {esc(text.get("book") or pick["odds_source"].split(" (")[0])}</span>
+        {exchange_note(pick)}
       </div>
     </div>
     <div class="probrow">
@@ -1589,6 +1618,8 @@ header{padding:44px 0 0}
 .price{text-align:right; display:flex; flex-direction:column; gap:2px; margin-left:auto}
 .price .odds{font-size:2.1rem; font-weight:800; letter-spacing:-.04em; line-height:1}
 .price .book{font-size:.8rem; color:var(--muted); font-weight:600}
+/* 28 nov 2026 — de bruto koers bij een beurskoers (§5 eist beide getallen). Zie exchange_note. */
+.price .book.exchange{font-weight:500; max-width:17rem; line-height:1.25; text-wrap:balance}
 
 .probrow{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line-soft); border-top:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft)}
 .prob{background:var(--surface-2); padding:13px 16px; display:flex; flex-direction:column; gap:2px}
